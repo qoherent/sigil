@@ -1,18 +1,18 @@
-export function handler(req: Request): Response {
-  const url = new URL(req.url)
+import { runQodeCommand } from './cli/mod.ts'
 
-  if (url.pathname === '/api') {
-    return Response.json({
-      message: 'Hello, world!',
-      time: new Date().toISOString(),
-    })
-  }
-
-  return new Response('<h1>Welcome to Deno!</h1>', {
-    headers: { 'content-type': 'text/html' },
-  })
-}
+export { runQodeCommand } from './cli/mod.ts'
 
 if (import.meta.main) {
-  Deno.serve(handler)
+  const result = runQodeCommand(Deno.args)
+  const encoder = new TextEncoder()
+
+  if (result.stdout.length > 0) {
+    await Deno.stdout.write(encoder.encode(result.stdout))
+  }
+
+  if (result.stderr.length > 0) {
+    await Deno.stderr.write(encoder.encode(result.stderr))
+  }
+
+  Deno.exit(result.status)
 }
