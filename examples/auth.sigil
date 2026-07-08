@@ -1,0 +1,40 @@
+component User {
+    goal {
+        its a data model to store user information
+    }
+
+    interface {
+        name,email,password, profile picture, is home owner
+    }
+}
+
+component Auth {
+    goal {
+        Identity managment that let user logged in as renter or room owners and manage there access throw the app.
+    }
+
+    interface {
+        # Credential
+        User.email,User.passowrd
+
+        # Sesstion
+        JWT
+    }
+
+    state {
+        logged-in
+        home owner
+    }
+
+    constraints {
+        # using nextjs auth system
+        # home owner and renter share the same User entity
+    }
+
+    logic {
+        # IsHomeOwner
+        Has access to add rooms and accept bookings
+        # Renter
+        Has access to rooms list and can book rooms
+    }
+}
