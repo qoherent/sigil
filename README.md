@@ -225,3 +225,4 @@ Parsing, validation tooling, and strict grammar enforcement are intentionally de
 - Can expands be named or scoped, for example by feature, layer, implementation, or environment?
 - Should reusable components expose only `component`, or can other components explicitly depend on selected `expand` details?
 - Should `#module.sigil` remain the root filename?
+- How we should organize the sigil files?
