@@ -1,6 +1,6 @@
 # Sigil
 
-sigil is shared free form language between human and machine to keep the system knowlege cohirent and understand able by breaking system to component and discribe why and how. in component we define why it work and how to interact with it and in extend we expose the detail.
+sigil is shared free form language between human and machine to keep the system knowlege cohirent and understand able by breaking system to component and discribe why and how. in component we define why it work and how to interact with it and in expand we expose the detail.
 the way we will work for first draft (standard SKILL for agent) is user first discribe the minimal information in the sigil and agent evaluate the coherensi and information with all related sigils and avalible code and try to improve the information until we they both agree and start the code generation.
 
 
@@ -20,7 +20,7 @@ component Box {
 
 }
 
-extend Box {
+expand Box {
   internal {
     names private things that exist inside the component: private components, dependencies, resources, services, capabilities, functions, types, domain vocabulary, and static relationships.
   }
@@ -50,7 +50,7 @@ goal
 interface
 ```
 
-The conventional section order for extent is:
+The conventional section order for expand is:
 
 ```text
 internal
@@ -64,7 +64,7 @@ This order is only a readability convention. It has no semantic effect.
 
 The mandatory semantic units are `component`, `goal`, and `interface`.
 
-extend has Optional sections:
+expand has Optional sections:
 
 - `internal`
 - `state`

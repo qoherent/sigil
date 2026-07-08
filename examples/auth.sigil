@@ -21,6 +21,10 @@ component Auth {
         JWT
     }
 
+
+}
+
+expand Auth {
     state {
         logged-in
         home owner

@@ -71,10 +71,7 @@ drizzle (ORM)
 - Shared primitives (e.g. a `UserId`, `ResourceId`) live in a shared `contracts`/`shared-kernel` area so modules can reference identifiers without depending on each other's internals.
 - This discipline is what allows any single module to be extracted into its own service later, if the project ever outgrew "monolith" — even though that's explicitly not a near-term goal here.
 
-    }
-
-    cases {
-        ## 3. Modules (Bounded Contexts)
+## 3. Modules (Bounded Contexts)
 
 These are architecture-level modules — logical boundaries of responsibility, not React components or folders (though they will likely map closely to top-level folders).
 
@@ -113,4 +110,5 @@ These are architecture-level modules — logical boundaries of responsibility, n
 - **Status:** Out of scope for MVP — included here so the module boundary exists in the architecture even before it's built, avoiding an awkward retrofit later.
 
     }
+
 }
