@@ -1,114 +1,65 @@
 component Slotted {
     goal {
-        A room booking platform, built as a testbed for a spec-driven development workflow.
-
-        Slotted connects room owners and renters in one authenticated app. Owners create and manage rooms and availability, while renters book those rooms for specific time slots with conflict detection, cancellations, and (eventually) recurring bookings. The primary goal of this project is not the product itself, but validating whether a spec-first approach to development holds up in practice — from schema design through implementation to test coverage.
+        A room booking platform built as a testbed for a Sigil-driven development workflow.
+        Slotted connects room owners and renters in one authenticated app.
+        Owners create and manage rooms and availability.
+        Renters book rooms for specific time slots with conflict detection and cancellation support.
+        The product is intentionally small; the real goal is testing whether Sigil can preserve rationale from schema design through implementation and tests.
     }
 
     interface {
-        # Input 
-        room
-      
-        # Output
-        booking or rent
-        
+        accepts room information from room owners
+        accepts availability rules from room owners
+        accepts booking requests from renters
+        exposes room search and room details to renters
+        exposes confirmed bookings, canceled bookings, and booking conflicts
     }
-
 }
 
 expand Slotted {
+    internal {
+        Identity and Access owns users, sessions, roles, and permission checks.
+        Resource Management owns rooms, room metadata, and base availability rules.
+        Booking owns booking creation, conflict detection, lifecycle, and cancellation rules.
+        Scheduling and Recurrence owns recurring booking patterns, series, and exceptions.
+        Calendar Read Model composes bookings and resources for UI display.
+        Notification is a future module for booking confirmations, cancellations, and reminders.
+        Stack: Next.js, Neon Postgres, Drizzle ORM.
+    }
+
+    state {
+        room can be draft, available, unavailable, or archived
+        booking can be requested, confirmed, or canceled
+        recurring booking can be a series or a single edited instance
+        calendar view is derived from bookings, rooms, and availability
+    }
 
     logic {
-## 5. What's Intentionally Left Open
-
-This document defines *boundaries and responsibilities*, not implementation detail. The tech lead and developers should decide together (and document as an addendum or ADR):
-
-- Exact folder/file structure mapping each module and layer onto the Next.js app.
-- Whether modules are enforced via folder convention only, or via stricter tooling (e.g. ESLint import boundaries, dependency-cruiser).
-- The precise shape of inter-module contracts (function signatures, event-based vs. direct call).
-- Whether Notification is built now or deferred entirely.
-- Testing strategy per layer (e.g. Domain = pure unit tests, Application = integration tests, Presentation = Playwright).
-
-# Stack
-nextjs
-vite
-neon-postgress
-drizzle (ORM)
+        Owners publish rooms with availability rules.
+        Renters search available rooms and request a time slot.
+        Booking checks identity, room availability, scheduling rules, and conflicts before confirming a booking.
+        Cancellations update booking state without deleting the historical booking record.
+        Calendar view reads from module contracts and shapes the data for presentation.
     }
 
     constraints {
-        # Architecture Style
-        **Modular Monolith with Layered Modules (Domain-Oriented, Hexagonal-influenced)**
-
-        - The system ships as a **single deployable unit** (a Next.js app), but internally it is organized as a set of **independent, domain-bound modules** — similar to bounded contexts in DDD.
-        - Each module is internally structured in **layers**, so business logic stays decoupled from the framework and the database.
-        - Modules talk to each other only through **explicit contracts** (function interfaces / service APIs), never by reaching into another module's database tables or internal logic directly.
-        - This gives us most of the benefits of microservices (clear boundaries, independent testability, ability to extract a module into its own service later) without the operational overhead of distributed systems — appropriate for a toy/medium project.
-
-        **Why this style fits a spec-driven workflow:**
-        - Each module maps naturally to one or more spec documents.
-        - Each layer within a module has a distinct kind of contract (data shape, use-case behavior, persistence), which gives the spec something concrete to describe and the tests something concrete to verify.
-        - Clear boundaries mean a tech lead can assign one module to one developer with minimal cross-talk.
-
-        ## 2. Layers (apply within every module)
-
-        These are conceptual layers, not React components. Every module should — at whatever level of rigor the team decides — separate its code along these lines:
-
-        | Layer | Responsibility | Depends on |
-        |---|---|---|
-        | **Presentation** | Renders UI, handles user interaction, calls into the Application layer. In our stack: Next.js pages, Server Components, and the client-facing edges of Server Actions. | Application |
-        | **Application (Use Cases)** | Orchestrates a single business operation end-to-end (e.g. "book a room," "cancel a booking"). Coordinates domain logic + infrastructure, handles transactions, translates errors. | Domain, Infrastructure (via interfaces) |
-        | **Domain** | Pure business rules and logic — framework-agnostic, no I/O. E.g. conflict detection, recurrence expansion, cancellation eligibility. This is the layer most directly derived from specs. | Nothing (pure functions/entities) |
-        | **Infrastructure** | Talks to the outside world: database (Drizzle), external services, email/notifications. Implements interfaces defined by the Application/Domain layers. | External systems |
-        | **Contracts (cross-cutting)** | Zod schemas shared across layers — the bridge between spec, runtime validation, and TypeScript types. Not a "layer" in the request-flow sense, but a shared artifact every layer depends on. | — |
-
-        **Rule of thumb:** the Domain layer should be testable with zero mocks and zero I/O. If a "business rule" test needs a database, that logic has leaked out of Domain and into Application/Infrastructure.
-
-## 4. Module Interaction Rules
-
-- Modules communicate through **well-defined interfaces** (function calls / internal service contracts), never through direct cross-module database access.
-- A module's Infrastructure layer is private to that module — e.g. Booking cannot query the Resources table directly; it calls a Resource Management interface.
-- Shared primitives (e.g. a `UserId`, `ResourceId`) live in a shared `contracts`/`shared-kernel` area so modules can reference identifiers without depending on each other's internals.
-- This discipline is what allows any single module to be extracted into its own service later, if the project ever outgrew "monolith" — even though that's explicitly not a near-term goal here.
-
-## 3. Modules (Bounded Contexts)
-
-These are architecture-level modules — logical boundaries of responsibility, not React components or folders (though they will likely map closely to top-level folders).
-
-### 3.1 Identity & Access
-- **Responsibility:** Who is using the system and what are they allowed to do.
-- **Core concepts:** User, Role/Permission, Session.
-- **Owns:** Authentication, authorization checks, user profile data.
-- **Consumed by:** every other module, via a simple "current user / permission check" contract — not by other modules querying user data directly.
-
-### 3.2 Resource Management
-- **Responsibility:** Defines what can be booked and under what constraints.
-- **Core concepts:** Resource (e.g. room, equipment), Availability Rule (open hours, blackout dates), Resource Metadata (capacity, location).
-- **Owns:** CRUD for resources, base availability rules.
-- **Exposes to Booking module:** "is this resource open at time X" queries.
-
-### 3.3 Booking
-- **Responsibility:** The core transactional heart of the system — creating, validating, and canceling bookings.
-- **Core concepts:** Booking, Conflict, Cancellation Policy.
-- **Owns:** Conflict detection logic, booking lifecycle (requested → confirmed → canceled), cancellation rules.
-- **Depends on:** Resource Management (availability), Scheduling (if the booking is recurring), Identity (who's booking).
-
-### 3.4 Scheduling & Recurrence
-- **Responsibility:** Expands and manages recurring booking patterns.
-- **Core concepts:** Recurrence Rule (e.g. "every Tuesday for 8 weeks"), Series, Exception (a single edited/canceled instance within a series).
-- **Owns:** Recurrence expansion logic, series-vs-instance editing rules.
-- **Deliberately underspecified in the MVP** — this is the module intended to stress-test how the spec-driven workflow handles ambiguity discovered mid-build.
-
-### 3.5 Calendar / Read Model (Aggregation)
-- **Responsibility:** Provides the composed, read-optimized view of bookings + resources for the UI (e.g. a month view calendar).
-- **Core concepts:** Calendar View, Time Range Query.
-- **Why it's separate:** Booking and Resource Management own the *write* side of their data; Calendar exists purely to aggregate and shape data for display, so read-heavy UI concerns don't creep into the transactional modules.
-
-### 3.6 Notification (optional / future scope)
-- **Responsibility:** Alerts users about booking confirmations, cancellations, upcoming bookings.
-- **Core concepts:** Notification Event, Delivery Channel (email, in-app).
-- **Status:** Out of scope for MVP — included here so the module boundary exists in the architecture even before it's built, avoiding an awkward retrofit later.
-
+        Architecture style is a modular monolith with layered, domain-oriented modules.
+        The system ships as a single Next.js app.
+        Modules communicate through explicit contracts, not direct access to another module's database tables or internal logic.
+        Each module separates Presentation, Application, Domain, Infrastructure, and Contracts concerns where useful.
+        Domain logic should be testable with zero mocks and zero I/O.
+        Infrastructure is private to the module that owns it.
+        Shared identifiers such as UserId and ResourceId live in a shared contracts or shared-kernel area.
+        Booking must call Resource Management to answer availability questions.
+        Other modules must call Identity and Access for current user and permission checks.
+        Notification is out of scope for the first implementation but remains a known module boundary.
     }
 
+    cases {
+        A room owner creates a room and publishes availability.
+        A renter books an available room for a specific time slot.
+        A renter cannot book a room when the requested slot conflicts with an existing confirmed booking.
+        A renter cancels a confirmed booking.
+        A calendar view shows rooms and bookings for a selected date range.
+    }
 }
