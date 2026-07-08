@@ -1,12 +1,16 @@
 # Sigil
 
-Sigil is a shared, free-form language for humans and coding agents. Its purpose is to keep system knowledge coherent and understandable by breaking a system into components and recording both the public contract and the reasoning behind the implementation.
+Sigil is a structured, section-based language for humans and coding agents, with free-form text inside each section. Its purpose is to keep system knowledge coherent and understandable by breaking a system into components and recording both the public contract and the reasoning behind the implementation.
+
+A Sigil component can describe a product module, service boundary, domain concept, library abstraction, API object, state machine, or other coherent unit. Sigil is not limited to business application features.
 
 Sigil exists to solve a specific problem in AI-assisted development: agents can generate code quickly, but the reason a system exists, how its parts interact, and why decisions were made can disappear into a long session. Sigil keeps that context durable before code generation starts.
 
 The first iteration is not a parser or a full programming language. It is a standard workflow and file format for a Codex skill. A user writes the minimum useful Sigil, then the agent evaluates it against related Sigil files and available code. The agent asks questions, improves coherence, and only starts code generation after the human and agent agree on the specification.
 
-`Slotted` in `examples/#module.sigil` is only an example project used to test the language. It is not the purpose of this repository.
+`Slotted` in `examples/slotted/#module.sigil` is only an example project used to test the language. It is not the purpose of this repository.
+
+`Promise` in `examples/promise/promise.sigil` shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
 ## Language Shape
 
@@ -19,7 +23,9 @@ The outer structure is restricted:
 - A `component` must contain `goal` and `interface`.
 - An `expand` may contain `internal`, `state`, `logic`, `constraints`, and `cases`.
 
-Inside a section, authors are free to use any clear text format: concise English, Markdown, pseudocode, math, arrows, host-language-like syntax, domain notation, ASCII sketches, or combinations. The model should help keep the style consistent inside a project.
+Keep `component` focused on the reusable public contract. Put `internal`, `state`, `logic`, `constraints`, and `cases` in `expand`.
+
+Inside a section, authors are free to use any clear text format: concise English, Markdown, pseudocode, API signatures, math, arrows, host-language-like syntax, domain notation, ASCII sketches, or combinations. The model should help keep the style consistent inside a project.
 
 ```sigil
 component Box {
@@ -91,6 +97,8 @@ A `component` is the reusable public description of a system part. It should be 
 
 `interface` explains how the component interacts with the outside world. This can include inputs, outputs, public operations, events, dependencies consumed from other components, or guarantees other components rely on.
 
+For API-like components, `interface` may contain constructors, methods, functions, return values, static helpers, and other public signatures.
+
 ### `expand`
 
 `expand` adds detail to a component without changing the public shape of the component itself. It is where the author records internal structure, state, rules, decisions, and examples that would otherwise be lost during implementation.
@@ -115,6 +123,8 @@ The intended reuse model is:
 
 `logic` describes how the component works: flows, algorithms, policies, transformations, and decision paths.
 
+For state-machine-like components, `logic` should describe transitions and what happens when public operations are called in each state.
+
 ### `constraints`
 
 `constraints` describes rules that must remain true across valid executions or implementations.
@@ -129,7 +139,66 @@ Architecture documents can be summarized in `constraints` when they define rules
 
 Inside each section, a new line separates semantically distinct ideas. Each non-empty semantic line is a source unit, interpretation unit, diff unit, review unit, and possible source-mapping target.
 
+Blank lines are allowed for readability. They do not create semantic units.
+
 Sigil does not require semicolons or a universal type grammar inside sections.
+
+## Examples
+
+### Programming abstraction
+
+```sigil
+component Promise {
+  goal {
+    Represent a value that may resolve now, later, or fail.
+    Let callers chain reactions without knowing when the value arrives.
+  }
+
+  interface {
+    new Promise<T>(executor)
+    then(onResolved, onRejected?) returns Promise
+    catch(onRejected) returns Promise
+    Promise.resolve(value)
+    Promise.reject(reason)
+    Promise.try(handler)
+  }
+}
+
+expand Promise {
+  internal {
+    resolve
+    reject
+    held reactions
+    PromiseLike value
+  }
+
+  state {
+    Pending
+    Resolved(value)
+    Rejected(reason)
+  }
+
+  logic {
+    A new Promise starts Pending and runs executor with resolve and reject.
+    then returns an after Promise immediately.
+    If then or catch is called while Pending, hold the reaction until settlement.
+    Resolving with a PromiseLike value adopts its eventual result.
+    Rejecting with a PromiseLike value does not unwrap it.
+  }
+}
+```
+
+### Stack as a constraint
+
+```sigil
+expand Slotted {
+  constraints {
+    Stack is Next.js, Neon Postgres, and Drizzle ORM.
+    The system ships as a single Next.js app.
+    Database access goes through Drizzle.
+  }
+}
+```
 
 ## Root Level
 

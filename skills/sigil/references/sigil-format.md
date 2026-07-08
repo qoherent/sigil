@@ -4,6 +4,8 @@ Sigil source files use `.sigil`.
 
 The outer structure is restricted, but section bodies are free-form text.
 
+Use Sigil for any coherent component-like unit: product modules, domain concepts, services, APIs, library abstractions, state machines, or architecture boundaries.
+
 ```sigil
 component Name {
     goal {
@@ -37,6 +39,8 @@ expand Name {
     }
 }
 ```
+
+Keep `component` focused on the reusable public contract. Put `internal`, `state`, `logic`, `constraints`, and `cases` in `expand`.
 
 ## Required And Optional Sections
 
@@ -78,17 +82,64 @@ Use `goal` for why the component exists.
 
 Use `interface` for public interactions: inputs, outputs, public operations, events, guarantees, and dependencies visible to other components.
 
+For API-like components, `interface` may contain signatures such as constructors, methods, functions, return values, and static helpers.
+
 Use `internal` for private things that exist inside the component: modules, services, dependencies, libraries, resources, functions, types, and vocabulary.
 
 Use `state` for meaningful configurations during execution. It is not storage layout unless the storage shape carries domain meaning.
 
 Use `logic` for behavior: flows, policies, algorithms, and decision paths.
 
+For state-machine-like components, `logic` should describe transitions and what happens when public operations are called in each state.
+
 Use `constraints` for binding decisions and rules. Stack choices belong here when they constrain implementation.
 
 Use `cases` for examples and acceptance criteria that can be observed from outside the component.
 
 ## Examples
+
+Programming abstraction:
+
+```sigil
+component Promise {
+    goal {
+        Represent a value that may resolve now, later, or fail.
+        Let callers chain reactions without knowing when the value arrives.
+    }
+
+    interface {
+        new Promise<T>(executor)
+        then(onResolved, onRejected?) returns Promise
+        catch(onRejected) returns Promise
+        Promise.resolve(value)
+        Promise.reject(reason)
+        Promise.try(handler)
+    }
+}
+
+expand Promise {
+    internal {
+        resolve
+        reject
+        held reactions
+        PromiseLike value
+    }
+
+    state {
+        Pending
+        Resolved(value)
+        Rejected(reason)
+    }
+
+    logic {
+        A new Promise starts Pending and runs executor with resolve and reject.
+        then returns an after Promise immediately.
+        If then or catch is called while Pending, hold the reaction until settlement.
+        Resolving with a PromiseLike value adopts its eventual result.
+        Rejecting with a PromiseLike value does not unwrap it.
+    }
+}
+```
 
 Stack as a constraint:
 
@@ -129,6 +180,12 @@ component Auth {
 ```
 
 Other components should depend on the public `component` description first. Use `expand` only when deeper implementation context is needed.
+
+## Semantic Lines
+
+Each non-empty line inside a section is a semantic unit. Blank lines are allowed for readability.
+
+Prefer one distinct idea per line. Avoid burying multiple decisions in a paragraph when they may need separate review, diffing, or source mapping.
 
 ## Open Language Decisions
 

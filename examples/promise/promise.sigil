@@ -1,0 +1,77 @@
+component Promise {
+  goal {
+    Represent a value that may resolve now, later, or fail.
+
+    Let callers chain reactions without knowing when the value arrives.
+  }
+
+  interface {
+    new Promise<T>(executor)
+
+    then(onResolved, onRejected?) returns Promise
+
+    catch(onRejected) returns Promise
+
+    Promise.resolve(value)
+
+    Promise.reject(reason)
+
+    Promise.try(handler)
+  }
+
+}
+
+
+expand Promise {
+  internal {
+    resolve
+
+    reject
+
+    handler
+
+    after Promise
+
+    held reactions
+
+    PromiseLike value
+  }
+
+  state {
+    Pending
+
+    Resolved(value)
+
+    Rejected(reason)
+  }
+
+  logic {
+    A new Promise starts Pending and runs executor with resolve and reject.
+
+    resolve shifts Pending to Resolved(value).
+
+    reject shifts Pending to Rejected(reason).
+
+    Executor errors reject the Promise.
+
+    Once Resolved or Rejected, later resolve or reject attempts are ignored.
+
+    then returns an after Promise immediately.
+
+    catch returns an after Promise immediately.
+
+    In Resolved state, then runs the resolved handler and catch passes through.
+
+    In Rejected state, catch runs the rejected handler and then passes through unless it has a rejection handler.
+
+    If then or catch is called while Pending, hold the reaction until settlement.
+
+    When settlement happens, replay held reactions through the settled state.
+
+    Promise.try turns handler return into resolve and handler throw into reject.
+
+    Resolving with a PromiseLike value adopts its eventual result.
+
+    Rejecting with a PromiseLike value does not unwrap it.
+  }
+}
