@@ -1,6 +1,6 @@
 ---
 name: sigil
-description: Work with Sigil `.sigil` component specifications for AI-assisted development. Use when the user asks to read, write, improve, reconcile, or use Sigil files; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow.
+description: Work with Sigil `.sigil` component specifications for AI-assisted development. Use when the user asks to read, write, improve, reconcile, or use Sigil files; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. This skill must stop for human review after creating or changing Sigil and must not write implementation code until the user explicitly approves the agreed Sigil.
 ---
 
 # Sigil
@@ -42,10 +42,28 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
    - Prefer concise, reviewable lines over paragraphs inside sections.
    - Free-form Markdown, pseudocode, API signatures, bullets, tables, and prose are allowed inside sections when they remain coherent.
 
-6. Then implement, if requested.
-   - Use the agreed Sigil as the durable rationale and source of constraints.
+6. Stop at the Sigil review gate.
+   - After creating or changing Sigil files, summarize the changes and ask the user to review them.
+   - Do not write implementation code in the same pass unless the user has already explicitly approved the current Sigil and explicitly asked for code.
+   - A request like "use Sigil", "improve Sigil", "prepare Sigil", or "check the spec before coding" is not approval to code.
+
+7. Implement only after approval.
+   - Use the approved Sigil as the durable rationale and source of constraints.
    - Keep generated code aligned with component boundaries and public interfaces.
-   - Update Sigil when implementation reveals a real decision that was not captured.
+   - If implementation reveals a missing decision, stop and update or propose Sigil first, then ask for review again.
+
+## Review Gate
+
+The review gate is mandatory when Sigil is created or changed.
+
+At the gate, respond with:
+
+- changed Sigil files;
+- the main decisions or assumptions captured;
+- unresolved questions, if any;
+- a direct request for the user to review and approve before implementation.
+
+Do not continue from the review gate into implementation just because the original user request included code generation. The point of Sigil is to make the human check the durable rationale before code exists.
 
 ## Review Heuristics
 
@@ -89,5 +107,6 @@ When updating Sigil files, summarize:
 - which files changed;
 - which ambiguities were resolved;
 - which open questions remain.
+- that implementation is waiting for user approval of the Sigil.
 
 When a user asks only for understanding or review, do not edit files unless they ask for updates.

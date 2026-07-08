@@ -12,6 +12,25 @@ The first iteration is not a parser or a full programming language. It is a stan
 
 `Promise` in `examples/promise/promise.sigil` shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
+## Workflow
+
+Sigil is documentation-first. The `.sigil` files are the durable place where decisions, assumptions, component boundaries, and behavior are recorded before implementation.
+
+The intended workflow is:
+
+1. The user writes the minimum useful Sigil.
+2. The agent reads relevant `.sigil` files, code, tests, and documentation.
+3. The agent checks for missing information, vague boundaries, contradictions, and code/spec drift.
+4. The agent asks targeted questions only when the answer changes architecture, ownership, behavior, or public contract.
+5. The agent updates or proposes Sigil changes.
+6. The agent stops at a review gate and asks the user to review the Sigil.
+7. The user approves or corrects the Sigil.
+8. Only after approval, the agent uses the agreed Sigil to generate or change code.
+
+If implementation reveals a missing decision, the agent should stop and reflect that decision back into Sigil before continuing. This keeps documentation ahead of the code instead of turning it into an after-the-fact summary.
+
+Requests like "use Sigil", "improve Sigil", "prepare Sigil", or "check the spec before coding" are not approval to write implementation code. They mean the agent should work on the documentation/specification layer and wait for review.
+
 ## Language Shape
 
 Sigil source files use the `.sigil` extension.
@@ -215,7 +234,8 @@ The MVP is a Codex skill that can:
 - detect missing, conflicting, or vague information;
 - ask the user targeted questions;
 - update or propose improved Sigil text;
-- use the agreed Sigil as context for code generation.
+- stop for user review after creating or changing Sigil;
+- use the approved Sigil as context for code generation.
 
 Parsing, validation tooling, and strict grammar enforcement are intentionally deferred.
 
