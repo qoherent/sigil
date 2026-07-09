@@ -126,7 +126,7 @@ Use `cases` for examples and acceptance criteria that can be observed from outsi
 
 ## Semantic Lines
 
-Each non-empty line inside a section is a semantic unit.
+Each non-empty line inside a section is a semantic unit and possible future anchor target.
 Blank lines are allowed for readability.
 
 Prefer one distinct idea per line.

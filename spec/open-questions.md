@@ -21,9 +21,11 @@ This file tracks unresolved language and workflow decisions.
 ## Tooling
 
 - Should the first parser validate only top-level form and section shape?
-- Should semantic lines become addressable source locations for review comments and implementation traces?
+- What stable addressing scheme should anchors use for semantic lines?
 - Should Sigil tooling support generated diagrams or dependency maps?
-- Should future tooling detect code/spec drift automatically?
+- How should anchors identify stable Sigil semantic lines as files are edited?
+- Should anchors be stored outside `.sigil` files, generated from code, or reviewed as part of the repository?
+- What should tooling do when anchored code changes but the corresponding Sigil line does not?
 
 ## Workflow
 

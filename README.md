@@ -109,3 +109,6 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 This repository currently contains the Sigil language specification, workflow documentation, Codex skill, and examples.
 
 Parsing, validation tooling, strict grammar enforcement, and code generation integrations are intentionally deferred.
+
+Future tooling may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
+Anchors are intended to help humans and assistants detect code/spec drift, but they are postponed because they require parser, indexing, and synchronization design.

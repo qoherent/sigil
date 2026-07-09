@@ -273,7 +273,7 @@ A semantic line is a:
 - interpretation unit;
 - diff unit;
 - review unit;
-- possible source-mapping target.
+- possible anchor target.
 
 Blank lines are allowed for readability.
 Blank lines do not create semantic units.
@@ -430,7 +430,27 @@ Larger examples live in:
 - `examples/slotted/auth.sigil`
 - `examples/slotted/user-profile.sigil`
 
-## 12. Unresolved Language Questions
+## 12. Future Tooling: Anchors
+
+Anchors are a deferred tooling concept for connecting Sigil semantic lines to corresponding code locations.
+
+An anchor would not change the meaning of a Sigil line.
+It would record traceability between specification intent and implementation evidence.
+
+The likely storage model is an internal middle table or index maintained by tooling, not inline syntax in `.sigil` files.
+This keeps Sigil readable while allowing tools to map a component, section, or semantic line to related files, symbols, tests, migrations, or generated code.
+
+Anchors are intended to provide:
+
+- guard rails for assistants when changing code;
+- context for humans reviewing why code exists;
+- signals when code and Sigil drift apart;
+- support for future code/spec synchronization workflows.
+
+Anchors are intentionally postponed.
+They require decisions about parsing, stable semantic-line identity, code indexing, refactor tracking, synchronization policy, and conflict handling.
+
+## 13. Unresolved Language Questions
 
 Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 
@@ -445,3 +465,9 @@ How should conflicts between collected expands be represented, detected, and res
 Should Sigil introduce a project configuration file or marker to define the workspace root for `@` imports?
 
 Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?
+
+How should anchors identify stable Sigil semantic lines as files are edited?
+
+Should anchors be stored outside `.sigil` files, generated from code, or reviewed as part of the repository?
+
+What should tooling do when anchored code changes but the corresponding Sigil line does not?
