@@ -1,4 +1,4 @@
 interface:
   display_name: "Sigil"
-  short_description: "Work with Sigil component specs before code generation"
-  default_prompt: "Use Sigil to read, improve, and align component specs, then stop for review before generating code."
+  short_description: "Use Sigil specs and CLI before code generation"
+  default_prompt: "Use Sigil and its CLI to check, query, improve, and align component specs, then stop for review before generating code."

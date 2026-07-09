@@ -1,23 +1,50 @@
 # Sigil Format Reference
 
-This is a concise agent-facing reference for Sigil.
-The canonical language specification lives at repository path `spec/sigil-language.md`.
+This is a concise agent-facing reference for Sigil. The canonical language
+specification lives at repository path `spec/sigil-language.md`.
 
-Use this file when you need a quick reminder of syntax, section placement, or review heuristics during a Codex session.
+Use this file when you need a quick reminder of syntax, section placement, or
+review heuristics during a Codex session.
+
+## CLI Assistance
+
+When a `sigil` command is available on `PATH`, prefer it for mechanical parsing,
+validation, graph, context, and render operations.
+
+An installed Codex skill does not include the Sigil platform repository's
+`packages/` directory. Only use `packages/sigil-cli/src/main.ts` when the
+current workspace contains that path.
+
+Typical installed command shape:
+
+```bash
+sigil check . --format json --pretty
+```
+
+Typical repository-local command shape:
+
+```bash
+deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
+```
+
+Use CLI diagnostics as stable coded findings. Use CLI context output as a
+starting point, then read source files before editing them.
 
 ## Source Files
 
 Sigil source files use `.sigil`.
 
-The current module summary filename is `#module.sigil`.
-The name is provisional and may change if it causes platform or editor friction.
-Until project configuration exists, the topmost discovered `#module.sigil` defines the Sigil workspace root.
-Nested `#module.sigil` files define importable module directories inside that workspace.
+The current module summary filename is `#module.sigil`. The name is provisional
+and may change if it causes platform or editor friction. Until project
+configuration exists, the topmost discovered `#module.sigil` defines the Sigil
+workspace root. Nested `#module.sigil` files define importable module
+directories inside that workspace.
 
-Sigil files should live as near as practical to the code they describe.
-Use workspace-root Sigil for product, deployable, bounded-context, or cross-cutting summaries.
-Use nested `#module.sigil` files for importable module directory summaries.
-If the main `component` must live elsewhere, a nearby `expand Name` may live beside the code it explains.
+Sigil files should live as near as practical to the code they describe. Use
+workspace-root Sigil for product, deployable, bounded-context, or cross-cutting
+summaries. Use nested `#module.sigil` files for importable module directory
+summaries. If the main `component` must live elsewhere, a nearby `expand Name`
+may live beside the code it explains.
 
 ## Top-Level Forms
 
@@ -57,10 +84,11 @@ expand Name {
 `@sub/folder import { ComponentName }` imports from `sub/folder/#module.sigil`.
 `@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
 
-Importing `Name` makes `component Name` and all matching `expand Name` blocks available to the current file.
+Importing `Name` makes `component Name` and all matching `expand Name` blocks
+available to the current file.
 
-Keep `component` focused on the reusable public contract.
-Put state, behavior, constraints, and representative cases in `expand`.
+Keep `component` focused on the reusable public contract. Put state, behavior,
+constraints, and representative cases in `expand`.
 
 ## Required And Optional Sections
 
@@ -104,61 +132,76 @@ Import syntax:
 ```
 
 A path without a `.sigil` filename resolves to `#module.sigil` inside that path.
-A path with a `.sigil` filename resolves to that exact file.
-The `@` prefix resolves from the Sigil workspace root.
-Until project configuration exists, discover candidate roots by walking upward from the current Sigil file or command target and collecting ancestor directories containing `#module.sigil`.
-Use the topmost discovered candidate as the workspace root unless an explicit tool invocation supplies another root.
+A path with a `.sigil` filename resolves to that exact file. The `@` prefix
+resolves from the Sigil workspace root. Until project configuration exists,
+discover candidate roots by walking upward from the current Sigil file or
+command target and collecting ancestor directories containing `#module.sigil`.
+Use the topmost discovered candidate as the workspace root unless an explicit
+tool invocation supplies another root.
 
-Imported names must resolve to matching `component` declarations.
-Imported names are case-sensitive.
-All matching expands for the imported component are collective.
+Imported names must resolve to matching `component` declarations. Imported names
+are case-sensitive. All matching expands for the imported component are
+collective.
 
 ## Section Placement
 
 Use `goal` for why the component exists.
 
-Use `interface` for public interactions: inputs, outputs, public operations, events, guarantees, and dependencies visible to other components.
+Use `interface` for public interactions: inputs, outputs, public operations,
+events, guarantees, and dependencies visible to other components.
 
-For API-like components, `interface` may contain signatures such as constructors, methods, functions, return values, and static helpers.
+For API-like components, `interface` may contain signatures such as
+constructors, methods, functions, return values, and static helpers.
 
-Use `state` for meaningful configurations during execution.
-It is not storage layout unless the storage shape carries domain meaning.
+Use `state` for meaningful configurations during execution. It is not storage
+layout unless the storage shape carries domain meaning.
 
-Use `logic` for behavior: flows, policies, algorithms, transformations, decision paths, and lifecycle transitions.
+Use `logic` for behavior: flows, policies, algorithms, transformations, decision
+paths, and lifecycle transitions.
 
-For state-machine-like components, `logic` should describe transitions and what happens when public operations are called in each state.
+For state-machine-like components, `logic` should describe transitions and what
+happens when public operations are called in each state.
 
-Use `constraints` for binding decisions and rules.
-Architecture, ownership, dependency direction, stack choices, persistence rules, and technology decisions belong here.
+Use `constraints` for binding decisions and rules. Architecture, ownership,
+dependency direction, stack choices, persistence rules, and technology decisions
+belong here.
 
-Use `cases` for examples and acceptance criteria that can be observed from outside the component.
+Use `cases` for examples and acceptance criteria that can be observed from
+outside the component.
 
 ## Semantic Lines
 
-Each non-empty line inside a section is a semantic unit and possible future anchor target.
-Blank lines are allowed for readability.
+Each non-empty line inside a section is a semantic unit and possible future
+anchor target. Blank lines are allowed for readability.
 
-Prefer one distinct idea per line.
-Avoid burying multiple decisions in a paragraph when they may need separate review, diffing, or source mapping.
+Prefer one distinct idea per line. Avoid burying multiple decisions in a
+paragraph when they may need separate review, diffing, or source mapping.
 
 ## Review Checks
 
 When reviewing Sigil, check:
 
 - Does every component explain why it exists?
-- Does every component expose how callers, users, modules, or other parts interact with it?
-- Does each imported name resolve to a matching component in the imported Sigil source?
+- Does every component expose how callers, users, modules, or other parts
+  interact with it?
+- Does each imported name resolve to a matching component in the imported Sigil
+  source?
 - Does each `expand Name` have a matching `component Name`?
-- Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
+- Are details such as `state`, `logic`, `constraints`, and `cases` kept in
+  `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
-- Are implementation details hidden from public component interfaces unless they are part of the contract?
-- Are roles, states, permissions, and lifecycle transitions explicit enough to test?
-- For abstractions and APIs, are constructor/functions, return values, settlement/lifecycle behavior, and error behavior explicit?
+- Are implementation details hidden from public component interfaces unless they
+  are part of the contract?
+- Are roles, states, permissions, and lifecycle transitions explicit enough to
+  test?
+- For abstractions and APIs, are constructor/functions, return values,
+  settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?
 
-Multiple `expand Name` blocks for the same component are collective.
-When using expanded detail for `Name`, read all matching expands as one collected expansion.
-If collected expands contradict each other, treat that as a specification issue to resolve with the user.
+Multiple `expand Name` blocks for the same component are collective. When using
+expanded detail for `Name`, read all matching expands as one collected
+expansion. If collected expands contradict each other, treat that as a
+specification issue to resolve with the user.
 
 ## Examples
 

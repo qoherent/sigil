@@ -1,0 +1,9 @@
+component Local {
+  goal {
+    Test inferred workspace roots.
+  }
+
+  interface {
+    local()
+  }
+}

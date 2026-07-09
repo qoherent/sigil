@@ -1,0 +1,240 @@
+# sigil-cli Requirements
+
+**Status:** Draft **Owner:** _TBD_ **Last updated:** 2026-07-09
+
+This document defines the v1 product requirements for `sigil-cli`.
+
+`sigil-cli` is the command-line interface over `sigil-core`. It exists for
+agents, CI, scripts, debugging, and review/documentation workflows. It is not
+the primary human authoring UI.
+
+## 1. Purpose
+
+`sigil-cli` gives users and automation a stable way to inspect, validate, and
+extract information from Sigil workspaces.
+
+It should make the shared `sigil-core` model usable from a terminal without
+reinterpreting Sigil independently.
+
+## 2. V1 Scope
+
+V1 must provide commands to:
+
+- parse one Sigil file;
+- check a file or workspace for diagnostics;
+- resolve a workspace and expose graph data;
+- produce deterministic agent-oriented context output;
+- render a simple Markdown review view.
+
+V1 should favor predictable, machine-readable behavior over rich terminal UI.
+
+## 3. Out Of Scope
+
+V1 must not implement:
+
+- editor UI;
+- LSP transport;
+- VS Code APIs;
+- Codex-specific prompt behavior;
+- embeddings or semantic search;
+- interactive terminal workflows;
+- watch mode;
+- generated diagrams;
+- anchors or code/spec synchronization;
+- mutation or formatting of `.sigil` files.
+
+## 4. Runtime And Dependency Requirements
+
+`sigil-cli` should use Deno TypeScript.
+
+`sigil-cli` must depend on `sigil-core` for:
+
+- parsing;
+- workspace discovery;
+- import resolution;
+- graph construction;
+- diagnostics;
+- primitive projections.
+
+`sigil-cli` may own:
+
+- argument parsing;
+- process exit codes;
+- stdout and stderr formatting;
+- concrete filesystem adapter for Deno;
+- command-specific output shaping.
+
+`sigil-cli` must not duplicate parser, resolver, graph, or diagnostic logic from
+`sigil-core`.
+
+## 5. Global Behavior
+
+All commands should support:
+
+- `--root <path>` to supply an explicit workspace root;
+- `--format json` for machine-readable output where the command returns
+  structured data;
+- `--pretty` for human-readable JSON indentation;
+- `--quiet` for commands where only exit status matters.
+
+All machine-readable outputs that depend on workspace behavior must include:
+
+- resolved workspace root;
+- whether the root was inferred;
+- diagnostics;
+- command-specific data.
+
+Diagnostic output must include stable diagnostic codes from `sigil-core`.
+
+## 6. Exit Codes
+
+Exit codes should be stable:
+
+- `0`: command completed with no error diagnostics;
+- `1`: command completed and found one or more error diagnostics;
+- `2`: command usage error, invalid arguments, or unsupported option;
+- `3`: host/runtime failure such as unreadable input outside normal Sigil
+  diagnostics.
+
+Warnings alone should not produce exit code `1`.
+
+## 7. Commands
+
+### `sigil parse <file>`
+
+Parses one Sigil source file and returns the parsed document plus diagnostics.
+
+Default output should be JSON.
+
+Required output data:
+
+- file path;
+- imports;
+- components;
+- expands;
+- semantic lines;
+- diagnostics.
+
+This command should not load or resolve a full workspace unless a later option
+explicitly asks for it.
+
+### `sigil check [path]`
+
+Loads and resolves a Sigil workspace or target path and reports diagnostics.
+
+If `path` is omitted, the command should use the current working directory as
+the command target.
+
+Required output data for JSON:
+
+- workspace root;
+- root inferred flag;
+- diagnostic list;
+- diagnostic counts by severity.
+
+Default human output may be concise text, but JSON must remain available.
+
+### `sigil graph [path]`
+
+Loads and resolves a workspace or target path and emits graph data from
+`sigil-core`.
+
+Required output data:
+
+- workspace root;
+- file dependency edges;
+- component-to-expansion edges;
+- diagnostics.
+
+The command should not generate diagrams in v1.
+
+### `sigil context`
+
+Produces deterministic agent-oriented context data from resolved Sigil.
+
+V1 should use graph and exact-match signals only.
+
+Supported selectors:
+
+- `--component <name>`;
+- `--file <path>`.
+
+Required output data:
+
+- workspace root;
+- selected components;
+- component contracts;
+- collected expansions;
+- related file paths;
+- diagnostics.
+
+V1 must not implement embeddings, opaque ranking, or full semantic search.
+
+### `sigil render [path]`
+
+Produces a simple Markdown review view.
+
+Required output:
+
+- component contracts;
+- collected expansions;
+- diagnostics summary;
+- source file references.
+
+This command is for review and documentation workflows. It is not the primary
+human authoring UI.
+
+## 8. Output Contracts
+
+JSON output should be stable enough for agents, CI, and snapshot tests.
+
+JSON field names should use camelCase.
+
+JSON output should avoid host-specific absolute paths unless the user supplied
+absolute paths.
+
+Human text output should be readable but not treated as a stable API.
+
+Agents and scripts should use JSON output.
+
+## 9. Filesystem Behavior
+
+`sigil-cli` owns the concrete Deno filesystem adapter for `sigil-core`.
+
+The adapter should:
+
+- read text files;
+- check path existence;
+- list files recursively under the workspace root;
+- normalize paths consistently with `sigil-core` expectations;
+- ignore `.git` directories by default.
+
+The adapter should not skip `.sigil` files based on package or integration
+boundaries.
+
+## 10. Acceptance Scenarios
+
+V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
+
+- parse `examples/promise/promise.sigil` and emit JSON;
+- check the repository workspace from the root `#module.sigil`;
+- resolve `examples/slotted/auth.sigil` imports from the topmost workspace root;
+- report diagnostics with stable codes;
+- return exit code `1` when error diagnostics exist;
+- return exit code `0` when only warnings or no diagnostics exist;
+- emit graph JSON with file and expansion edges;
+- emit context JSON for `--component Auth`;
+- render Markdown for the Slotted example;
+- avoid duplicating parser or resolver behavior outside `sigil-core`.
+
+## 11. Implementation Notes
+
+The first implementation may be a thin CLI with minimal argument parsing.
+
+Prefer explicit command modules over a large single command file once commands
+grow.
+
+Keep command shaping separate from `sigil-core` data models so the core API
+remains reusable by LSP and editor integrations.
+
+Do not add interactive prompts in v1.
