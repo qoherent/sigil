@@ -1,0 +1,10 @@
+{
+  "name": "@sigil/core",
+  "exports": "./src/mod.ts",
+  "tasks": {
+    "test": "deno test --allow-read"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}

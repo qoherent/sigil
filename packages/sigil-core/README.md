@@ -12,7 +12,7 @@ Package docs:
 
 Platform context lives in [../../spec/sigil-platform-architecture.md](../../spec/sigil-platform-architecture.md).
 
-Planned responsibilities:
+Responsibilities:
 
 - parse `.sigil` files;
 - preserve source locations and semantic lines;
