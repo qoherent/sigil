@@ -5,6 +5,13 @@ Shared Sigil implementation package.
 `sigil-core` is the center of the platform.
 Every CLI command, editor feature, renderer, agent context pack, and host integration should use this package instead of reinterpreting Sigil independently.
 
+Package docs:
+
+- [spec.md](spec.md): v1 product requirements and acceptance scenarios.
+- [architecture.md](architecture.md): architecture style, internal modules, dependency rules, and implementation guidelines.
+
+Platform context lives in [../../spec/sigil-platform-architecture.md](../../spec/sigil-platform-architecture.md).
+
 Planned responsibilities:
 
 - parse `.sigil` files;
