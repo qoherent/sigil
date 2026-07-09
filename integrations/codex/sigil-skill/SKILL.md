@@ -17,7 +17,7 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
    - Read all relevant `.sigil` files first.
    - Follow `@path import { Name }` clauses to read imported Sigil files.
    - Also read nearby code, docs, tests, package metadata, or architecture notes when the user asks to align Sigil with an existing repo.
-   - Treat `#module.sigil` as the current tolerated root module filename.
+   - Treat the topmost ancestor `#module.sigil` as the Sigil workspace root until project configuration exists.
 
 2. Build the component picture.
    - Identify import dependencies and whether imported names resolve to components.

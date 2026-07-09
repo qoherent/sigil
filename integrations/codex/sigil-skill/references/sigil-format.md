@@ -9,11 +9,14 @@ Use this file when you need a quick reminder of syntax, section placement, or re
 
 Sigil source files use `.sigil`.
 
-The current tolerated root module filename is `#module.sigil`.
-The name is provisional and may change if it causes tooling friction.
+The current module summary filename is `#module.sigil`.
+The name is provisional and may change if it causes platform or editor friction.
+Until project configuration exists, the topmost discovered `#module.sigil` defines the Sigil workspace root.
+Nested `#module.sigil` files define importable module directories inside that workspace.
 
 Sigil files should live as near as practical to the code they describe.
-Use root-level Sigil for product, deployable, bounded-context, or cross-cutting summaries.
+Use workspace-root Sigil for product, deployable, bounded-context, or cross-cutting summaries.
+Use nested `#module.sigil` files for importable module directory summaries.
 If the main `component` must live elsewhere, a nearby `expand Name` may live beside the code it explains.
 
 ## Top-Level Forms
@@ -103,6 +106,8 @@ Import syntax:
 A path without a `.sigil` filename resolves to `#module.sigil` inside that path.
 A path with a `.sigil` filename resolves to that exact file.
 The `@` prefix resolves from the Sigil workspace root.
+Until project configuration exists, discover candidate roots by walking upward from the current Sigil file or command target and collecting ancestor directories containing `#module.sigil`.
+Use the topmost discovered candidate as the workspace root unless an explicit tool invocation supplies another root.
 
 Imported names must resolve to matching `component` declarations.
 Imported names are case-sensitive.

@@ -1,0 +1,25 @@
+component Sigil {
+  goal {
+    Preserve software rationale in a durable language that humans and coding agents can share.
+    Provide a platform for parsing, resolving, reviewing, and integrating Sigil specifications across development workflows.
+  }
+
+  interface {
+    defines the Sigil language through spec/sigil-language.md
+    defines the human-agent workflow through spec/sigil-workflow.md
+    defines platform architecture through spec/sigil-platform-architecture.md
+    provides examples under examples/
+    provides buildable platform packages under packages/
+    provides host integrations under integrations/
+  }
+}
+
+expand Sigil {
+  constraints {
+    This root #module.sigil defines the Sigil workspace root until project configuration exists.
+    Language-level documentation lives under spec/.
+    Buildable or distributable platform units live under packages/.
+    Host-specific adapters live under integrations/.
+    Examples remain fixtures and design-pressure cases for the language and platform.
+  }
+}

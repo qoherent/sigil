@@ -32,6 +32,8 @@ The intended workflow is:
 
 The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.md).
 
+The Sigil platform architecture is drafted in [spec/sigil-platform-architecture.md](spec/sigil-platform-architecture.md).
+
 ## Language Shape
 
 Sigil source files use the `.sigil` extension.
@@ -77,11 +79,20 @@ The canonical language definition lives in [spec/sigil-language.md](spec/sigil-l
 
 Open design questions are tracked in [spec/open-questions.md](spec/open-questions.md).
 
+## Repository Layout
+
+The root [#module.sigil](./%23module.sigil) currently defines this repository as a Sigil workspace.
+
+- `spec/` contains language, workflow, platform architecture, and open-question documents.
+- `examples/` contains example Sigil files used as design-pressure fixtures.
+- `packages/` contains planned buildable platform units such as `sigil-core`, `sigil-cli`, and `sigil-lsp`.
+- `integrations/` contains host-specific adapters such as the Codex skill and future editor integrations.
+
 ## Examples
 
 `Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil) shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
-`Slotted` in [examples/slotted/#module.sigil](examples/slotted/#module.sigil) is an example room booking product used to test Sigil against product and module modeling.
+`Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil) is an example room booking product used to test Sigil against product and module modeling.
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
@@ -92,7 +103,7 @@ It is not the purpose of this repository.
 
 ## Codex Skill
 
-The Codex skill lives in [skills/sigil/SKILL.md](skills/sigil/SKILL.md).
+The Codex skill lives in [integrations/codex/sigil-skill/SKILL.md](integrations/codex/sigil-skill/SKILL.md).
 
 The skill teaches Codex to:
 
@@ -104,14 +115,14 @@ The skill teaches Codex to:
 - stop at the review gate after Sigil changes;
 - use approved Sigil as implementation context.
 
-The skill reference file at [skills/sigil/references/sigil-format.md](skills/sigil/references/sigil-format.md) is a concise agent-facing guide.
+The skill reference file at [integrations/codex/sigil-skill/references/sigil-format.md](integrations/codex/sigil-skill/references/sigil-format.md) is a concise agent-facing guide.
 The canonical language specification remains [spec/sigil-language.md](spec/sigil-language.md).
 
 ## Current Status
 
-This repository currently contains the Sigil language specification, workflow documentation, Codex skill, and examples.
+This repository currently contains the Sigil language specification, workflow documentation, platform architecture, examples, planned package boundaries, and integration docs.
 
-Parsing, validation tooling, strict grammar enforcement, anchors, and code generation integrations are intentionally deferred.
+Parsing implementation, validation implementation, strict grammar enforcement, anchors, and code generation integrations are intentionally deferred.
 
-Future tooling may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
+Future platform packages may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
 Anchors are intended to help humans and assistants detect code/spec drift, but they are postponed because they require parser, indexing, and synchronization design.

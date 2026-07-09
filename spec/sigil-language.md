@@ -30,8 +30,11 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The current tolerated root module filename is `#module.sigil`.
-This filename is provisional because the `#` prefix may create friction for shells, URLs, editors, or future tooling.
+The current module summary filename is `#module.sigil`.
+This filename is provisional because the `#` prefix may create friction for shells, URLs, editors, or future platform packages.
+
+Until Sigil introduces a project configuration file such as `sigil.config`, the topmost discovered `#module.sigil` defines the root of a Sigil workspace.
+Nested `#module.sigil` files define importable module directories inside that workspace.
 
 Sigil files are plain text.
 The outer structure is restricted, but section bodies are free-form text.
@@ -42,7 +45,8 @@ The default placement is beside the corresponding module, feature, abstraction, 
 When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
-Use root-level Sigil such as `#module.sigil` for product, deployable, bounded-context, or cross-cutting summaries.
+Use `#module.sigil` at the workspace root for product, deployable, bounded-context, or cross-cutting summaries.
+Use nested `#module.sigil` files for importable module directory summaries.
 Use imports to connect nearby Sigil files instead of moving all specifications into a central folder.
 
 ## 3. Top-Level Forms
@@ -100,7 +104,9 @@ Import syntax:
 Import paths begin with `@`.
 The `@` prefix resolves from the Sigil workspace root.
 
-Until Sigil has project configuration, tools and agents should treat the repository root or current working directory as the Sigil workspace root.
+Until Sigil has project configuration, tools and agents should discover candidate roots by walking upward from the current file or command target and collecting ancestor directories that contain `#module.sigil`.
+The workspace root is the topmost discovered candidate unless an explicit tool invocation supplies another root.
+If no ancestor `#module.sigil` exists, tools may fall back to the current working directory and should report that the workspace root is inferred.
 
 A directory import resolves to that directory's `#module.sigil`.
 
@@ -318,6 +324,9 @@ An import path with a `.sigil` filename resolves to that exact file.
 
 Import paths resolve from the Sigil workspace root.
 
+Until project configuration exists, the Sigil workspace root is the topmost ancestor directory containing `#module.sigil`, unless an explicit tool invocation supplies another root.
+If no ancestor `#module.sigil` exists, tools may infer the current working directory as the workspace root and should surface that inference.
+
 An imported name must resolve to a matching `component Name`.
 
 A `component` must contain `goal` and `interface`.
@@ -445,14 +454,14 @@ Larger examples live in:
 - `examples/slotted/auth.sigil`
 - `examples/slotted/user-profile.sigil`
 
-## 12. Future Tooling: Anchors
+## 12. Future Platform Capability: Anchors
 
-Anchors are a deferred tooling concept for connecting Sigil semantic lines to corresponding code locations.
+Anchors are a deferred platform concept for connecting Sigil semantic lines to corresponding code locations.
 
 An anchor would not change the meaning of a Sigil line.
 It would record traceability between specification intent and implementation evidence.
 
-The likely storage model is an internal middle table or index maintained by tooling, not inline syntax in `.sigil` files.
+The likely storage model is an internal middle table or index maintained by platform packages, not inline syntax in `.sigil` files.
 This keeps Sigil readable while allowing tools to map a component, section, or semantic line to related files, symbols, tests, migrations, or generated code.
 
 Anchors are intended to provide:
@@ -469,13 +478,13 @@ They require decisions about parsing, stable semantic-line identity, code indexi
 
 Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 
-Should `#module.sigil` remain the root filename?
+Should `#module.sigil` remain the workspace root marker after project configuration exists?
 
 How strict should future parsing and validation become while preserving authoring speed?
 
 How should conflicts between collected expands be represented, detected, and resolved?
 
-Should Sigil introduce a project configuration file or marker to define the workspace root for `@` imports?
+Should Sigil introduce `sigil.config` or another project configuration file to replace or override `#module.sigil` as the workspace root marker?
 
 Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?
 
@@ -483,4 +492,4 @@ How should anchors identify stable Sigil semantic lines as files are edited?
 
 Should anchors be stored outside `.sigil` files, generated from code, or reviewed as part of the repository?
 
-What should tooling do when anchored code changes but the corresponding Sigil line does not?
+What should the platform do when anchored code changes but the corresponding Sigil line does not?
