@@ -5,7 +5,7 @@ description: Work with Sigil `.sigil` component specifications for AI-assisted d
 
 # Sigil
 
-Sigil is a shared, free-form specification language for humans and coding agents. Use it to preserve system rationale before implementation: what each component is for, how it interacts with the rest of the system, what internal details matter, and which constraints the code must obey.
+Sigil is a shared, free-form specification language for humans and coding agents. Use it to preserve system rationale before implementation: what each component is for, how it interacts with the rest of the system, how it behaves, and which constraints the code must obey.
 
 A Sigil component can be a product module, service boundary, domain concept, library abstraction, API object, state machine, or other coherent unit. Do not assume the domain is only business/product software.
 
@@ -20,7 +20,7 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
 
 2. Build the component picture.
    - Identify public `component` contracts: `goal` and `interface`.
-   - Identify matching `expand` blocks for internal detail.
+   - Identify matching `expand` blocks for operational detail.
    - Treat `component` as the reusable public contract and `expand` as the deeper operational description.
    - Note missing components, duplicate expands, vague lines, contradictions, and code/spec drift.
 
@@ -31,9 +31,9 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
 
 4. Keep sections disciplined.
    - Put binding decisions in `constraints`, including stack choices and architecture rules.
-   - Put owned internals, modules, libraries, dependencies, and resources in `internal`.
    - Put behavior, flows, transitions, policies, and algorithms in `logic`.
    - Put meaningful runtime/domain configurations in `state`.
+   - Put architecture, ownership, dependencies, module boundaries, and binding technology decisions in `constraints`.
    - Put examples, acceptance criteria, and edge cases in `cases`.
 
 5. Preserve semantic lines.
@@ -72,7 +72,7 @@ When reviewing or improving Sigil, check:
 - Does every component explain why it exists?
 - Does every component expose how callers, users, modules, or other parts interact with it?
 - Does each `expand Name` have a matching `component Name`?
-- Are details such as `internal`, `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
+- Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
 - Are implementation details hidden from public component interfaces unless they are part of the contract?
 - Are roles, states, permissions, and lifecycle transitions explicit enough to test?

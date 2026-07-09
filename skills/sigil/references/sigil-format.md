@@ -18,10 +18,6 @@ component Name {
 }
 
 expand Name {
-    internal {
-        private sub-components, dependencies, services, types, resources, and domain vocabulary
-    }
-
     state {
         meaningful configurations that persist or change during execution
     }
@@ -40,7 +36,7 @@ expand Name {
 }
 ```
 
-Keep `component` focused on the reusable public contract. Put `internal`, `state`, `logic`, `constraints`, and `cases` in `expand`.
+Keep `component` focused on the reusable public contract. Put state, behavior, constraints, and representative cases in `expand`.
 
 ## Required And Optional Sections
 
@@ -51,7 +47,6 @@ Keep `component` focused on the reusable public contract. Put `internal`, `state
 
 `expand` may contain:
 
-- `internal`
 - `state`
 - `logic`
 - `constraints`
@@ -67,7 +62,6 @@ interface
 Conventional `expand` order:
 
 ```text
-internal
 state
 logic
 constraints
@@ -83,8 +77,6 @@ Use `goal` for why the component exists.
 Use `interface` for public interactions: inputs, outputs, public operations, events, guarantees, and dependencies visible to other components.
 
 For API-like components, `interface` may contain signatures such as constructors, methods, functions, return values, and static helpers.
-
-Use `internal` for private things that exist inside the component: modules, services, dependencies, libraries, resources, functions, types, and vocabulary.
 
 Use `state` for meaningful configurations during execution. It is not storage layout unless the storage shape carries domain meaning.
 
@@ -118,13 +110,6 @@ component Promise {
 }
 
 expand Promise {
-    internal {
-        resolve
-        reject
-        held reactions
-        PromiseLike value
-    }
-
     state {
         Pending
         Resolved(value)
@@ -158,7 +143,7 @@ Architecture rules as constraints:
 ```sigil
 constraints {
     Architecture style is a modular monolith with layered, domain-oriented modules.
-    Modules communicate through explicit contracts, not direct access to another module's database tables or internal logic.
+    Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
     Domain logic should be testable with zero mocks and zero I/O.
 }
 ```

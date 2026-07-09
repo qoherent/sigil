@@ -24,12 +24,6 @@ component Auth {
 }
 
 expand Auth {
-    internal {
-        User is the shared identity entity for renters and room owners.
-        Next.js authentication is the intended auth foundation.
-        JWT is the session representation exposed to the app.
-    }
-
     state {
         anonymous user has no active session
         logged-in user has an active session
@@ -46,7 +40,9 @@ expand Auth {
 
     constraints {
         Renters and room owners share the same User entity.
-        Other modules should ask Auth for current user and permissions instead of reading auth internals directly.
+        Next.js authentication is the intended auth foundation.
+        JWT is the session representation exposed to the app.
+        Other modules should ask Auth for current user and permissions instead of reading Auth private details directly.
         Password storage and verification details are private to Auth.
     }
 

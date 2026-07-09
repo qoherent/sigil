@@ -23,20 +23,6 @@ component Promise {
 
 
 expand Promise {
-  internal {
-    resolve
-
-    reject
-
-    handler
-
-    after Promise
-
-    held reactions
-
-    PromiseLike value
-  }
-
   state {
     Pending
 

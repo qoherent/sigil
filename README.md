@@ -1,10 +1,12 @@
 # Sigil
 
-Sigil is a structured, section-based language for humans and coding agents, with free-form text inside each section. Its purpose is to keep system knowledge coherent and understandable by breaking a system into components and recording both the public contract and the reasoning behind the implementation.
+Sigil is a lightweight, rationale-oriented modeling language for software systems. It records what a system is, why it exists, how it behaves, and how its implementation should be understood and changed over time.
+
+Sigil is designed to be readable by both humans and coding agents. Its purpose is to keep system knowledge coherent and understandable by breaking a system into components and recording both the public contract and the reasoning behind the implementation.
 
 A Sigil component can describe a product module, service boundary, domain concept, library abstraction, API object, state machine, or other coherent unit. Sigil is not limited to business application features.
 
-Sigil exists to solve a specific problem in AI-assisted development: agents can generate code quickly, but the reason a system exists, how its parts interact, and why decisions were made can disappear into a long session. Sigil keeps that context durable before code generation starts.
+Sigil exists to solve a specific problem in AI-assisted development: agents can generate code quickly, but the reason a system exists, how its parts interact, and why decisions were made can disappear into a long session. Sigil keeps that context durable before, during, and after implementation.
 
 The first iteration is not a parser or a full programming language. It is a standard workflow and file format for a Codex skill. A user writes the minimum useful Sigil, then the agent evaluates it against related Sigil files and available code. The agent asks questions, improves coherence, and only starts code generation after the human and agent agree on the specification.
 
@@ -40,9 +42,9 @@ The outer structure is restricted:
 - `component Name { ... }` defines the public purpose and boundary of a component.
 - `expand Name { ... }` adds deeper detail for an existing component.
 - A `component` must contain `goal` and `interface`.
-- An `expand` may contain `internal`, `state`, `logic`, `constraints`, and `cases`.
+- An `expand` may contain `state`, `logic`, `constraints`, and `cases`.
 
-Keep `component` focused on the reusable public contract. Put `internal`, `state`, `logic`, `constraints`, and `cases` in `expand`.
+Keep `component` focused on the reusable public contract. Put state, behavior, constraints, and representative cases in `expand`.
 
 Inside a section, authors are free to use any clear text format: concise English, Markdown, pseudocode, API signatures, math, arrows, host-language-like syntax, domain notation, ASCII sketches, or combinations. The model should help keep the style consistent inside a project.
 
@@ -58,11 +60,6 @@ component Box {
 }
 
 expand Box {
-  internal {
-    private components, dependencies, resources, services, capabilities,
-    functions, types, domain vocabulary, and static relationships
-  }
-
   state {
     meaningful configurations that persist or change during execution.
     this is not storage layout.
@@ -93,7 +90,6 @@ interface
 The conventional section order for `expand` is:
 
 ```text
-internal
 state
 logic
 constraints
@@ -120,7 +116,7 @@ For API-like components, `interface` may contain constructors, methods, function
 
 ### `expand`
 
-`expand` adds detail to a component without changing the public shape of the component itself. It is where the author records internal structure, state, rules, decisions, and examples that would otherwise be lost during implementation.
+`expand` adds detail to a component without changing the public shape of the component itself. It is where the author records state, behavior, rules, decisions, and examples that would otherwise be lost during implementation.
 
 An `expand Name` should normally refer to a matching `component Name`.
 
@@ -129,10 +125,6 @@ The intended reuse model is:
 - Other components should depend on the public `component` description first.
 - `expand` is used when deeper implementation context is needed.
 - A component may have more than one `expand` in the future, but the rules for selecting, merging, or scoping multiple expands are still an open design question.
-
-### `internal`
-
-`internal` names private things that exist inside the component: private sub-components, dependencies, resources, services, capabilities, functions, types, domain vocabulary, and static relationships.
 
 ### `state`
 
@@ -184,13 +176,6 @@ component Promise {
 }
 
 expand Promise {
-  internal {
-    resolve
-    reject
-    held reactions
-    PromiseLike value
-  }
-
   state {
     Pending
     Resolved(value)

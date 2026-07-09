@@ -17,16 +17,6 @@ component Slotted {
 }
 
 expand Slotted {
-    internal {
-        Identity and Access owns users, sessions, roles, and permission checks.
-        Resource Management owns rooms, room metadata, and base availability rules.
-        Booking owns booking creation, conflict detection, lifecycle, and cancellation rules.
-        Scheduling and Recurrence owns recurring booking patterns, series, and exceptions.
-        Calendar Read Model composes bookings and resources for UI display.
-        Notification is a future module for booking confirmations, cancellations, and reminders.
-        Stack: Next.js, Neon Postgres, Drizzle ORM.
-    }
-
     state {
         room can be draft, available, unavailable, or archived
         booking can be requested, confirmed, or canceled
@@ -45,14 +35,20 @@ expand Slotted {
     constraints {
         Architecture style is a modular monolith with layered, domain-oriented modules.
         The system ships as a single Next.js app.
-        Modules communicate through explicit contracts, not direct access to another module's database tables or internal logic.
+        Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
         Each module separates Presentation, Application, Domain, Infrastructure, and Contracts concerns where useful.
         Domain logic should be testable with zero mocks and zero I/O.
         Infrastructure is private to the module that owns it.
         Shared identifiers such as UserId and ResourceId live in a shared contracts or shared-kernel area.
+        Identity and Access owns users, sessions, roles, and permission checks.
+        Resource Management owns rooms, room metadata, and base availability rules.
+        Booking owns booking creation, conflict detection, lifecycle, and cancellation rules.
+        Scheduling and Recurrence owns recurring booking patterns, series, and exceptions.
+        Calendar Read Model composes bookings and resources for UI display.
         Booking must call Resource Management to answer availability questions.
         Other modules must call Identity and Access for current user and permission checks.
         Notification is out of scope for the first implementation but remains a known module boundary.
+        Stack is Next.js, Neon Postgres, and Drizzle ORM.
     }
 
     cases {
