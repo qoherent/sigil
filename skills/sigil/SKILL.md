@@ -21,8 +21,8 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
 2. Build the component picture.
    - Identify public `component` contracts: `goal` and `interface`.
    - Identify matching `expand` blocks for operational detail.
-   - Treat `component` as the reusable public contract and `expand` as the deeper operational description.
-   - Note missing components, duplicate expands, vague lines, contradictions, and code/spec drift.
+   - Treat `component` as the reusable public contract and all matching `expand Name` blocks as the collected operational description.
+   - Note missing components, collected-expand contradictions, vague lines, and code/spec drift.
 
 3. Improve Sigil before generating code.
    - If the user is asking for implementation and the Sigil is incomplete, repair or propose the Sigil first.
@@ -78,7 +78,7 @@ When reviewing or improving Sigil, check:
 - Are roles, states, permissions, and lifecycle transitions explicit enough to test?
 - For abstractions and APIs, are constructor/functions, return values, settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?
-- Are there multiple expands for the same component? If yes, flag selection or merge behavior as an open design question unless the repo already defines a rule.
+- If there are multiple expands for the same component, did you collect all matching expands and flag any contradictions between them?
 
 ## Working With Users
 

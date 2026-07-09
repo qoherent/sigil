@@ -4,11 +4,10 @@ This file tracks unresolved language and workflow decisions.
 
 ## Language
 
-- If a component has multiple `expand` blocks, how should an agent choose which one applies?
-- Can expands be named or scoped by feature, layer, implementation, environment, or audience?
-- Should reusable components expose only `component`, or can other components explicitly depend on selected `expand` details?
+- Should reusable components expose only `component`, or can other components explicitly depend on collected `expand` details?
 - Should `#module.sigil` remain the root filename?
 - How strict should future parsing and validation become while preserving authoring speed?
+- How should conflicts between collected expands be represented, detected, and resolved?
 
 ## Project Organization
 

@@ -44,6 +44,7 @@ When reviewing or improving Sigil, check:
 - Are roles, states, permissions, and lifecycle transitions explicit enough to test?
 - For abstractions and APIs, are constructor/functions, return values, settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?
-- Are there multiple expands for the same component?
+- If there are multiple expands for the same component, did you collect all matching expands and flag contradictions between them?
 
-When multiple expands exist, ask whether they should be merged, scoped, or selected by context unless the project already defines a rule.
+When multiple expands exist, treat them as one collected expansion.
+Ask for clarification only when the collected expands contradict each other or create an unclear public contract.

@@ -121,8 +121,9 @@ When reviewing Sigil, check:
 - For abstractions and APIs, are constructor/functions, return values, settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?
 
-Multiple `expand` blocks for the same component are not fully defined yet.
-If you find them, ask whether they should be merged, scoped by feature/layer/environment, or selected by context.
+Multiple `expand Name` blocks for the same component are collective.
+When using expanded detail for `Name`, read all matching expands as one collected expansion.
+If collected expands contradict each other, treat that as a specification issue to resolve with the user.
 
 ## Examples
 

@@ -123,8 +123,13 @@ cases
 The order is a readability convention.
 It has no semantic effect.
 
-Multiple `expand` blocks for the same component are not fully defined yet.
-When multiple expands exist, an agent or reviewer should treat selection, merging, and scoping as an open design question unless the surrounding project defines a rule.
+Multiple `expand Name` blocks for the same component are collective.
+When a component is referenced with its expanded detail, all matching `expand Name` blocks contribute to the expanded component.
+
+An `expand` does not select, override, or shadow another `expand` with the same name.
+Separate expands may live in different files when authors want to add detail from another feature, layer, implementation concern, environment, or audience.
+
+If collected expands contradict each other, the contradiction is a specification issue that must be resolved by the author or reviewer.
 
 ## 6. Sections
 
@@ -349,14 +354,12 @@ Larger examples live in:
 
 ## 11. Unresolved Language Questions
 
-If a component has multiple `expand` blocks, how should an agent choose which one applies?
-
-Can expands be named or scoped by feature, layer, implementation, environment, or audience?
-
-Should reusable components expose only `component`, or can other components explicitly depend on selected `expand` details?
+Should reusable components expose only `component`, or can other components explicitly depend on collected `expand` details?
 
 Should `#module.sigil` remain the root filename?
 
 How should projects organize Sigil files as they grow?
 
 How strict should future parsing and validation become while preserving authoring speed?
+
+How should conflicts between collected expands be represented, detected, and resolved?
