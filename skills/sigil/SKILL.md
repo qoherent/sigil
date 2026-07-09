@@ -15,14 +15,16 @@ Read `references/sigil-format.md` when you need syntax, section meanings, or exa
 
 1. Discover relevant context.
    - Read all relevant `.sigil` files first.
+   - Follow `@path import { Name }` clauses to read imported Sigil files.
    - Also read nearby code, docs, tests, package metadata, or architecture notes when the user asks to align Sigil with an existing repo.
    - Treat `#module.sigil` as the current tolerated root module filename.
 
 2. Build the component picture.
+   - Identify import dependencies and whether imported names resolve to components.
    - Identify public `component` contracts: `goal` and `interface`.
    - Identify matching `expand` blocks for operational detail.
    - Treat `component` as the reusable public contract and all matching `expand Name` blocks as the collected operational description.
-   - Note missing components, collected-expand contradictions, vague lines, and code/spec drift.
+   - Note unresolved imports, missing components, collected-expand contradictions, vague lines, and code/spec drift.
 
 3. Improve Sigil before generating code.
    - If the user is asking for implementation and the Sigil is incomplete, repair or propose the Sigil first.
@@ -72,6 +74,7 @@ When reviewing or improving Sigil, check:
 - Does every component explain why it exists?
 - Does every component expose how callers, users, modules, or other parts interact with it?
 - Does each `expand Name` have a matching `component Name`?
+- Does each imported name resolve to a matching component in the imported Sigil source?
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
 - Are implementation details hidden from public component interfaces unless they are part of the contract?

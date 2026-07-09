@@ -36,9 +36,12 @@ The outer structure is restricted, but section bodies are free-form text.
 
 ## 3. Top-Level Forms
 
-Sigil currently defines two top-level forms:
+Sigil currently defines three top-level forms:
 
 ```sigil
+@sub/folder import { ComponentName }
+@sub/folder/auth.sigil import { Auth }
+
 component Name {
   goal {
     why this component exists
@@ -68,10 +71,62 @@ expand Name {
 }
 ```
 
+`import` makes named components from another Sigil file available to the current file.
 `component` defines the public purpose and boundary of a system part.
 `expand` adds deeper operational detail for an existing component.
 
-## 4. Components
+## 4. Imports
+
+An `import` declares that the current Sigil file depends on named components from another Sigil file or module directory.
+
+Import syntax:
+
+```sigil
+@path import { Name }
+@path import { Name, OtherName }
+```
+
+Import paths begin with `@`.
+The `@` prefix resolves from the Sigil workspace root.
+
+Until Sigil has project configuration, tools and agents should treat the repository root or current working directory as the Sigil workspace root.
+
+A directory import resolves to that directory's `#module.sigil`.
+
+```sigil
+@sub/folder import { ComponentName }
+```
+
+Given this file layout:
+
+```text
+sub/folder/#module.sigil
+sub/folder/auth.sigil
+```
+
+`@sub/folder import { ComponentName }` resolves through `sub/folder/#module.sigil`.
+
+A file import resolves to the exact `.sigil` file.
+
+```sigil
+@sub/folder/auth.sigil import { Auth }
+```
+
+`@sub/folder/auth.sigil import { Auth }` resolves through `sub/folder/auth.sigil`.
+
+Importing `Name` makes the public `component Name` available to the importing file.
+It also makes all matching `expand Name` blocks from the imported file available as collected expanded detail.
+
+Imported names are case-sensitive and should match the spelling of the component declaration.
+
+Imports are explicit dependency edges between Sigil files.
+They do not copy text into the importing file.
+They make the referenced component contract and collected expansion available for interpretation, review, and implementation context.
+
+An imported name must resolve to a `component Name` in the resolved import source.
+An import that resolves only to `expand Name` without `component Name` is unresolved.
+
+## 5. Components
 
 A `component` is the reusable public description of a system part.
 It should be understandable without reading implementation details.
@@ -97,7 +152,7 @@ Put state, behavior, constraints, examples, architecture rules, and implementati
 Other components should depend on the public `component` description first.
 They should depend on `expand` details only when deeper implementation context is necessary.
 
-## 5. Expands
+## 6. Expands
 
 An `expand` adds operational detail to a component without changing the public shape of the component itself.
 It is where authors record state, behavior, rules, decisions, edge cases, and examples that would otherwise be lost during implementation.
@@ -131,7 +186,7 @@ Separate expands may live in different files when authors want to add detail fro
 
 If collected expands contradict each other, the contradiction is a specification issue that must be resolved by the author or reviewer.
 
-## 6. Sections
+## 7. Sections
 
 ### `goal`
 
@@ -208,7 +263,7 @@ It may include:
 
 Prefer cases that can be observed by users, callers, tests, or adjacent components.
 
-## 7. Semantic Lines
+## 8. Semantic Lines
 
 Inside each section, each non-empty line is a semantic unit.
 
@@ -240,9 +295,19 @@ Section bodies may use clear free-form notation, including:
 
 The notation should remain coherent inside a project.
 
-## 8. Validity Rules
+## 9. Validity Rules
 
 A valid Sigil source file may contain one or more top-level forms.
+
+An `import` must specify a path and one or more names.
+
+An import path without a `.sigil` filename resolves to `#module.sigil` inside that path.
+
+An import path with a `.sigil` filename resolves to that exact file.
+
+Import paths resolve from the Sigil workspace root.
+
+An imported name must resolve to a matching `component Name`.
 
 A `component` must contain `goal` and `interface`.
 
@@ -266,7 +331,7 @@ Behavior, transitions, algorithms, and policies belong in `logic`.
 
 Examples, acceptance criteria, and externally observable edge cases belong in `cases`.
 
-## 9. Recommended Style
+## 10. Recommended Style
 
 Write concise, reviewable lines.
 
@@ -286,7 +351,19 @@ When a decision is binding, place it in `constraints`.
 
 When a decision is unresolved, record it as an open question instead of hiding it in ambiguous prose.
 
-## 10. Examples
+## 11. Examples
+
+Import from a module directory:
+
+```sigil
+@sub/folder import { ComponentName }
+```
+
+Import from a specific file:
+
+```sigil
+@sub/folder/auth.sigil import { Auth }
+```
 
 Programming abstraction:
 
@@ -351,10 +428,11 @@ Larger examples live in:
 - `examples/promise/promise.sigil`
 - `examples/slotted/#module.sigil`
 - `examples/slotted/auth.sigil`
+- `examples/slotted/user-profile.sigil`
 
-## 11. Unresolved Language Questions
+## 12. Unresolved Language Questions
 
-Should reusable components expose only `component`, or can other components explicitly depend on collected `expand` details?
+Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 
 Should `#module.sigil` remain the root filename?
 
@@ -363,3 +441,7 @@ How should projects organize Sigil files as they grow?
 How strict should future parsing and validation become while preserving authoring speed?
 
 How should conflicts between collected expands be represented, detected, and resolved?
+
+Should Sigil introduce a project configuration file or marker to define the workspace root for `@` imports?
+
+Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?

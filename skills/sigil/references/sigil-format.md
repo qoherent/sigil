@@ -15,6 +15,9 @@ The name is provisional and may change if it causes tooling friction.
 ## Top-Level Forms
 
 ```sigil
+@sub/folder import { ComponentName }
+@sub/folder/auth.sigil import { Auth }
+
 component Name {
   goal {
     why this component exists
@@ -43,6 +46,11 @@ expand Name {
   }
 }
 ```
+
+`@sub/folder import { ComponentName }` imports from `sub/folder/#module.sigil`.
+`@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
+
+Importing `Name` makes `component Name` and all matching `expand Name` blocks available to the current file.
 
 Keep `component` focused on the reusable public contract.
 Put state, behavior, constraints, and representative cases in `expand`.
@@ -79,6 +87,23 @@ cases
 
 The order is only a readability convention.
 
+## Imports
+
+Import syntax:
+
+```sigil
+@path import { Name }
+@path import { Name, OtherName }
+```
+
+A path without a `.sigil` filename resolves to `#module.sigil` inside that path.
+A path with a `.sigil` filename resolves to that exact file.
+The `@` prefix resolves from the Sigil workspace root.
+
+Imported names must resolve to matching `component` declarations.
+Imported names are case-sensitive.
+All matching expands for the imported component are collective.
+
 ## Section Placement
 
 Use `goal` for why the component exists.
@@ -113,6 +138,7 @@ When reviewing Sigil, check:
 
 - Does every component explain why it exists?
 - Does every component expose how callers, users, modules, or other parts interact with it?
+- Does each imported name resolve to a matching component in the imported Sigil source?
 - Does each `expand Name` have a matching `component Name`?
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?

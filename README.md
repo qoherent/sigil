@@ -23,7 +23,7 @@ The `.sigil` files are the durable place where decisions, assumptions, component
 The intended workflow is:
 
 1. The user writes the minimum useful Sigil.
-2. The agent reads relevant Sigil, code, tests, and documentation.
+2. The agent reads relevant Sigil, follows imports, and reads related code, tests, and documentation.
 3. The agent checks for missing information, vague boundaries, contradictions, and code/spec drift.
 4. The agent updates or proposes Sigil changes.
 5. The agent stops for human review.
@@ -35,9 +35,12 @@ The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.m
 
 Sigil source files use the `.sigil` extension.
 
-The language currently has two top-level forms:
+The language currently has three top-level forms:
 
 ```sigil
+@sub/folder import { ComponentName }
+@sub/folder/auth.sigil import { Auth }
+
 component Name {
   goal {
     why this component exists
@@ -79,6 +82,8 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
+`UserProfile` in [examples/slotted/user-profile.sigil](examples/slotted/user-profile.sigil) shows an imported component with a TypeScript-shaped public interface.
+
 `Slotted` is only an example project used to test the language.
 It is not the purpose of this repository.
 
@@ -89,6 +94,7 @@ The Codex skill lives in [skills/sigil/SKILL.md](skills/sigil/SKILL.md).
 The skill teaches Codex to:
 
 - read relevant `.sigil` files first;
+- follow Sigil imports;
 - identify public component contracts and matching expands;
 - detect missing, conflicting, or vague information;
 - improve or propose Sigil before implementation;

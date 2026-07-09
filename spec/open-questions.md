@@ -4,10 +4,12 @@ This file tracks unresolved language and workflow decisions.
 
 ## Language
 
-- Should reusable components expose only `component`, or can other components explicitly depend on collected `expand` details?
+- Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 - Should `#module.sigil` remain the root filename?
 - How strict should future parsing and validation become while preserving authoring speed?
 - How should conflicts between collected expands be represented, detected, and resolved?
+- Should Sigil introduce a project configuration file or marker to define the workspace root for `@` imports?
+- Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?
 
 ## Project Organization
 

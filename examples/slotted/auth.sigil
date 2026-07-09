@@ -1,11 +1,20 @@
+@examples/slotted/user-profile.sigil import { UserProfile }
+
 component User {
     goal {
-        Stores the identity and profile information shared by renters and room owners.
+        Stores the authentication identity shared by renters and room owners.
     }
 
     interface {
-        exposes user identity: id, name, email, profile picture
-        exposes role signal: is home owner
+        type User = {
+            id: UserId
+            email: string
+            isHomeOwner: boolean
+        }
+
+        exposes user identity: User.id, User.email
+        exposes role signal: User.isHomeOwner
+        depends on UserProfile for display profile information
         hides password storage details from other components
     }
 }
@@ -16,10 +25,16 @@ component Auth {
     }
 
     interface {
-        accepts credentials: User.email and password
+        type SignInCredentials = {
+            email: User.email
+            password: string
+        }
+
+        signIn(credentials: SignInCredentials) returns JWT
         exposes session: JWT
         exposes permission check: can manage rooms
         exposes permission check: can book rooms
+        uses UserProfile for non-authentication profile display
     }
 }
 
@@ -32,7 +47,7 @@ expand Auth {
     }
 
     logic {
-        Sign-in validates User.email and password.
+        signIn validates SignInCredentials.email and SignInCredentials.password.
         A successful sign-in creates a JWT-backed session.
         isHomeOwner grants access to room creation and booking acceptance.
         renter access grants room browsing and room booking.

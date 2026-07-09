@@ -41,6 +41,7 @@ expand Slotted {
         Infrastructure is private to the module that owns it.
         Shared identifiers such as UserId and ResourceId live in a shared contracts or shared-kernel area.
         Identity and Access owns users, sessions, roles, and permission checks.
+        User Profile owns editable display profile information such as displayName and profilePictureUrl.
         Resource Management owns rooms, room metadata, and base availability rules.
         Booking owns booking creation, conflict detection, lifecycle, and cancellation rules.
         Scheduling and Recurrence owns recurring booking patterns, series, and exceptions.

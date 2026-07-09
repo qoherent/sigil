@@ -6,7 +6,7 @@ The `.sigil` files are the durable place where decisions, assumptions, component
 ## Intended Flow
 
 1. The user writes the minimum useful Sigil.
-2. The agent reads relevant `.sigil` files, code, tests, package metadata, and documentation.
+2. The agent reads relevant `.sigil` files, follows Sigil imports, and reads related code, tests, package metadata, and documentation.
 3. The agent checks for missing information, vague boundaries, contradictions, and code/spec drift.
 4. The agent asks targeted questions only when the answer changes architecture, ownership, behavior, or public contract.
 5. The agent updates or proposes Sigil changes.
@@ -37,6 +37,7 @@ When reviewing or improving Sigil, check:
 
 - Does every component explain why it exists?
 - Does every component expose how callers, users, modules, or other parts interact with it?
+- Does each imported name resolve to a matching component in the imported Sigil source?
 - Does each `expand Name` have a matching `component Name`?
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
