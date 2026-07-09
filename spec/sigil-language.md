@@ -9,6 +9,8 @@ The language favors durable understanding over strict syntax.
 ## 1. Purpose
 
 Sigil captures component-level rationale before, during, and after implementation.
+It is designed to preserve the understanding that can otherwise disappear during long agent-assisted coding sessions.
+The goal is not only to describe what code should do, but to keep reasons, boundaries, and review context durable enough for humans to stay accountable for the system.
 
 A Sigil component can describe:
 
@@ -33,6 +35,15 @@ This filename is provisional because the `#` prefix may create friction for shel
 
 Sigil files are plain text.
 The outer structure is restricted, but section bodies are free-form text.
+
+Sigil files should live as near as practical to the code they describe.
+The default placement is beside the corresponding module, feature, abstraction, or implementation files.
+
+When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
+Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
+
+Use root-level Sigil such as `#module.sigil` for product, deployable, bounded-context, or cross-cutting summaries.
+Use imports to connect nearby Sigil files instead of moving all specifications into a central folder.
 
 ## 3. Top-Level Forms
 
@@ -351,6 +362,10 @@ When a decision is binding, place it in `constraints`.
 
 When a decision is unresolved, record it as an open question instead of hiding it in ambiguous prose.
 
+Place Sigil files near the corresponding code by default.
+
+If the main `component` cannot live near the code, prefer placing an `expand` for that component near the code.
+
 ## 11. Examples
 
 Import from a module directory:
@@ -455,8 +470,6 @@ They require decisions about parsing, stable semantic-line identity, code indexi
 Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 
 Should `#module.sigil` remain the root filename?
-
-How should projects organize Sigil files as they grow?
 
 How strict should future parsing and validation become while preserving authoring speed?
 

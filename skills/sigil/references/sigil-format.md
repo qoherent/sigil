@@ -12,6 +12,10 @@ Sigil source files use `.sigil`.
 The current tolerated root module filename is `#module.sigil`.
 The name is provisional and may change if it causes tooling friction.
 
+Sigil files should live as near as practical to the code they describe.
+Use root-level Sigil for product, deployable, bounded-context, or cross-cutting summaries.
+If the main `component` must live elsewhere, a nearby `expand Name` may live beside the code it explains.
+
 ## Top-Level Forms
 
 ```sigil

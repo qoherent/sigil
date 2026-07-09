@@ -12,6 +12,7 @@ AI coding assistants can generate working code quickly, but long agent-driven se
 The "why", the ownership boundaries, and the intended behavior disappear into a conversation that is too long to revisit and too implicit to review.
 
 Sigil keeps that context durable before, during, and after implementation.
+It gives reviewers and future maintainers a compact place to understand purpose, public contracts, behavior, constraints, and representative cases without reverse-engineering a large diff.
 
 The problem statement is captured in [PROBLEM.md](PROBLEM.md).
 
@@ -34,6 +35,8 @@ The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.m
 ## Language Shape
 
 Sigil source files use the `.sigil` extension.
+They should live as near as practical to the code they describe.
+When a public component contract must live elsewhere, a nearby `expand` can still hold the local implementation rationale.
 
 The language currently has three top-level forms:
 
@@ -108,7 +111,7 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 This repository currently contains the Sigil language specification, workflow documentation, Codex skill, and examples.
 
-Parsing, validation tooling, strict grammar enforcement, and code generation integrations are intentionally deferred.
+Parsing, validation tooling, strict grammar enforcement, anchors, and code generation integrations are intentionally deferred.
 
 Future tooling may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
 Anchors are intended to help humans and assistants detect code/spec drift, but they are postponed because they require parser, indexing, and synchronization design.

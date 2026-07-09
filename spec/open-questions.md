@@ -13,9 +13,8 @@ This file tracks unresolved language and workflow decisions.
 
 ## Project Organization
 
-- How should projects organize Sigil files as they grow?
-- Should each product module own its own `.sigil` file?
-- Should shared abstractions live beside their implementation or in a central specification folder?
+- Should each product module own a root `.sigil` file, or only colocated component and expand files as needed?
+- How should shared abstractions be placed when they do not have one obvious implementation location?
 - Should root-level Sigil describe the whole product, the deployable unit, or the current bounded context?
 
 ## Tooling

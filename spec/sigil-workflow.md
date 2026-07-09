@@ -2,6 +2,7 @@
 
 Sigil is documentation-first.
 The `.sigil` files are the durable place where decisions, assumptions, component boundaries, and behavior are recorded before implementation.
+They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks, and code/spec drift in AI-assisted development.
 
 ## Intended Flow
 
