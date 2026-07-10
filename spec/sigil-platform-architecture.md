@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Owner:** _TBD_
-**Last updated:** 2026-07-09
+**Last updated:** 2026-07-10
 
 This document defines the high-level architecture guidelines for the Sigil platform.
 Package-specific product details, public commands, editor features, and implementation milestones belong near the package or integration they describe.
@@ -49,15 +49,15 @@ Boundary rules:
 
 ## 3. Package Responsibilities
 
-Planned platform packages:
+Platform packages:
 
-- `packages/sigil-core`: shared parser, resolver, graph, diagnostics, source-location model, and projection primitives.
-- `packages/sigil-cli`: command-line interface for agents, CI, scripts, and debugging.
+- `packages/sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
+- `packages/sigil-cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
 - `packages/sigil-lsp`: future language-server interface for editor features across multiple editors.
 
-Planned integrations:
+Integrations:
 
-- `integrations/codex/sigil-skill`: Codex skill and agent-facing reference material.
+- `integrations/codex/sigil-skill`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
 - `integrations/editor/vscode`: future VS Code extension, syntax highlighting, editor commands, and visual affordances.
 
 The CLI is an automation interface.
@@ -115,6 +115,9 @@ Sigil has different user modes, so one interface should not pretend to serve eve
 - Markdown rendering is a review and documentation projection.
 - LSP is the reusable semantic bridge between the shared core and editor integrations.
 - Host integrations should stay thin over shared packages.
+
+The Codex skill currently owns nondeterministic host behavior such as user elicitation, web research, brownfield evidence reconciliation, and semantic readiness review.
+Whether core should later expose deterministic readiness primitives or a separate optional agent package remains exploratory in ADR-009.
 
 This keeps the platform coherent while allowing each surface to feel natural for its audience.
 

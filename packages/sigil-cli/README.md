@@ -21,7 +21,7 @@ deno task install
 
 This installs a `sigil` command that can be discovered on `PATH`.
 
-Planned responsibilities:
+Implemented responsibilities:
 
 - expose parser output;
 - run workspace checks;
@@ -29,10 +29,19 @@ Planned responsibilities:
 - render Markdown for review and documentation workflows;
 - keep CLI behavior thin over `sigil-core`.
 
-Initial command candidates:
+Commands:
 
 - `sigil parse <path>` returns parsed JSON;
 - `sigil check [path]` returns diagnostics;
 - `sigil graph [path]` returns component and import graph data;
 - `sigil context ...` returns agent context JSON;
 - `sigil render ...` returns Markdown.
+
+The CLI returns exit code `0` for success or warnings, `1` for error diagnostics, `2` for usage errors, and `3` for host/runtime failures.
+Use JSON output for automation; human text and Markdown are convenience projections.
+
+Run the package tests with:
+
+```bash
+deno task test
+```

@@ -23,16 +23,20 @@ The `.sigil` files are the durable place where decisions, assumptions, component
 
 The intended workflow is:
 
-1. The user writes the minimum useful Sigil.
-2. The agent reads relevant Sigil, follows imports, and reads related code, tests, and documentation.
-3. The agent checks for missing information, vague boundaries, contradictions, and code/spec drift.
-4. The agent updates or proposes Sigil changes.
-5. The agent stops for human review.
-6. After approval, the agent uses the agreed Sigil to generate or change code.
+1. The user writes the minimum useful Sigil, or selects a reviewed pilot when adopting Sigil in a brownfield repository.
+2. The agent runs structural checks, follows imports, and reads related code, tests, configuration, and documentation.
+3. The agent reviews semantic readiness, cross-Sigil coherence, modularity, applicable standards, and code/spec drift.
+4. Brownfield reconstruction and externally informed additions are proposed before the agent edits Sigil.
+5. The user approves, rejects, or revises the proposed contract and semantic lines.
+6. The agent writes only the approved Sigil and stops at a semantic review gate.
+7. After approval, the agent colocates Sigil with the implementation and uses the agreed contract to generate or change code.
+8. If implementation reveals a missing material decision, the workflow returns to Sigil and human review.
 
 The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.md).
 
 The Sigil platform architecture is drafted in [spec/sigil-platform-architecture.md](spec/sigil-platform-architecture.md).
+
+The current exploration of semantic readiness and model ownership is recorded in [ADR-009](spec/decisions/adr-009-sigil-readiness-and-model-boundary.md).
 
 ## Language Shape
 
@@ -85,7 +89,7 @@ The root [#module.sigil](./%23module.sigil) currently defines this repository as
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains example Sigil files used as design-pressure fixtures.
-- `packages/` contains planned buildable platform units such as `sigil-core`, `sigil-cli`, and `sigil-lsp`.
+- `packages/` contains the implemented `sigil-core` and `sigil-cli` packages plus the future `sigil-lsp` package boundary.
 - `integrations/` contains host-specific adapters such as the Codex skill and future editor integrations.
 
 ## Examples
@@ -111,18 +115,28 @@ The skill teaches Codex to:
 - follow Sigil imports;
 - identify public component contracts and matching expands;
 - detect missing, conflicting, or vague information;
-- improve or propose Sigil before implementation;
-- stop at the review gate after Sigil changes;
+- assess semantic readiness, modularity, applicable standards, and common implementation pitfalls;
+- introduce Sigil incrementally into brownfield codebases through a change-frontier pilot;
+- propose brownfield and externally informed semantic lines before editing;
+- stop at the review gate after semantic changes;
+- colocate approved Sigil with the implementation it explains;
 - use approved Sigil as implementation context.
 
 The skill reference file at [integrations/codex/sigil-skill/references/sigil-format.md](integrations/codex/sigil-skill/references/sigil-format.md) is a concise agent-facing guide.
+The [standards review](integrations/codex/sigil-skill/references/standards-review.md) and [brownfield adoption](integrations/codex/sigil-skill/references/brownfield-adoption.md) references define the corresponding host-side workflows.
 The canonical language specification remains [spec/sigil-language.md](spec/sigil-language.md).
 
 ## Current Status
 
-This repository currently contains the Sigil language specification, workflow documentation, platform architecture, examples, planned package boundaries, and integration docs.
+This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
-Parsing implementation, validation implementation, strict grammar enforcement, anchors, and code generation integrations are intentionally deferred.
+`sigil-core` currently implements structurally strict and body-tolerant parsing, source ranges and semantic lines, workspace discovery, import and component resolution, collective expansion, graphs, projections, and stable diagnostics.
+`sigil-cli` implements `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
+
+Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
+The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
+
+LSP/editor support, anchors, stricter body semantics, project configuration, and code-generation integrations remain deferred.
 
 Future platform packages may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
 Anchors are intended to help humans and assistants detect code/spec drift, but they are postponed because they require parser, indexing, and synchronization design.

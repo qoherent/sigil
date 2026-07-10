@@ -9,7 +9,7 @@ This file tracks unresolved language and workflow decisions.
 - How strict should future parsing and validation become while preserving authoring speed?
 - How should conflicts between collected expands be represented, detected, and resolved?
 - Should Sigil introduce `sigil.config` or another project configuration file to replace or override `#module.sigil` as the workspace root marker?
-- Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?
+- Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
 
 ## Project Organization
 
@@ -19,7 +19,7 @@ This file tracks unresolved language and workflow decisions.
 
 ## Platform
 
-- Should the first parser validate only top-level form and section shape?
+- Which additional semantic checks, if any, should move from host integrations into deterministic core diagnostics?
 - What stable addressing scheme should anchors use for semantic lines?
 - Should Sigil platform packages support generated diagrams or dependency maps?
 - How should anchors identify stable Sigil semantic lines as files are edited?
@@ -32,3 +32,8 @@ This file tracks unresolved language and workflow decisions.
 - Should implementation sessions record which Sigil version they used?
 - How should rejected or superseded Sigil decisions be preserved?
 - Should the Codex skill update implementation plans from Sigil automatically, or only after explicit user approval?
+- How should evidence from brownfield reconciliation remain traceable without becoming Sigil syntax?
+- Should standards sources remain in review summaries or gain a durable repository representation?
+- How should multiple hosts produce comparable semantic-readiness findings without sharing one model or prompt?
+
+The broader readiness and model-boundary questions are tracked in [ADR-009](decisions/adr-009-sigil-readiness-and-model-boundary.md).

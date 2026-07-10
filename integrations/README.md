@@ -6,7 +6,7 @@ Integrations adapt the Sigil language, workflow, or platform to a host environme
 
 Current integration:
 
-- `codex/sigil-skill`: Codex skill and agent-facing Sigil reference material.
+- `codex/sigil-skill`: Codex skill with agent-facing format guidance, standards-aware semantic review, incremental brownfield adoption, proposal and review gates, and implementation colocation.
 
 Planned integrations:
 

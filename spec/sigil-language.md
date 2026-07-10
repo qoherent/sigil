@@ -486,7 +486,7 @@ How should conflicts between collected expands be represented, detected, and res
 
 Should Sigil introduce `sigil.config` or another project configuration file to replace or override `#module.sigil` as the workspace root marker?
 
-Should imports support aliases, re-exports, wildcard imports, or cycle detection rules?
+Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
 
 How should anchors identify stable Sigil semantic lines as files are edited?
 

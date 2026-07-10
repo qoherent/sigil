@@ -1,12 +1,12 @@
 # Packages
 
-This directory is reserved for buildable or distributable Sigil platform units.
+This directory contains buildable or distributable Sigil platform units.
 Package docs describe package-level product and implementation responsibilities.
 
-Planned packages:
+Current packages:
 
-- `sigil-core`: shared parser, resolver, graph, diagnostics, and projection logic.
-- `sigil-cli`: command-line interface over `sigil-core`.
+- `sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, filesystem boundary, and projection logic.
+- `sigil-cli`: implemented Deno command-line interface over `sigil-core` with `parse`, `check`, `graph`, `context`, and `render` commands.
 - `sigil-lsp`: future editor-facing language server over `sigil-core`.
 
 Host-specific adapters belong under `integrations/`, not here.

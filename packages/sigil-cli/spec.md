@@ -1,6 +1,6 @@
 # sigil-cli Requirements
 
-**Status:** Draft **Owner:** _TBD_ **Last updated:** 2026-07-09
+**Status:** Draft **Owner:** _TBD_ **Last updated:** 2026-07-10
 
 This document defines the v1 product requirements for `sigil-cli`.
 
@@ -229,10 +229,12 @@ V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 ## 11. Implementation Notes
 
-The first implementation may be a thin CLI with minimal argument parsing.
+The current implementation is a thin CLI with explicit argument parsing,
+command handlers, output models, formatting, filesystem adaptation, and exit
+status decisions over `sigil-core`.
 
-Prefer explicit command modules over a large single command file once commands
-grow.
+Keep command modules explicit rather than consolidating behavior into one large
+entrypoint as commands grow.
 
 Keep command shaping separate from `sigil-core` data models so the core API
 remains reusable by LSP and editor integrations.
