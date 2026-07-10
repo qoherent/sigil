@@ -1,6 +1,6 @@
 ---
 name: sigil
-description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when Codex needs to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; assess semantic readiness, applicable standards, best practices, pitfalls, coherence, or modularity; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` for mechanical parsing, checks, graph, context, and render operations. Stop for human review after creating or semantically changing Sigil, and do not write implementation code until the user explicitly approves the agreed Sigil.
+description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when Codex needs to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; introduce Sigil into an existing or partially documented brownfield codebase; assess semantic readiness, applicable standards, best practices, pitfalls, coherence, or modularity; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` for mechanical parsing, checks, graph, context, and render operations. Stop for human review after creating or semantically changing Sigil, and do not write implementation code until the user explicitly approves the agreed Sigil.
 ---
 
 # Sigil
@@ -24,6 +24,11 @@ examples.
 Read `references/standards-review.md` completely whenever creating, reviewing,
 or preparing Sigil for implementation. It defines the semantic-readiness,
 standards, conflict, evidence, and modularity procedure.
+
+Read `references/brownfield-adoption.md` completely when implementation already
+exists but the relevant Sigil is absent or incomplete. Do not load it for a
+greenfield design or a component with established Sigil unless the user asks
+for brownfield reconciliation.
 
 ## Tooling
 
@@ -85,6 +90,11 @@ Do not use CLI output as approval to implement code. The review gate still
 applies after creating or semantically changing Sigil files.
 
 ## Core Workflow
+
+If the target is brownfield, follow `references/brownfield-adoption.md` for
+coverage detection, pilot selection, repository evidence, and the pre-edit
+proposal gate. Return to this workflow after the user approves the exact Sigil
+proposal.
 
 1. Discover relevant context.
    - When a `sigil` command or repo-local CLI is available, start with `check`
@@ -209,9 +219,10 @@ applies after creating or semantically changing Sigil files.
 
 ## Review Gate
 
-Externally informed compatible guidance has a proposal gate before any edit.
-Present exact additions and wait for approval. After approval, edit Sigil and
-stop again at the semantic review gate so the user can review the complete file.
+Externally informed compatible guidance and brownfield reconstruction have a
+proposal gate before any edit. Present exact additions and wait for approval.
+After approval, edit Sigil and stop again at the semantic review gate so the
+user can review the complete file.
 
 The review gate is mandatory when Sigil is created or semantically changed.
 After approval, a placement-only move or split that preserves the approved
@@ -286,6 +297,10 @@ Prefer editing the Sigil directly when:
 Do not directly edit Sigil from external guidance until the user approves the
 proposed semantic lines. Do not resolve a conflict by silently prioritizing a
 standard, repository behavior, or user preference.
+
+In brownfield work, treat code as evidence of current behavior, not proof of
+desired behavior or rationale. Do not create or change Sigil until the user
+approves the pilot boundary and exact semantic lines.
 
 ## Output Style
 
