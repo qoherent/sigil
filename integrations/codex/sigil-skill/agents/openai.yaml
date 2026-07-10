@@ -1,4 +1,4 @@
 interface:
   display_name: "Sigil"
   short_description: "Use Sigil specs and CLI before code generation"
-  default_prompt: "Use $sigil and its CLI to check, improve, and align component specs, stop for review, then colocate approved Sigil with the generated implementation."
+  default_prompt: "Use $sigil to check semantic readiness, applicable standards, pitfalls, coherence, and modularity; suggest evidence-backed edits, keep sources in the review summary, and stop before changing Sigil."

@@ -1,6 +1,6 @@
 ---
 name: sigil
-description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when the user asks to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` when available for parsing, checking, graph, context, and render operations. This skill must stop for human review after creating or semantically changing Sigil and must not write implementation code until the user explicitly approves the agreed Sigil.
+description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when Codex needs to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; assess semantic readiness, applicable standards, best practices, pitfalls, coherence, or modularity; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` for mechanical parsing, checks, graph, context, and render operations. Stop for human review after creating or semantically changing Sigil, and do not write implementation code until the user explicitly approves the agreed Sigil.
 ---
 
 # Sigil
@@ -20,6 +20,10 @@ assume the domain is only business/product software.
 
 Read `references/sigil-format.md` when you need syntax, section meanings, or
 examples.
+
+Read `references/standards-review.md` completely whenever creating, reviewing,
+or preparing Sigil for implementation. It defines the semantic-readiness,
+standards, conflict, evidence, and modularity procedure.
 
 ## Tooling
 
@@ -108,14 +112,48 @@ applies after creating or semantically changing Sigil files.
    - Note unresolved imports, missing components, collected-expand
      contradictions, vague lines, and code/spec drift.
 
-3. Improve Sigil before generating code.
+3. Run the semantic-readiness and standards review.
+   - Follow `references/standards-review.md`.
+   - Make each goal specific, bounded, and unambiguous.
+   - Check interfaces for required inputs, outputs, errors, permissions,
+     lifecycle guarantees, and applicable standards or best practices.
+   - Derive externally observable edge cases and test points from state, logic,
+     and constraints.
+   - Check imported components, collected expands, and module summaries for
+     contradictions, ownership overlap, and inconsistent contracts.
+   - Assess cohesion, interface size, coupling, dependency direction, state
+     ownership, and reasons to change without assigning a numeric score.
+   - Assess standards applicability on every review, but research only when the
+     domain, stack, risk, or public contract makes external guidance relevant.
+   - Classify each researched finding as compatible guidance, potential
+     conflict, definite conflict, unverifiable guidance, or non-applicable.
+
+4. Propose externally informed changes before editing.
+   - For compatible guidance, show the exact proposed semantic lines and target
+     sections, cite the sources in the review summary, and wait for approval
+     before editing Sigil.
+   - For potential or definite conflicts, preserve Sigil, warn the user, identify
+     the affected lines and guidance, explain the impact, and offer alternatives.
+   - For unavailable or paywalled authoritative material, block high-risk or
+     compliance-critical implementation; otherwise warn, record uncertainty,
+     and require explicit user acceptance.
+   - Keep source details in the review summary, not in Sigil. Write approved
+     additions as project decisions rather than claims that a standard mandates
+     them.
+   - Use only provisional assessment language: `appears aligned`, `partially
+     assessed`, `gap identified`, `conflict identified`, or `not assessable`.
+     Never claim certification or definitive compliance.
+
+5. Improve Sigil before generating code.
    - If the user is asking for implementation and the Sigil is incomplete,
      repair or propose the Sigil first.
    - Ask concise questions only when the ambiguity changes architecture,
      ownership, behavior, or public contract.
    - If the ambiguity is low-risk, make a conservative assumption and state it.
+   - After the user approves externally informed additions, place each semantic
+     line in the appropriate `state`, `logic`, `constraints`, or `cases` section.
 
-4. Keep sections disciplined.
+6. Keep sections disciplined.
    - Put binding decisions in `constraints`, including stack choices and
      architecture rules.
    - Put behavior, flows, transitions, policies, and algorithms in `logic`.
@@ -124,14 +162,14 @@ applies after creating or semantically changing Sigil files.
      technology decisions in `constraints`.
    - Put examples, acceptance criteria, and edge cases in `cases`.
 
-5. Preserve semantic lines.
+7. Preserve semantic lines.
    - Keep each non-empty line as one distinct idea.
    - Blank lines are allowed for readability and do not create semantic units.
    - Prefer concise, reviewable lines over paragraphs inside sections.
    - Free-form Markdown, pseudocode, API signatures, bullets, tables, and prose
      are allowed inside sections when they remain coherent.
 
-6. Stop at the Sigil review gate.
+8. Stop at the Sigil review gate.
    - After creating or semantically changing Sigil files, summarize the changes
      and ask the user to review them.
    - Do not write implementation code in the same pass unless the user has
@@ -140,7 +178,7 @@ applies after creating or semantically changing Sigil files.
    - A request like "use Sigil", "improve Sigil", "prepare Sigil", or "check the
      spec before coding" is not approval to code.
 
-7. Colocate approved Sigil with its implementation.
+9. Colocate approved Sigil with its implementation.
    - Before writing implementation code, determine the module or source
      directory that will own the implementation.
    - Treat a Sigil file created elsewhere while the implementation location was
@@ -159,7 +197,7 @@ applies after creating or semantically changing Sigil files.
    - Run `sigil check` after relocation, and use `sigil graph` or `sigil context`
      to verify imports, collected expands, and related file paths when relevant.
 
-8. Implement only after approval.
+10. Implement only after approval.
    - Use the approved Sigil as the durable rationale and source of constraints.
    - Keep generated code aligned with component boundaries and public
      interfaces.
@@ -170,6 +208,10 @@ applies after creating or semantically changing Sigil files.
      Sigil first, then ask for review again.
 
 ## Review Gate
+
+Externally informed compatible guidance has a proposal gate before any edit.
+Present exact additions and wait for approval. After approval, edit Sigil and
+stop again at the semantic review gate so the user can review the complete file.
 
 The review gate is mandatory when Sigil is created or semantically changed.
 After approval, a placement-only move or split that preserves the approved
@@ -192,9 +234,9 @@ the human check the durable rationale before code exists.
 
 When reviewing or improving Sigil, check:
 
-- Does every component explain why it exists?
-- Does every component expose how callers, users, modules, or other parts
-  interact with it?
+- Is every goal specific about responsibility, boundary, and intended outcome?
+- Does every interface make relevant inputs, outputs, errors, permissions,
+  lifecycle guarantees, and dependencies explicit?
 - Does each `expand Name` have a matching `component Name`?
 - Does each imported name resolve to a matching component in the imported Sigil
   source?
@@ -208,8 +250,15 @@ When reviewing or improving Sigil, check:
 - For abstractions and APIs, are constructor/functions, return values,
   settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?
+- Do state, logic, and constraints imply missing edge cases or test points?
 - If there are multiple expands for the same component, did you collect all
   matching expands and flag any contradictions between them?
+- Do related Sigil files agree on naming, ownership, dependency direction,
+  states, policies, and public expectations?
+- Is each component cohesive, appropriately sized, and coupled through explicit
+  contracts rather than another component's private details?
+- Did you assess whether applicable standards, formal guidance, or official
+  platform practices reveal gaps, conflicts, or pitfalls?
 
 ## Working With Users
 
@@ -234,7 +283,27 @@ Prefer editing the Sigil directly when:
 - the decision already appears elsewhere in the repo;
 - a line can be made clearer without changing meaning.
 
+Do not directly edit Sigil from external guidance until the user approves the
+proposed semantic lines. Do not resolve a conflict by silently prioritizing a
+standard, repository behavior, or user preference.
+
 ## Output Style
+
+For a standards-aware semantic review, use these headings and write `none` when
+a section has no findings:
+
+- Scope and risk
+- Sources consulted
+- Compatible suggestions
+- Conflicts and pitfalls
+- Cross-Sigil coherence and modularity
+- Unverifiable guidance
+- Proposed Sigil edits
+- Approval request
+
+For each source, report its issuer, title, identifier or version when available,
+publication or update date when available, access date, direct link, and any
+scope limitation. Do not copy the source details into Sigil.
 
 At a semantic review gate, summarize:
 
