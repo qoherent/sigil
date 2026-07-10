@@ -184,6 +184,14 @@ Rationale: The same Sigil core should support multiple hosts without making Code
 
 Tradeoff: Documentation and installation references must point to longer integration paths.
 
+### ADR-009: Explore Sigil Readiness And The Model Boundary
+
+Status: Exploratory; no option has been selected.
+
+Question: When does Sigil contain enough information for implementation, and which layer should gather missing information from users, repositories, models, and research?
+
+Discussion: See [ADR-009: Sigil Readiness And Model Boundary](decisions/adr-009-sigil-readiness-and-model-boundary.md).
+
 ## 8. Risks And Guardrails
 
 ### Over-Formalizing The Language

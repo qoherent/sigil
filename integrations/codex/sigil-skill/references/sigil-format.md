@@ -46,6 +46,11 @@ summaries. Use nested `#module.sigil` files for importable module directory
 summaries. If the main `component` must live elsewhere, a nearby `expand Name`
 may live beside the code it explains.
 
+When implementation establishes a clear owner directory, relocate a temporary
+Sigil file beside that implementation and update affected imports. Keep the
+workspace-root `#module.sigil` in place. If a shared component contract cannot
+move, colocate its implementation-specific `expand Name` instead.
+
 ## Top-Level Forms
 
 ```sigil

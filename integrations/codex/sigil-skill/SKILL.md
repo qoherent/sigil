@@ -1,6 +1,6 @@
 ---
 name: sigil
-description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when the user asks to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` when available for parsing, checking, graph, context, and render operations. This skill must stop for human review after creating or changing Sigil and must not write implementation code until the user explicitly approves the agreed Sigil.
+description: Work with Sigil, a lightweight rationale-oriented modeling language for software systems, and its CLI for AI-assisted development. Use when the user asks to read, write, improve, reconcile, validate, query, render, or use `.sigil` files; create or update component/expand specs; describe product modules, programming abstractions, APIs, state machines, or architecture decisions; align code with Sigil; resolve ambiguity before code generation; or build from a Sigil-driven workflow. Prefer `sigil-cli` when available for parsing, checking, graph, context, and render operations. This skill must stop for human review after creating or semantically changing Sigil and must not write implementation code until the user explicitly approves the agreed Sigil.
 ---
 
 # Sigil
@@ -78,7 +78,7 @@ fails for host reasons, fall back to direct file reading and the format
 reference.
 
 Do not use CLI output as approval to implement code. The review gate still
-applies after creating or changing Sigil files.
+applies after creating or semantically changing Sigil files.
 
 ## Core Workflow
 
@@ -132,24 +132,50 @@ applies after creating or changing Sigil files.
      are allowed inside sections when they remain coherent.
 
 6. Stop at the Sigil review gate.
-   - After creating or changing Sigil files, summarize the changes and ask the
-     user to review them.
+   - After creating or semantically changing Sigil files, summarize the changes
+     and ask the user to review them.
    - Do not write implementation code in the same pass unless the user has
      already explicitly approved the current Sigil and explicitly asked for
      code.
    - A request like "use Sigil", "improve Sigil", "prepare Sigil", or "check the
      spec before coding" is not approval to code.
 
-7. Implement only after approval.
+7. Colocate approved Sigil with its implementation.
+   - Before writing implementation code, determine the module or source
+     directory that will own the implementation.
+   - Treat a Sigil file created elsewhere while the implementation location was
+     unknown as temporary; move it beside the owning module or source files once
+     that location is known.
+   - Keep a shared public `component` at its contract or module-summary location
+     when multiple implementations depend on it, and place implementation-specific
+     `expand Name` blocks beside the code they explain.
+   - When one Sigil file describes components owned by different implementation
+     directories, split it so each component or implementation-specific expand
+     lives near its owner. Do not duplicate a public component declaration.
+   - Do not move the workspace-root `#module.sigil` merely to colocate code; it
+     remains the workspace marker and cross-cutting summary.
+   - Update every affected `@path import { Name }` after moving or splitting a
+     Sigil file.
+   - Run `sigil check` after relocation, and use `sigil graph` or `sigil context`
+     to verify imports, collected expands, and related file paths when relevant.
+
+8. Implement only after approval.
    - Use the approved Sigil as the durable rationale and source of constraints.
    - Keep generated code aligned with component boundaries and public
      interfaces.
+   - Include Sigil relocation in the implementation work; do not leave an
+     approved component in a temporary planning directory when its owning code
+     now has a clear home.
    - If implementation reveals a missing decision, stop and update or propose
      Sigil first, then ask for review again.
 
 ## Review Gate
 
-The review gate is mandatory when Sigil is created or changed.
+The review gate is mandatory when Sigil is created or semantically changed.
+After approval, a placement-only move or split that preserves the approved
+semantic lines may proceed with implementation without another review gate.
+Import-path updates required by that relocation are also placement-only.
+Any changed, added, or removed semantic line still requires review.
 
 At the gate, respond with:
 
@@ -210,12 +236,18 @@ Prefer editing the Sigil directly when:
 
 ## Output Style
 
-When updating Sigil files, summarize:
+At a semantic review gate, summarize:
 
 - which files changed;
 - which ambiguities were resolved;
-- which open questions remain.
+- which open questions remain;
 - that implementation is waiting for user approval of the Sigil.
+
+After an approved placement-only relocation during implementation, summarize:
+
+- the old and new Sigil paths;
+- any imports updated;
+- the validation command and result.
 
 When a user asks only for understanding or review, do not edit files unless they
 ask for updates.
