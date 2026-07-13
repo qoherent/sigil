@@ -44,6 +44,11 @@ Sigil source files use the `.sigil` extension.
 They should live as near as practical to the code they describe.
 When a public component contract must live elsewhere, a nearby `expand` can still hold the local implementation rationale.
 
+Screens, views, and reusable user-interface surfaces can be components too.
+Their `interface` may describe visible regions, user actions, navigation, feedback, and other observable behavior in natural language.
+Because section bodies are free-form, the interface may also contain ASCII wireframes, Markdown image references to repository assets, or links to designs such as Figma files.
+Authors can explain a visual reference's intended role in their own words when ambiguity would affect implementation.
+
 The language currently has three top-level forms:
 
 ```sigil
@@ -101,6 +106,8 @@ The root [#module.sigil](./%23module.sigil) currently defines this repository as
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
 `UserProfile` in [examples/slotted/user-profile.sigil](examples/slotted/user-profile.sigil) shows an imported component with a TypeScript-shaped public interface.
+
+`BookingCalendarView` in [examples/slotted/booking-calendar-view.sigil](examples/slotted/booking-calendar-view.sigil) shows a UI component whose interface combines natural language, an ASCII wireframe, and a repository image reference.
 
 `Slotted` is only an example project used to test the language.
 It is not the purpose of this repository.

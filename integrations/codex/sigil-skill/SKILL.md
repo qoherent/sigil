@@ -15,8 +15,9 @@ preserving both the public contract and the reasoning behind implementation
 decisions.
 
 A Sigil component can be a product module, service boundary, domain concept,
-library abstraction, API object, state machine, or other coherent unit. Do not
-assume the domain is only business/product software.
+library abstraction, API object, state machine, screen, view, reusable UI
+surface, or other coherent unit. Do not assume the domain is only
+business/product software.
 
 Read `references/sigil-format.md` when you need syntax, section meanings, or
 examples.
@@ -108,6 +109,10 @@ proposal.
      or when source-level review needs exact wording.
    - Also read nearby code, docs, tests, package metadata, or architecture notes
      when the user asks to align Sigil with an existing repo.
+   - For UI components, inspect referenced repository images and accessible
+     external designs when their contents affect the requested contract.
+     Report references that cannot be accessed instead of guessing their
+     contents.
    - Treat the topmost ancestor `#module.sigil` as the Sigil workspace root
      until project configuration exists.
 
@@ -117,6 +122,9 @@ proposal.
      expands, and related files.
    - Identify public `component` contracts: `goal` and `interface`.
    - Identify matching `expand` blocks for operational detail.
+   - Treat natural-language UI descriptions, ASCII wireframes, image references,
+     and design links inside `interface` as free-form public-contract content.
+     Do not invent keywords or authority fields for visual references.
    - Treat `component` as the reusable public contract and all matching
      `expand Name` blocks as the collected operational description.
    - Note unresolved imports, missing components, collected-expand
@@ -127,6 +135,9 @@ proposal.
    - Make each goal specific, bounded, and unambiguous.
    - Check interfaces for required inputs, outputs, errors, permissions,
      lifecycle guarantees, and applicable standards or best practices.
+   - For UI components, check visible regions, actions, navigation, feedback,
+     loading, empty, error, and disabled behavior when those details materially
+     affect the contract.
    - Derive externally observable edge cases and test points from state, logic,
      and constraints.
    - Check imported components, collected expands, and module summaries for
@@ -164,6 +175,9 @@ proposal.
      line in the appropriate `state`, `logic`, `constraints`, or `cases` section.
 
 6. Keep sections disciplined.
+   - A UI `interface` may describe visible structure and interactions with
+     natural language, brace-safe ASCII, repository image references, or design
+     links such as Figma URLs.
    - Put binding decisions in `constraints`, including stack choices and
      architecture rules.
    - Put behavior, flows, transitions, policies, and algorithms in `logic`.
@@ -178,6 +192,8 @@ proposal.
    - Prefer concise, reviewable lines over paragraphs inside sections.
    - Free-form Markdown, pseudocode, API signatures, bullets, tables, and prose
      are allowed inside sections when they remain coherent.
+   - Preserve the author's natural wording for visual references. Do not
+     introduce a vocabulary that Sigil does not define.
 
 8. Stop at the Sigil review gate.
    - After creating or semantically changing Sigil files, summarize the changes
@@ -260,6 +276,12 @@ When reviewing or improving Sigil, check:
   test?
 - For abstractions and APIs, are constructor/functions, return values,
   settlement/lifecycle behavior, and error behavior explicit?
+- For UI components, are visible structure, interactions, navigation, feedback,
+  and applicable loading, empty, error, disabled, responsive, keyboard, and
+  accessibility behavior clear enough to implement and observe?
+- If an image, screenshot, or design link is referenced, is its intended role
+  clear enough to avoid conflicting interpretations, and is required material
+  accessible?
 - Are examples in `cases` externally observable?
 - Do state, logic, and constraints imply missing edge cases or test points?
 - If there are multiple expands for the same component, did you collect all
@@ -284,6 +306,8 @@ Ask targeted questions when:
 - a lifecycle or state transition has unclear behavior;
 - an API-shaped interface has unclear return, error, chaining, or async
   behavior;
+- a UI description and its visual references support materially different
+  implementations, or a required visual reference is inaccessible;
 - stack, persistence, auth, deployment, or testing choices are binding but
   unstated;
 - code generation would lock in a domain rule that is not captured.

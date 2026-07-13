@@ -76,6 +76,22 @@ Check every relevant public operation, event, or dependency for:
 Do not require every category mechanically. Require it only when omitting it
 could materially change implementation or observable behavior.
 
+For UI components, also check when applicable:
+
+- visible regions, content hierarchy, and navigation;
+- user actions and the feedback they produce;
+- loading, empty, error, and disabled behavior;
+- responsive behavior and supported input methods;
+- keyboard operation and accessibility expectations;
+- agreement between written lines, ASCII wireframes, repository images, and
+  external design references.
+
+Visual material is free-form interface content, not special Sigil syntax. Do
+not require keywords or authority fields. Ask what a visual means only when
+different interpretations could materially change the public UI contract.
+Report a required image or external design that cannot be accessed instead of
+guessing its contents.
+
 ### Constraint-Derived Cases And Test Points
 
 For each state, policy, and binding constraint, ask what an external caller,

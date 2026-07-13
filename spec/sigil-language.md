@@ -20,6 +20,7 @@ A Sigil component can describe:
 - a library abstraction;
 - an API object;
 - a state machine;
+- a screen, view, or reusable user-interface surface;
 - an architecture boundary;
 - any other coherent unit whose intent should survive code generation.
 
@@ -226,6 +227,39 @@ It may include:
 
 For API-like components, `interface` may contain constructors, methods, functions, return values, static helpers, and other public signatures.
 
+For UI components, `interface` may describe visible regions, content, user actions, navigation, feedback, and other externally observable behavior.
+It may use natural language, ASCII wireframes, Markdown image references to repository assets, or links to external designs such as Figma files.
+These representations remain ordinary free-form section content; Sigil defines no visual-reference keywords, authority fields, or special Figma or image syntax.
+When different interpretations of a visual could materially change implementation, authors should explain its intended role in their own natural language.
+
+Keep changing UI states in `state`, interaction and transition behavior in `logic`, required responsive or accessibility decisions in `constraints`, and observable UI scenarios in `cases`.
+
+For example:
+
+```sigil
+component BookingCalendarView {
+  goal {
+    Help renters understand room availability and existing bookings for a selected date range.
+  }
+
+  interface {
+    Shows date navigation above a calendar of rooms and bookings.
+    Lets the user move to the previous or next date range.
+
+    +------------------------------------------+
+    | Previous | July 2026 | Next              |
+    +------------------------------------------+
+    | Room     | Confirmed bookings            |
+    +------------------------------------------+
+
+    Image reference: ![Calendar layout](./booking-calendar-view.svg)
+    The image suggests visual grouping; the written interface defines required behavior.
+
+    A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
+  }
+}
+```
+
 ### `state`
 
 `state` describes meaningful configurations that persist or change during execution.
@@ -311,6 +345,7 @@ Section bodies may use clear free-form notation, including:
 - ASCII sketches.
 
 The notation should remain coherent inside a project.
+ASCII content should avoid unmatched `{` or `}` characters because the current parser uses braces to track section boundaries.
 
 ## 9. Validity Rules
 

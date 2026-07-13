@@ -1,0 +1,57 @@
+component BookingCalendarView {
+    goal {
+        Help renters understand room availability and existing bookings for a selected date range.
+        Keep calendar presentation and interaction decisions separate from booking and resource policies.
+    }
+
+    interface {
+        Shows date navigation above a calendar of rooms and confirmed bookings.
+        Lets the user move to the previous or next date range.
+        Lets the user select an available room and time slot to begin a booking request.
+        Shows clear feedback while calendar data is loading or cannot be loaded.
+
+        +------------------------------------------------------+
+        | Previous | July 2026                      | Next     |
+        +------------------------------------------------------+
+        | Room     | 09:00 | 10:00 | 11:00 | 12:00            |
+        +------------------------------------------------------+
+        | Cedar    | Open  | Booked| Booked| Open              |
+        | Maple    | Open  | Open  | Open  | Booked            |
+        +------------------------------------------------------+
+
+        Visual reference: ![Booking calendar layout](./booking-calendar-view.svg)
+        The image provides layout guidance while the written interface defines required behavior.
+    }
+}
+
+expand BookingCalendarView {
+    state {
+        loading while calendar data is requested
+        empty when no rooms are available in the selected range
+        ready with rooms and bookings for the selected range
+        failed when calendar data cannot be loaded
+    }
+
+    logic {
+        Previous and Next request the adjacent date range.
+        Selecting an available slot begins a booking request for that room and time.
+        Selecting a booked slot does not begin a booking request.
+        Loading, empty, ready, and failed states replace the calendar body without removing date navigation.
+    }
+
+    constraints {
+        BookingCalendarView owns presentation and interaction behavior, not room availability or booking policy.
+        Calendar data comes from the Calendar Read Model described by Slotted.
+        The layout adapts to narrow screens without hiding date navigation or booking status.
+        Interactive controls are reachable and operable with a keyboard.
+        Availability and booking status are communicated with text rather than color alone.
+    }
+
+    cases {
+        A renter moves to the next date range and sees its rooms and bookings.
+        A renter selects an open slot and begins a booking request.
+        A renter cannot begin a booking request from a booked slot.
+        A renter sees an empty message when the selected range contains no available rooms.
+        A renter can retry after calendar data fails to load.
+    }
+}

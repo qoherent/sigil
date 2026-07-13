@@ -75,6 +75,8 @@ relationships. Inspect, when relevant:
 - manifests, package metadata, entrypoints, and exported APIs;
 - implementation paths and public types;
 - tests, fixtures, and acceptance scenarios;
+- existing screens, screenshots, repository image assets, and accessible design
+  files or links when the pilot includes UI behavior;
 - schemas, migrations, persistence adapters, and data contracts;
 - configuration, deployment, permissions, and integration boundaries;
 - related Sigil, module summaries, imports, and collected expands;
@@ -105,6 +107,8 @@ Repository evidence has different meanings:
 - tests show behavior someone chose to exercise, but may be incomplete or
   stale;
 - documentation may express intent, but may also be outdated;
+- screenshots and design artifacts may show current presentation or documented
+  intent depending on their provenance, but do not prove the desired contract;
 - names and directory structure suggest boundaries, but do not prove them;
 - version history may reveal rationale, but absence of history is not evidence
   of intent;
