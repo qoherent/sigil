@@ -23,11 +23,15 @@ interface IndexedExpand {
   readonly declaration: ExpandDeclaration;
 }
 
-export function resolveSigilWorkspace(workspace: SigilWorkspace): ResolvedSigilWorkspace {
+export function resolveSigilWorkspace(
+  workspace: SigilWorkspace,
+): ResolvedSigilWorkspace {
   const diagnostics: SigilDiagnostic[] = [...workspace.diagnostics];
   const componentsByName = new Map<string, IndexedComponent[]>();
   const expandsByName = new Map<string, IndexedExpand[]>();
-  const documentByPath = new Map(workspace.files.map((file) => [normalizePath(file.path), file.document]));
+  const documentByPath = new Map(
+    workspace.files.map((file) => [normalizePath(file.path), file.document]),
+  );
 
   for (const file of workspace.files) {
     for (const component of file.document.components) {
@@ -77,13 +81,20 @@ export function resolveSigilWorkspace(workspace: SigilWorkspace): ResolvedSigilW
           `Import path @${declaration.path} resolved to missing file ${targetFile}.`,
           { filePath: file.path, range: declaration.range },
         ));
-        resolvedImports.push({ declaration, sourceFile: file.path, targetFile, names: [] });
+        resolvedImports.push({
+          declaration,
+          sourceFile: file.path,
+          targetFile,
+          names: [],
+        });
         continue;
       }
 
       const targetDocument = documentByPath.get(targetFile)!;
       const names: ResolvedImportName[] = declaration.names.map((name) => {
-        const component = targetDocument.components.find((item) => item.name === name);
+        const component = targetDocument.components.find((item) =>
+          item.name === name
+        );
         if (!component) {
           diagnostics.push(diagnostic(
             "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
@@ -95,7 +106,12 @@ export function resolveSigilWorkspace(workspace: SigilWorkspace): ResolvedSigilW
         return { name, component };
       });
 
-      resolvedImports.push({ declaration, sourceFile: file.path, targetFile, names });
+      resolvedImports.push({
+        declaration,
+        sourceFile: file.path,
+        targetFile,
+        names,
+      });
     }
   }
 
@@ -107,7 +123,10 @@ export function resolveSigilWorkspace(workspace: SigilWorkspace): ResolvedSigilW
       const expands = expandsByName.get(name) ?? [];
       const expansion: CollectedExpansion = {
         componentName: name,
-        expands: expands.map((item) => item.declaration),
+        expands: expands.map((item) => ({
+          filePath: item.filePath,
+          declaration: item.declaration,
+        })),
       };
       resolvedComponents.push({
         name,
@@ -130,7 +149,9 @@ export function resolveSigilWorkspace(workspace: SigilWorkspace): ResolvedSigilW
 }
 
 function resolveImportPath(root: string, importPath: string): string {
-  const target = importPath.endsWith(".sigil") ? importPath : joinPath(importPath, "#module.sigil");
+  const target = importPath.endsWith(".sigil")
+    ? importPath
+    : joinPath(importPath, "#module.sigil");
   return normalizePath(joinPath(root, target));
 }
 
@@ -140,6 +161,10 @@ function buildGraph(
   expandsByName: ReadonlyMap<string, IndexedExpand[]>,
 ): SigilGraph {
   return {
+    componentNodes: components.map((component) => ({
+      name: component.name,
+      filePath: component.filePath,
+    })),
     fileEdges: imports
       .filter((item) => item.targetFile !== undefined)
       .map((item) => ({
@@ -147,6 +172,16 @@ function buildGraph(
         to: item.targetFile!,
         importPath: item.declaration.path,
       })),
+    importedComponentEdges: imports.flatMap((item) =>
+      item.targetFile === undefined ? [] : item.names
+        .filter((name) => name.component !== undefined)
+        .map((name) => ({
+          sourceFile: item.sourceFile,
+          targetFile: item.targetFile!,
+          componentName: name.name,
+          importPath: item.declaration.path,
+        }))
+    ),
     componentExpansionEdges: components.flatMap((component) =>
       (expandsByName.get(component.name) ?? []).map((expand) => ({
         componentName: component.name,
@@ -157,7 +192,9 @@ function buildGraph(
   };
 }
 
-function detectImportCycles(imports: readonly ResolvedImport[]): SigilDiagnostic[] {
+function detectImportCycles(
+  imports: readonly ResolvedImport[],
+): SigilDiagnostic[] {
   const diagnostics: SigilDiagnostic[] = [];
   const adjacency = new Map<string, string[]>();
   for (const item of imports) {

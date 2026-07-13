@@ -108,11 +108,11 @@ The workspace root is used to:
 - create agent context packs;
 - power editor and documentation views.
 
-Until a project configuration format exists, platform packages should discover candidate roots by walking upward from the current file, command target, or editor document and collecting ancestor directories that contain `#module.sigil`.
-The workspace root is the topmost discovered candidate unless an explicit CLI or editor setting supplies another root.
-If no ancestor `#module.sigil` exists, platform packages may infer the current working directory and should surface that the root was inferred.
+A mandatory strict JSON `sigil.config` defines the workspace root, config schema version, language version, project identifier, and file discovery rules.
+Platform packages walk upward and select the nearest ancestor config when every higher configured workspace excludes that nearer root, unless an explicit root containing the config is supplied.
+Missing and unexcluded nested configs are errors; configs inside excluded subtrees define independent workspaces, while `#module.sigil` files remain optional summaries and import targets.
 
-All machine-readable outputs should include the resolved workspace root when it affects behavior.
+All workspace-dependent machine-readable outputs include the resolved root, config path, config version, language version, and project name.
 
 ## 6. Interface Strategy
 

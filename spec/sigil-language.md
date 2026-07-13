@@ -1,5 +1,9 @@
 # Sigil Language Specification
 
+**Language version:** 1.0.0
+**Status:** Accepted
+**Released:** 2026-07-13
+
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
 
@@ -31,11 +35,12 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The current module summary filename is `#module.sigil`.
-This filename is provisional because the `#` prefix may create friction for shells, URLs, editors, or future platform packages.
+The module summary filename is `#module.sigil`.
+Root and nested module summaries are optional and do not define workspace roots.
 
-Until Sigil introduces a project configuration file such as `sigil.config`, the topmost discovered `#module.sigil` defines the root of a Sigil workspace.
-Nested `#module.sigil` files define importable module directories inside that workspace.
+A strict JSON `sigil.config` is required at the workspace root.
+It selects config schema and language versions and defines workspace file discovery.
+The version 1 config contract is defined in [sigil-config.md](sigil-config.md).
 
 Sigil files are plain text.
 The outer structure is restricted, but section bodies are free-form text.
@@ -105,9 +110,9 @@ Import syntax:
 Import paths begin with `@`.
 The `@` prefix resolves from the Sigil workspace root.
 
-Until Sigil has project configuration, tools and agents should discover candidate roots by walking upward from the current file or command target and collecting ancestor directories that contain `#module.sigil`.
-The workspace root is the topmost discovered candidate unless an explicit tool invocation supplies another root.
-If no ancestor `#module.sigil` exists, tools may fall back to the current working directory and should report that the workspace root is inferred.
+Tools discover the workspace by walking upward from the current file or command target and selecting the nearest ancestor `sigil.config` whose root is excluded by every higher configured workspace.
+An explicit root must contain `sigil.config` directly.
+Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
 
 A directory import resolves to that directory's `#module.sigil`.
 
@@ -359,8 +364,8 @@ An import path with a `.sigil` filename resolves to that exact file.
 
 Import paths resolve from the Sigil workspace root.
 
-Until project configuration exists, the Sigil workspace root is the topmost ancestor directory containing `#module.sigil`, unless an explicit tool invocation supplies another root.
-If no ancestor `#module.sigil` exists, tools may infer the current working directory as the workspace root and should surface that inference.
+The Sigil workspace root is the directory containing the nearest applicable `sigil.config`.
+Missing or unexcluded nested configs are invalid, and an explicit root must contain its config directly.
 
 An imported name must resolve to a matching `component Name`.
 
@@ -519,13 +524,9 @@ The capability remains unavailable until that ADR and the colocated Sigil contra
 
 Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 
-Should `#module.sigil` remain the workspace root marker after project configuration exists?
-
 How strict should future parsing and validation become while preserving authoring speed?
 
 How should conflicts between collected expands be represented, detected, and resolved?
-
-Should Sigil introduce `sigil.config` or another project configuration file to replace or override `#module.sigil` as the workspace root marker?
 
 Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
 

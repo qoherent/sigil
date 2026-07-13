@@ -5,10 +5,8 @@ This file tracks unresolved language and workflow decisions.
 ## Language
 
 - Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
-- Should `#module.sigil` remain the workspace root marker after project configuration exists?
 - How strict should future parsing and validation become while preserving authoring speed?
 - How should conflicts between collected expands be represented, detected, and resolved?
-- Should Sigil introduce `sigil.config` or another project configuration file to replace or override `#module.sigil` as the workspace root marker?
 - Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
 
 ## Project Organization

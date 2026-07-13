@@ -95,7 +95,7 @@ Repository evidence is classified as observed behavior, documented intent, user-
 Code demonstrates current behavior; it does not prove desired behavior or rationale.
 Initial brownfield Sigil contains only the contract the user approves.
 
-When no workspace exists, the proposal may include a minimal root `#module.sigil` containing only confirmed repository-level facts.
+When no workspace exists, the proposal includes a minimal `sigil.config` and may include an optional root `#module.sigil` containing only confirmed repository-level facts.
 Component contracts and implementation-specific expands are placed beside the code they describe.
 
 ## Standards And External Guidance
@@ -114,7 +114,7 @@ Unavailable authoritative material blocks high-risk or compliance-critical imple
 Approved Sigil should live beside the module, feature, abstraction, or implementation it explains.
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
-The workspace-root `#module.sigil` remains the workspace marker and cross-cutting summary.
+The workspace-root `sigil.config` remains the discovery marker; a root `#module.sigil` remains an optional cross-cutting summary.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.
 
 ## Agent Review Heuristics

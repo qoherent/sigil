@@ -1,8 +1,22 @@
 {
   "name": "@sigil/core",
+  "version": "1.0.0",
   "exports": "./src/mod.ts",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "architecture.md",
+      "spec.md",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "tests/"
+    ]
+  },
   "tasks": {
-    "test": "deno test --allow-read"
+    "test": "deno test --allow-read",
+    "publish:dry-run": "deno publish --dry-run"
   },
   "compilerOptions": {
     "strict": true

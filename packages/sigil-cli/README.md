@@ -1,5 +1,7 @@
 # sigil-cli
 
+Current package version: **1.0.0**.
+
 Command-line interface for agents, CI, scripts, and platform debugging.
 
 The CLI is not the primary human authoring experience. Humans may use it early
@@ -13,7 +15,13 @@ Package docs:
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
 
-Local install for use from an installed Codex skill:
+Install the published CLI:
+
+```bash
+deno install --global --allow-read --allow-write --name sigil jsr:@sigil/cli@1
+```
+
+Local development install:
 
 ```bash
 deno task install
@@ -31,6 +39,8 @@ Implemented responsibilities:
 
 Commands:
 
+- `sigil init [path]` creates a config without overwriting;
+- `sigil version [path]` reports tool and configured contract versions;
 - `sigil parse <path>` returns parsed JSON;
 - `sigil check [path]` returns diagnostics;
 - `sigil graph [path]` returns component and import graph data;

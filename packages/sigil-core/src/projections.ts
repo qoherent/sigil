@@ -1,4 +1,8 @@
-import type { CollectedExpansion, ResolvedComponent, ResolvedSigilWorkspace } from "./model.ts";
+import type {
+  CollectedExpansion,
+  ResolvedComponent,
+  ResolvedSigilWorkspace,
+} from "./model.ts";
 
 export interface ComponentContractView {
   readonly name: string;
@@ -7,10 +11,16 @@ export interface ComponentContractView {
   readonly interfaceLines: readonly string[];
 }
 
-export function componentContracts(resolved: ResolvedSigilWorkspace): readonly ComponentContractView[] {
+export function componentContracts(
+  resolved: ResolvedSigilWorkspace,
+): readonly ComponentContractView[] {
   return resolved.components.map((component) => {
-    const goal = component.declaration.sections.find((section) => section.name === "goal");
-    const iface = component.declaration.sections.find((section) => section.name === "interface");
+    const goal = component.declaration.sections.find((section) =>
+      section.name === "goal"
+    );
+    const iface = component.declaration.sections.find((section) =>
+      section.name === "interface"
+    );
     return {
       name: component.name,
       filePath: component.filePath,
@@ -24,5 +34,7 @@ export function collectedExpansionFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
 ): CollectedExpansion | undefined {
-  return resolved.components.find((component: ResolvedComponent) => component.name === componentName)?.expansions;
+  return resolved.components.find((component: ResolvedComponent) =>
+    component.name === componentName
+  )?.expansions;
 }

@@ -1,4 +1,4 @@
-import type { SigilFileSystem } from "../../sigil-core/src/mod.ts";
+import type { SigilFileSystem } from "@sigil/core";
 
 export class DenoSigilFileSystem implements SigilFileSystem {
   async readTextFile(path: string): Promise<string> {
@@ -19,6 +19,10 @@ export class DenoSigilFileSystem implements SigilFileSystem {
     const files: string[] = [];
     await collectFiles(normalizePath(root), files);
     return files.sort();
+  }
+
+  async writeTextFile(path: string, source: string): Promise<void> {
+    await Deno.writeTextFile(path, source, { createNew: true });
   }
 }
 

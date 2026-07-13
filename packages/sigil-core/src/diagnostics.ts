@@ -1,4 +1,8 @@
-import type { SigilDiagnostic, SigilDiagnosticCode, SourceRange } from "./model.ts";
+import type {
+  SigilDiagnostic,
+  SigilDiagnosticCode,
+  SourceRange,
+} from "./model.ts";
 
 export function diagnostic(
   code: SigilDiagnosticCode,
@@ -11,7 +15,7 @@ export function diagnostic(
 ): SigilDiagnostic {
   return {
     code,
-    severity: options.severity ?? (code === "SIGIL_INFERRED_WORKSPACE_ROOT" ? "warning" : "error"),
+    severity: options.severity ?? "error",
     message,
     filePath: options.filePath,
     range: options.range,

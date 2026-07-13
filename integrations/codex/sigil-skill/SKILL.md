@@ -49,7 +49,9 @@ CLI discovery order:
 1. If `sigil` is available on `PATH`, use `sigil`.
 2. Else, if the current workspace contains `packages/sigil-cli/src/main.ts`,
    invoke it with Deno from the workspace root.
-3. Else, fall back to direct file reading and `references/sigil-format.md`.
+3. Else, stop and ask the user to install a compatible Sigil CLI. Version 1
+   does not silently reinterpret a configured workspace without its required
+   parser and resolver.
 
 Installed or global CLI command shape:
 
@@ -62,6 +64,18 @@ Repository-local CLI command shape:
 ```bash
 deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
 ```
+
+Before semantic work, run:
+
+```bash
+sigil version . --format json --pretty
+sigil check . --format json --pretty
+```
+
+This skill version requires CLI and core `^1.0.0`, config schema `1.0.0`, and
+Sigil Language `1.0.0`. Stop with a compatibility report when the CLI is
+missing, `sigil.config` is missing or invalid, or any resolved version is not
+supported. Do not fall back to the old `#module.sigil` root behavior.
 
 Common invocations:
 
@@ -83,9 +97,8 @@ Interpret CLI exit codes as:
 - `3`: host/runtime failure; fall back only if the CLI cannot read the requested
   input.
 
-If no CLI is available, Deno is unavailable for a repo-local CLI, or the command
-fails for host reasons, fall back to direct file reading and the format
-reference.
+If the CLI fails for host reasons, report the failure and stop before relying
+on workspace semantics.
 
 Do not use CLI output as approval to implement code. The review gate still
 applies after creating or semantically changing Sigil files.
@@ -113,8 +126,8 @@ proposal.
      external designs when their contents affect the requested contract.
      Report references that cannot be accessed instead of guessing their
      contents.
-   - Treat the topmost ancestor `#module.sigil` as the Sigil workspace root
-     until project configuration exists.
+   - Treat the nearest eligible ancestor `sigil.config` as the workspace root contract; a nearer independent workspace must be excluded by every configured parent.
+   - Treat root and nested `#module.sigil` files only as optional module summaries.
 
 2. Build the component picture.
    - Use CLI JSON diagnostics and context output when available to identify

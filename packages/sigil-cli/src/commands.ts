@@ -1,6 +1,10 @@
 import type { CommandRequest, ContextRequest } from "./args.ts";
 import { CoreAdapter } from "./core-adapter.ts";
-import { type CommandResult, diagnosticCounts } from "./output-model.ts";
+import {
+  type CommandResult,
+  diagnosticCounts,
+  workspaceMetadata,
+} from "./output-model.ts";
 
 export interface CommandHandlerOptions {
   readonly core?: CoreAdapter;
@@ -11,87 +15,106 @@ export async function runCommand(
   options: CommandHandlerOptions = {},
 ): Promise<CommandResult> {
   const core = options.core ?? new CoreAdapter();
-
+  if (request.command === "init") {
+    const result = await core.initConfig(
+      request.path,
+      request.name,
+      request.include,
+      request.exclude,
+    );
+    return {
+      command: "init",
+      workspaceRoot: result.root,
+      configPath: result.configPath,
+      configVersion: result.config?.configVersion ?? null,
+      languageVersion: result.config?.languageVersion ?? null,
+      projectName: result.config?.project.name ?? null,
+      config: result.config,
+      diagnostics: result.diagnostics,
+    };
+  }
+  if (request.command === "version") {
+    const workspace = await core.loadWorkspace(request.path, request.root);
+    return {
+      command: "version",
+      ...core.versions(),
+      ...workspaceMetadata(workspace),
+      diagnostics: workspace.diagnostics,
+    };
+  }
   if (request.command === "parse") {
-    const parsed = await core.parseFile(request.file);
+    const parsed = await core.parseFile(request.file, request.root);
     return {
       command: "parse",
+      ...workspaceMetadata(parsed.discovery),
       document: parsed.document,
       diagnostics: parsed.diagnostics,
     };
   }
-
+  const resolved = await core.resolveWorkspace(
+    request.path ?? (request.command === "context" ? request.file : undefined),
+    request.root,
+  );
   if (request.command === "check") {
-    const resolved = await core.resolveWorkspace(request.path, request.root);
     return {
       command: "check",
-      workspaceRoot: resolved.workspace.root,
-      rootInferred: resolved.workspace.rootInferred,
+      ...workspaceMetadata(resolved.workspace),
       diagnostics: resolved.diagnostics,
       diagnosticCounts: diagnosticCounts(resolved.diagnostics),
     };
   }
-
   if (request.command === "graph") {
-    const resolved = await core.resolveWorkspace(request.path, request.root);
     return {
       command: "graph",
-      workspaceRoot: resolved.workspace.root,
-      rootInferred: resolved.workspace.rootInferred,
+      ...workspaceMetadata(resolved.workspace),
       graph: resolved.graph,
       diagnostics: resolved.diagnostics,
     };
   }
-
   if (request.command === "context") {
-    return await contextCommand(request, core);
+    return contextCommand(request, core, resolved);
   }
-
-  const resolved = await core.resolveWorkspace(request.path, request.root);
   return {
     command: "render",
+    ...workspaceMetadata(resolved.workspace),
     markdown: renderMarkdown(resolved, core),
     diagnostics: resolved.diagnostics,
   };
 }
 
-async function contextCommand(
+function contextCommand(
   request: ContextRequest,
   core: CoreAdapter,
-): Promise<CommandResult> {
-  const resolved = await core.resolveWorkspace(
-    request.path ?? request.file,
-    request.root,
-  );
+  resolved: Awaited<ReturnType<CoreAdapter["resolveWorkspace"]>>,
+): CommandResult {
   const selectedFile = request.file
-    ? core.normalizePath(request.file)
+    ? core.resolveTarget(request.file)
     : undefined;
-  const selectedComponents = resolved.components.filter((component) => {
-    if (request.component) return component.name === request.component;
-    if (selectedFile) return component.filePath === selectedFile;
-    return false;
-  });
+  const selectedComponents = resolved.components.filter((component) =>
+    request.component
+      ? component.name === request.component
+      : component.filePath === selectedFile
+  );
   const selectedNames = new Set(
     selectedComponents.map((component) => component.name),
   );
-  const contracts = core.componentContracts(resolved)
-    .filter((contract) => selectedNames.has(contract.name));
-  const expansions = selectedComponents
-    .map((component) => core.collectedExpansionFor(resolved, component.name))
-    .filter((item) => item !== undefined);
+  const contracts = core.componentContracts(resolved).filter((contract) =>
+    selectedNames.has(contract.name)
+  );
+  const expansions = selectedComponents.map((component) =>
+    core.collectedExpansionFor(resolved, component.name)
+  ).filter((item) => item !== undefined);
   const relatedFilePaths = [
     ...new Set([
       ...selectedComponents.map((component) => component.filePath),
       ...expansions.flatMap((expansion) =>
-        expansion.expands.map((expand) => findExpandFile(resolved, expand.name))
+        expansion.expands.map((expand) => expand.filePath)
       ),
-    ].filter(Boolean)),
+    ]),
   ].sort();
-
   return {
     command: "context",
-    workspaceRoot: resolved.workspace.root,
-    rootInferred: resolved.workspace.rootInferred,
+    ...workspaceMetadata(resolved.workspace),
     selectedComponents,
     componentContracts: contracts,
     collectedExpansions: expansions,
@@ -104,10 +127,12 @@ function renderMarkdown(
   resolved: Awaited<ReturnType<CoreAdapter["resolveWorkspace"]>>,
   core: CoreAdapter,
 ): string {
-  const lines: string[] = [
+  const lines = [
     "# Sigil Workspace",
     "",
     `Workspace root: ${resolved.workspace.root}`,
+    `Project: ${resolved.workspace.config?.project.name ?? "unresolved"}`,
+    `Language: ${resolved.workspace.config?.languageVersion ?? "unresolved"}`,
     "",
   ];
   for (const contract of core.componentContracts(resolved)) {
@@ -117,46 +142,35 @@ function renderMarkdown(
       `Source: ${contract.filePath}`,
       "",
       "### Goal",
+      ...formatList(contract.goalLines),
+      "",
+      "### Interface",
+      ...formatList(contract.interfaceLines),
     );
-    lines.push(...formatList(contract.goalLines));
-    lines.push("", "### Interface");
-    lines.push(...formatList(contract.interfaceLines));
     const expansion = core.collectedExpansionFor(resolved, contract.name);
-    if (expansion && expansion.expands.length > 0) {
+    if (expansion?.expands.length) {
       lines.push("", "### Expansions");
-      for (const expand of expansion.expands) {
-        for (const section of expand.sections) {
-          lines.push("", `#### ${section.name}`);
-          lines.push(...formatList(section.lines.map((line) => line.text)));
+      for (const item of expansion.expands) {
+        lines.push("", `Source: ${item.filePath}`);
+        for (const section of item.declaration.sections) {
+          lines.push(
+            "",
+            `#### ${section.name}`,
+            ...formatList(section.lines.map((line) => line.text)),
+          );
         }
       }
     }
     lines.push("");
   }
-
   lines.push("## Diagnostics", "");
-  if (resolved.diagnostics.length === 0) {
-    lines.push("- none");
-  } else {
-    for (const diagnostic of resolved.diagnostics) {
-      lines.push(
-        `- ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`,
-      );
-    }
-  }
+  if (!resolved.diagnostics.length) lines.push("- none");
+  else {for (const item of resolved.diagnostics) {
+      lines.push(`- ${item.severity} ${item.code}: ${item.message}`);
+    }}
   return `${lines.join("\n")}\n`;
 }
 
 function formatList(lines: readonly string[]): string[] {
-  return lines.length === 0 ? ["- none"] : lines.map((line) => `- ${line}`);
-}
-
-function findExpandFile(
-  resolved: Awaited<ReturnType<CoreAdapter["resolveWorkspace"]>>,
-  name: string,
-): string {
-  const edge = resolved.graph.componentExpansionEdges.find((item) =>
-    item.componentName === name
-  );
-  return edge?.expandFile ?? "";
+  return lines.length ? lines.map((line) => `- ${line}`) : ["- none"];
 }

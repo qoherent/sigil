@@ -1,0 +1,66 @@
+name: Publish JSR package
+
+on:
+  push:
+    tags:
+      - core-v*
+      - cli-v*
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to publish
+        required: true
+        type: choice
+        options: [core, cli]
+      version:
+        description: Exact manifest version to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: jsr-${{ github.ref }}-${{ inputs.package }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.2
+      - name: Select and validate package
+        id: package
+        shell: bash
+        env:
+          INPUT_PACKAGE: ${{ inputs.package }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          package="$INPUT_PACKAGE"
+          version="$INPUT_VERSION"
+          if [[ -z "$package" ]]; then
+            package="${GITHUB_REF_NAME%%-v*}"
+            version="${GITHUB_REF_NAME#*-v}"
+          fi
+          case "$package" in
+            core) directory="packages/sigil-core" ;;
+            cli) directory="packages/sigil-cli" ;;
+            *) echo "Unsupported package: $package" >&2; exit 2 ;;
+          esac
+          actual="$(deno eval "const c=JSON.parse(await Deno.readTextFile('$directory/deno.json')); console.log(c.version)")"
+          [[ "$actual" == "$version" ]] || { echo "Tag/input $version does not match manifest $actual" >&2; exit 1; }
+          echo "directory=$directory" >> "$GITHUB_OUTPUT"
+      - run: deno task fmt
+      - run: deno task lint
+      - run: deno task check
+      - run: deno task test
+      - name: Verify publish contents
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: deno publish --dry-run
+      - name: Publish
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: deno publish

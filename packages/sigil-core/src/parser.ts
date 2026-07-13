@@ -3,6 +3,7 @@ import type {
   ComponentDeclaration,
   ExpandDeclaration,
   ImportDeclaration,
+  ParseOptions,
   ParseResult,
   Section,
   SemanticLine,
@@ -12,6 +13,7 @@ import type {
   SigilSectionName,
   SourceRange,
 } from "./model.ts";
+import { SIGIL_LANGUAGE_VERSION } from "./model.ts";
 
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
@@ -36,12 +38,34 @@ interface SectionDraft {
   braceDepth: number;
 }
 
-export function parseSigilDocument(filePath: string, source: string): ParseResult {
+export function parseSigilDocument(
+  filePath: string,
+  source: string,
+  options: ParseOptions,
+): ParseResult {
   const diagnostics: SigilDiagnostic[] = [];
   const imports: ImportDeclaration[] = [];
   const components: ComponentDeclaration[] = [];
   const expands: ExpandDeclaration[] = [];
   const lines = source.split(/\r?\n/);
+
+  if (options.languageVersion !== SIGIL_LANGUAGE_VERSION) {
+    const unsupported = diagnostic(
+      "SIGIL_UNSUPPORTED_LANGUAGE_VERSION",
+      `Unsupported languageVersion ${
+        JSON.stringify(options.languageVersion)
+      }; supported version is ${SIGIL_LANGUAGE_VERSION}.`,
+      { filePath },
+    );
+    const document: SigilDocument = {
+      filePath,
+      imports: [],
+      components: [],
+      expands: [],
+      diagnostics: [unsupported],
+    };
+    return { document, diagnostics: [unsupported] };
+  }
 
   let form: FormDraft | undefined;
   let section: SectionDraft | undefined;
@@ -114,17 +138,23 @@ export function parseSigilDocument(filePath: string, source: string): ParseResul
 
     if (trimmed.length === 0) continue;
 
-    const importMatch = trimmed.match(/^@(.+?)\s+import\s+\{\s*([^}]+?)\s*\}\s*$/);
+    const importMatch = trimmed.match(
+      /^@(.+?)\s+import\s+\{\s*([^}]+?)\s*\}\s*$/,
+    );
     if (importMatch) {
       imports.push({
         path: importMatch[1].trim(),
-        names: importMatch[2].split(",").map((name) => name.trim()).filter(Boolean),
+        names: importMatch[2].split(",").map((name) => name.trim()).filter(
+          Boolean,
+        ),
         range: lineRange(lineNumber, line),
       });
       continue;
     }
 
-    const formMatch = trimmed.match(/^(component|expand)\s+([A-Za-z][A-Za-z0-9_]*)\s*\{\s*$/);
+    const formMatch = trimmed.match(
+      /^(component|expand)\s+([A-Za-z][A-Za-z0-9_]*)\s*\{\s*$/,
+    );
     if (formMatch) {
       form = {
         kind: formMatch[1] as SigilFormKind,
@@ -148,7 +178,9 @@ export function parseSigilDocument(filePath: string, source: string): ParseResul
       `Unclosed section ${section.name}.`,
       { filePath, range: singlePointRange(section.startLine) },
     ));
-    form.sections.push(finishSection(section, lines.length, lines.at(-1)?.length ?? 1));
+    form.sections.push(
+      finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
+    );
   }
 
   if (form) {
@@ -157,7 +189,11 @@ export function parseSigilDocument(filePath: string, source: string): ParseResul
       `Unclosed ${form.kind} ${form.name}.`,
       { filePath, range: singlePointRange(form.startLine) },
     ));
-    const declaration = finishForm(form, lines.length, lines.at(-1)?.length ?? 1);
+    const declaration = finishForm(
+      form,
+      lines.length,
+      lines.at(-1)?.length ?? 1,
+    );
     if (declaration.kind === "component") components.push(declaration);
     else expands.push(declaration);
   }
@@ -191,7 +227,11 @@ export function parseSigilDocument(filePath: string, source: string): ParseResul
   return { document, diagnostics };
 }
 
-function finishSection(section: SectionDraft, endLine: number, endColumn: number): Section {
+function finishSection(
+  section: SectionDraft,
+  endLine: number,
+  endColumn: number,
+): Section {
   return {
     name: section.name,
     range: {

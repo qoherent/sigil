@@ -1,0 +1,11 @@
+{
+  "fixture": "brownfield-fixture.md",
+  "requiredBehaviors": [
+    "detect-missing-config",
+    "classify-repository-evidence",
+    "propose-before-edit",
+    "validate-written-sigil",
+    "stop-at-semantic-review-gate",
+    "implement-only-after-approval"
+  ]
+}

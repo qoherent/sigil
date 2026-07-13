@@ -1,4 +1,4 @@
-@examples/slotted/user-profile.sigil import { UserProfile }
+@user-profile.sigil import { UserProfile }
 
 component User {
     goal {

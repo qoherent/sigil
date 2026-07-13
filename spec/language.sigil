@@ -1,0 +1,31 @@
+component SigilLanguage {
+  goal {
+    Give authors and tools one immutable versioned contract for interpreting Sigil source.
+    Preserve the current import, component, expand, section, and semantic-line grammar as Sigil Language 1.0.0.
+  }
+
+  interface {
+    languageVersion = "1.0.0"
+    accepts UTF-8 .sigil source containing import, component, and expand forms
+    requires goal and interface sections on each component
+    preserves free-form non-empty section lines as distinct semantic lines
+    reports structural diagnostics while retaining partial documents when practical
+  }
+}
+
+expand SigilLanguage {
+  constraints {
+    Language version identifiers are semantic versions.
+    Sigil Language 1.0.0 is immutable after release.
+    A breaking grammar or interpretation change requires a new language major version.
+    Additive language behavior requires an explicitly supported later language version.
+    Tools never silently interpret an unsupported language version as 1.0.0.
+    The filename #module.sigil identifies a module summary but has no workspace-discovery authority.
+  }
+
+  cases {
+    A tool configured for language 1.0.0 parses the existing Promise and Slotted examples without changing their meaning.
+    A tool that does not support the configured language version reports an error before parsing workspace Sigil files.
+    A future breaking grammar change does not alter the meaning of a document explicitly configured for language 1.0.0.
+  }
+}

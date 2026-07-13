@@ -1,4 +1,4 @@
-import type { SigilDiagnostic } from "../../sigil-core/src/mod.ts";
+import type { SigilDiagnostic } from "@sigil/core";
 
 export const EXIT_OK = 0;
 export const EXIT_DIAGNOSTICS = 1;

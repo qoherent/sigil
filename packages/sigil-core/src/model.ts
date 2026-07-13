@@ -18,8 +18,40 @@ export type SigilDiagnosticCode =
   | "SIGIL_UNRESOLVED_IMPORTED_COMPONENT"
   | "SIGIL_EXPAND_WITHOUT_COMPONENT"
   | "SIGIL_DUPLICATE_COMPONENT"
-  | "SIGIL_INFERRED_WORKSPACE_ROOT"
-  | "SIGIL_IMPORT_CYCLE";
+  | "SIGIL_IMPORT_CYCLE"
+  | "SIGIL_CONFIG_NOT_FOUND"
+  | "SIGIL_CONFIG_PARSE"
+  | "SIGIL_CONFIG_INVALID"
+  | "SIGIL_UNSUPPORTED_CONFIG_VERSION"
+  | "SIGIL_UNSUPPORTED_LANGUAGE_VERSION"
+  | "SIGIL_NESTED_CONFIG"
+  | "SIGIL_CONFIG_EXISTS";
+
+export const SIGIL_CONFIG_VERSION = "1.0.0" as const;
+export const SIGIL_LANGUAGE_VERSION = "1.0.0" as const;
+export const SIGIL_CORE_VERSION = "1.0.0" as const;
+
+export interface SigilProjectConfig {
+  readonly name: string;
+}
+
+export interface SigilFileDiscoveryConfig {
+  readonly include: readonly string[];
+  readonly exclude: readonly string[];
+}
+
+export interface SigilConfig {
+  readonly configVersion: string;
+  readonly languageVersion: string;
+  readonly project: SigilProjectConfig;
+  readonly files: SigilFileDiscoveryConfig;
+  readonly tools: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+}
+
+export interface SigilConfigParseResult {
+  readonly config?: SigilConfig;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
 
 export interface SourceLocation {
   readonly line: number;
@@ -88,6 +120,10 @@ export interface ParseResult {
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 
+export interface ParseOptions {
+  readonly languageVersion: string;
+}
+
 export interface SigilFileSystem {
   readTextFile(path: string): Promise<string>;
   exists(path: string): Promise<boolean>;
@@ -101,8 +137,8 @@ export interface LoadedSigilFile {
 
 export interface SigilWorkspace {
   readonly root: string;
-  readonly rootInferred: boolean;
-  readonly rootModulePath?: string;
+  readonly configPath?: string;
+  readonly config?: SigilConfig;
   readonly files: readonly LoadedSigilFile[];
   readonly diagnostics: readonly SigilDiagnostic[];
 }
@@ -127,7 +163,12 @@ export interface ResolvedImportName {
 
 export interface CollectedExpansion {
   readonly componentName: string;
-  readonly expands: readonly ExpandDeclaration[];
+  readonly expands: readonly ResolvedExpansion[];
+}
+
+export interface ResolvedExpansion {
+  readonly filePath: string;
+  readonly declaration: ExpandDeclaration;
 }
 
 export interface ResolvedComponent {
@@ -138,8 +179,22 @@ export interface ResolvedComponent {
 }
 
 export interface SigilGraph {
+  readonly componentNodes: readonly ComponentNode[];
   readonly fileEdges: readonly FileDependencyEdge[];
+  readonly importedComponentEdges: readonly ImportedComponentEdge[];
   readonly componentExpansionEdges: readonly ComponentExpansionEdge[];
+}
+
+export interface ComponentNode {
+  readonly name: string;
+  readonly filePath: string;
+}
+
+export interface ImportedComponentEdge {
+  readonly sourceFile: string;
+  readonly targetFile: string;
+  readonly componentName: string;
+  readonly importPath: string;
 }
 
 export interface FileDependencyEdge {

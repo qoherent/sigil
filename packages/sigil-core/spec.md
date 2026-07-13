@@ -1,8 +1,7 @@
 # sigil-core Requirements
 
-**Status:** Draft
-**Owner:** _TBD_
-**Last updated:** 2026-07-09
+**Status:** Accepted for 1.0.0
+**Last updated:** 2026-07-13
 
 This document defines the v1 product requirements for `sigil-core`.
 Architecture style, module boundaries, and dependency rules live in [architecture.md](architecture.md).
@@ -19,9 +18,11 @@ V1 is the parser and resolver foundation.
 
 It must:
 
-- parse `.sigil` files into typed document models;
+- parse `.sigil` files using an explicit supported language version;
+- parse and validate strict `sigil.config` schema 1.0.0;
 - preserve source locations and semantic lines;
-- discover Sigil workspaces through an explicit root or the topmost discovered `#module.sigil`;
+- discover the nearest eligible ancestor config or use an explicit configured root;
+- apply include and exclude globs and permit independent workspaces only inside excluded subtrees;
 - load workspace files through an abstract filesystem boundary;
 - resolve `@path import { Name }` declarations from the workspace root;
 - treat nested `#module.sigil` files as importable module directory summaries;
@@ -85,6 +86,7 @@ The model should include typed concepts equivalent to:
 - `Section`;
 - `SemanticLine`;
 - `SigilWorkspace`;
+- `SigilConfig`;
 - `ResolvedComponent`;
 - `CollectedExpansion`;
 - `SigilGraph`;
@@ -139,14 +141,16 @@ V1 diagnostics must include stable codes for:
 - unresolved imported component;
 - expand without matching component;
 - duplicate component ambiguity;
-- inferred workspace root;
+- missing, malformed, invalid, unsupported, existing, or nested config;
 - import cycle protection.
 
 ## 8. Workspace And Import Requirements
 
-Until project configuration exists, the workspace root is the topmost ancestor directory containing `#module.sigil`, unless a caller supplies an explicit root.
-
-If no ancestor `#module.sigil` exists and no explicit root is supplied, `sigil-core` may infer the caller-provided current directory as the workspace root and must emit an inferred-root diagnostic.
+The workspace root contains mandatory `sigil.config` schema 1.0.0.
+Without an explicit root, the nearest ancestor config owns the target when every
+higher configured workspace excludes that nearer root. An explicit root must
+contain the config directly. Nested configs inside included paths are errors;
+excluded nested subtrees are independent workspaces and are skipped by parents.
 
 Import paths begin with `@` and resolve from the workspace root.
 
@@ -162,9 +166,10 @@ V1 is acceptable when tests demonstrate that `sigil-core` can:
 
 - parse `examples/promise/promise.sigil`;
 - preserve semantic lines with owner, section, text, file, and source range;
-- discover the repository root `#module.sigil` as the workspace root;
-- treat `examples/slotted/#module.sigil` as a nested module summary;
-- resolve `examples/slotted/auth.sigil` imports from the topmost workspace root;
+- discover the repository `sigil.config` from nested targets that remain in the root workspace;
+- discover Promise and Slotted through their independent example configs;
+- treat `examples/slotted/#module.sigil` as the Slotted workspace summary;
+- resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;
 - collect matching expansions for resolved components;
 - return partial models plus diagnostics for malformed files;
 - emit stable diagnostic codes;

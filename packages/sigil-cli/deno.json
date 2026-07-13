@@ -1,9 +1,23 @@
 {
   "name": "@sigil/cli",
+  "version": "1.0.0",
   "exports": "./src/main.ts",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "architecture.md",
+      "spec.md",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "tests/"
+    ]
+  },
   "tasks": {
-    "install": "deno install --global --allow-read --name sigil src/main.ts",
-    "test": "deno test --allow-read --allow-write"
+    "install": "deno install --global --config ../../deno.json --allow-read --allow-write --name sigil src/main.ts",
+    "test": "deno test --allow-read --allow-write --allow-run",
+    "publish:dry-run": "deno publish --dry-run"
   },
   "compilerOptions": {
     "strict": true

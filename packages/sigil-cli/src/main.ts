@@ -1,3 +1,4 @@
+/** Command-line interface for versioned Sigil 1.0 workspaces. @module */
 import { parseArgs } from "./args.ts";
 import { runCommand } from "./commands.ts";
 import { EXIT_RUNTIME, EXIT_USAGE, exitCodeForDiagnostics } from "./exit.ts";

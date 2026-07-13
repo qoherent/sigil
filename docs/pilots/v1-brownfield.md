@@ -1,0 +1,39 @@
+# Sigil 1.0 brownfield pilot
+
+**Boundary:** the existing `sigil-core` workspace discovery and `sigil-cli`
+command implementation in this repository.
+
+**Starting evidence:** core and CLI already parsed and resolved workspaces using
+`#module.sigil`; both packages had tests and draft v1 requirements but no stable
+config/version contract.
+
+**Approved intent:** introduce mandatory config/language versioning, preserve
+module summaries, correct discovery and output gaps, and release core, CLI, and
+the standalone skill as independently versioned contracts.
+
+**Review checkpoints:** the exact language, config, core, CLI, and skill Sigil
+contracts were written, checked with zero diagnostics, rendered, and explicitly
+approved before implementation.
+
+**Implementation outcome:** core and CLI now discover workspaces through the
+mandatory versioned config, expose stable version metadata and diagnostics,
+complete graph/expansion projections, and provide non-interactive `init` and
+`version` commands. The standalone skill checks compatibility before semantic
+work, and the repository contains the v1 schema, migration, API, compatibility,
+release, CI, and licensing artifacts.
+
+**Acceptance evidence (2026-07-13):** formatting, linting, type checking, 13
+core tests, 12 CLI tests, and skill validation passed on Deno 2.9.2. JSR dry
+runs passed for `@sigil/core@1.0.0` and `@sigil/cli@1.0.0`. A local package
+import and installed-CLI smoke test reported core/CLI 1.0.0, initialized a
+workspace named `smoke`, and checked it with zero diagnostics. The repository
+CI matrix remains the release gate for Linux, macOS, and Windows.
+
+**Reviewer comprehension:** the approval confirmed the five independent v1
+contracts, mandatory root config, metadata boundary, review gate, and vNext
+exclusions before implementation began.
+
+**Observed workflow findings:** the semantic gate exposed the need to separate
+workspace identity from duplicated package/project metadata and retained only
+`project.name` in config. It also caught stale root-marker language in the CLI
+requirements and made cross-platform path behavior an explicit tested contract.

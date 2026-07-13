@@ -1,3 +1,8 @@
+@spec/language.sigil import { SigilLanguage }
+@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+@packages/sigil-cli import { SigilCli }
+@integrations/codex/sigil-skill import { SigilCodexSkill }
+
 component Sigil {
   goal {
     Preserve software rationale in a durable language that humans and coding agents can share.
@@ -5,6 +10,10 @@ component Sigil {
   }
 
   interface {
+    publishes Sigil Language 1.0.0 through SigilLanguage
+    publishes sigil.config schema 1.0.0 through SigilWorkspaceConfig
+    publishes @sigil/core 1.0.0 and @sigil/cli 1.0.0
+    publishes the standalone Sigil Codex skill 1.0.0 through SigilCodexSkill
     defines the Sigil language through spec/sigil-language.md
     defines the human-agent workflow through spec/sigil-workflow.md
     defines platform architecture through spec/sigil-platform-architecture.md
@@ -16,7 +25,10 @@ component Sigil {
 
 expand Sigil {
   constraints {
-    This root #module.sigil defines the Sigil workspace root until project configuration exists.
+    A mandatory sigil.config defines a Sigil workspace root.
+    Root and nested #module.sigil files are optional module summaries and do not define workspace roots.
+    Language, config schema, core, CLI, and skill versions evolve independently under semantic versioning.
+    Anchors, LSP, editor integrations, plugin packaging, and durable approval records remain outside version 1.
     Language-level documentation lives under spec/.
     Buildable or distributable platform units live under packages/.
     Host-specific adapters live under integrations/.

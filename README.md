@@ -90,10 +90,11 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 ## Repository Layout
 
-The root [#module.sigil](./%23module.sigil) currently defines this repository as a Sigil workspace.
+The root [sigil.config](./sigil.config) defines this repository as a language-1.0.0 Sigil workspace and excludes the independent example projects.
+The root [#module.sigil](./%23module.sigil) is its optional cross-cutting module summary.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
-- `examples/` contains example Sigil files used as design-pressure fixtures.
+- `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
 - `packages/` contains the implemented `sigil-core` and `sigil-cli`, the proposed vNext `sigil-indexer`, and the future `sigil-lsp` package boundary.
 - `integrations/` contains host-specific adapters such as the Codex skills and future editor integrations.
 
@@ -101,7 +102,11 @@ The root [#module.sigil](./%23module.sigil) currently defines this repository as
 
 `Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil) shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
+Its [sigil.config](examples/promise/sigil.config) makes it an independent project named `promise`.
+
 `Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil) is an example room booking product used to test Sigil against product and module modeling.
+
+Its [sigil.config](examples/slotted/sigil.config) makes it an independent project named `slotted`; imports beginning with `@` resolve from that directory.
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
@@ -135,10 +140,13 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
+Sigil Language, config schema, `@sigil/core`, `@sigil/cli`, and the standalone Codex skill are versioned at 1.0.0.
+See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
+
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
-`sigil-core` currently implements structurally strict and body-tolerant parsing, source ranges and semantic lines, workspace discovery, import and component resolution, collective expansion, graphs, projections, and stable diagnostics.
-`sigil-cli` implements `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
+`sigil-core` implements explicit language-version parsing, strict config validation, config-based discovery, glob filtering, source ranges and semantic lines, import and component resolution, collective expansion, graphs, projections, and stable diagnostics.
+`sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
 The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.

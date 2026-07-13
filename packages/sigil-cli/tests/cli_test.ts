@@ -6,156 +6,259 @@ import {
   EXIT_USAGE,
 } from "../src/exit.ts";
 
-Deno.test("parse emits JSON for the Promise example", async () => {
+Deno.test("parse discovers config and emits workspace metadata", async () => {
   const result = await runCli([
     "parse",
     "../../examples/promise/promise.sigil",
+    "--format",
+    "json",
   ]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
   assertEquals(json.command, "parse");
+  assertEquals(json.languageVersion, "1.0.0");
+  assertEquals(json.projectName, "promise");
   assertEquals(json.document.components[0].name, "Promise");
 });
 
-Deno.test("check returns 0 for the repository workspace", async () => {
-  const result = await runCli(["check", "../..", "--format", "json"]);
+Deno.test("check resolves repository config from a nested working directory", async () => {
+  const result = await runCli(["check", "--format", "json"]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.command, "check");
   assertEquals(json.workspaceRoot, "../..");
+  assertEquals(json.configPath, "../../sigil.config");
   assertEquals(json.diagnosticCounts.error, 0);
 });
 
-Deno.test("check returns 1 for error diagnostics", async () => {
-  const workspaceRoot = await Deno.makeTempDir({
-    prefix: "sigil-cli-bad-workspace-",
-  });
+Deno.test("init creates defaults, accepts a custom name, and refuses overwrite", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-init-" });
   try {
-    await Deno.writeTextFile(
-      `${workspaceRoot}/#module.sigil`,
-      [
-        "component Temp {",
-        "  goal {",
-        "    Valid root marker for the temporary workspace.",
-        "  }",
-        "",
-        "  interface {",
-        "    Valid interface so only broken.sigil contributes errors.",
-        "  }",
-        "}",
-        "",
-      ].join("\n"),
-    );
-    await Deno.writeTextFile(
-      `${workspaceRoot}/broken.sigil`,
-      [
-        "component Broken {",
-        "  mystery {",
-        "    This section should produce an unknown-section diagnostic.",
-        "  }",
-        "}",
-        "",
-      ].join("\n"),
-    );
+    const first = await runCli([
+      "init",
+      root,
+      "--name",
+      "example",
+      "--format",
+      "json",
+    ]);
+    assertEquals(first.exitCode, EXIT_OK);
+    const output = parseJson(first.stdout);
+    assertEquals(output.configVersion, "1.0.0");
+    assertEquals(output.languageVersion, "1.0.0");
+    assertEquals(output.projectName, "example");
+    const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
+    assertEquals(config.project.name, "example");
+    assertEquals(config.languageVersion, "1.0.0");
+    assert(config.files.include.includes("**/*.sigil"));
 
-    const result = await runCli(["check", workspaceRoot, "--format", "json"]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    const json = parseJson(result.stdout);
-    assertHasCode(json.diagnostics, "SIGIL_UNKNOWN_SECTION");
-    assertHasCode(json.diagnostics, "SIGIL_MISSING_GOAL");
-    assertHasCode(json.diagnostics, "SIGIL_MISSING_INTERFACE");
+    const second = await runCli(["init", root, "--format", "json"]);
+    assertEquals(second.exitCode, EXIT_DIAGNOSTICS);
+    assertHasCode(parseJson(second.stdout).diagnostics, "SIGIL_CONFIG_EXISTS");
   } finally {
-    await Deno.remove(workspaceRoot, { recursive: true });
+    await Deno.remove(root, { recursive: true });
   }
 });
 
-Deno.test("check returns 0 for warnings alone", async () => {
+Deno.test("init defaults project name to directory basename", async () => {
+  const parent = await Deno.makeTempDir({ prefix: "sigil-parent-" });
+  const root = `${parent}/sample-project`;
+  await Deno.mkdir(root);
+  try {
+    assertEquals((await runCli(["init", root])).exitCode, EXIT_OK);
+    const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
+    assertEquals(config.project.name, "sample-project");
+  } finally {
+    await Deno.remove(parent, { recursive: true });
+  }
+});
+
+Deno.test("version reports tool and resolved contract versions", async () => {
   const result = await runCli([
-    "check",
-    "tests/fixtures/valid.sigil",
+    "version",
+    "../..",
+    "--format",
+    "json",
+    "--pretty",
+  ]);
+  assertEquals(result.exitCode, EXIT_OK);
+  const json = parseJson(result.stdout);
+  assertEquals(json.cliVersion, "1.0.0");
+  assertEquals(json.coreVersion, "1.0.0");
+  assertEquals(json.configVersion, "1.0.0");
+  assertEquals(json.languageVersion, "1.0.0");
+});
+
+Deno.test("configuration failure returns document null and exit 1", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-bad-config-" });
+  try {
+    await Deno.writeTextFile(`${root}/sigil.config`, "{");
+    await Deno.writeTextFile(`${root}/item.sigil`, validSigil("Item"));
+    const result = await runCli([
+      "parse",
+      `${root}/item.sigil`,
+      "--format",
+      "json",
+    ]);
+    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
+    const json = parseJson(result.stdout);
+    assertEquals(json.document, null);
+    assertHasCode(json.diagnostics, "SIGIL_CONFIG_PARSE");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("check returns 1 for Sigil diagnostics and 0 for a valid empty workspace", async () => {
+  const root = await makeWorkspace("diagnostics");
+  try {
+    let result = await runCli(["check", root, "--format", "json"]);
+    assertEquals(result.exitCode, EXIT_OK);
+    await Deno.writeTextFile(
+      `${root}/broken.sigil`,
+      "component Broken {\n  mystery {\n    bad\n  }\n}\n",
+    );
+    result = await runCli(["check", root, "--format", "json"]);
+    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
+    assertHasCode(
+      parseJson(result.stdout).diagnostics,
+      "SIGIL_UNKNOWN_SECTION",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("graph includes component nodes and imported-component edges", async () => {
+  const repository = await runCli(["graph", "../..", "--format", "json"]);
+  assertEquals(repository.exitCode, EXIT_OK);
+  assert(
+    !parseJson(repository.stdout).graph.componentNodes.some(
+      (node: { name: string }) =>
+        node.name === "Promise" || node.name === "Slotted",
+    ),
+  );
+
+  const result = await runCli([
+    "graph",
+    "../../examples/slotted",
     "--format",
     "json",
   ]);
   assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
-  assertHasCode(json.diagnostics, "SIGIL_INFERRED_WORKSPACE_ROOT");
-});
-
-Deno.test("graph emits file and expansion edges", async () => {
-  const result = await runCli(["graph", "../..", "--format", "json"]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
+  const output = parseJson(result.stdout);
+  assertEquals(output.projectName, "slotted");
+  const graph = output.graph;
   assert(
-    json.graph.fileEdges.some((edge: { to: string }) =>
-      edge.to.endsWith("examples/slotted/user-profile.sigil")
-    ),
+    graph.componentNodes.some((node: { name: string }) => node.name === "Auth"),
   );
   assert(
-    json.graph.componentExpansionEdges.some((edge: { componentName: string }) =>
-      edge.componentName === "Slotted"
+    graph.importedComponentEdges.some((edge: { componentName: string }) =>
+      edge.componentName === "UserProfile"
     ),
   );
 });
 
-Deno.test("context emits deterministic data for component Auth", async () => {
-  const result = await runCli([
-    "context",
-    "../../examples/slotted/auth.sigil",
-    "--component",
-    "Auth",
-    "--format",
-    "json",
-  ]);
+Deno.test("context reports every collected expansion file", async () => {
+  const root = await makeWorkspace("multi-expand");
+  try {
+    await Deno.writeTextFile(`${root}/contract.sigil`, validSigil("Feature"));
+    await Deno.writeTextFile(
+      `${root}/one.sigil`,
+      "expand Feature {\n  logic {\n    One.\n  }\n}\n",
+    );
+    await Deno.writeTextFile(
+      `${root}/two.sigil`,
+      "expand Feature {\n  cases {\n    Two.\n  }\n}\n",
+    );
+    const result = await runCli([
+      "context",
+      root,
+      "--component",
+      "Feature",
+      "--format",
+      "json",
+    ]);
+    assertEquals(result.exitCode, EXIT_OK);
+    const paths = parseJson(result.stdout).relatedFilePaths;
+    assert(paths.some((path: string) => path.endsWith("/one.sigil")));
+    assert(paths.some((path: string) => path.endsWith("/two.sigil")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("render JSON includes workspace metadata and Markdown", async () => {
+  const result = await runCli(["render", "../..", "--format", "json"]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.command, "context");
-  assertEquals(json.selectedComponents[0].name, "Auth");
-  assert(
-    json.relatedFilePaths.some((path: string) =>
-      path.endsWith("examples/slotted/auth.sigil")
-    ),
-  );
+  assertEquals(json.projectName, "sigil");
+  assert(json.markdown.includes("# Sigil Workspace"));
 });
 
-Deno.test("render emits Markdown for the Slotted example", async () => {
-  const result = await runCli([
-    "render",
-    "../../examples/slotted/#module.sigil",
-  ]);
-  assertEquals(result.exitCode, EXIT_OK);
-  assert(result.stdout.includes("# Sigil Workspace"));
-  assert(result.stdout.includes("## Slotted"));
-});
-
-Deno.test("invalid arguments return usage exit code", async () => {
-  const result = await runCli([
+Deno.test("invalid usage and runtime failures keep stable exit codes", async () => {
+  const usage = await runCli([
     "context",
     "--component",
     "Auth",
     "--file",
     "auth.sigil",
   ]);
-  assertEquals(result.exitCode, EXIT_USAGE);
-  assert(result.stderr.includes("context accepts only one"));
+  assertEquals(usage.exitCode, EXIT_USAGE);
+  const runtime = await runCli(["parse", "does-not-exist.sigil"]);
+  assertEquals(runtime.exitCode, EXIT_RUNTIME);
 });
 
-Deno.test("runtime filesystem failures return runtime exit code", async () => {
-  const result = await runCli(["parse", "does-not-exist.sigil"]);
-  assertEquals(result.exitCode, EXIT_RUNTIME);
-  assert(result.stderr.length > 0);
+Deno.test("executable subprocess returns version JSON", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-read",
+      "src/main.ts",
+      "version",
+      "../..",
+      "--format",
+      "json",
+    ],
+    cwd: ".",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const output = await command.output();
+  assertEquals(output.code, EXIT_OK);
+  assertEquals(
+    JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
+    "1.0.0",
+  );
 });
 
+async function makeWorkspace(name: string): Promise<string> {
+  const root = await Deno.makeTempDir({ prefix: "sigil-cli-" });
+  await Deno.writeTextFile(
+    `${root}/sigil.config`,
+    JSON.stringify({
+      configVersion: "1.0.0",
+      languageVersion: "1.0.0",
+      project: { name },
+      files: { include: ["**/*.sigil"] },
+      tools: {},
+    }),
+  );
+  return root;
+}
+
+function validSigil(name: string): string {
+  return `component ${name} {\n  goal {\n    Test ${name}.\n  }\n\n  interface {\n    run()\n  }\n}\n`;
+}
+// deno-lint-ignore no-explicit-any
 function parseJson(source: string): any {
   return JSON.parse(source);
 }
-
 function assert(
   condition: unknown,
   message = "Assertion failed",
 ): asserts condition {
   if (!condition) throw new Error(message);
 }
-
 function assertEquals<T>(actual: T, expected: T): void {
   if (actual !== expected) {
     throw new Error(
@@ -163,15 +266,12 @@ function assertEquals<T>(actual: T, expected: T): void {
     );
   }
 }
-
 function assertHasCode(
   diagnostics: readonly { readonly code: string }[],
   code: string,
 ): void {
   assert(
-    diagnostics.some((diagnostic) => diagnostic.code === code),
-    `Expected diagnostic code ${code}, got ${
-      diagnostics.map((diagnostic) => diagnostic.code).join(", ")
-    }`,
+    diagnostics.some((item) => item.code === code),
+    `Expected ${code}, got ${diagnostics.map((item) => item.code).join(", ")}`,
   );
 }

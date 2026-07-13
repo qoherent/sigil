@@ -173,13 +173,13 @@ implementations genuinely depend on it.
 When no Sigil workspace exists, include a minimal root `#module.sigil` in the
 proposal. It should:
 
-- establish the workspace root;
+- establish the workspace root with a proposed `sigil.config`;
 - describe only confirmed product, deployable, bounded-context, or cross-cutting
   facts;
 - avoid pretending to inventory the entire repository;
 - avoid declaring components whose boundaries have not been reviewed.
 
-If repository-level purpose or ownership is unclear, propose the root marker
+If repository-level purpose or ownership is unclear, propose the root config
 structure and ask the user for the missing intent instead of inventing it.
 
 ### Placement And Imports
@@ -296,7 +296,7 @@ the proposal as blocked until the user or a qualified reviewer resolves it.
 ### Repository With No Sigil
 
 A user asks to add Sigil to a large service. Inspect the architecture and next
-planned change, recommend one coherent pilot, and show a minimal root marker plus
+planned change, recommend one coherent pilot, and show a minimal root config plus
 colocated component text. Do not create either file before approval.
 
 ### Partial Coverage

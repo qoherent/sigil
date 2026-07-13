@@ -1,0 +1,55 @@
+@spec/language.sigil import { SigilLanguage }
+@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+
+component SigilCli {
+  goal {
+    Expose Sigil Language and workspace behavior to agents, CI, scripts, debugging, and review workflows through a stable non-interactive command line.
+    Keep command behavior thin over core contracts so every host interprets Sigil consistently.
+  }
+
+  interface {
+    CLI version = "1.0.0"
+    sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
+    sigil version [path]
+    sigil parse file
+    sigil check [path]
+    sigil graph [path]
+    sigil context [path] (--component name | --file file)
+    sigil render [path]
+    workspace commands depend on SigilWorkspaceConfig and SigilLanguage
+    structured output supports --format json and --pretty
+    commands that produce no required stdout support --quiet
+  }
+}
+
+expand SigilCli {
+  logic {
+    init writes one schema-1.0.0 sigil.config and refuses to overwrite an existing config.
+    init defaults project.name to the target directory basename.
+    init defaults language, config, include, exclude, and tools values from SigilWorkspaceConfig.
+    version reports CLI and core versions, supported config and language versions, and resolved workspace versions when available.
+    parse discovers and validates workspace configuration before invoking the raw parser with its explicit language version.
+    check, graph, context, and render resolve workspace behavior through core.
+    A configuration error prevents source loading and parse JSON reports document: null with diagnostics.
+  }
+
+  constraints {
+    Every workspace-dependent JSON result includes workspaceRoot, configPath, configVersion, languageVersion, and projectName.
+    CLI commands do not mutate .sigil files in version 1.
+    CLI commands are deterministic and non-interactive in version 1.
+    Exit code 0 means success or warnings only.
+    Exit code 1 means configuration or Sigil error diagnostics.
+    Exit code 2 means invalid command usage.
+    Exit code 3 means a host or runtime failure.
+  }
+
+  cases {
+    init in an empty directory creates a valid config using the directory basename as project.name.
+    init against an existing config reports an error and leaves the file unchanged.
+    version in a valid workspace reports compatible CLI, core, config, and language versions.
+    check from a nested directory resolves the nearest eligible ancestor config.
+    render with JSON format includes workspace metadata and Markdown review content.
+    context for a component with expands in multiple files reports every related expansion file.
+    An unreadable file produces exit code 3 rather than an unresolved-import diagnostic.
+  }
+}

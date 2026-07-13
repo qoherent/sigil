@@ -27,6 +27,10 @@ Typical repository-local command shape:
 deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
 ```
 
+Run `sigil version . --format json --pretty` before `check`. This reference
+describes config schema and language version `1.0.0`; do not apply it to an
+unsupported workspace version.
+
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
 starting point, then read source files before editing them.
 
@@ -34,11 +38,14 @@ starting point, then read source files before editing them.
 
 Sigil source files use `.sigil`.
 
-The current module summary filename is `#module.sigil`. The name is provisional
-and may change if it causes platform or editor friction. Until project
-configuration exists, the topmost discovered `#module.sigil` defines the Sigil
-workspace root. Nested `#module.sigil` files define importable module
-directories inside that workspace.
+The module summary filename is `#module.sigil`. Root and nested module files are
+optional summaries and import targets. They do not define workspace roots.
+
+A strict JSON `sigil.config` is mandatory at the workspace root. It selects
+config schema and language versions, provides `project.name`, and defines file
+include and exclude globs. A nested config defines an independent workspace only
+when its entire subtree is excluded by each configured parent; otherwise it is
+invalid.
 
 Sigil files should live as near as practical to the code they describe. Use
 workspace-root Sigil for product, deployable, bounded-context, or cross-cutting
@@ -138,11 +145,8 @@ Import syntax:
 
 A path without a `.sigil` filename resolves to `#module.sigil` inside that path.
 A path with a `.sigil` filename resolves to that exact file. The `@` prefix
-resolves from the Sigil workspace root. Until project configuration exists,
-discover candidate roots by walking upward from the current Sigil file or
-command target and collecting ancestor directories containing `#module.sigil`.
-Use the topmost discovered candidate as the workspace root unless an explicit
-tool invocation supplies another root.
+resolves from the workspace root selected by the single ancestor
+`sigil.config`. An explicit root must contain `sigil.config` directly.
 
 Imported names must resolve to matching `component` declarations. Imported names
 are case-sensitive. All matching expands for the imported component are

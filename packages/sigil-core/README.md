@@ -1,5 +1,14 @@
 # sigil-core
 
+Current package version: **1.0.0**. Import with:
+
+```ts
+import { parseSigilDocument } from "jsr:@sigil/core@1";
+```
+
+Raw parsing requires an explicit `languageVersion`. Workspace APIs discover and
+validate mandatory `sigil.config` before loading `.sigil` files.
+
 Shared Sigil implementation package.
 
 `sigil-core` is the center of the platform.

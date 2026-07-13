@@ -6,29 +6,33 @@ export class InMemorySigilFileSystem implements SigilFileSystem {
 
   constructor(files: Record<string, string> | Map<string, string>) {
     this.#files = new Map();
-    const entries = files instanceof Map ? files.entries() : Object.entries(files);
+    const entries = files instanceof Map
+      ? files.entries()
+      : Object.entries(files);
     for (const [path, source] of entries) {
       this.#files.set(normalizePath(path), source);
     }
   }
 
-  async readTextFile(path: string): Promise<string> {
+  readTextFile(path: string): Promise<string> {
     const source = this.#files.get(normalizePath(path));
     if (source === undefined) {
-      throw new Error(`File not found: ${path}`);
+      return Promise.reject(new Error(`File not found: ${path}`));
     }
-    return source;
+    return Promise.resolve(source);
   }
 
-  async exists(path: string): Promise<boolean> {
-    return this.#files.has(normalizePath(path));
+  exists(path: string): Promise<boolean> {
+    return Promise.resolve(this.#files.has(normalizePath(path)));
   }
 
-  async listFiles(root: string): Promise<readonly string[]> {
+  listFiles(root: string): Promise<readonly string[]> {
     const normalizedRoot = normalizePath(root);
     const prefix = normalizedRoot === "." ? "" : `${normalizedRoot}/`;
-    return [...this.#files.keys()]
-      .filter((path) => path === normalizedRoot || path.startsWith(prefix))
-      .sort();
+    return Promise.resolve(
+      [...this.#files.keys()]
+        .filter((path) => path === normalizedRoot || path.startsWith(prefix))
+        .sort(),
+    );
   }
 }

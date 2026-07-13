@@ -1,6 +1,6 @@
 component Local {
   goal {
-    Test inferred workspace roots.
+    Test a small local Sigil component.
   }
 
   interface {

@@ -93,9 +93,9 @@ Discovers and loads Sigil workspaces.
 
 Responsibilities:
 
-- discover candidate roots by walking upward for `#module.sigil`;
-- choose the topmost discovered root unless an explicit root is supplied;
-- infer a root with diagnostics when no root marker exists;
+- discover the nearest ancestor config whose parent workspaces exclude its subtree unless an explicit configured root is supplied;
+- parse config and apply file include and exclude globs;
+- reject missing, invalid, unsupported, and unexcluded nested configuration;
 - load relevant `.sigil` files through `filesystem`;
 - classify root and nested `#module.sigil` files.
 

@@ -1,0 +1,44 @@
+@spec/language.sigil import { SigilLanguage }
+@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+@packages/sigil-cli import { SigilCli }
+
+component SigilCodexSkill {
+  goal {
+    Give Codex a reusable versioned workflow for reviewing Sigil, preserving rationale, and implementing only approved contracts.
+    Keep model-assisted semantic review in the host integration rather than deterministic core or CLI packages.
+  }
+
+  interface {
+    skill version = "1.0.0"
+    requires SigilCli version compatible with ^1.0.0
+    requires SigilWorkspaceConfig version 1.0.0
+    requires SigilLanguage version 1.0.0
+    validates workspace and version compatibility before semantic work
+    reviews contracts, collected expands, repository evidence, modularity, and applicable guidance
+    stops for explicit human review after creating or semantically changing Sigil
+    is installable from integrations/codex/sigil-skill through skill-installer repository-path installation
+  }
+}
+
+expand SigilCodexSkill {
+  logic {
+    The skill runs sigil version and sigil check before relying on workspace semantics.
+    Missing or unsupported config, language, CLI, or core versions stop semantic and implementation work with a clear compatibility report.
+    Approved Sigil guides implementation until a material missing decision returns the workflow to review.
+  }
+
+  constraints {
+    VERSION and compatibility metadata are shipped beside SKILL.md.
+    Human approval remains session-scoped and is not persisted in version 1.
+    Standalone repository or user installation is the version 1 distribution surface.
+    Plugin packaging is deferred beyond version 1.
+    The skill does not install or overwrite itself during ordinary use.
+  }
+
+  cases {
+    A compatible configured workspace proceeds through structural and semantic review.
+    A workspace without sigil.config stops before its Sigil files are interpreted.
+    An unsupported language version stops before implementation.
+    A semantic change stops at the review gate even when the original request also asked for code.
+  }
+}
