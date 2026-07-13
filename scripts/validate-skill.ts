@@ -60,6 +60,10 @@ const requiredBrownfieldBehaviors = [
   "elicit-application-goal-and-interface",
   "reject-empty-or-import-only-root-module",
   "propose-confirmed-root-application-summary",
+  "classify-root-expand-evidence",
+  "propose-minimal-root-expand",
+  "preserve-only-binding-root-constraints",
+  "exclude-incidental-and-module-specific-root-details",
   "propose-before-edit",
   "validate-written-sigil",
   "stop-at-semantic-review-gate",
@@ -85,6 +89,16 @@ requireText(
   "must not be empty or import-only",
   "fixture meaningful root-module rule",
 );
+requireText(
+  fixture,
+  "Classify material application-wide evidence into root `state`, `logic`,",
+  "fixture root-expand classification",
+);
+requireText(
+  fixture,
+  "only when evidence shows it is a binding application decision",
+  "fixture binding root-constraint rule",
+);
 
 const brownfield = await Deno.readTextFile(
   `${root}/references/brownfield-adoption.md`,
@@ -98,6 +112,16 @@ requireText(
   brownfield,
   "Never create or preserve an empty root module or one containing only imports.",
   "meaningful root module requirement",
+);
+requireText(
+  brownfield,
+  "After the user confirms the goal and interface, classify the remaining material",
+  "root-expand evidence classification",
+);
+requireText(
+  brownfield,
+  "`constraints` only when repository evidence or user confirmation shows",
+  "binding technology constraint rule",
 );
 
 console.log(

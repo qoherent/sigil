@@ -128,6 +128,29 @@ could not be determined and ask directly for the goal and interface. Do not
 propose exact root-module text, create a placeholder, or use imports as a
 substitute while either remains unconfirmed.
 
+After the user confirms the goal and interface, classify the remaining material
+repository evidence as candidates for a root `expand`:
+
+- `state`: meaningful application-wide runtime modes, deployable units,
+  persistence modes, or operational configurations that can vary;
+- `logic`: cross-cutting application flows, routing, orchestration, lifecycle,
+  or policies that explain how the application behaves as a whole;
+- `constraints`: binding technologies, architecture and dependency direction,
+  compatibility requirements, supported platforms, or deployment rules;
+- `cases`: observable application-level outcomes, representative workflows,
+  failures, or acceptance scenarios.
+
+For each candidate, record the evidence path and whether it is observed,
+documented, or user-confirmed. These are still proposed semantic lines and do
+not enter Sigil until the user approves the exact pre-edit proposal.
+
+Do not promote a package, framework, database, environment variable, build flag,
+or implementation pattern merely because it exists. A technology belongs in
+root `constraints` only when repository evidence or user confirmation shows
+that it is a binding application-level decision. Exclude secrets, literal
+credentials, volatile values, exhaustive dependency inventories, low-level
+configuration, private algorithms, and facts owned by a pilot component.
+
 Classify every material finding:
 
 - **Observed behavior:** behavior demonstrated by implementation, executable
@@ -228,12 +251,14 @@ root module should:
 - avoid declaring components whose boundaries have not been reviewed.
 - import only reviewed pilot components that the root summary genuinely
   depends on.
+- include a root `expand` when confirmed repository-level state, logic,
+  constraints, or cases materially improve the application summary.
 
 The root component name should follow confirmed product or repository naming.
 Its interface describes how users or external systems encounter the
-application; a list of internal imports is not an interface. Omit `expand`
-unless confirmed repository-level logic, constraints, or cases add useful
-meaning.
+application; a list of internal imports is not an interface. Include only the
+root `expand` sections supported by material evidence. Omit empty sections and
+omit the entire `expand` when it would add no repository-level meaning.
 
 A minimal root module normally has this shape:
 
@@ -247,7 +272,29 @@ component ConfirmedApplicationName {
     confirmed externally meaningful UI, API, CLI, library, worker, event, or service surface
   }
 }
+
+expand ConfirmedApplicationName {
+  state {
+    confirmed application-wide runtime or deployment modes, when applicable
+  }
+
+  logic {
+    confirmed cross-cutting flows or policies, when applicable
+  }
+
+  constraints {
+    confirmed binding technologies or architecture decisions, when applicable
+  }
+
+  cases {
+    confirmed observable application outcomes, when applicable
+  }
+}
 ```
+
+The `expand` above is illustrative: remove every unsupported or empty section,
+and remove the whole block when no candidate survives evidence review. Keep
+module-owned operational detail in the colocated pilot expand.
 
 Add an import above the component only when a reviewed pilot contract is a real
 dependency of this application summary. The component remains meaningful if the
@@ -286,7 +333,9 @@ alternatives were rejected.
 
 List observed behavior, documented intent, user-confirmed intent, and relevant
 paths. For a new workspace, include the provisional application picture and the
-user's confirmation or corrections.
+user's confirmation or corrections. Also list each proposed root-expand line by
+target section and evidence path, plus material repository facts intentionally
+excluded as incidental or module-specific.
 
 ### Observed Versus Intended Behavior
 
@@ -307,7 +356,9 @@ policy, and non-responsibilities where needed.
 Show the exact component, expand, and import text that would be written. Include
 the minimal root module proposal when required. Its goal and interface must
 reflect the confirmed application picture, and its imports must be limited to
-reviewed component contracts.
+reviewed component contracts. Include only evidence-backed root `state`,
+`logic`, `constraints`, and `cases` lines that materially describe the
+application as a whole.
 
 ### Proposed Locations And Imports
 
@@ -378,8 +429,11 @@ planned change, plus root product documentation, dependency definitions,
 executable configuration, and entrypoints. Present the evidence-based candidate
 application goal and interface and ask the user to correct or confirm them.
 After confirmation, recommend one coherent pilot and show a minimal root config,
-a meaningful root application component, and colocated pilot text. Do not create
-the files before approval, and do not use an empty or import-only root module.
+a meaningful root application component, an evidence-backed root expand when
+applicable, and colocated pilot text. Do not create the files before approval,
+and do not use an empty or import-only root module. A framework in the manifest
+becomes a root constraint only when evidence shows it is a binding application
+decision; module-specific states and cases remain with the pilot.
 
 ### Partial Coverage
 

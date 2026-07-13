@@ -5,6 +5,9 @@
 - Require brownfield application discovery and user confirmation of the
   application goal and interface before proposing a meaningful root module.
 - Reject empty and import-only root modules in the brownfield workflow fixture.
+- Classify confirmed application-wide evidence into minimal root `state`,
+  `logic`, `constraints`, and `cases` sections while excluding incidental and
+  module-specific details.
 
 ## 1.0.0 - 2026-07-13
 

@@ -116,6 +116,12 @@ executable configuration, and entrypoints, then asked the user to confirm or
 correct the provisional application goal and externally meaningful interface.
 The root module must be a minimal confirmed application summary, never an empty
 marker or import-only barrel.
+After goal and interface confirmation, classify other material repository
+evidence into an optional root `expand`: runtime and deployment modes in
+`state`, cross-cutting flows and policies in `logic`, binding technologies and
+architecture decisions in `constraints`, and observable application outcomes
+in `cases`. Keep incidental dependencies, secrets, low-level configuration, and
+module-specific details out of the root summary.
 
 1. Discover relevant context.
    - When a `sigil` command or repo-local CLI is available, start with `check`

@@ -130,6 +130,7 @@ The skill teaches Codex to:
 - assess semantic readiness, modularity, applicable standards, and common implementation pitfalls;
 - introduce Sigil incrementally into brownfield codebases through a change-frontier pilot;
 - derive a provisional application picture from project documentation, dependency definitions, executable configuration, and entrypoints, then confirm its goal and interface with the user before proposing a meaningful root module;
+- preserve material application-wide runtime modes, flows, binding architecture decisions, and observable outcomes in a minimal root expand while excluding incidental and module-specific details;
 - propose brownfield and externally informed semantic lines before editing;
 - stop at the review gate after semantic changes;
 - colocate approved Sigil with the implementation it explains;

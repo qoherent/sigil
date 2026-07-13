@@ -18,6 +18,7 @@ component SigilCodexSkill {
     for a new brownfield workspace, inspects project documentation, dependency manifests, executable configuration, and entrypoints before proposing the root module
     asks the user to confirm or correct the application's goal and externally meaningful interface before proposing a root #module.sigil
     proposes a minimal root module that summarizes confirmed application purpose and imports only reviewed component contracts
+    proposes a root expand when confirmed repository-level state, cross-cutting logic, binding constraints, or application cases materially improve the application summary
     stops for explicit human review after creating or semantically changing Sigil
     is installable from integrations/codex/sigil-skill through skill-installer repository-path installation
   }
@@ -29,6 +30,10 @@ expand SigilCodexSkill {
     Missing or unsupported config, language, CLI, or core versions stop semantic and implementation work with a clear compatibility report.
     Repository evidence forms a provisional application picture, while user confirmation establishes the goal and interface preserved by a new root module.
     A missing or materially ambiguous application goal or interface pauses root module creation for focused user input.
+    After confirming the application goal and interface, the skill classifies material repository evidence into root state, logic, constraints, and cases.
+    Root expand lines remain evidence-backed proposals until the user explicitly approves them.
+    Runtime and deployment modes belong in state, cross-cutting flows and policies in logic, binding technologies and architecture decisions in constraints, and observable application outcomes in cases.
+    Incidental dependencies, secrets, low-level configuration, and module-specific behavior remain outside the root expand.
     Approved Sigil guides implementation until a material missing decision returns the workflow to review.
   }
 
@@ -45,6 +50,9 @@ expand SigilCodexSkill {
     A workspace without sigil.config stops before its Sigil files are interpreted.
     A brownfield repository with no Sigil receives an evidence-based application summary question before any root module is proposed.
     An empty or import-only root module is not proposed when the application's purpose and interface remain unconfirmed.
+    A repository with confirmed runtime modes, architecture decisions, cross-cutting behavior, or application outcomes receives a minimal root expand containing the applicable sections.
+    A dependency found only in a manifest is not preserved as a binding root constraint without evidence that the application intentionally depends on it.
+    Module-specific states and cases remain with their owning pilot components rather than moving into the root summary.
     An unsupported language version stops before implementation.
     A semantic change stops at the review gate even when the original request also asked for code.
   }
