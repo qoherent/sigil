@@ -65,6 +65,9 @@ proposing files.
 
 Prefer boundaries that can be reviewed independently. Do not choose a broad
 “application” component merely because the repository has no obvious modules.
+The minimal root application summary required for a new workspace is not the
+pilot: it records confirmed repository-level purpose and public surfaces, while
+the pilot remains the first detailed change frontier.
 
 ## 3. Gather And Classify Evidence
 
@@ -81,6 +84,49 @@ relationships. Inspect, when relevant:
 - configuration, deployment, permissions, and integration boundaries;
 - related Sigil, module summaries, imports, and collected expands;
 - focused version history when it contains rationale unavailable elsewhere.
+
+When the root application summary is absent, empty, import-only, or lacks a
+confirmed goal or interface, the following repository-level evidence is
+mandatory before asking about or proposing the application summary:
+
+- root README, product, architecture, and operational documentation;
+- dependency definitions, workspace manifests, lockfiles, and declared scripts;
+- executable runtime, build, deployment, routing, and environment configuration;
+- application entrypoints, exported APIs, commands, routes, event consumers, or
+  top-level UI shells that reveal externally meaningful surfaces.
+
+Do not read every file indiscriminately. Use manifests and entrypoints to find
+the smallest set of evidence that explains what is built, how it is invoked,
+and which users or systems interact with it.
+
+### Application Picture For A New Workspace
+
+After the repository scan, summarize a provisional application picture with:
+
+- an application name grounded in repository naming;
+- a one- or two-line candidate goal describing responsibility, intended user or
+  system outcome, and repository-level boundary;
+- a concise candidate interface describing externally meaningful surfaces such
+  as a UI, API, CLI, library export, worker, events, or deployable service;
+- the evidence paths supporting each statement;
+- conflicts, unsupported inferences, and facts that remain unknown.
+
+Then ask the user to confirm or correct the candidate goal and interface. Prefer
+a focused question that includes the evidence-based draft, for example:
+
+```text
+From the README, package manifest, runtime configuration, and entrypoints, I
+understand this application to exist to <candidate goal>. Its external surface
+appears to be <candidate interface>. What should I correct before I preserve
+this as the root application contract?
+```
+
+This confirmation is mandatory even when the repository evidence appears
+consistent. Repository evidence describes the current system; the user's answer
+establishes the intended application contract. If evidence is sparse, say what
+could not be determined and ask directly for the goal and interface. Do not
+propose exact root-module text, create a placeholder, or use imports as a
+substitute while either remains unconfirmed.
 
 Classify every material finding:
 
@@ -170,17 +216,46 @@ implementations genuinely depend on it.
 
 ### Workspace Marker
 
-When no Sigil workspace exists, include a minimal root `#module.sigil` in the
-proposal. It should:
+When no Sigil workspace exists, propose `sigil.config` as the workspace marker
+and a minimal root `#module.sigil` as the confirmed application summary. The
+root module should:
 
-- establish the workspace root with a proposed `sigil.config`;
-- describe only confirmed product, deployable, bounded-context, or cross-cutting
-  facts;
+- declare one repository-level application component with a confirmed goal and
+  externally meaningful interface;
+- describe only confirmed product, deployable, bounded-context, or
+  cross-cutting facts;
 - avoid pretending to inventory the entire repository;
 - avoid declaring components whose boundaries have not been reviewed.
+- import only reviewed pilot components that the root summary genuinely
+  depends on.
 
-If repository-level purpose or ownership is unclear, propose the root config
-structure and ask the user for the missing intent instead of inventing it.
+The root component name should follow confirmed product or repository naming.
+Its interface describes how users or external systems encounter the
+application; a list of internal imports is not an interface. Omit `expand`
+unless confirmed repository-level logic, constraints, or cases add useful
+meaning.
+
+A minimal root module normally has this shape:
+
+```sigil
+component ConfirmedApplicationName {
+  goal {
+    confirmed responsibility, intended outcome, and repository-level boundary
+  }
+
+  interface {
+    confirmed externally meaningful UI, API, CLI, library, worker, event, or service surface
+  }
+}
+```
+
+Add an import above the component only when a reviewed pilot contract is a real
+dependency of this application summary. The component remains meaningful if the
+import is removed.
+
+If repository-level purpose or interface is unclear, the config proposal may
+continue, but the root-module proposal waits for the focused confirmation step.
+Never create or preserve an empty root module or one containing only imports.
 
 ### Placement And Imports
 
@@ -210,7 +285,8 @@ alternatives were rejected.
 ### Repository Evidence
 
 List observed behavior, documented intent, user-confirmed intent, and relevant
-paths.
+paths. For a new workspace, include the provisional application picture and the
+user's confirmation or corrections.
 
 ### Observed Versus Intended Behavior
 
@@ -229,7 +305,9 @@ policy, and non-responsibilities where needed.
 ### Proposed Sigil
 
 Show the exact component, expand, and import text that would be written. Include
-the minimal root module proposal when required.
+the minimal root module proposal when required. Its goal and interface must
+reflect the confirmed application picture, and its imports must be limited to
+reviewed component contracts.
 
 ### Proposed Locations And Imports
 
@@ -296,8 +374,12 @@ the proposal as blocked until the user or a qualified reviewer resolves it.
 ### Repository With No Sigil
 
 A user asks to add Sigil to a large service. Inspect the architecture and next
-planned change, recommend one coherent pilot, and show a minimal root config plus
-colocated component text. Do not create either file before approval.
+planned change, plus root product documentation, dependency definitions,
+executable configuration, and entrypoints. Present the evidence-based candidate
+application goal and interface and ask the user to correct or confirm them.
+After confirmation, recommend one coherent pilot and show a minimal root config,
+a meaningful root application component, and colocated pilot text. Do not create
+the files before approval, and do not use an empty or import-only root module.
 
 ### Partial Coverage
 

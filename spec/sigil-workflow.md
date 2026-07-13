@@ -95,7 +95,9 @@ Repository evidence is classified as observed behavior, documented intent, user-
 Code demonstrates current behavior; it does not prove desired behavior or rationale.
 Initial brownfield Sigil contains only the contract the user approves.
 
-When no workspace exists, the proposal includes a minimal `sigil.config` and may include an optional root `#module.sigil` containing only confirmed repository-level facts.
+When no workspace exists, the agent first inspects root product and architecture documentation, dependency definitions, executable configuration, and application entrypoints.
+It uses that evidence to present a provisional application goal and externally meaningful interface, then asks the user to confirm or correct both before proposing root-module text.
+The proposal includes a minimal `sigil.config` and a root `#module.sigil` containing a meaningful confirmed application summary; it never creates an empty or import-only root module.
 Component contracts and implementation-specific expands are placed beside the code they describe.
 
 ## Standards And External Guidance

@@ -3,6 +3,10 @@
   "requiredBehaviors": [
     "detect-missing-config",
     "classify-repository-evidence",
+    "scan-application-evidence",
+    "elicit-application-goal-and-interface",
+    "reject-empty-or-import-only-root-module",
+    "propose-confirmed-root-application-summary",
     "propose-before-edit",
     "validate-written-sigil",
     "stop-at-semantic-review-gate",

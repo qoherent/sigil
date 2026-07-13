@@ -110,6 +110,13 @@ coverage detection, pilot selection, repository evidence, and the pre-edit
 proposal gate. Return to this workflow after the user approves the exact Sigil
 proposal.
 
+For a new brownfield workspace, do not propose a root `#module.sigil` until you
+have inspected the repository's product documentation, dependency manifests,
+executable configuration, and entrypoints, then asked the user to confirm or
+correct the provisional application goal and externally meaningful interface.
+The root module must be a minimal confirmed application summary, never an empty
+marker or import-only barrel.
+
 1. Discover relevant context.
    - When a `sigil` command or repo-local CLI is available, start with `check`
      on the target workspace or file to discover diagnostics.
@@ -338,6 +345,11 @@ standard, repository behavior, or user preference.
 In brownfield work, treat code as evidence of current behavior, not proof of
 desired behavior or rationale. Do not create or change Sigil until the user
 approves the pilot boundary and exact semantic lines.
+
+When creating the first root module for a brownfield repository, repository
+evidence may support a provisional application picture but cannot establish its
+intended goal or interface. Ask the user to confirm or correct both before
+showing the exact root-module proposal.
 
 ## Output Style
 

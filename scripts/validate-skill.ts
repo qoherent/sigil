@@ -50,17 +50,58 @@ for (
 const expected = JSON.parse(
   await Deno.readTextFile(`${root}/evals/expected.json`),
 );
-if (
-  !Array.isArray(expected.requiredBehaviors) ||
-  expected.requiredBehaviors.length !== 6
-) {
+const fixture = await Deno.readTextFile(
+  `${root}/evals/brownfield-fixture.md`,
+);
+const requiredBrownfieldBehaviors = [
+  "detect-missing-config",
+  "classify-repository-evidence",
+  "scan-application-evidence",
+  "elicit-application-goal-and-interface",
+  "reject-empty-or-import-only-root-module",
+  "propose-confirmed-root-application-summary",
+  "propose-before-edit",
+  "validate-written-sigil",
+  "stop-at-semantic-review-gate",
+  "implement-only-after-approval",
+];
+if (!Array.isArray(expected.requiredBehaviors)) {
   throw new Error(
-    "Brownfield fixture must declare all six required behaviors.",
+    "Brownfield fixture must declare required behaviors.",
   );
 }
+for (const behavior of requiredBrownfieldBehaviors) {
+  if (!expected.requiredBehaviors.includes(behavior)) {
+    throw new Error(`Brownfield fixture is missing behavior ${behavior}.`);
+  }
+}
+requireText(
+  fixture,
+  "Present a provisional application goal and externally meaningful interface",
+  "fixture application confirmation step",
+);
+requireText(
+  fixture,
+  "must not be empty or import-only",
+  "fixture meaningful root-module rule",
+);
+
+const brownfield = await Deno.readTextFile(
+  `${root}/references/brownfield-adoption.md`,
+);
+requireText(
+  brownfield,
+  "Application Picture For A New Workspace",
+  "brownfield application discovery",
+);
+requireText(
+  brownfield,
+  "Never create or preserve an empty root module or one containing only imports.",
+  "meaningful root module requirement",
+);
 
 console.log(
-  "Sigil skill 1.0.0 structure, compatibility, gates, and fixture rubric are valid.",
+  "Sigil skill 1.0.0 structure, compatibility, gates, application discovery, and fixture rubric are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

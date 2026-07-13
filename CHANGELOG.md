@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Require brownfield application discovery and user confirmation of the
+  application goal and interface before proposing a meaningful root module.
+- Reject empty and import-only root modules in the brownfield workflow fixture.
+
 ## 1.0.0 - 2026-07-13
 
 - Freeze Sigil Language 1.0.0.
