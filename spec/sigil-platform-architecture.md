@@ -53,11 +53,13 @@ Platform packages:
 
 - `packages/sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
 - `packages/sigil-cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
+- `packages/sigil-indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
 - `packages/sigil-lsp`: future language-server interface for editor features across multiple editors.
 
 Integrations:
 
 - `integrations/codex/sigil-skill`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
+- `integrations/codex/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
 - `integrations/editor/vscode`: future VS Code extension, syntax highlighting, editor commands, and visual affordances.
 
 The CLI is an automation interface.
@@ -86,6 +88,12 @@ The core must not depend on:
 - VS Code APIs;
 - editor UI concerns;
 - transport protocols such as LSP or MCP.
+
+`sigil-indexer` may depend on `sigil-core` and source-language parser adapters.
+It must remain deterministic and must not call models or depend on host prompts.
+Source AST nodes are resolution evidence, not durable anchor identities.
+Accepted anchor relationships live in a versioned workspace sidecar rather than
+inside Sigil syntax.
 
 ## 5. Workspace Rules
 
@@ -118,6 +126,11 @@ Sigil has different user modes, so one interface should not pretend to serve eve
 
 The Codex skill currently owns nondeterministic host behavior such as user elicitation, web research, brownfield evidence reconciliation, and semantic readiness review.
 Whether core should later expose deterministic readiness primitives or a separate optional agent package remains exploratory in ADR-009.
+
+The proposed anchor workflow follows the same boundary: shared packages produce
+and validate deterministic candidate data, while Codex or another host may
+interpret natural language and propose relationships. Human review remains
+outside shared packages. See ADR-010.
 
 This keeps the platform coherent while allowing each surface to feel natural for its audience.
 
@@ -195,6 +208,16 @@ Question: When does Sigil contain enough information for implementation, and whi
 
 Discussion: See [ADR-009: Sigil Readiness And Model Boundary](decisions/adr-009-sigil-readiness-and-model-boundary.md).
 
+### ADR-010: Use AST Evidence With Model-Assisted Anchor Proposals
+
+Status: Proposed; implementation is blocked on semantic review.
+
+Decision proposal: Keep anchors outside `.sigil` syntax, use deterministic
+source-language adapters and a committed anchor sidecar, and allow hosts to use
+models only to propose natural-language relationships for human approval.
+
+Discussion: See [ADR-010: AST Anchors And Model-Assisted Indexing](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+
 ## 8. Risks And Guardrails
 
 ### Over-Formalizing The Language
@@ -214,6 +237,21 @@ Guardrail: all surfaces use `sigil-core`.
 If source locations and semantic lines are not preserved from the beginning, anchors and drift detection become expensive later.
 
 Guardrail: source ranges are core parser output, not metadata added later.
+
+### Treating AST Nodes As Permanent Identity
+
+AST nodes are recreated on every parse and may disappear during behavior-preserving refactors.
+
+Guardrail: persist relationship IDs and locator fingerprints, use AST nodes as
+resolution evidence, and return ambiguous remapping to review.
+
+### Letting Models Mutate Accepted Anchors
+
+Natural-language matching is useful but nondeterministic and may silently choose
+the wrong target after a refactor.
+
+Guardrail: models only propose; deterministic validation and explicit human
+approval precede persistence.
 
 ### Making Agent Context Too Large
 
@@ -239,9 +277,11 @@ Detailed package and integration specs should live close to the implementation s
 
 - `packages/sigil-core/README.md`: parser, resolver, graph, diagnostics, projections.
 - `packages/sigil-cli/README.md`: command behavior for agents, CI, scripts, and debugging.
+- `packages/sigil-indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
 - `packages/sigil-lsp/README.md`: future editor semantic protocol.
 - `integrations/editor/vscode/README.md`: future concrete editor UX.
 - `integrations/codex/sigil-skill/`: Codex prompt and reference behavior.
+- `integrations/codex/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.
 
 Root-level docs should stay stable and architectural.
 Package docs can change as the implementation and product surface become more concrete.

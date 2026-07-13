@@ -47,6 +47,10 @@ V1 must not implement:
 - generated diagrams;
 - import aliases, re-exports, or wildcard imports.
 
+Anchors remain outside `sigil-core`. The proposed vNext design in ADR-010 adds
+them through a separate deterministic `sigil-indexer` package that consumes
+core semantic-line and workspace models.
+
 ## 4. Public Interface Requirements
 
 `sigil-core` should expose a typed Deno TypeScript library API.

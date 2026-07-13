@@ -20,11 +20,12 @@ This file tracks unresolved language and workflow decisions.
 ## Platform
 
 - Which additional semantic checks, if any, should move from host integrations into deterministic core diagnostics?
-- What stable addressing scheme should anchors use for semantic lines?
 - Should Sigil platform packages support generated diagrams or dependency maps?
-- How should anchors identify stable Sigil semantic lines as files are edited?
-- Should anchors be stored outside `.sigil` files, generated from code, or reviewed as part of the repository?
-- What should platform packages do when anchored code changes but the corresponding Sigil line does not?
+- Which source-language adapter should follow the proposed TypeScript anchor adapter?
+- How should non-AST targets such as SQL migrations and generated artifacts be indexed?
+- Should anchor checks offer a strict CI mode that fails on structurally changed targets?
+- How should editors display many-to-many anchor relationships?
+- When should obsolete anchor evidence be removed rather than retained?
 
 ## Workflow
 
@@ -37,3 +38,4 @@ This file tracks unresolved language and workflow decisions.
 - How should multiple hosts produce comparable semantic-readiness findings without sharing one model or prompt?
 
 The broader readiness and model-boundary questions are tracked in [ADR-009](decisions/adr-009-sigil-readiness-and-model-boundary.md).
+The proposed anchor architecture and its deferred questions are tracked in [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).

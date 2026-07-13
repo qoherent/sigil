@@ -63,6 +63,27 @@ After approval, a placement-only move or split that preserves approved semantic 
 Required import-path updates are placement-only.
 Any added, removed, or changed semantic line creates another review gate.
 
+## Proposed Anchor Workflow
+
+Anchors are a staged vNext workflow defined by
+[ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+They do not change Sigil semantics or replace review of Sigil and code.
+
+The proposed flow is:
+
+1. Resolve the approved Sigil component and its collected expansions.
+2. Build a deterministic source AST and symbol index.
+3. Produce no more than twenty inspectable source candidates for each selected semantic line.
+4. Let a host model propose `implements`, `verifies`, or `supports` relationships when natural-language interpretation is required.
+5. Validate every proposed target deterministically.
+6. Present initial or ambiguous mappings for explicit human approval.
+7. Persist only approved mappings in `.sigil/anchors.json`.
+8. Reconcile formatting and unique relocations deterministically.
+9. Return material Sigil changes, missing targets, ambiguity, splits, and merges to review.
+
+Models never accept or silently repair anchors. An anchor signals relevant
+implementation evidence; it does not prove that code satisfies Sigil.
+
 ## Brownfield Adoption
 
 Brownfield adoption is incremental rather than a whole-repository conversion.

@@ -94,8 +94,8 @@ The root [#module.sigil](./%23module.sigil) currently defines this repository as
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains example Sigil files used as design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core` and `sigil-cli` packages plus the future `sigil-lsp` package boundary.
-- `integrations/` contains host-specific adapters such as the Codex skill and future editor integrations.
+- `packages/` contains the implemented `sigil-core` and `sigil-cli`, the proposed vNext `sigil-indexer`, and the future `sigil-lsp` package boundary.
+- `integrations/` contains host-specific adapters such as the Codex skills and future editor integrations.
 
 ## Examples
 
@@ -143,7 +143,8 @@ This repository contains the Sigil language and workflow specifications, platfor
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
 The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
 
-LSP/editor support, anchors, stricter body semantics, project configuration, and code-generation integrations remain deferred.
+LSP/editor support, stricter body semantics, project configuration, and code-generation integrations remain deferred.
 
-Future platform packages may introduce anchors: trace links between Sigil semantic lines and corresponding code locations.
-Anchors are intended to help humans and assistants detect code/spec drift, but they are postponed because they require parser, indexing, and synchronization design.
+Anchors are now a proposed vNext capability: reviewed trace links between Sigil semantic lines and implementation evidence.
+[ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.
+The proposal does not add inline Sigil syntax and is not implemented until its ADR and colocated Sigil contracts are approved.

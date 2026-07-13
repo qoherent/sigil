@@ -43,6 +43,9 @@ V1 must not implement:
 - anchors or code/spec synchronization;
 - mutation or formatting of `.sigil` files.
 
+Anchors remain outside the implemented v1 surface. The staged vNext anchor
+surface is defined below and does not change the v1 acceptance criteria.
+
 ## 4. Runtime And Dependency Requirements
 
 `sigil-cli` should use Deno TypeScript.
@@ -240,3 +243,39 @@ Keep command shaping separate from `sigil-core` data models so the core API
 remains reusable by LSP and editor integrations.
 
 Do not add interactive prompts in v1.
+
+## 12. Proposed VNext Anchor Commands
+
+After ADR-010 and the AnchorIndexer Sigil contract are approved, the CLI may
+depend on `sigil-indexer` and add a nested `anchors` command group.
+
+### `sigil anchors candidates [path] --component <name>`
+
+Read-only. Returns the selected component, collected expansions, semantic-line
+locators, and no more than twenty deterministically ordered TypeScript candidates
+per line. Each candidate reports inspectable ordering signals. The command does
+not invoke a model.
+
+### `sigil anchors check [path]`
+
+Read-only. Loads `.sigil/anchors.json`, validates schema and workspace paths,
+and resolves every accepted source target. It returns `resolved`, `changed`,
+`ambiguous`, or `missing` for each anchor.
+
+Invalid schema, paths outside the workspace, ambiguity, and missing targets are
+error diagnostics. Unique structural changes are warnings. Warnings alone
+preserve exit code `0`.
+
+### `sigil anchors apply <proposal-file>`
+
+Mutating and non-interactive. Validates proposal schema, current Sigil and
+source fingerprints, target resolution, accepted outcome, duplicates, and
+workspace containment before atomically updating `.sigil/anchors.json`.
+
+The command rejects `ambiguous`, `no-match`, stale, or partially invalid input
+without writing. Host workflows must obtain explicit human approval before
+invocation.
+
+All three commands support `--format json` and `--pretty`. Machine-readable
+output includes workspace root, diagnostics, schema version, and command data.
+No command calls a model or contains Codex-specific behavior.

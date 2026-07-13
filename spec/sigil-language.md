@@ -489,15 +489,21 @@ Larger examples live in:
 - `examples/slotted/auth.sigil`
 - `examples/slotted/user-profile.sigil`
 
-## 12. Future Platform Capability: Anchors
+## 12. Proposed Platform Capability: Anchors
 
-Anchors are a deferred platform concept for connecting Sigil semantic lines to corresponding code locations.
+Anchors are a proposed vNext platform concept for connecting Sigil semantic lines to implementation evidence.
 
 An anchor would not change the meaning of a Sigil line.
 It would record traceability between specification intent and implementation evidence.
 
-The likely storage model is an internal middle table or index maintained by platform packages, not inline syntax in `.sigil` files.
+The proposed storage model is the committed workspace sidecar `.sigil/anchors.json`, not inline syntax in `.sigil` files.
+Generated AST indexes remain disposable.
 This keeps Sigil readable while allowing tools to map a component, section, or semantic line to related files, symbols, tests, migrations, or generated code.
+
+Source AST nodes provide structural evidence and recovery signals, but they are not permanent identities.
+Accepted anchors use stable relationship IDs plus Sigil and source locator snapshots.
+Initial and ambiguous mappings require human approval.
+Deterministic platform tools own indexing, validation, persistence, and reconciliation; optional host models may propose natural-language matches from bounded candidates.
 
 Anchors are intended to provide:
 
@@ -506,8 +512,8 @@ Anchors are intended to provide:
 - signals when code and Sigil drift apart;
 - support for future code/spec synchronization workflows.
 
-Anchors are intentionally postponed.
-They require decisions about parsing, stable semantic-line identity, code indexing, refactor tracking, synchronization policy, and conflict handling.
+The proposed design and remaining decisions are recorded in [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+The capability remains unavailable until that ADR and the colocated Sigil contracts pass review and implementation is complete.
 
 ## 13. Unresolved Language Questions
 
@@ -523,8 +529,8 @@ Should Sigil introduce `sigil.config` or another project configuration file to r
 
 Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
 
-How should anchors identify stable Sigil semantic lines as files are edited?
+How should future language adapters represent targets that do not have stable AST symbols?
 
-Should anchors be stored outside `.sigil` files, generated from code, or reviewed as part of the repository?
+How should editors present multiple anchors for one line and one target shared by multiple lines?
 
-What should the platform do when anchored code changes but the corresponding Sigil line does not?
+When should a changed anchor remain reviewable evidence versus be removed as obsolete?

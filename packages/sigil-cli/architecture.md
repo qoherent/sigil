@@ -246,6 +246,28 @@ Do not add interactive prompts in v1.
 
 Do not add mutation or formatting commands in v1.
 
+## 9. Proposed VNext Anchor Extension
+
+After ADR-010 approval, `sigil-cli` may depend on `sigil-indexer` through a
+separate `indexer-adapter`. Existing Sigil parsing and resolution continue
+through `core-adapter`.
+
+```text
+anchors argv -> anchors command handler -> indexer-adapter -> sigil-indexer
+                                              |
+                                              -> fs-adapter atomic sidecar write
+```
+
+Rules:
+
+- `args` parses the nested `anchors candidates`, `anchors check`, and `anchors apply` requests;
+- anchor command handlers shape results but do not parse ASTs or reconcile locators;
+- `indexer-adapter` connects the Deno filesystem, resolved Sigil workspace, and `sigil-indexer`;
+- only `anchors apply` may write, and it may write only `.sigil/anchors.json`;
+- the write uses a temporary sibling plus atomic rename after complete validation;
+- no CLI module invokes a model, imports a Codex skill, or interprets proposal evidence;
+- existing v1 commands and exit behavior remain backward compatible.
+
 ## 6. Output Guidelines
 
 JSON is the stable output contract.
