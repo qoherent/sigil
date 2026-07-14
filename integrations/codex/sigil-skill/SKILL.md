@@ -198,6 +198,10 @@ Select the workflow before detailed semantic work:
      Never claim certification or definitive compliance.
 
 5. Improve Sigil before generating code.
+   - Before adding or modifying implementation, verify that the affected
+     behavior has clear Sigil coverage. If it does not, stop and collaborate
+     with the user to define, review, and approve the affected Sigil before
+     changing code.
    - If the user is asking for implementation and the Sigil is incomplete,
      repair or propose the Sigil first.
    - In Greenfield work, use the approved conversational design procedure rather
@@ -263,6 +267,8 @@ Select the workflow before detailed semantic work:
      to verify imports, collected expands, and related file paths when relevant.
 
 10. Implement only after approval.
+   - Do not add or modify implementation without clear, user-approved Sigil
+     coverage for the affected behavior.
    - Use the approved Sigil as the durable rationale and source of constraints.
    - Keep generated code aligned with component boundaries and public
      interfaces.

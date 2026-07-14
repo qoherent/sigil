@@ -27,5 +27,7 @@ Expected skill behavior:
 10. Synthesize conversation and review findings into exact proposed Sigil and
     request confirmation.
 11. Write only approved Sigil, validate it, and stop at the semantic review gate.
-12. Implement only after the written Sigil is approved and implementation is
+12. Treat the missing Sigil coverage as a reason to collaborate with the user
+    on the affected Sigil before adding implementation.
+13. Implement only after the written Sigil is approved and implementation is
     explicitly requested.

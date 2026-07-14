@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Require user collaboration to define and approve clear Sigil coverage before
+  adding or modifying affected implementation.
 - Define `RootSigil` as the root-project or declared workspace-member contract
   for `#module.sigil` and reserve descriptive filenames for internal Sigil files.
 - Clarify that logic owns behavior and execution flow while constraints own

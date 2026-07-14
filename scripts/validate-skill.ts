@@ -25,6 +25,16 @@ requireText(skill, "references/brownfield-adoption.md", "brownfield routing");
 requireText(skill, "sigil init", "brownfield initialization");
 requireText(skill, "manageable rounds", "conversational clarification");
 requireText(skill, "choices", "design choices");
+requireText(
+  skill,
+  "verify that the affected\n     behavior has clear Sigil coverage",
+  "clear Sigil coverage guard",
+);
+requireText(
+  skill,
+  "collaborate\n     with the user to define, review, and approve the affected Sigil",
+  "missing coverage collaboration",
+);
 requireText(skill, "Stop at the Sigil review gate", "semantic review gate");
 requireText(
   skill,
@@ -79,6 +89,7 @@ const requiredBrownfieldBehaviors = [
   "propose-before-edit",
   "review-root-before-task-focus",
   "focus-requested-task-after-root-approval",
+  "collaborate-on-missing-sigil-before-implementation",
   "validate-written-sigil",
   "stop-at-semantic-review-gate",
   "implement-only-after-approval",
@@ -118,6 +129,11 @@ requireText(
   "Only after RootSigil approval, focus on the requested component",
   "fixture root-before-task ordering",
 );
+requireText(
+  fixture,
+  "collaborate with the user to define and approve that coverage",
+  "brownfield missing coverage collaboration",
+);
 
 const greenfieldFixture = await Deno.readTextFile(
   `${root}/evals/greenfield-fixture.md`,
@@ -133,6 +149,7 @@ const requiredGreenfieldBehaviors = [
   "continue-until-contract-is-clear",
   "synthesize-conversation-into-exact-sigil",
   "confirm-before-writing-sigil",
+  "collaborate-on-missing-sigil-before-implementation",
   "stop-at-semantic-review-gate",
   "implement-only-after-approval",
 ];
@@ -163,6 +180,11 @@ requireText(
   greenfieldFixture,
   "exact proposed Sigil",
   "greenfield exact proposal",
+);
+requireText(
+  greenfieldFixture,
+  "collaborate with the user\n    on the affected Sigil before adding implementation",
+  "greenfield missing coverage collaboration",
 );
 
 const brownfield = await Deno.readTextFile(

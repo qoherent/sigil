@@ -19,6 +19,7 @@
     "propose-before-edit",
     "review-root-before-task-focus",
     "focus-requested-task-after-root-approval",
+    "collaborate-on-missing-sigil-before-implementation",
     "validate-written-sigil",
     "stop-at-semantic-review-gate",
     "implement-only-after-approval"
@@ -35,6 +36,7 @@
     "continue-until-contract-is-clear",
     "synthesize-conversation-into-exact-sigil",
     "confirm-before-writing-sigil",
+    "collaborate-on-missing-sigil-before-implementation",
     "stop-at-semantic-review-gate",
     "implement-only-after-approval"
   ]

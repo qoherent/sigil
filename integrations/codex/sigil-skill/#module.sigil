@@ -26,6 +26,16 @@ component SigilCodexSkill {
 }
 
 expand SigilCodexSkill {
+  constraints {
+    Before adding or modifying implementation that lacks clear Sigil coverage, collaborate with the user to define and approve the affected Sigil.
+  }
+
+  cases {
+    A requested implementation change without clear Sigil coverage pauses for collaborative Sigil definition and approval before code changes begin.
+  }
+}
+
+expand SigilCodexSkill {
   state {
     Greenfield workflow applies when the selected behavior or component has no existing implementation that constrains its intended contract.
   }

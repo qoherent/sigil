@@ -35,5 +35,8 @@ Expected skill behavior:
     before editing.
 12. After task-Sigil approval, write and validate it, then stop at the task-Sigil
     review gate.
-13. Write implementation code only after the user approves the written task
+13. If the requested implementation change lacks clear Sigil coverage,
+    collaborate with the user to define and approve that coverage before
+    changing code.
+14. Write implementation code only after the user approves the written task
     Sigil and explicitly requests implementation.
