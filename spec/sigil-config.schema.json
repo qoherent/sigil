@@ -8,14 +8,19 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^(?!/)(?![A-Za-z]:[\\\\/])(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "member": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.$)(?!/)(?![A-Za-z]:[\\\\/])(?!.*\\\\)(?!\\./)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
     }
   },
   "additionalProperties": false,
-  "required": ["configVersion", "languageVersion", "project", "files"],
+  "required": ["configVersion", "languageVersion", "workspace", "files"],
   "properties": {
     "configVersion": { "const": "1.0.0" },
     "languageVersion": { "const": "1.0.0" },
-    "project": {
+    "workspace": {
       "type": "object",
       "additionalProperties": false,
       "required": ["name"],
@@ -24,6 +29,12 @@
           "type": "string",
           "minLength": 1,
           "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+        },
+        "members": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/member" },
+          "uniqueItems": true,
+          "default": []
         }
       }
     },

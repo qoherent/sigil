@@ -23,7 +23,7 @@ export function formatResult(
       `Supported config: ${result.supportedConfigVersions.join(", ")}`,
       `Supported language: ${result.supportedLanguageVersions.join(", ")}`,
       `Workspace: ${result.workspaceRoot}`,
-      `Project: ${result.projectName ?? "unresolved"}`,
+      `Workspace name: ${result.workspaceName ?? "unresolved"}`,
       `Configured config: ${result.configVersion ?? "unresolved"}`,
       `Configured language: ${result.languageVersion ?? "unresolved"}`,
     ];

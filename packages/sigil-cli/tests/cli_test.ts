@@ -17,7 +17,7 @@ Deno.test("parse discovers config and emits workspace metadata", async () => {
   const json = parseJson(result.stdout);
   assertEquals(json.command, "parse");
   assertEquals(json.languageVersion, "1.0.0");
-  assertEquals(json.projectName, "promise");
+  assertEquals(json.workspaceName, "promise");
   assertEquals(json.document.components[0].name, "Promise");
 });
 
@@ -45,9 +45,10 @@ Deno.test("init creates defaults, accepts a custom name, and refuses overwrite",
     const output = parseJson(first.stdout);
     assertEquals(output.configVersion, "1.0.0");
     assertEquals(output.languageVersion, "1.0.0");
-    assertEquals(output.projectName, "example");
+    assertEquals(output.workspaceName, "example");
     const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
-    assertEquals(config.project.name, "example");
+    assertEquals(config.workspace.name, "example");
+    assertEquals(config.workspace.members.length, 0);
     assertEquals(config.languageVersion, "1.0.0");
     assert(config.files.include.includes("**/*.sigil"));
 
@@ -59,14 +60,14 @@ Deno.test("init creates defaults, accepts a custom name, and refuses overwrite",
   }
 });
 
-Deno.test("init defaults project name to directory basename", async () => {
+Deno.test("init defaults workspace name to directory basename", async () => {
   const parent = await Deno.makeTempDir({ prefix: "sigil-parent-" });
   const root = `${parent}/sample-project`;
   await Deno.mkdir(root);
   try {
     assertEquals((await runCli(["init", root])).exitCode, EXIT_OK);
     const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
-    assertEquals(config.project.name, "sample-project");
+    assertEquals(config.workspace.name, "sample-project");
   } finally {
     await Deno.remove(parent, { recursive: true });
   }
@@ -168,7 +169,7 @@ Deno.test("graph includes component nodes and imported-component edges", async (
   ]);
   assertEquals(result.exitCode, EXIT_OK);
   const output = parseJson(result.stdout);
-  assertEquals(output.projectName, "slotted");
+  assertEquals(output.workspaceName, "slotted");
   const graph = output.graph;
   assert(
     graph.componentNodes.some((node: { name: string }) => node.name === "Auth"),
@@ -213,7 +214,7 @@ Deno.test("render JSON includes workspace metadata and Markdown", async () => {
   const result = await runCli(["render", "../..", "--format", "json"]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.projectName, "sigil");
+  assertEquals(json.workspaceName, "sigil");
   assert(json.markdown.includes("# Sigil Workspace"));
 });
 
@@ -260,7 +261,7 @@ async function makeWorkspace(name: string): Promise<string> {
     JSON.stringify({
       configVersion: "1.0.0",
       languageVersion: "1.0.0",
-      project: { name },
+      workspace: { name, members: [] },
       files: { include: ["**/*.sigil"] },
       tools: {},
     }),

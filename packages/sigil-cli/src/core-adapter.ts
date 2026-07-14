@@ -103,7 +103,10 @@ export class CoreAdapter {
     const config = {
       configVersion: SIGIL_CONFIG_VERSION,
       languageVersion: SIGIL_LANGUAGE_VERSION,
-      project: { name: name?.trim() || basename(root) },
+      workspace: {
+        name: name?.trim() || basename(root),
+        members: [],
+      },
       files: {
         include: include.length ? [...include] : [...DEFAULT_SIGIL_INCLUDES],
         exclude: exclude.length ? [...exclude] : [...DEFAULT_SIGIL_EXCLUDES],

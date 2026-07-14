@@ -26,7 +26,7 @@ export interface WorkspaceMetadata {
   readonly configPath: string | null;
   readonly configVersion: string | null;
   readonly languageVersion: string | null;
-  readonly projectName: string | null;
+  readonly workspaceName: string | null;
 }
 export interface InitCommandResult extends WorkspaceMetadata {
   readonly command: "init";
@@ -82,7 +82,7 @@ export function workspaceMetadata(
     configPath: workspace.configPath ?? null,
     configVersion: workspace.config?.configVersion ?? null,
     languageVersion: workspace.config?.languageVersion ?? null,
-    projectName: workspace.config?.project.name ?? null,
+    workspaceName: workspace.config?.workspace.name ?? null,
   };
 }
 

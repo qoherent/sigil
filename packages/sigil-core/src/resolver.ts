@@ -32,16 +32,19 @@ export function resolveSigilWorkspace(
   const documentByPath = new Map(
     workspace.files.map((file) => [normalizePath(file.path), file.document]),
   );
-  const projectRoots = new Set(workspace.projectRoots.map(normalizePath));
+  const rootSigilRoots = new Set([
+    normalizePath(workspace.root),
+    ...workspace.memberRoots.map(normalizePath),
+  ]);
 
   for (const file of workspace.files) {
     if (
       isModuleFile(file.path) &&
-      !projectRoots.has(dirname(normalizePath(file.path)))
+      !rootSigilRoots.has(dirname(normalizePath(file.path)))
     ) {
       diagnostics.push(diagnostic(
         "SIGIL_INVALID_ROOT_MODULE",
-        `${file.path} is not at the workspace root or a declared subproject root; use a descriptive .sigil filename for internal contracts.`,
+        `${file.path} is not at the workspace root or a declared workspace-member root; use a descriptive .sigil filename for internal contracts.`,
         { filePath: file.path },
       ));
     }
@@ -88,11 +91,11 @@ export function resolveSigilWorkspace(
       const targetFile = resolveImportPath(workspace.root, declaration.path);
       if (
         !declaration.path.endsWith(".sigil") &&
-        !projectRoots.has(dirname(targetFile))
+        !rootSigilRoots.has(dirname(targetFile))
       ) {
         diagnostics.push(diagnostic(
           "SIGIL_INVALID_DIRECTORY_IMPORT",
-          `Directory import @${declaration.path} does not target the workspace root or a declared subproject; import an internal contract by its explicit .sigil filename.`,
+          `Directory import @${declaration.path} does not target the workspace root or a declared workspace member; import an internal contract by its explicit .sigil filename.`,
           { filePath: file.path, range: declaration.range },
         ));
         resolvedImports.push({

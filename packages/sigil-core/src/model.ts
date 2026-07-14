@@ -33,8 +33,9 @@ export const SIGIL_CONFIG_VERSION = "1.0.0" as const;
 export const SIGIL_LANGUAGE_VERSION = "1.0.0" as const;
 export const SIGIL_CORE_VERSION = "1.0.0" as const;
 
-export interface SigilProjectConfig {
+export interface SigilWorkspaceConfig {
   readonly name: string;
+  readonly members: readonly string[];
 }
 
 export interface SigilFileDiscoveryConfig {
@@ -45,7 +46,7 @@ export interface SigilFileDiscoveryConfig {
 export interface SigilConfig {
   readonly configVersion: string;
   readonly languageVersion: string;
-  readonly project: SigilProjectConfig;
+  readonly workspace: SigilWorkspaceConfig;
   readonly files: SigilFileDiscoveryConfig;
   readonly tools: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 }
@@ -141,7 +142,7 @@ export interface SigilWorkspace {
   readonly root: string;
   readonly configPath?: string;
   readonly config?: SigilConfig;
-  readonly projectRoots: readonly string[];
+  readonly memberRoots: readonly string[];
   readonly files: readonly LoadedSigilFile[];
   readonly diagnostics: readonly SigilDiagnostic[];
 }

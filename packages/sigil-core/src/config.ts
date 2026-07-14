@@ -44,13 +44,13 @@ export function parseSigilConfig(
   } else {
     rejectUnknown(
       value,
-      ["configVersion", "languageVersion", "project", "files", "tools"],
+      ["configVersion", "languageVersion", "workspace", "files", "tools"],
       "configuration",
       messages,
     );
     requireSemver(value.configVersion, "configVersion", messages);
     requireSemver(value.languageVersion, "languageVersion", messages);
-    validateProject(value.project, messages);
+    validateWorkspace(value.workspace, messages);
     validateFiles(value.files, messages);
     validateTools(value.tools, messages);
   }
@@ -83,13 +83,16 @@ export function parseSigilConfig(
     };
   }
 
-  const project = raw.project as Record<string, unknown>;
+  const workspace = raw.workspace as Record<string, unknown>;
   const files = raw.files as Record<string, unknown>;
   return {
     config: {
       configVersion: raw.configVersion as string,
       languageVersion: raw.languageVersion as string,
-      project: { name: project.name as string },
+      workspace: {
+        name: workspace.name as string,
+        members: (workspace.members as string[] | undefined) ?? [],
+      },
       files: {
         include: files.include as string[],
         exclude: (files.exclude as string[] | undefined) ??
@@ -145,17 +148,55 @@ export function globMatches(pattern: string, path: string): boolean {
   return new RegExp(`${source}$`).test(path);
 }
 
-function validateProject(value: unknown, messages: string[]): void {
+function validateWorkspace(value: unknown, messages: string[]): void {
   if (!isObject(value)) {
-    messages.push("project must be an object.");
+    messages.push("workspace must be an object.");
     return;
   }
-  rejectUnknown(value, ["name"], "project", messages);
+  rejectUnknown(value, ["name", "members"], "workspace", messages);
   if (
     typeof value.name !== "string" || value.name.trim().length === 0 ||
     value.name !== value.name.trim()
   ) {
-    messages.push("project.name must be a trimmed non-empty string.");
+    messages.push("workspace.name must be a trimmed non-empty string.");
+  }
+  validateWorkspaceMembers(value.members, messages);
+}
+
+function validateWorkspaceMembers(value: unknown, messages: string[]): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    messages.push("workspace.members must be an array of strings.");
+    return;
+  }
+
+  const members = value as string[];
+  for (const member of members) {
+    if (
+      member.length === 0 || member !== member.trim() || member === "." ||
+      member.startsWith("/") || /^[A-Za-z]:[\\/]/.test(member) ||
+      member.includes("\\") || member.startsWith("./") ||
+      member.endsWith("/") || member.includes("//") ||
+      member.split("/").some((segment) => segment === "." || segment === "..")
+    ) {
+      messages.push(
+        "workspace.members entries must be normalized, non-root, workspace-relative POSIX directory paths.",
+      );
+      break;
+    }
+  }
+
+  if (new Set(members).size !== members.length) {
+    messages.push("workspace.members entries must be unique.");
+  }
+  const sorted = [...new Set(members)].sort();
+  for (let index = 0; index < sorted.length; index++) {
+    for (let other = index + 1; other < sorted.length; other++) {
+      if (sorted[other].startsWith(`${sorted[index]}/`)) {
+        messages.push("workspace.members entries must not overlap.");
+        return;
+      }
+    }
   }
 }
 

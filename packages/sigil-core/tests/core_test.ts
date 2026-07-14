@@ -56,15 +56,16 @@ Deno.test("raw parsing requires a supported explicit language version", () => {
   assertHasCode(parsed.diagnostics, "SIGIL_UNSUPPORTED_LANGUAGE_VERSION");
 });
 
-Deno.test("strict config accepts v1 defaults and rejects project metadata", () => {
+Deno.test("strict config accepts workspace defaults and rejects invalid members", () => {
   const valid = parseSigilConfig(configSource());
   assert(valid.config);
-  assertEquals(valid.config.project.name, "test");
+  assertEquals(valid.config.workspace.name, "test");
+  assertEquals(valid.config.workspace.members.length, 0);
   assert(valid.config.files.exclude.includes("node_modules/**"));
 
   const invalid = parseSigilConfig(
     configSource({
-      project: { name: "test", description: "duplicate metadata" },
+      workspace: { name: "test", description: "duplicate metadata" },
     }),
   );
   assertEquals(invalid.config, undefined);
@@ -74,6 +75,22 @@ Deno.test("strict config accepts v1 defaults and rejects project metadata", () =
     configSource({ files: { include: ["../outside/*.sigil"] } }),
   );
   assertHasCode(escaping.diagnostics, "SIGIL_CONFIG_INVALID");
+
+  for (
+    const members of [
+      ["."],
+      ["../outside"],
+      ["packages/core", "packages/core"],
+      ["packages", "packages/core"],
+    ]
+  ) {
+    assertHasCode(
+      parseSigilConfig(configSource({
+        workspace: { name: "test", members },
+      })).diagnostics,
+      "SIGIL_CONFIG_INVALID",
+    );
+  }
 });
 
 Deno.test("config reports malformed and unsupported versions", () => {
@@ -96,7 +113,7 @@ Deno.test("discovers the nearest excluded workspace config and resolves imports"
   const resolved = resolveSigilWorkspace(workspace);
   assertEquals(workspace.root, "examples/slotted");
   assertEquals(workspace.configPath, "examples/slotted/sigil.config");
-  assertEquals(workspace.config?.project.name, "slotted");
+  assertEquals(workspace.config?.workspace.name, "slotted");
   assertEquals(resolved.diagnostics.length, 0);
   assert(
     resolved.graph.importedComponentEdges.some((edge) =>
@@ -117,7 +134,7 @@ Deno.test("requires config and rejects an unexcluded nearer config", async () =>
   const nested = await loadSigilWorkspace(
     new InMemorySigilFileSystem({
       "sigil.config": configSource(),
-      "nested/sigil.config": configSource({ project: { name: "nested" } }),
+      "nested/sigil.config": configSource({ workspace: { name: "nested" } }),
       "nested/item.sigil": rootModule,
     }),
     { startPath: "nested/item.sigil" },
@@ -133,7 +150,7 @@ Deno.test("requires config and rejects an unexcluded nearer config", async () =>
           exclude: ["nested/**/*.sigil"],
         },
       }),
-      "nested/sigil.config": configSource({ project: { name: "nested" } }),
+      "nested/sigil.config": configSource({ workspace: { name: "nested" } }),
       "nested/item.sigil": rootModule,
     }),
     { startPath: "nested/item.sigil" },
@@ -145,13 +162,13 @@ Deno.test("requires config and rejects an unexcluded nearer config", async () =>
       "sigil.config": configSource({
         files: { include: ["**/*.sigil"], exclude: ["nested/**"] },
       }),
-      "nested/sigil.config": configSource({ project: { name: "nested" } }),
+      "nested/sigil.config": configSource({ workspace: { name: "nested" } }),
       "nested/item.sigil": rootModule,
     }),
     { startPath: "nested/item.sigil" },
   );
   assertEquals(independent.root, "nested");
-  assertEquals(independent.config?.project.name, "nested");
+  assertEquals(independent.config?.workspace.name, "nested");
   assertEquals(independent.diagnostics.length, 0);
   assertEquals(independent.files.length, 1);
 });
@@ -169,7 +186,7 @@ Deno.test("nested config below selected root is diagnosed and its subtree skippe
     new InMemorySigilFileSystem({
       "sigil.config": configSource(),
       "root.sigil": rootModule,
-      "nested/sigil.config": configSource({ project: { name: "nested" } }),
+      "nested/sigil.config": configSource({ workspace: { name: "nested" } }),
       "nested/hidden.sigil": rootModule.replaceAll("Sigil", "Hidden"),
     }),
     { startPath: ".", explicitRoot: "." },
@@ -184,7 +201,7 @@ Deno.test("nested config below selected root is diagnosed and its subtree skippe
         files: { include: ["**/*.sigil"], exclude: ["nested/**"] },
       }),
       "root.sigil": rootModule,
-      "nested/sigil.config": configSource({ project: { name: "nested" } }),
+      "nested/sigil.config": configSource({ workspace: { name: "nested" } }),
       "nested/hidden.sigil": rootModule.replaceAll("Sigil", "Hidden"),
     }),
     { startPath: ".", explicitRoot: "." },
@@ -192,6 +209,21 @@ Deno.test("nested config below selected root is diagnosed and its subtree skippe
   assertEquals(excluded.diagnostics.length, 0);
   assertEquals(excluded.files.length, 1);
   assertEquals(excluded.files[0].path, "root.sigil");
+
+  const memberWithConfig = await loadSigilWorkspace(
+    new InMemorySigilFileSystem({
+      "sigil.config": configSource({
+        workspace: { name: "test", members: ["member"] },
+        files: { include: ["**/*.sigil"], exclude: ["member/**"] },
+      }),
+      "member/sigil.config": configSource({
+        workspace: { name: "member" },
+      }),
+      "member/#module.sigil": rootModule,
+    }),
+    { startPath: ".", explicitRoot: "." },
+  );
+  assertHasCode(memberWithConfig.diagnostics, "SIGIL_NESTED_CONFIG");
 });
 
 Deno.test("glob includes root files and exclusion wins", async () => {
@@ -226,7 +258,7 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
     root: ".",
     configPath: "sigil.config",
     config: parseSigilConfig(configSource()).config,
-    projectRoots: ["."],
+    memberRoots: [],
     files: [{ path: "broken.sigil", document: parsed.document }],
     diagnostics: parsed.diagnostics,
   });
@@ -236,9 +268,11 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
   assertHasCode(resolved.diagnostics, "SIGIL_EXPAND_WITHOUT_COMPONENT");
 });
 
-Deno.test("reserves RootSigil and directory imports for project roots", async () => {
+Deno.test("uses only workspace.members for RootSigil locations and directory imports", async () => {
   const fs = new InMemorySigilFileSystem({
-    "sigil.config": configSource(),
+    "sigil.config": configSource({
+      workspace: { name: "test", members: ["declared"] },
+    }),
     "deno.json": JSON.stringify({ workspace: ["workspace-only"] }),
     "#module.sigil": rootModule,
     "internal/#module.sigil": rootModule.replaceAll("Sigil", "Internal"),
@@ -258,9 +292,7 @@ Deno.test("reserves RootSigil and directory imports for project roots", async ()
   const workspace = await loadSigilWorkspace(fs, { startPath: "." });
   const resolved = resolveSigilWorkspace(workspace);
 
-  assert(workspace.projectRoots.includes("."));
-  assert(workspace.projectRoots.includes("declared"));
-  assert(workspace.projectRoots.includes("workspace-only"));
+  assertEquals(workspace.memberRoots.join(","), "declared");
   assertHasCode(resolved.diagnostics, "SIGIL_INVALID_ROOT_MODULE");
   assertHasCode(resolved.diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
   assert(
@@ -269,7 +301,7 @@ Deno.test("reserves RootSigil and directory imports for project roots", async ()
     ),
   );
   assert(
-    resolved.graph.importedComponentEdges.some((edge) =>
+    !resolved.graph.importedComponentEdges.some((edge) =>
       edge.componentName === "WorkspaceOnly"
     ),
   );
@@ -331,7 +363,7 @@ function workspaceFs(): InMemorySigilFileSystem {
     }),
     "#module.sigil": rootModule,
     "examples/slotted/sigil.config": configSource({
-      project: { name: "slotted" },
+      workspace: { name: "slotted" },
     }),
     "examples/slotted/#module.sigil": slottedModule,
     "examples/slotted/auth.sigil": authSigil,
@@ -343,7 +375,7 @@ function configSource(overrides: Record<string, unknown> = {}): string {
   const base: Record<string, unknown> = {
     configVersion: "1.0.0",
     languageVersion: "1.0.0",
-    project: { name: "test" },
+    workspace: { name: "test" },
     files: { include: ["**/*.sigil"] },
     tools: {},
   };

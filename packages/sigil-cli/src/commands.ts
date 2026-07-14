@@ -28,7 +28,7 @@ export async function runCommand(
       configPath: result.configPath,
       configVersion: result.config?.configVersion ?? null,
       languageVersion: result.config?.languageVersion ?? null,
-      projectName: result.config?.project.name ?? null,
+      workspaceName: result.config?.workspace.name ?? null,
       config: result.config,
       diagnostics: result.diagnostics,
     };
@@ -131,7 +131,7 @@ function renderMarkdown(
     "# Sigil Workspace",
     "",
     `Workspace root: ${resolved.workspace.root}`,
-    `Project: ${resolved.workspace.config?.project.name ?? "unresolved"}`,
+    `Workspace: ${resolved.workspace.config?.workspace.name ?? "unresolved"}`,
     `Language: ${resolved.workspace.config?.languageVersion ?? "unresolved"}`,
     "",
   ];
