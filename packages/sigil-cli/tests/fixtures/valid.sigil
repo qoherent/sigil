@@ -1,0 +1,9 @@
+component Local {
+  goal {
+    Test a small local Sigil component.
+  }
+
+  interface {
+    local()
+  }
+}

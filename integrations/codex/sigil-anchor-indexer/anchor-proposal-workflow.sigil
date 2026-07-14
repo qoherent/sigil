@@ -1,0 +1,50 @@
+@packages/sigil-indexer/sigil-indexer.sigil import { AnchorIndexer, TypeScriptSourceAdapter }
+
+component AnchorProposalWorkflow {
+  goal {
+    Use bounded model reasoning to propose evidence-backed anchors for natural-language Sigil semantic lines.
+    Keep acceptance, persistence, and deterministic validation outside delegated proposal workers.
+  }
+
+  interface {
+    proposeAnchors(componentName) returns proposed, ambiguous, or no-match results
+    presents proposed anchors and evidence for explicit human review
+    applies approved proposals through AnchorIndexer only after approval
+    depends on AnchorIndexer for candidates, validation, reconciliation, and persistence
+    depends on TypeScriptSourceAdapter for the initial source targets
+  }
+}
+
+expand AnchorProposalWorkflow {
+  state {
+    candidate bundles are unreviewed deterministic evidence
+    model proposals are unaccepted until human review
+    accepted anchors live in the host-neutral committed anchor index
+  }
+
+  logic {
+    Resolve one component and collect all of its expands before proposing anchors.
+    Divide work into batches of no more than ten semantic lines from one component.
+    Give each proposal worker no more than twenty deterministic candidates per semantic line.
+    Proposal workers return a relationship, target locator, evidence, alternatives, and outcome.
+    The primary agent reconciles duplicate or contradictory proposals and validates every target.
+    The primary agent presents proposals before invoking anchor persistence.
+    Missing, ambiguous, split, merged, or materially changed mappings return to review.
+  }
+
+  constraints {
+    Proposal workers do not edit Sigil, source code, proposal artifacts, or the accepted anchor index.
+    Model output never bypasses deterministic target validation.
+    Every initial anchor and ambiguous remapping requires explicit human approval.
+    The proposal schema contains no Codex thread IDs, subagent IDs, prompts, or hidden reasoning.
+    The workflow sends only bounded source summaries and evidence needed for the selected component.
+    Hosts without delegation may run the same proposal procedure in one agent.
+  }
+
+  cases {
+    A clear implementation and test mapping are proposed with separate relationships and evidence.
+    Two plausible functions produce an ambiguous result and no persisted anchor.
+    A semantic line with no matching implementation produces no-match and no persisted anchor.
+    An approved proposal with stale fingerprints is rejected before the index changes.
+  }
+}

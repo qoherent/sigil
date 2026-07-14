@@ -1,0 +1,114 @@
+component SigilLanguage {
+  goal {
+    Give authors and tools one versioned contract for interpreting Sigil source.
+    Keep the language contract aligned with approved syntax, configuration, workspace, source-file, and interpretation behavior.
+  }
+
+  interface {
+    languageVersion = "1.0.0"
+    accepts UTF-8 .sigil source containing import, component, and expand forms
+    preserves free-form non-empty section lines as distinct semantic lines
+    reports structural diagnostics while retaining partial documents when practical
+    import declares a dependency on named components from another Sigil source and makes their public contracts and collected expands available
+    component defines the reusable public contract of a coherent system part through its goal and interface
+    expand adds collective operational detail to a component without changing or overriding its public contract
+    goal describes why a component exists, the responsibility it owns, and its intended outcome
+    interface describes how users, callers, external systems, or other components interact with the component through its observable public contract
+    state describes meaningful configurations, modes, and domain conditions that exist or change during execution
+    logic describes behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
+    constraints describe rules, policies, invariants, architecture decisions, and technology choices that valid implementations must obey
+    cases describe representative outcomes, examples, edge cases, and externally observable acceptance scenarios
+  }
+}
+
+expand SigilLanguage {
+  constraints {
+    spec/language.sigil records the current approved Sigil language and workspace contract.
+    The SigilLanguage contract evolves when approved syntax, configuration, workspace, source-file, or interpretation behavior changes.
+    Language, configuration schema, core, CLI, and integration versions remain explicit and may evolve independently.
+    Tools reject configured language or configuration versions they do not support.
+    Breaking interpretation changes require a new language major version.
+    Compatible additions and clarifications use the appropriate semantic version increment.
+    Every component requires goal and interface sections.
+    A directory import without a .sigil filename may target only a valid RootSigil location.
+    Ordinary internal Sigil files are imported using their explicit .sigil filenames.
+  }
+
+  cases {
+    A tool configured for language 1.0.0 parses the existing Promise and Slotted examples without changing their meaning.
+    A tool that does not support the configured language version reports an error before parsing workspace Sigil files.
+    A future breaking grammar change does not alter the meaning of a document explicitly configured for language 1.0.0.
+    Importing Name makes component Name and its matching collected expands available to the importing source.
+    A component can be understood through its goal and interface without reading its expands or implementation.
+    When multiple expand Name blocks target one component, tools expose all matching blocks as collected detail without override or shadowing.
+  }
+}
+
+component SigilWorkspaceConfig {
+  goal {
+    Define the versioned configuration contract for one Sigil workspace.
+    Keep workspace discovery and identity separate from the projects described by RootSigil.
+  }
+
+  interface {
+    filename: sigil.config
+    location: workspace root
+    configVersion: supported semantic version
+    languageVersion: supported SigilLanguage version
+    workspace.name: non-empty stable workspace identifier
+    workspace.members: optional array of unique workspace-relative project-root paths
+    files.include: non-empty array of workspace-relative POSIX glob strings
+    files.exclude?: array of workspace-relative POSIX glob strings
+    tools?: object of namespaced JSON objects preserved for host integrations
+  }
+}
+
+expand SigilWorkspaceConfig {
+  constraints {
+    sigil.config is the sole authority for the Sigil workspace boundary and its members.
+    The directory containing sigil.config is the workspace root and root project location.
+    Each workspace.members entry declares one additional project root in the same workspace.
+    Workspace member paths are unique, non-root, workspace-relative directories.
+    Workspace member paths cannot escape the workspace or overlap another member path.
+    Package and repository workspace manifests do not independently declare Sigil workspace members.
+    A workspace member does not contain its own sigil.config.
+    A nested directory with its own sigil.config is an independent workspace and must be excluded from the parent workspace.
+    files.include and files.exclude control source discovery but do not declare project roots.
+  }
+}
+
+component RootSigil {
+  goal {
+    Define the purpose and expected content of #module.sigil for one project.
+    Give humans and agents a high-level understanding of that project before they inspect its internal components.
+  }
+
+  interface {
+    filename: #module.sigil
+    location: the root project at the workspace root or a workspace member at its declared member root
+    contains a project-named component representing that project
+    project goal describes why the project exists and its intended outcome
+    project interface describes how users and external systems interact with it, such as through a web app, mobile app, API, CLI, or library
+    project expand uses the general state, logic, constraints, and cases meanings at project scope
+  }
+}
+
+expand RootSigil {
+  constraints {
+    RootSigil limits content to project-wide concerns without redefining the general meanings of expand sections.
+    Excludes secrets, incidental dependencies, low-level configuration, and module-specific implementation details.
+    RootSigil describes one project and does not define a Sigil workspace.
+    #module.sigil is permitted only at the workspace root or a member root declared by workspace.members.
+    The workspace-root #module.sigil describes the root project.
+    A member-root #module.sigil describes that workspace member project.
+    Every #module.sigil follows the RootSigil contract.
+    Ordinary directories, features, components, and implementation modules cannot contain #module.sigil.
+    Internal Sigil contracts use descriptive .sigil filenames.
+    Package manifests and directory structure alone do not authorize a RootSigil location.
+  }
+
+  cases {
+    A reader can understand the project's purpose, interaction surfaces, major behavior, and architecture without first inspecting internal modules.
+    An excluded independent workspace describes its own root project and does not contribute a member project to its parent workspace.
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/farhoud/qode/blob/v1.0.0/spec/sigil-config.schema.json",
+  "title": "Sigil workspace configuration",
+  "type": "object",
+  "$defs": {
+    "glob": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:[\\\\/])(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "member": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.$)(?!/)(?![A-Za-z]:[\\\\/])(?!.*\\\\)(?!\\./)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+    }
+  },
+  "additionalProperties": false,
+  "required": ["configVersion", "languageVersion", "workspace", "files"],
+  "properties": {
+    "configVersion": { "const": "1.0.0" },
+    "languageVersion": { "const": "1.0.0" },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+        },
+        "members": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/member" },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include"],
+      "properties": {
+        "include": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/glob" },
+          "default": ["**/*.sigil"]
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/glob" },
+          "default": [
+            ".git/**",
+            ".deno/**",
+            "node_modules/**",
+            "build/**",
+            "coverage/**"
+          ]
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": { "type": "object" },
+      "default": {}
+    }
+  }
+}

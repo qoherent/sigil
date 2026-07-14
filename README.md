@@ -1,232 +1,166 @@
 # Sigil
 
-Sigil is an architecture-level execution language designed for iteration.
+Sigil is a lightweight, rationale-oriented modeling language for software systems.
+It records what a system is, why it exists, how it behaves, and how its implementation should be understood and changed over time.
 
-It lets architects describe and execute a system before every part has a real implementation. Unresolved parts remain executable while the architect progressively removes invention and replaces pretend execution with deliberate logic, generated implementation code, or real implementation code.
+Sigil is designed for humans and coding agents working together.
+Its purpose is to keep system knowledge coherent by breaking a system into components and preserving both the public contract and the reasoning behind implementation decisions.
 
-The loop:
+## Why It Exists
 
-```text
-describe
-→ compile semantically
-→ run
-→ pause and inspect
-→ expose assumptions
-→ refine
-→ implement selected parts
-→ repeat
-```
+AI coding assistants can generate working code quickly, but long agent-driven sessions often lose the rationale behind the code.
+The "why", the ownership boundaries, and the intended behavior disappear into a conversation that is too long to revisit and too implicit to review.
+
+Sigil keeps that context durable before, during, and after implementation.
+It gives reviewers and future maintainers a compact place to understand purpose, public contracts, behavior, constraints, and representative cases without reverse-engineering a large diff.
+
+The problem statement is captured in [PROBLEM.md](PROBLEM.md).
+
+## How It Works
+
+Sigil is documentation-first.
+The `.sigil` files are the durable place where decisions, assumptions, component boundaries, and behavior are recorded before implementation.
+
+The intended workflow is:
+
+1. The user writes the minimum useful Sigil, or selects a reviewed pilot when adopting Sigil in a brownfield repository.
+2. The agent runs structural checks, follows imports, and reads related code, tests, configuration, and documentation.
+3. The agent reviews semantic readiness, cross-Sigil coherence, modularity, applicable standards, and code/spec drift.
+4. Brownfield reconstruction and externally informed additions are proposed before the agent edits Sigil.
+5. The user approves, rejects, or revises the proposed contract and semantic lines.
+6. The agent writes only the approved Sigil and stops at a semantic review gate.
+7. After approval, the agent colocates Sigil with the implementation and uses the agreed contract to generate or change code.
+8. If implementation reveals a missing material decision, the workflow returns to Sigil and human review.
+
+The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.md).
+
+The Sigil platform architecture is drafted in [spec/sigil-platform-architecture.md](spec/sigil-platform-architecture.md).
+
+The current exploration of semantic readiness and model ownership is recorded in [ADR-009](spec/decisions/adr-009-sigil-readiness-and-model-boundary.md).
 
 ## Language Shape
 
-Sigil source files use `.sigil`.
+Sigil source files use the `.sigil` extension.
+They should live as near as practical to the code they describe.
+When a public component contract must live elsewhere, a nearby `expand` can still hold the local implementation rationale.
+
+Screens, views, and reusable user-interface surfaces can be components too.
+Their `interface` may describe visible regions, user actions, navigation, feedback, and other observable behavior in natural language.
+Because section bodies are free-form, the interface may also contain ASCII wireframes, Markdown image references to repository assets, or links to designs such as Figma files.
+Authors can explain a visual reference's intended role in their own words when ambiguity would affect implementation.
+
+The language currently has three top-level forms:
 
 ```sigil
-from "./sub/system.sigil" import { Gallery, Reviews }
+@sub/folder import { ComponentName }
+@sub/folder/auth.sigil import { Auth }
 
-component ProductPage {
+component Name {
   goal {
-    help a shopper decide whether this product is right for them
+    why this component exists
   }
 
   interface {
-    header {
-      +Gallery
-    }
-
-    middle {
-      +Reviews for the current product
-    }
+    how this component interacts with the outside world
   }
+}
 
-  internal {
-    +ProductRepository
-  }
-
+expand Name {
   state {
-    loading
-    ready with product, gallery, reviews
-    failed with recoverable reason
+    meaningful configurations that persist or change during execution
   }
 
   logic {
-    load product details
-    load gallery and reviews in parallel
-    show ready view when required data is present
+    behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
   }
 
   constraints {
-    never expose private customer data
-    product title remains visible before reviews
+    rules, policies, invariants, and decisions the implementation must obey
   }
 
   cases {
-    product loads with reviews and gallery
-    reviews fail while product details remain usable
+    externally observable examples, acceptance criteria, and edge cases
   }
 }
 ```
 
-The conventional section order is:
+The canonical language definition lives in [spec/sigil-language.md](spec/sigil-language.md).
 
-```text
-goal
-interface
-internal
-state
-logic
-constraints
-cases
-```
+Open design questions are tracked in [spec/open-questions.md](spec/open-questions.md).
 
-This order is only a readability convention. It has no semantic effect.
+## Repository Layout
 
-The mandatory semantic units are `component`, `goal`, and `interface`.
+The root [sigil.config](./sigil.config) defines this repository as a language-1.0.0 Sigil workspace and excludes the independent example projects.
+The root [#module.sigil](./%23module.sigil) is its `RootSigil`: the high-level
+project summary of purpose, interaction surfaces, project-wide behavior, and
+binding architecture decisions.
 
-Optional sections:
+- `spec/` contains language, workflow, platform architecture, and open-question documents.
+- `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
+- `packages/` contains the implemented `sigil-core` and `sigil-cli`, the proposed vNext `sigil-indexer`, and the future `sigil-lsp` package boundary.
+- `integrations/` contains host-specific adapters such as the Codex skills and future editor integrations.
 
-- `internal`
-- `state`
-- `logic`
-- `constraints`
-- `cases`
+## Examples
 
-## Section Meaning
+`Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil) shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
-`goal` explains why the component exists and what outcome it enables.
+Its [sigil.config](examples/promise/sigil.config) makes it an independent workspace named `promise`.
 
-`interface` is the component boundary: everything the environment can see, call, supply, receive, render, interact with, subscribe to, or publicly depend on.
+`Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil) is an example room booking product used to test Sigil against product and module modeling.
 
-`internal` names private things that exist inside the component: private components, dependencies, resources, services, capabilities, functions, types, domain vocabulary, and static relationships.
+Its [sigil.config](examples/slotted/sigil.config) makes it an independent workspace named `slotted`; imports beginning with `@` resolve from that directory.
 
-```text
-internal = what privately exists
-state    = what changes over time
-logic    = what executes
-```
+`Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
-`state` describes architecturally meaningful configurations that persist or change during execution. It is not storage layout.
+`UserProfile` in [examples/slotted/user-profile.sigil](examples/slotted/user-profile.sigil) shows an imported component with a TypeScript-shaped public interface.
 
-`logic` describes executable architecture-level decisions, ordering, dataflow, delegation, and state transitions.
+`BookingCalendarView` in [examples/slotted/booking-calendar-view.sigil](examples/slotted/booking-calendar-view.sigil) shows a UI component whose interface combines natural language, an ASCII wireframe, and a repository image reference.
 
-`constraints` are universal truths over all valid executions.
+`Slotted` is only an example project used to test the language.
+It is not the purpose of this repository.
 
-`cases` are representative externally observable situations and acceptance criteria. They are examples, not the complete behavior of the component.
+## Codex Skill
 
-## Semantic Lines
+The Codex skill lives in [integrations/codex/sigil-skill/SKILL.md](integrations/codex/sigil-skill/SKILL.md).
 
-Inside each section, authors may use whatever notation best expresses the idea: concise English, pseudocode, math, arrows, host-language-like syntax, domain notation, ASCII sketches, or combinations.
+The skill teaches Codex to:
 
-A new line separates semantically distinct things. Each non-empty semantic line is a source unit, breakpoint location, interpretation unit, diff unit, and source mapping target.
+- read relevant `.sigil` files first;
+- follow Sigil imports;
+- identify public component contracts and matching expands;
+- detect missing, conflicting, or vague information;
+- assess semantic readiness, modularity, applicable standards, and common implementation pitfalls;
+- introduce Sigil incrementally into brownfield codebases through a change-frontier pilot;
+- derive a provisional application picture from project documentation, dependency definitions, executable configuration, and entrypoints, then confirm its goal and interface with the user before proposing a meaningful `RootSigil`;
+- preserve material application-wide runtime modes, flows, binding architecture decisions, and observable outcomes in a minimal root expand while excluding incidental and module-specific details;
+- propose brownfield and externally informed semantic lines before editing;
+- stop at the review gate after semantic changes;
+- colocate approved Sigil with the implementation it explains;
+- use approved Sigil as implementation context.
 
-Sigil does not require semicolons or a universal type grammar inside sections.
+The skill reference file at [integrations/codex/sigil-skill/references/sigil-format.md](integrations/codex/sigil-skill/references/sigil-format.md) is a concise agent-facing guide.
+The [standards review](integrations/codex/sigil-skill/references/standards-review.md) and [brownfield adoption](integrations/codex/sigil-skill/references/brownfield-adoption.md) references define the corresponding host-side workflows.
+The canonical language specification remains [spec/sigil-language.md](spec/sigil-language.md).
 
-## Composition
+## Current Status
 
-Imports make component declarations available. A line beginning with `+` composes a referenced component.
+Sigil Language, config schema, `@sigil/core`, `@sigil/cli`, and the standalone Codex skill are versioned at 1.0.0.
+See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 
-```sigil
-interface {
-  +Gallery
-  +Reviews for the current product
-}
-```
+This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
-```sigil
-internal {
-  +ProductRepository
-  +Analytics
-}
-```
+`sigil-core` implements explicit language-version parsing, strict config
+validation, config-based discovery, declared project-root detection, glob
+filtering, source ranges and semantic lines, import and component resolution,
+`RootSigil` location enforcement, collective expansion, graphs, projections,
+and stable diagnostics.
+`sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
-The containing section determines architectural role:
+Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
+The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
 
-- `interface +Component`: public or user-visible composition
-- `internal +Component`: private composition or dependency
+LSP/editor support, stricter body semantics, project configuration, and code-generation integrations remain deferred.
 
-## Frontend and Backend
-
-Sigil is not backend-only.
-
-Frontend `interface` blocks may describe visual composition, spatial relationships, responsive layouts, state-dependent views, overlays, focus behavior, accessibility, motion, design tokens, ASCII layout sketches, or direct CSS-like details when useful.
-
-Backend `interface` blocks may describe functions, endpoints, commands, queries, messages, events, streams, outputs, and externally visible effects.
-
-These are authoring idioms, not mandatory subgrammars.
-
-## Type Policy
-
-Sigil does not own a universal type system.
-
-Authors may write TypeScript-style declarations, Rust-style declarations, Python typing, Java declarations, mathematical notation, domain notation, or ordinary English. Host-language tooling may be added later as an adapter, but no host language defines core Sigil semantics.
-
-## Execution Model
-
-The authored source is not the final runtime AST.
-
-```text
-Sigil source
-→ structural parsing
-→ semantic normalization by an LLM compiler harness
-→ normalized semantic graph / AST
-→ executable architecture
-```
-
-A running system may mix:
-
-- real implementation code
-- generated implementation code
-- executable Sigil logic
-- `LLM.pretend`
-
-The compiler must record assumptions and provenance whenever it introduces meaning not directly present in the source. Semantic closure measures how much invention remains. Green closure is evidence of convergence under the configured process, not mathematical proof.
-
-## Current Milestone
-
-The repository is at the command-scaffold stage. The next milestone is structural tooling, not the full runtime.
-
-Milestone breakdown:
-
-1. Rename the public command and binary to `sigil`.
-2. Parse `.sigil` files into a source-ranged structural AST.
-3. Index imports, component declarations, and `+Component` composition.
-4. Provide offline structural LSP features.
-5. Make `sigil check` useful for deterministic structural validation.
-6. Define interfaces for future semantic normalization, provenance, closure, traces, and replay.
-7. Keep host-language tooling optional and adapter-based.
-
-See [PRD.md](./PRD.md) for the execution plan and [ARCHITECTURE.md](./ARCHITECTURE.md) for the durable technical design.
-
-## Target CLI
-
-```sh
-sigil check path/to/system.sigil
-sigil lsp
-```
-
-The first implementation task in the current milestone makes the built binary and help text match this public surface.
-
-## Development
-
-```sh
-deno task test
-deno task check
-deno task build
-```
-
-After the command rename lands, the build output should be:
-
-```text
-build/sigil
-```
-
-## Not This
-
-Sigil is not:
-
-- a general-purpose programming language
-- a formal proof system
-- a mandatory pseudocode grammar
-- a prompt file format
-- a universal type system
-- a replacement for host implementation languages
+Anchors are now a proposed vNext capability: reviewed trace links between Sigil semantic lines and implementation evidence.
+[ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.
+The proposal does not add inline Sigil syntax and is not implemented until its ADR and colocated Sigil contracts are approved.

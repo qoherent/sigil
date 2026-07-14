@@ -1,46 +1,17 @@
 {
-  "name": "@qoherent/sigil",
-  "version": "0.1.0",
-  "exports": {
-    ".": "./src/main.ts",
-    "./main": "./src/main.ts"
-  },
+  "workspace": [
+    "./packages/sigil-core",
+    "./packages/sigil-cli"
+  ],
+  "lock": true,
   "tasks": {
-    "dev": "deno run --watch --allow-net src/main.ts",
-    "test": "deno test --allow-net tests/",
-    "check": "deno check src/main.ts tests/**/*.ts",
+    "fmt": "deno fmt --check deno.json sigil.config examples/promise/sigil.config examples/slotted/sigil.config spec/sigil-config.schema.json packages/sigil-core/deno.json packages/sigil-core/src packages/sigil-core/tests packages/sigil-cli/deno.json packages/sigil-cli/src packages/sigil-cli/tests scripts",
     "lint": "deno lint",
-    "fmt": "deno fmt",
-    "build": "deno compile --allow-net --output build/sigil src/main.ts",
-    "build:install": "deno compile --allow-net --output ~/.local/bin/sigil src/main.ts"
-  },
-  "imports": {
-    "@std/assert": "jsr:@std/assert@1"
-  },
-  "compilerOptions": {
-    "lib": ["deno.ns", "dom"],
-    "strict": true,
-    "exactOptionalPropertyTypes": false,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "fmt": {
-    "useTabs": false,
-    "lineWidth": 100,
-    "indentWidth": 2,
-    "semiColons": false,
-    "singleQuote": true,
-    "proseWrap": "preserve"
-  },
-  "lint": {
-    "rules": {
-      "tags": ["recommended"],
-      "exclude": ["no-unused-vars", "no-explicit-any"]
-    }
-  },
-  "test": {
-    "include": ["tests/"],
-    "exclude": ["build/", "node_modules/"]
+    "check": "deno check packages/sigil-core/src/mod.ts packages/sigil-cli/src/main.ts",
+    "test:core": "deno task --cwd packages/sigil-core test",
+    "test:cli": "deno task --cwd packages/sigil-cli test",
+    "test:skill": "deno run --allow-read scripts/validate-skill.ts",
+    "test": "deno task test:core && deno task test:cli && deno task test:skill",
+    "publish:dry-run": "deno task --cwd packages/sigil-core publish:dry-run && deno task --cwd packages/sigil-cli publish:dry-run"
   }
 }

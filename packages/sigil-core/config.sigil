@@ -1,0 +1,56 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+
+expand SigilWorkspaceConfig {
+  state {
+    supported configVersion is exactly 1.0.0
+    supported languageVersion is exactly 1.0.0
+    default files.include is ["**/*.sigil"]
+    default files.exclude is [".git/**", ".deno/**", "node_modules/**", "build/**", "coverage/**"]
+    default tools is {}
+  }
+
+  logic {
+    Without --root, discovery walks from the target toward filesystem root and selects the nearest ancestor sigil.config.
+    A nearer config owns the target when every higher ancestor config excludes that nearer workspace root.
+    A higher ancestor config that includes the nearer workspace root produces a multiple-ancestor configuration error.
+    With --root, discovery requires sigil.config directly inside the supplied root and does not search elsewhere.
+    Discovery parses and validates configuration before loading any Sigil source.
+    File discovery evaluates include globs against normalized workspace-relative POSIX paths.
+    Exclude matches take precedence over include matches.
+    The pattern **/*.sigil matches Sigil files at the workspace root and in nested directories.
+    A nested sigil.config inside an excluded subtree defines an independent workspace and is skipped without error by the parent workspace.
+    A nested sigil.config inside an included subtree produces an error and its subtree is not loaded.
+    Filesystem failures propagate to the host instead of becoming Sigil source diagnostics.
+  }
+
+  constraints {
+    sigil.config is strict UTF-8 JSON.
+    Required top-level keys are configVersion, languageVersion, workspace, and files.
+    Unknown top-level keys are rejected.
+    workspace contains required name and optional members keys and rejects unknown keys.
+    workspace.members contains unique non-root workspace-relative directory paths that do not overlap.
+    files contains required include and optional exclude keys and rejects unknown keys.
+    tools is optional and core preserves namespaced JSON objects without interpreting them.
+    Project descriptions and rationale belong in README, Sigil components, or RootSigil summaries rather than workspace configuration.
+    Package and release metadata belongs in deno.json, package.json, or other package manifests.
+    Package manifests may inform member proposals but do not participate in workspace-member discovery.
+    #module.sigil files do not define workspace roots or workspace members.
+  }
+
+  cases {
+    A target below one valid config resolves that config directory as its workspace root.
+    A target with no ancestor config reports SIGIL_CONFIG_NOT_FOUND and loads no Sigil files.
+    A target inside an excluded independent workspace resolves its nearest config even when a parent workspace config exists.
+    A target with a nearer config still included by a parent config reports SIGIL_NESTED_CONFIG and loads no Sigil files.
+    A parent workspace ignores a nested config and its files when the nested directory is excluded.
+    A parent workspace reports SIGIL_NESTED_CONFIG when a nested config is inside an included path.
+    An explicit root without a direct config reports SIGIL_CONFIG_NOT_FOUND.
+    Malformed JSON reports SIGIL_CONFIG_PARSE and loads no Sigil files.
+    Missing, mistyped, empty, or unknown fields report SIGIL_CONFIG_INVALID and load no Sigil files.
+    Unsupported config or language versions report version-specific error diagnostics and load no Sigil files.
+    A matching excluded path is not loaded even when an include pattern also matches it.
+    The workspace root is a valid root-project RootSigil location.
+    A declared workspace member is a valid member-project RootSigil location.
+    An undeclared package directory is not a valid RootSigil location even when it contains a package manifest.
+  }
+}

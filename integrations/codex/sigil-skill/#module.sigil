@@ -1,0 +1,131 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@packages/sigil-cli import { SigilCli }
+
+component SigilCodexSkill {
+  goal {
+    Give Codex one reusable, versioned workflow for designing, reviewing, and implementing software through approved Sigil contracts.
+    Keep model-assisted semantic judgment and human approval in the host integration rather than deterministic core or CLI packages.
+  }
+
+  interface {
+    skill version = "1.0.0"
+    installable from integrations/codex/sigil-skill through skill-installer repository-path installation
+    invoked by Codex for Sigil authoring, review, reconciliation, validation, and Sigil-guided implementation
+    requires SigilCli and core versions compatible with ^1.0.0
+    requires SigilWorkspaceConfig version 1.0.0
+    requires SigilLanguage version 1.0.0
+    selects the Greenfield or Brownfield workflow from repository and Sigil evidence
+    validates workspace and version compatibility before relying on workspace semantics
+    reviews component contracts, collected expands, relevant evidence, modularity, and applicable guidance
+    uses collaborative conversation to discover intent, challenge assumptions, compare choices, and improve a contract before confirmation
+    proposes exact semantic changes before editing when evidence reconstruction or external guidance requires approval
+    stops for explicit human review after creating or semantically changing Sigil
+    implements only an explicitly approved Sigil contract
+    returns to Sigil review when implementation exposes a material missing decision
+  }
+}
+
+expand SigilCodexSkill {
+  constraints {
+    Before adding or modifying implementation that lacks clear Sigil coverage, collaborate with the user to define and approve the affected Sigil.
+  }
+
+  cases {
+    A requested implementation change without clear Sigil coverage pauses for collaborative Sigil definition and approval before code changes begin.
+  }
+}
+
+expand SigilCodexSkill {
+  state {
+    Greenfield workflow applies when the selected behavior or component has no existing implementation that constrains its intended contract.
+  }
+
+  logic {
+    Begin with a design conversation about the problem, intended users or callers, desired outcomes, boundaries, non-responsibilities, and important constraints.
+    Ask as many targeted questions as materially useful, grouped into manageable rounds that build on the user's answers.
+    Surface hidden assumptions, conflicting goals, missing failure behavior, and decisions that could make the proposed system weaker than intended.
+    When several valid designs exist, present concrete choices with consequences, tradeoffs, and a reasoned recommendation.
+    Invite the user to combine, reject, or revise the choices rather than treating the presented options as exhaustive.
+    Continue the conversation until product, behavior, ownership, lifecycle, architecture, and verification decisions are clear enough to model without guessing.
+    Establish the smallest coherent component boundary from the agreed outcome, callers, ownership, and non-responsibilities.
+    Draft goal and interface before operational state, logic, constraints, and cases.
+    Assess semantic readiness, modularity, cross-Sigil coherence, and applicable standards or platform guidance.
+    Synthesize the conversational decisions and review findings into exact proposed Sigil and ask the user to confirm or revise it.
+    Write the agreed Sigil and validate its structure, imports, collected expands, and workspace relationships.
+    Stop at the Sigil review gate before implementation.
+    After explicit approval, implement against the agreed contract and colocate Sigil with its owning module.
+  }
+
+  constraints {
+    Greenfield conversation is a normal design activity and is not limited to repairing vague requests.
+    The skill does not merely encode the first idea when questions and alternatives can produce a more coherent contract.
+    Questions and choices remain relevant to material product, contract, ownership, lifecycle, architecture, risk, or verification decisions.
+    Presented choices explain meaningful tradeoffs and do not hide a binding decision inside a recommendation.
+    Greenfield design does not invent major product, architecture, persistence, authorization, deployment, or lifecycle decisions silently.
+    Public interfaces state material inputs, outputs, failures, permissions, and lifecycle guarantees before code locks them in.
+    Binding technology and architecture choices belong in constraints rather than leaking into goals or public interfaces.
+    Implementation does not begin until the user approves the current Sigil and explicitly requests implementation.
+  }
+
+  cases {
+    An initial product idea receives multiple focused rounds of questions before component boundaries are proposed.
+    Competing architecture or behavior choices are compared with their consequences before the user decides.
+    A weak or contradictory assumption is surfaced constructively instead of being copied into Sigil unchanged.
+    The user can reject all presented choices and describe a different direction.
+    A conversational synthesis receives explicit confirmation before it becomes reviewed Sigil.
+    A complete proposal becomes reviewed Sigil before implementation begins.
+    A new implementation that reveals an undecided public behavior returns to Sigil review instead of choosing silently in code.
+  }
+}
+
+expand SigilCodexSkill {
+  state {
+    Brownfield workflow applies when relevant implementation exists but Sigil coverage is absent, partial, ambiguous, or suspected to have drifted.
+  }
+
+  logic {
+    Determine the repository root and whether it already contains sigil.config before gathering detailed project evidence.
+    When sigil.config is absent, run sigil init at the repository root to create the versioned workspace configuration first.
+    Validate the existing or initialized workspace configuration before interpreting or creating Sigil source.
+    When the workspace RootSigil is absent, gather repository-level documentation, manifests, executable configuration, and entrypoints to form a provisional application picture.
+    Assess whether repository evidence is specific enough to describe the application's responsibility, intended outcome, users or systems, boundary, and external interaction surfaces.
+    When the application picture is vague or incomplete, begin a focused conversation and ask the user for the missing product, boundary, and interface information.
+    Continue with targeted follow-up questions while answers leave material RootSigil decisions unresolved.
+    Synthesize repository evidence and conversational answers into a candidate application goal and externally meaningful interface.
+    Ask the user to confirm or correct the synthesized goal and interface as a separate decision after the discovery conversation.
+    Classify confirmed application-wide state, cross-cutting logic, binding constraints, and observable cases for an optional root expand.
+    Present the exact RootSigil proposal and wait for approval before writing #module.sigil.
+    After approval, write and validate RootSigil, then stop at its Sigil review gate.
+    After RootSigil approval, focus on the user's requested task and select its smallest coherent component or change-frontier boundary.
+    Gather task-specific implementation, tests, documentation, and related Sigil as evidence for that boundary.
+    Separate observed behavior, documented intent, user-confirmed intent, unresolved ambiguity, and suspected accidental behavior.
+    Present exact task components, expands, locations, and imports before reconstructing or semantically changing Sigil.
+    After task-Sigil approval, write and validate only the approved changes and stop at the Sigil review gate before implementation.
+  }
+
+  constraints {
+    sigil init creates a missing workspace config and never overwrites an existing sigil.config.
+    A new Brownfield workspace establishes an approved RootSigil before detailed modeling or implementation of the requested task.
+    RootSigil contains only confirmed application-wide purpose, external surfaces, behavior, and decisions.
+    RootSigil is not proposed while the application goal, users or systems, boundary, or external interaction surfaces remain materially vague.
+    Confirmation verifies a synthesized application contract and does not replace the preceding discovery conversation when evidence is insufficient.
+    Incidental dependencies, secrets, low-level configuration, and task-specific details remain outside RootSigil.
+    Task adoption remains bounded to the requested coherent boundary rather than converting the whole repository in one pass.
+    Code is evidence of current behavior, not proof of desired behavior or rationale.
+    Suspected accidental behavior does not become a contract without user confirmation.
+    Existing user changes and unrelated dirty-worktree content are preserved.
+  }
+
+  cases {
+    A Brownfield repository without sigil.config runs sigil init before project evidence is gathered for RootSigil.
+    A repository with an existing sigil.config validates it without running init or overwriting it.
+    A workspace without RootSigil receives an evidence-based application summary question before #module.sigil is proposed.
+    A vague project description starts a focused conversation about purpose, users or systems, boundaries, and external interaction surfaces.
+    An incomplete answer produces targeted follow-up questions instead of guessed RootSigil lines.
+    Once the conversation supplies enough information, the synthesized goal and interface receive a separate confirmation request.
+    An approved RootSigil is written and reviewed before work narrows to the user's requested task.
+    Conflicting code, tests, and documentation are reported for a user decision instead of silently reconciled.
+    A requested task with established Sigil coverage returns to ordinary review after the workspace RootSigil is confirmed.
+    Approved task Sigil captures intended behavior while legacy differences remain explicit until implementation is authorized.
+  }
+}

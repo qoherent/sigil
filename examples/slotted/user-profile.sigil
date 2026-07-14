@@ -1,0 +1,51 @@
+component UserProfile {
+    goal {
+        Stores editable profile information for a signed-in user.
+        Keeps profile presentation details separate from authentication identity and session rules.
+    }
+
+    interface {
+        type UserProfile = {
+            userId: UserId
+            displayName: string
+            profilePictureUrl?: string
+        }
+
+        type UserProfileSummary = Pick<UserProfile, "userId" | "displayName" | "profilePictureUrl">
+
+        updateUserProfile(userId: UserId, input: Partial<Pick<UserProfile, "displayName" | "profilePictureUrl">>) returns UserProfile
+        getUserProfile(userId: UserId) returns UserProfile
+        getUserProfileSummary(userId: UserId) returns UserProfileSummary
+
+        accepts profile updates from the owning user
+        exposes public profile summary to booking and room views
+        depends on UserId for ownership
+    }
+}
+
+expand UserProfile {
+    state {
+        profile can be incomplete or complete
+        profile belongs to exactly one UserId
+        profilePictureUrl can be absent or present
+    }
+
+    logic {
+        A new user starts with an incomplete profile.
+        The owning user can update displayName and profilePictureUrl.
+        Booking and room views read profile summary for display only.
+        Authentication does not depend on profile completeness.
+    }
+
+    constraints {
+        UserProfile owns non-authentication profile fields.
+        Auth owns credentials, sessions, roles, and permission checks.
+        Other modules should use UserProfile for display information instead of reading Auth private user details.
+    }
+
+    cases {
+        A renter updates their display name.
+        A room owner sets a profilePictureUrl.
+        A signed-in user can book a room even when their profile is incomplete.
+    }
+}
