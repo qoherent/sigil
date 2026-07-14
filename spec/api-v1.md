@@ -16,9 +16,15 @@
   and graph projections;
 - `componentContracts` and `collectedExpansionFor` expose reusable projections.
 
-Workspace results expose `root`, `configPath`, `config`, files, and diagnostics.
+Workspace results expose `root`, `configPath`, `config`, declared
+`memberRoots`, files, and diagnostics. The workspace root identifies the root
+project; `memberRoots` contains only roots declared by `workspace.members`.
 Graph results expose component nodes, file edges, imported-component edges, and
 component-expansion edges. Resolved expansion entries include their source file.
+
+`SIGIL_INVALID_ROOT_MODULE` reports `#module.sigil` outside a project or
+declared workspace-member root. `SIGIL_INVALID_DIRECTORY_IMPORT` reports a
+directory import to such an invalid location.
 
 Sigil source/config problems are diagnostics. Filesystem inability propagates to
 the host.
@@ -26,7 +32,7 @@ the host.
 ## CLI
 
 Workspace JSON includes `workspaceRoot`, `configPath`, `configVersion`,
-`languageVersion`, `projectName`, diagnostics, and command data. `parse` returns
+`languageVersion`, `workspaceName`, diagnostics, and command data. `parse` returns
 `document: null` when configuration prevents parsing.
 
 Exit codes are 0 for success or warnings, 1 for configuration/Sigil errors, 2

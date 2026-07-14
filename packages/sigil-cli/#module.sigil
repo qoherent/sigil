@@ -1,5 +1,4 @@
-@spec/language.sigil import { SigilLanguage }
-@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 
 component SigilCli {
   goal {
@@ -25,7 +24,7 @@ component SigilCli {
 expand SigilCli {
   logic {
     init writes one schema-1.0.0 sigil.config and refuses to overwrite an existing config.
-    init defaults project.name to the target directory basename.
+    init defaults workspace.name to the target directory basename and workspace.members to an empty array.
     init defaults language, config, include, exclude, and tools values from SigilWorkspaceConfig.
     version reports CLI and core versions, supported config and language versions, and resolved workspace versions when available.
     parse discovers and validates workspace configuration before invoking the raw parser with its explicit language version.
@@ -34,7 +33,7 @@ expand SigilCli {
   }
 
   constraints {
-    Every workspace-dependent JSON result includes workspaceRoot, configPath, configVersion, languageVersion, and projectName.
+    Every workspace-dependent JSON result includes workspaceRoot, configPath, configVersion, languageVersion, and workspaceName.
     CLI commands do not mutate .sigil files in version 1.
     CLI commands are deterministic and non-interactive in version 1.
     Exit code 0 means success or warnings only.
@@ -44,7 +43,7 @@ expand SigilCli {
   }
 
   cases {
-    init in an empty directory creates a valid config using the directory basename as project.name.
+    init in an empty directory creates a valid config using the directory basename as workspace.name.
     init against an existing config reports an error and leaves the file unchanged.
     version in a valid workspace reports compatible CLI, core, config, and language versions.
     check from a nested directory resolves the nearest eligible ancestor config.

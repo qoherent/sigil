@@ -226,6 +226,7 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
     root: ".",
     configPath: "sigil.config",
     config: parseSigilConfig(configSource()).config,
+    projectRoots: ["."],
     files: [{ path: "broken.sigil", document: parsed.document }],
     diagnostics: parsed.diagnostics,
   });
@@ -233,6 +234,50 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
   assertHasCode(resolved.diagnostics, "SIGIL_MISSING_GOAL");
   assertHasCode(resolved.diagnostics, "SIGIL_MISSING_INTERFACE");
   assertHasCode(resolved.diagnostics, "SIGIL_EXPAND_WITHOUT_COMPONENT");
+});
+
+Deno.test("reserves RootSigil and directory imports for project roots", async () => {
+  const fs = new InMemorySigilFileSystem({
+    "sigil.config": configSource(),
+    "deno.json": JSON.stringify({ workspace: ["workspace-only"] }),
+    "#module.sigil": rootModule,
+    "internal/#module.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "consumer.sigil":
+      "@internal import { Internal }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "declared/deno.json": "{}",
+    "declared/#module.sigil": rootModule.replaceAll("Sigil", "Declared"),
+    "declared-consumer.sigil":
+      "@declared import { Declared }\n\ncomponent DeclaredConsumer {\n  goal {\n    Consume declared project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "workspace-only/#module.sigil": rootModule.replaceAll(
+      "Sigil",
+      "WorkspaceOnly",
+    ),
+    "workspace-consumer.sigil":
+      "@workspace-only import { WorkspaceOnly }\n\ncomponent WorkspaceConsumer {\n  goal {\n    Consume workspace project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+  });
+  const workspace = await loadSigilWorkspace(fs, { startPath: "." });
+  const resolved = resolveSigilWorkspace(workspace);
+
+  assert(workspace.projectRoots.includes("."));
+  assert(workspace.projectRoots.includes("declared"));
+  assert(workspace.projectRoots.includes("workspace-only"));
+  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_ROOT_MODULE");
+  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.componentName === "Declared"
+    ),
+  );
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.componentName === "WorkspaceOnly"
+    ),
+  );
+  assert(
+    !resolved.graph.importedComponentEdges.some((edge) =>
+      edge.componentName === "Internal"
+    ),
+  );
 });
 
 Deno.test("collects expansion file paths and exposes projections", async () => {

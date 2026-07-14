@@ -1,5 +1,4 @@
-@spec/language.sigil import { SigilLanguage }
-@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 @packages/sigil-cli import { SigilCli }
 
 component SigilCodexSkill {
@@ -32,7 +31,7 @@ expand SigilCodexSkill {
     A missing or materially ambiguous application goal or interface pauses root module creation for focused user input.
     After confirming the application goal and interface, the skill classifies material repository evidence into root state, logic, constraints, and cases.
     Root expand lines remain evidence-backed proposals until the user explicitly approves them.
-    Runtime and deployment modes belong in state, cross-cutting flows and policies in logic, binding technologies and architecture decisions in constraints, and observable application outcomes in cases.
+    Runtime and deployment modes belong in state, cross-cutting behavior and flows belong in logic, rules, policies, binding technologies, and architecture decisions belong in constraints, and observable application outcomes belong in cases.
     Incidental dependencies, secrets, low-level configuration, and module-specific behavior remain outside the root expand.
     Approved Sigil guides implementation until a material missing decision returns the workflow to review.
   }

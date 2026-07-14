@@ -25,7 +25,10 @@ It must:
 - apply include and exclude globs and permit independent workspaces only inside excluded subtrees;
 - load workspace files through an abstract filesystem boundary;
 - resolve `@path import { Name }` declarations from the workspace root;
-- treat nested `#module.sigil` files as importable module directory summaries;
+- read additional project roots exclusively from `workspace.members` in
+  `sigil.config`;
+- reject `#module.sigil` files and directory imports outside valid `RootSigil`
+  locations;
 - identify public components and matching expansions;
 - collect all matching `expand Name` blocks without override or shadowing semantics;
 - build graph primitives for files, imports, components, and expansions;
@@ -139,6 +142,8 @@ V1 diagnostics must include stable codes for:
 - missing `interface`;
 - unresolved import path;
 - unresolved imported component;
+- invalid `RootSigil` location;
+- invalid directory import;
 - expand without matching component;
 - duplicate component ambiguity;
 - missing, malformed, invalid, unsupported, existing, or nested config;
@@ -154,7 +159,11 @@ excluded nested subtrees are independent workspaces and are skipped by parents.
 
 Import paths begin with `@` and resolve from the workspace root.
 
-A directory import resolves to `#module.sigil` inside that directory.
+A directory import resolves to `#module.sigil` only at the workspace root or a
+member root declared by `workspace.members`. Package manifests and repository
+workspace declarations do not authorize RootSigil locations. A nested directory
+with its own `sigil.config` is an excluded independent workspace rather than a
+member project. Ordinary internal contracts use explicit `.sigil` filenames.
 
 A file import resolves to the exact `.sigil` file.
 

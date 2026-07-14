@@ -114,14 +114,16 @@ For a new brownfield workspace, do not propose a root `#module.sigil` until you
 have inspected the repository's product documentation, dependency manifests,
 executable configuration, and entrypoints, then asked the user to confirm or
 correct the provisional application goal and externally meaningful interface.
-The root module must be a minimal confirmed application summary, never an empty
-marker or import-only barrel.
+The root module must follow the `RootSigil` contract as a minimal confirmed
+application summary, never an empty marker or import-only barrel. Its
+project-named component goal describes why the project exists and its interface
+describes how users or external systems interact with it.
 After goal and interface confirmation, classify other material repository
 evidence into an optional root `expand`: runtime and deployment modes in
-`state`, cross-cutting flows and policies in `logic`, binding technologies and
-architecture decisions in `constraints`, and observable application outcomes
-in `cases`. Keep incidental dependencies, secrets, low-level configuration, and
-module-specific details out of the root summary.
+`state`, cross-cutting behavior and flows in `logic`, rules, policies, binding
+technologies, and architecture decisions in `constraints`, and observable
+application outcomes in `cases`. Keep incidental dependencies, secrets,
+low-level configuration, and module-specific details out of the root summary.
 
 1. Discover relevant context.
    - When a `sigil` command or repo-local CLI is available, start with `check`
@@ -140,7 +142,10 @@ module-specific details out of the root summary.
      Report references that cannot be accessed instead of guessing their
      contents.
    - Treat the nearest eligible ancestor `sigil.config` as the workspace root contract; a nearer independent workspace must be excluded by every configured parent.
-   - Treat root and nested `#module.sigil` files only as optional module summaries.
+   - Treat the directory containing `sigil.config` as the workspace root and root-project location.
+   - Reserve `#module.sigil` for the workspace root or a member root explicitly declared by `workspace.members`; never infer a member from directory structure or package manifests.
+   - Treat an excluded subtree with its own `sigil.config` as an independent workspace, not as a member of its parent.
+   - Use descriptive `.sigil` filenames for ordinary internal directories, features, components, and implementation modules, and import them by explicit filename.
 
 2. Build the component picture.
    - Use CLI JSON diagnostics and context output when available to identify
@@ -206,10 +211,10 @@ module-specific details out of the root summary.
      links such as Figma URLs.
    - Put binding decisions in `constraints`, including stack choices and
      architecture rules.
-   - Put behavior, flows, transitions, policies, and algorithms in `logic`.
+   - Put behavior, flows, transitions, algorithms, transformations, and decision paths in `logic`.
    - Put meaningful runtime/domain configurations in `state`.
-   - Put architecture, ownership, dependencies, module boundaries, and binding
-     technology decisions in `constraints`.
+   - Put rules, policies, invariants, architecture, ownership, dependencies,
+     module boundaries, and binding technology decisions in `constraints`.
    - Put examples, acceptance criteria, and edge cases in `cases`.
 
 7. Preserve semantic lines.
@@ -243,7 +248,8 @@ module-specific details out of the root summary.
      directories, split it so each component or implementation-specific expand
      lives near its owner. Do not duplicate a public component declaration.
    - Do not move the workspace-root `#module.sigil` merely to colocate code; it
-     remains the workspace marker and cross-cutting summary.
+     remains the root-project `RootSigil` summary beside the `sigil.config`
+     workspace marker.
    - Update every affected `@path import { Name }` after moving or splitting a
      Sigil file.
    - Run `sigil check` after relocation, and use `sigil graph` or `sigil context`
@@ -352,7 +358,7 @@ In brownfield work, treat code as evidence of current behavior, not proof of
 desired behavior or rationale. Do not create or change Sigil until the user
 approves the pilot boundary and exact semantic lines.
 
-When creating the first root module for a brownfield repository, repository
+When creating the first `RootSigil` for a brownfield repository, repository
 evidence may support a provisional application picture but cannot establish its
 intended goal or interface. Ask the user to confirm or correct both before
 showing the exact root-module proposal.

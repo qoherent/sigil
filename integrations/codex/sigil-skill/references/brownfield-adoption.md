@@ -133,10 +133,11 @@ repository evidence as candidates for a root `expand`:
 
 - `state`: meaningful application-wide runtime modes, deployable units,
   persistence modes, or operational configurations that can vary;
-- `logic`: cross-cutting application flows, routing, orchestration, lifecycle,
-  or policies that explain how the application behaves as a whole;
-- `constraints`: binding technologies, architecture and dependency direction,
-  compatibility requirements, supported platforms, or deployment rules;
+- `logic`: cross-cutting application behavior, flows, routing, orchestration,
+  and lifecycle transitions;
+- `constraints`: rules, policies, binding technologies, architecture and
+  dependency direction, compatibility requirements, supported platforms, or
+  deployment rules;
 - `cases`: observable application-level outcomes, representative workflows,
   failures, or acceptance scenarios.
 
@@ -240,8 +241,8 @@ implementations genuinely depend on it.
 ### Workspace Marker
 
 When no Sigil workspace exists, propose `sigil.config` as the workspace marker
-and a minimal root `#module.sigil` as the confirmed application summary. The
-root module should:
+and a minimal root `#module.sigil` following the `RootSigil` contract as the
+confirmed application summary. The root module should:
 
 - declare one repository-level application component with a confirmed goal and
   externally meaningful interface;
@@ -260,7 +261,7 @@ application; a list of internal imports is not an interface. Include only the
 root `expand` sections supported by material evidence. Omit empty sections and
 omit the entire `expand` when it would add no repository-level meaning.
 
-A minimal root module normally has this shape:
+A minimal `RootSigil` normally has this shape:
 
 ```sigil
 component ConfirmedApplicationName {
@@ -279,11 +280,11 @@ expand ConfirmedApplicationName {
   }
 
   logic {
-    confirmed cross-cutting flows or policies, when applicable
+    confirmed cross-cutting behavior or flows, when applicable
   }
 
   constraints {
-    confirmed binding technologies or architecture decisions, when applicable
+    confirmed rules, policies, architecture, or technology decisions, when applicable
   }
 
   cases {
@@ -301,7 +302,7 @@ dependency of this application summary. The component remains meaningful if the
 import is removed.
 
 If repository-level purpose or interface is unclear, the config proposal may
-continue, but the root-module proposal waits for the focused confirmation step.
+continue, but the `RootSigil` proposal waits for the focused confirmation step.
 Never create or preserve an empty root module or one containing only imports.
 
 ### Placement And Imports

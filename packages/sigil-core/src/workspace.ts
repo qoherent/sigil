@@ -1,5 +1,6 @@
 import {
   excludesSigilSubtree,
+  globMatches,
   matchesSigilFile,
   parseSigilConfig,
 } from "./config.ts";
@@ -16,11 +17,20 @@ import { parseSigilDocument } from "./parser.ts";
 import {
   ancestorsFrom,
   basename,
+  dirname,
   isModuleFile,
   joinPath,
   normalizePath,
   relativePath,
 } from "./path.ts";
+
+const PROJECT_MANIFEST_NAMES = new Set([
+  "deno.json",
+  "package.json",
+  "pyproject.toml",
+  "Cargo.toml",
+  "go.mod",
+]);
 
 export interface WorkspaceDiscoveryResult {
   readonly root: string;
@@ -100,12 +110,21 @@ export async function loadSigilWorkspace(
   const diagnostics = [...discovery.diagnostics];
   const loadedFiles: LoadedSigilFile[] = [];
   if (!discovery.config || !discovery.configPath) {
-    return { ...discovery, files: loadedFiles, diagnostics };
+    return {
+      ...discovery,
+      projectRoots: [discovery.root],
+      files: loadedFiles,
+      diagnostics,
+    };
   }
 
-  const allPaths = await fs.listFiles(discovery.root);
+  const allPaths = (await fs.listFiles(discovery.root)).map(normalizePath);
+  const projectRoots = await discoverProjectRoots(
+    fs,
+    discovery.root,
+    allPaths,
+  );
   const nestedConfigs = allPaths
-    .map(normalizePath)
     .filter((path) =>
       basename(path) === "sigil.config" && path !== discovery.configPath
     )
@@ -130,7 +149,6 @@ export async function loadSigilWorkspace(
   }
 
   const paths = allPaths
-    .map(normalizePath)
     .filter((path) =>
       !nestedRoots.some((root) => path === root || path.startsWith(`${root}/`))
     )
@@ -148,7 +166,7 @@ export async function loadSigilWorkspace(
     diagnostics.push(...parsed.diagnostics);
   }
 
-  return { ...discovery, files: loadedFiles, diagnostics };
+  return { ...discovery, projectRoots, files: loadedFiles, diagnostics };
 }
 
 export function isWorkspaceRootModule(
@@ -158,11 +176,14 @@ export function isWorkspaceRootModule(
   return normalizePath(path) === joinPath(workspace.root, "#module.sigil");
 }
 
-export function isNestedModuleSummary(
+export function isRootSigil(
   workspace: SigilWorkspace,
   path: string,
 ): boolean {
-  return isModuleFile(path) && !isWorkspaceRootModule(workspace, path);
+  const normalized = normalizePath(path);
+  return isModuleFile(normalized) && workspace.projectRoots.includes(
+    dirname(normalized),
+  );
 }
 
 async function readDiscoveredConfig(
@@ -190,4 +211,67 @@ async function readDiscoveredConfig(
     config: parsed.config,
     diagnostics: parsed.diagnostics,
   };
+}
+
+async function discoverProjectRoots(
+  fs: SigilFileSystem,
+  root: string,
+  allPaths: readonly string[],
+): Promise<readonly string[]> {
+  const roots = new Set<string>([root]);
+  const directories = new Set(allPaths.map(dirname));
+  for (const path of allPaths) {
+    if (PROJECT_MANIFEST_NAMES.has(basename(path))) roots.add(dirname(path));
+  }
+
+  for (const manifestName of ["deno.json", "package.json"]) {
+    const manifestPath = joinPath(root, manifestName);
+    if (!allPaths.includes(manifestPath)) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(await fs.readTextFile(manifestPath));
+    } catch {
+      continue;
+    }
+    for (const entry of workspaceEntries(value)) {
+      if (entry.includes("*") || entry.includes("?")) {
+        for (const directory of directories) {
+          if (globMatches(entry, relativePath(root, directory))) {
+            roots.add(directory);
+          }
+        }
+        continue;
+      }
+      const candidate = joinPath(root, entry);
+      if (isWithinRoot(root, candidate)) roots.add(candidate);
+    }
+  }
+  return [...roots].sort();
+}
+
+function workspaceEntries(value: unknown): readonly string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const record = value as Record<string, unknown>;
+  const workspace = record.workspace ?? record.workspaces;
+  if (Array.isArray(workspace)) {
+    return workspace.filter((item): item is string => typeof item === "string");
+  }
+  if (workspace && typeof workspace === "object") {
+    const packages = (workspace as Record<string, unknown>).packages;
+    if (Array.isArray(packages)) {
+      return packages.filter((item): item is string =>
+        typeof item === "string"
+      );
+    }
+  }
+  return [];
+}
+
+function isWithinRoot(root: string, path: string): boolean {
+  if (root === ".") {
+    return path === "." ||
+      (!path.startsWith("../") && path !== ".." && !path.startsWith("/") &&
+        !/^[A-Za-z]:\//.test(path));
+  }
+  return path === root || path.startsWith(`${root}/`);
 }

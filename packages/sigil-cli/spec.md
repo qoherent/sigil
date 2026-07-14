@@ -85,7 +85,7 @@ All commands should support:
 All machine-readable outputs that depend on workspace behavior must include:
 
 - resolved workspace root;
-- config path, config version, language version, and project name;
+- config path, config version, language version, and workspace name;
 - diagnostics;
 - command-specific data.
 
@@ -134,7 +134,7 @@ Required output data for JSON:
 
 - workspace root;
 - config path and selected config/language versions;
-- project name;
+- workspace name;
 - diagnostic list;
 - diagnostic counts by severity.
 
@@ -200,7 +200,7 @@ must never overwrite an existing config.
 ### `sigil version [path]`
 
 Reports CLI and core package versions, their supported config and language
-versions, and—when a workspace resolves—the project name and configured
+versions, and—when a workspace resolves—the workspace name and configured
 versions.
 
 ## 8. Output Contracts

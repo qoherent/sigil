@@ -35,8 +35,12 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The module summary filename is `#module.sigil`.
-Root and nested module summaries are optional and do not define workspace roots.
+The project summary filename is `#module.sigil`.
+It is reserved for the root project at the workspace root or a workspace member
+at a member root declared by `workspace.members`, and every file with that name
+follows the `RootSigil` contract.
+Do not use `#module.sigil` for ordinary internal directories, features,
+components, or implementation modules.
 
 A strict JSON `sigil.config` is required at the workspace root.
 It selects config schema and language versions and defines workspace file discovery.
@@ -51,16 +55,64 @@ The default placement is beside the corresponding module, feature, abstraction, 
 When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
-Use `#module.sigil` at the workspace root for product, deployable, bounded-context, or cross-cutting summaries.
-Use nested `#module.sigil` files for importable module directory summaries.
-Use imports to connect nearby Sigil files instead of moving all specifications into a central folder.
+Use the workspace-root `#module.sigil` for the `RootSigil` project summary.
+In a monorepo workspace, a declared workspace member may also have a
+`RootSigil` at its member root. Internal contracts use descriptive `.sigil`
+filenames colocated with their implementation and are imported by explicit
+filename.
+
+### RootSigil
+
+`RootSigil` defines the role of `#module.sigil` for one project. The
+workspace-root file describes the root project. A member-root file describes a
+workspace member explicitly declared by `workspace.members` in `sigil.config`.
+Package manifests and directory structure alone do not authorize a RootSigil
+location.
+
+The file contains a project-named component representing that project.
+
+In that project component:
+
+- `goal` describes why the project exists and its intended outcome;
+- `interface` describes how users and external systems interact with the
+  project, such as through a web app, mobile app, API, CLI, or library.
+
+Its matching `expand` uses the general `state`, `logic`, `constraints`, and
+`cases` meanings at project scope. `RootSigil` narrows the scope to project-wide
+concerns; it does not redefine those sections.
+
+Root summaries exclude secrets, incidental dependencies, low-level
+configuration, and module-specific implementation details. `sigil.config`
+defines the workspace root; `RootSigil` summarizes the project without gaining
+workspace-discovery authority.
+
+An excluded nested directory with its own `sigil.config` is an independent
+workspace. It describes its own root project and is not a workspace member of
+the parent.
+
+### Workspace and project vocabulary
+
+A **Sigil workspace** is the tooling boundary controlled by one
+`sigil.config`. The **workspace root** is the directory containing that file.
+
+A **project** is a coherent app, service, library, package, or other system
+described by a `RootSigil`. A **project root** is a directory where
+`#module.sigil` is permitted. The workspace root is the **root project**
+location.
+
+A **workspace member** is an additional project explicitly declared by
+`workspace.members`. Its declared directory is its **member root**. A workspace
+with one or more members is a **monorepo workspace**.
+
+An **independent workspace** is an excluded nested directory containing its own
+`sigil.config`. It is not a workspace member of its parent.
 
 ## 3. Top-Level Forms
 
 Sigil currently defines three top-level forms:
 
 ```sigil
-@sub/folder import { ComponentName }
+@packages/sigil-cli import { SigilCli }
 @sub/folder/auth.sigil import { Auth }
 
 component Name {
@@ -79,11 +131,11 @@ expand Name {
   }
 
   logic {
-    flows, algorithms, policies, transformations, and decision paths
+    behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
   }
 
   constraints {
-    rules and decisions the implementation must obey
+    rules, policies, invariants, and decisions the implementation must obey
   }
 
   cases {
@@ -98,7 +150,9 @@ expand Name {
 
 ## 4. Imports
 
-An `import` declares that the current Sigil file depends on named components from another Sigil file or module directory.
+An `import` declares that the current Sigil file depends on named components
+from another Sigil source. It makes their public contracts and matching
+collected expands available to the importer.
 
 Import syntax:
 
@@ -114,20 +168,24 @@ Tools discover the workspace by walking upward from the current file or command 
 An explicit root must contain `sigil.config` directly.
 Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
 
-A directory import resolves to that directory's `#module.sigil`.
+A directory import is reserved for a valid `RootSigil` location and resolves to
+the root project's or declared workspace member's `#module.sigil`.
 
 ```sigil
-@sub/folder import { ComponentName }
+@packages/sigil-cli import { SigilCli }
 ```
 
 Given this file layout:
 
 ```text
-sub/folder/#module.sigil
-sub/folder/auth.sigil
+packages/sigil-cli/#module.sigil
+packages/sigil-cli/deno.json
 ```
 
-`@sub/folder import { ComponentName }` resolves through `sub/folder/#module.sigil`.
+Because `packages/sigil-cli` is declared in `workspace.members`,
+`@packages/sigil-cli import { SigilCli }` resolves through its `#module.sigil`.
+Package manifests and directory structure alone are not enough to make another
+directory importable this way.
 
 A file import resolves to the exact `.sigil` file.
 
@@ -154,6 +212,11 @@ An import that resolves only to `expand Name` without `component Name` is unreso
 A `component` is the reusable public description of a system part.
 It should be understandable without reading implementation details.
 
+Its `goal` describes why the component exists, the responsibility it owns, and
+its intended outcome. Its `interface` describes how users, callers, external
+systems, or other components interact with it through its observable public
+contract.
+
 A `component` must contain:
 
 - `goal`
@@ -177,7 +240,8 @@ They should depend on `expand` details only when deeper implementation context i
 
 ## 6. Expands
 
-An `expand` adds operational detail to a component without changing the public shape of the component itself.
+An `expand` adds collective operational detail to a component without changing
+or overriding its public contract.
 It is where authors record state, behavior, rules, decisions, edge cases, and examples that would otherwise be lost during implementation.
 
 An `expand Name` should normally refer to a matching `component Name`.
@@ -280,7 +344,6 @@ It may include:
 
 - flows;
 - algorithms;
-- policies;
 - transformations;
 - decision paths;
 - lifecycle transitions.
@@ -289,7 +352,8 @@ For state-machine-like components, `logic` should describe transitions and what 
 
 ### `constraints`
 
-`constraints` describes rules that must remain true across valid executions or implementations.
+`constraints` describes rules, policies, and invariants that must remain true
+across valid executions or implementations.
 
 Use `constraints` for binding decisions such as:
 
@@ -358,7 +422,9 @@ A valid Sigil source file may contain one or more top-level forms.
 
 An `import` must specify a path and one or more names.
 
-An import path without a `.sigil` filename resolves to `#module.sigil` inside that path.
+An import path without a `.sigil` filename may target only a valid `RootSigil`
+location: the workspace root or a member root declared by `workspace.members`.
+It resolves to `#module.sigil` inside that path.
 
 An import path with a `.sigil` filename resolves to that exact file.
 
@@ -387,7 +453,11 @@ Architecture, stack, ownership, and dependency decisions belong in `constraints`
 
 Runtime configurations, lifecycle states, and meaningful domain modes belong in `state`.
 
-Behavior, transitions, algorithms, and policies belong in `logic`.
+Behavior, transitions, algorithms, transformations, and decision paths belong
+in `logic`.
+
+Rules, policies, invariants, architecture decisions, and technology choices
+belong in `constraints`.
 
 Examples, acceptance criteria, and externally observable edge cases belong in `cases`.
 

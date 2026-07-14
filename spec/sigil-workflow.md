@@ -97,8 +97,14 @@ Initial brownfield Sigil contains only the contract the user approves.
 
 When no workspace exists, the agent first inspects root product and architecture documentation, dependency definitions, executable configuration, and application entrypoints.
 It uses that evidence to present a provisional application goal and externally meaningful interface, then asks the user to confirm or correct both before proposing root-module text.
-The proposal includes a minimal `sigil.config` and a root `#module.sigil` containing a meaningful confirmed application summary; it never creates an empty or import-only root module.
-After goal and interface confirmation, material application-wide evidence may be proposed in a root `expand`: runtime and deployment modes in `state`, cross-cutting flows and policies in `logic`, binding technologies and architecture decisions in `constraints`, and observable outcomes in `cases`.
+The proposal includes a minimal `sigil.config` and a root `#module.sigil` that
+follows the `RootSigil` contract with a meaningful confirmed application
+summary; it never creates an empty or import-only root module.
+After goal and interface confirmation, material application-wide evidence may
+be proposed in a root `expand` using the general section meanings at project
+scope: runtime and deployment modes in `state`, cross-cutting behavior and flows
+in `logic`, rules, policies, binding technologies, and architecture decisions in
+`constraints`, and observable outcomes in `cases`.
 Incidental dependencies, secrets, low-level configuration, and module-specific behavior remain outside the root summary.
 Component contracts and implementation-specific expands are placed beside the code they describe.
 
@@ -118,7 +124,9 @@ Unavailable authoritative material blocks high-risk or compliance-critical imple
 Approved Sigil should live beside the module, feature, abstraction, or implementation it explains.
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
-The workspace-root `sigil.config` remains the discovery marker; a root `#module.sigil` remains an optional cross-cutting summary.
+The workspace-root `sigil.config` remains the discovery marker; a root
+`#module.sigil` is the `RootSigil` project summary and has no discovery
+authority.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.
 
 ## Agent Review Heuristics

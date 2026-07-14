@@ -25,7 +25,10 @@ Responsibilities:
 
 - parse `.sigil` files;
 - preserve source locations and semantic lines;
+- identify the root project and workspace-member roots declared by `workspace.members`;
 - resolve imports;
+- reject `#module.sigil` files and directory imports outside valid `RootSigil`
+  locations;
 - collect component expansions;
 - build the workspace graph;
 - produce diagnostics;

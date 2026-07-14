@@ -19,7 +19,7 @@ Expected skill behavior:
    configuration, and entrypoints without treating them as desired intent.
 3. Present a provisional application goal and externally meaningful interface,
    with evidence paths, and ask the user to confirm or correct both.
-4. Wait for the user's answer before proposing the root module.
+4. Wait for the user's answer before proposing the `RootSigil`.
 5. Classify material application-wide evidence into root `state`, `logic`,
    `constraints`, and `cases`, with evidence paths. Treat every line as a
    proposal rather than approved intent.
@@ -28,7 +28,7 @@ Expected skill behavior:
    only when evidence shows it is a binding application decision.
 7. Propose the exact starter config, a minimal meaningful root application
    contract, an evidence-backed root expand containing only applicable
-   non-empty sections, and the component-local Sigil contract. The root module
+   non-empty sections, and the component-local Sigil contract. The `RootSigil`
    may import only reviewed components and must not be empty or import-only.
 8. Wait for approval before writing any artifact.
 9. After writing approved Sigil, validate it and stop at the semantic review

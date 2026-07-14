@@ -97,7 +97,9 @@ Responsibilities:
 - parse config and apply file include and exclude globs;
 - reject missing, invalid, unsupported, and unexcluded nested configuration;
 - load relevant `.sigil` files through `filesystem`;
-- classify root and nested `#module.sigil` files.
+- identify the root project and workspace-member roots exclusively from
+  `sigil.config`;
+- identify valid `RootSigil` locations.
 
 Rules:
 

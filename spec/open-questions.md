@@ -11,9 +11,7 @@ This file tracks unresolved language and workflow decisions.
 
 ## Project Organization
 
-- Should each product module own a nested `#module.sigil` file, or only colocated component and expand files as needed?
 - How should shared abstractions be placed when they do not have one obvious implementation location?
-- Should workspace-root Sigil describe the whole product, the deployable unit, or the current bounded context?
 
 ## Platform
 

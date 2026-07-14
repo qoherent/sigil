@@ -9,7 +9,7 @@ Package docs:
 
 - [spec.md](spec.md): proposed data contracts, behavior, and acceptance scenarios.
 - [architecture.md](architecture.md): package boundaries, adapters, persistence, and reconciliation.
-- [#module.sigil](./%23module.sigil): public component contracts and operational decisions awaiting semantic approval.
+- [sigil-indexer.sigil](./sigil-indexer.sigil): public component contracts and operational decisions awaiting semantic approval.
 
 Implementation is blocked until ADR-010 and the colocated Sigil contracts are
 reviewed and approved.

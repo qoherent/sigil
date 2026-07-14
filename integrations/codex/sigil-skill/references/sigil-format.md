@@ -38,30 +38,50 @@ starting point, then read source files before editing them.
 
 Sigil source files use `.sigil`.
 
-The module summary filename is `#module.sigil`. Root and nested module files are
-optional summaries and import targets. They do not define workspace roots.
+The project summary filename is `#module.sigil`. It is reserved for the root
+project or a workspace member explicitly declared by `workspace.members`, and
+every file with that name follows the `RootSigil` contract. Do not create it for ordinary internal
+directories, features, components, or implementation modules.
 
 A strict JSON `sigil.config` is mandatory at the workspace root. It selects
-config schema and language versions, provides `project.name`, and defines file
-include and exclude globs. A nested config defines an independent workspace only
+config schema and language versions, provides `workspace.name`, declares
+optional `workspace.members`, and defines file include and exclude globs. A nested config defines an independent workspace only
 when its entire subtree is excluded by each configured parent; otherwise it is
 invalid.
 
-Sigil files should live as near as practical to the code they describe. Use
-workspace-root Sigil for product, deployable, bounded-context, or cross-cutting
-summaries. Use nested `#module.sigil` files for importable module directory
-summaries. If the main `component` must live elsewhere, a nearby `expand Name`
-may live beside the code it explains.
+Sigil files should live as near as practical to the code they describe. Use the
+workspace-root `#module.sigil` for the root-project `RootSigil` summary. A
+declared workspace member may have one at its member root. Internal contracts
+use descriptive `.sigil` filenames. If the main `component` must live elsewhere,
+a nearby `expand Name` may live beside the code it explains.
 
 When implementation establishes a clear owner directory, relocate a temporary
 Sigil file beside that implementation and update affected imports. Keep the
 workspace-root `#module.sigil` in place. If a shared component contract cannot
 move, colocate its implementation-specific `expand Name` instead.
 
+### RootSigil
+
+Each valid `#module.sigil` contains a project-named component. Its
+`goal` describes why the overall project exists and its intended outcome. Its
+`interface` describes how users and external systems interact with the project,
+including applicable web app, mobile app, API, CLI, library, or other surfaces.
+
+The matching root `expand` uses the general `state`, `logic`, `constraints`, and
+`cases` meanings at project scope. `RootSigil` narrows scope without redefining
+the sections.
+
+Exclude secrets, incidental dependencies, low-level configuration, and
+module-specific implementation details. `sigil.config` remains the workspace
+marker and sole workspace-membership authority. Package manifests and directory
+structure alone do not authorize a member-root `RootSigil`. An excluded nested
+directory with its own config is an independent workspace, not a parent
+workspace member.
+
 ## Top-Level Forms
 
 ```sigil
-@sub/folder import { ComponentName }
+@packages/member import { ComponentName }
 @sub/folder/auth.sigil import { Auth }
 
 component Name {
@@ -80,11 +100,11 @@ expand Name {
   }
 
   logic {
-    flows, algorithms, policies, transformations, and decision paths
+    behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
   }
 
   constraints {
-    rules and decisions the implementation must obey
+    rules, policies, invariants, and decisions the implementation must obey
   }
 
   cases {
@@ -93,13 +113,16 @@ expand Name {
 }
 ```
 
-`@sub/folder import { ComponentName }` imports from `sub/folder/#module.sigil`.
+`@packages/member import { ComponentName }` imports from a declared workspace
+member's `#module.sigil`.
 `@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
 
 Importing `Name` makes `component Name` and all matching `expand Name` blocks
 available to the current file.
 
-Keep `component` focused on the reusable public contract. Put state, behavior,
+`component` defines the reusable public contract of a coherent system part
+through its `goal` and `interface`. `expand` adds collective operational detail
+without changing or overriding that public contract. Put state, behavior,
 constraints, and representative cases in `expand`.
 
 ## Required And Optional Sections
@@ -108,6 +131,10 @@ constraints, and representative cases in `expand`.
 
 - `goal`
 - `interface`
+
+`goal` describes why the component exists, the responsibility it owns, and its
+intended outcome. `interface` describes how users, callers, external systems,
+or other components interact with it through its observable public contract.
 
 `expand` may contain:
 
@@ -143,9 +170,10 @@ Import syntax:
 @path import { Name, OtherName }
 ```
 
-A path without a `.sigil` filename resolves to `#module.sigil` inside that path.
-A path with a `.sigil` filename resolves to that exact file. The `@` prefix
-resolves from the workspace root selected by the single ancestor
+A path without a `.sigil` filename may target only the workspace root or a
+member root declared by `workspace.members` and resolves to its `#module.sigil`. Ordinary
+internal contracts are imported with an explicit `.sigil` filename. The `@`
+prefix resolves from the workspace root selected by the single ancestor
 `sigil.config`. An explicit root must contain `sigil.config` directly.
 
 Imported names must resolve to matching `component` declarations. Imported names
@@ -178,15 +206,15 @@ observable UI scenarios in `cases`.
 Use `state` for meaningful configurations during execution. It is not storage
 layout unless the storage shape carries domain meaning.
 
-Use `logic` for behavior: flows, policies, algorithms, transformations, decision
-paths, and lifecycle transitions.
+Use `logic` for behavior: flows, algorithms, transformations, decision paths,
+and lifecycle transitions.
 
 For state-machine-like components, `logic` should describe transitions and what
 happens when public operations are called in each state.
 
-Use `constraints` for binding decisions and rules. Architecture, ownership,
-dependency direction, stack choices, persistence rules, and technology decisions
-belong here.
+Use `constraints` for rules, policies, invariants, and binding decisions.
+Architecture, ownership, dependency direction, stack choices, persistence
+rules, and technology decisions belong here.
 
 Use `cases` for examples and acceptance criteria that can be observed from
 outside the component.

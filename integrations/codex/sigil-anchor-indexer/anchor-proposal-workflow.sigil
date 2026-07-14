@@ -1,4 +1,4 @@
-@packages/sigil-indexer import { AnchorIndexer, TypeScriptSourceAdapter }
+@packages/sigil-indexer/sigil-indexer.sigil import { AnchorIndexer, TypeScriptSourceAdapter }
 
 component AnchorProposalWorkflow {
   goal {

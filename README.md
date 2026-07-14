@@ -71,11 +71,11 @@ expand Name {
   }
 
   logic {
-    flows, algorithms, policies, transformations, and decision paths
+    behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
   }
 
   constraints {
-    rules and decisions the implementation must obey
+    rules, policies, invariants, and decisions the implementation must obey
   }
 
   cases {
@@ -91,7 +91,9 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 ## Repository Layout
 
 The root [sigil.config](./sigil.config) defines this repository as a language-1.0.0 Sigil workspace and excludes the independent example projects.
-The root [#module.sigil](./%23module.sigil) is its optional cross-cutting module summary.
+The root [#module.sigil](./%23module.sigil) is its `RootSigil`: the high-level
+project summary of purpose, interaction surfaces, project-wide behavior, and
+binding architecture decisions.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
@@ -102,11 +104,11 @@ The root [#module.sigil](./%23module.sigil) is its optional cross-cutting module
 
 `Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil) shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
-Its [sigil.config](examples/promise/sigil.config) makes it an independent project named `promise`.
+Its [sigil.config](examples/promise/sigil.config) makes it an independent workspace named `promise`.
 
 `Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil) is an example room booking product used to test Sigil against product and module modeling.
 
-Its [sigil.config](examples/slotted/sigil.config) makes it an independent project named `slotted`; imports beginning with `@` resolve from that directory.
+Its [sigil.config](examples/slotted/sigil.config) makes it an independent workspace named `slotted`; imports beginning with `@` resolve from that directory.
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
@@ -129,7 +131,7 @@ The skill teaches Codex to:
 - detect missing, conflicting, or vague information;
 - assess semantic readiness, modularity, applicable standards, and common implementation pitfalls;
 - introduce Sigil incrementally into brownfield codebases through a change-frontier pilot;
-- derive a provisional application picture from project documentation, dependency definitions, executable configuration, and entrypoints, then confirm its goal and interface with the user before proposing a meaningful root module;
+- derive a provisional application picture from project documentation, dependency definitions, executable configuration, and entrypoints, then confirm its goal and interface with the user before proposing a meaningful `RootSigil`;
 - preserve material application-wide runtime modes, flows, binding architecture decisions, and observable outcomes in a minimal root expand while excluding incidental and module-specific details;
 - propose brownfield and externally informed semantic lines before editing;
 - stop at the review gate after semantic changes;
@@ -147,7 +149,11 @@ See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration gu
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
-`sigil-core` implements explicit language-version parsing, strict config validation, config-based discovery, glob filtering, source ranges and semantic lines, import and component resolution, collective expansion, graphs, projections, and stable diagnostics.
+`sigil-core` implements explicit language-version parsing, strict config
+validation, config-based discovery, declared project-root detection, glob
+filtering, source ranges and semantic lines, import and component resolution,
+`RootSigil` location enforcement, collective expansion, graphs, projections,
+and stable diagnostics.
 `sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.

@@ -128,6 +128,28 @@ Deno.test("check returns 1 for Sigil diagnostics and 0 for a valid empty workspa
   }
 });
 
+Deno.test("check rejects RootSigil in an undeclared internal directory", async () => {
+  const root = await makeWorkspace("invalid-root-sigil");
+  try {
+    await Deno.mkdir(`${root}/internal`);
+    await Deno.writeTextFile(
+      `${root}/internal/#module.sigil`,
+      validSigil("Internal"),
+    );
+    await Deno.writeTextFile(
+      `${root}/consumer.sigil`,
+      `@internal import { Internal }\n\n${validSigil("Consumer")}`,
+    );
+    const result = await runCli(["check", root, "--format", "json"]);
+    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
+    const diagnostics = parseJson(result.stdout).diagnostics;
+    assertHasCode(diagnostics, "SIGIL_INVALID_ROOT_MODULE");
+    assertHasCode(diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("graph includes component nodes and imported-component edges", async () => {
   const repository = await runCli(["graph", "../..", "--format", "json"]);
   assertEquals(repository.exitCode, EXIT_OK);

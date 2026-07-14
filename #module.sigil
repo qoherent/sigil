@@ -1,7 +1,6 @@
-@spec/language.sigil import { SigilLanguage }
-@packages/sigil-core/config.sigil import { SigilWorkspaceConfig }
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 @packages/sigil-cli import { SigilCli }
-@integrations/codex/sigil-skill import { SigilCodexSkill }
+@integrations/codex/sigil-skill/sigil-skill.sigil import { SigilCodexSkill }
 
 component Sigil {
   goal {
@@ -26,7 +25,8 @@ component Sigil {
 expand Sigil {
   constraints {
     A mandatory sigil.config defines a Sigil workspace root.
-    Root and nested #module.sigil files are optional module summaries and do not define workspace roots.
+    #module.sigil is reserved for the workspace root and member roots explicitly declared by workspace.members.
+    sigil.config defines workspace roots; RootSigil summaries have no workspace-discovery authority.
     Language, config schema, core, CLI, and skill versions evolve independently under semantic versioning.
     Anchors, LSP, editor integrations, plugin packaging, and durable approval records remain outside version 1.
     Language-level documentation lives under spec/.

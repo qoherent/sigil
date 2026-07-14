@@ -35,5 +35,5 @@ exclusions before implementation began.
 
 **Observed workflow findings:** the semantic gate exposed the need to separate
 workspace identity from duplicated package/project metadata and retained only
-`project.name` in config. It also caught stale root-marker language in the CLI
+the former `project.name` config field. It also caught stale root-marker language in the CLI
 requirements and made cross-platform path behavior an explicit tested contract.
