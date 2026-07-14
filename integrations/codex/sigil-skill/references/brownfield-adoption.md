@@ -1,462 +1,325 @@
 # Brownfield Sigil Adoption
 
-Use this procedure when a repository already contains implementation code but
-has no Sigil or lacks relevant Sigil for the selected change boundary.
+Use this procedure when implementation exists but Sigil coverage is absent,
+partial, ambiguous, or suspected to have drifted. Establish the workspace and
+its approved RootSigil before modeling or implementing the requested task.
 
-Brownfield adoption is incremental. Model one reviewed change frontier before
-expanding coverage. Code is evidence of current behavior, not proof of desired
-behavior or rationale.
+Code is evidence of current behavior, not proof of desired behavior or
+rationale. Preserve existing user changes and unrelated worktree content.
 
 ## Contents
 
-1. Detect coverage
-2. Select a pilot
-3. Gather and classify evidence
-4. Reconcile current and intended behavior
-5. Model component boundaries
-6. Prepare the pre-edit proposal
-7. Apply an approved proposal
-8. Limits and failure handling
-9. Examples
+1. Initialize or validate the workspace
+2. Establish and review RootSigil
+3. Focus on the requested task
+4. Gather and classify task evidence
+5. Reconcile current and intended behavior
+6. Model task boundaries
+7. Prepare the task-Sigil proposal
+8. Apply approved proposals
+9. Limits and examples
 
-## 1. Detect Coverage
+## 1. Initialize Or Validate The Workspace
 
-Inspect before asking the user for repository facts that can be discovered.
+Determine the repository root and check whether it directly contains
+`sigil.config` before gathering detailed project evidence.
 
-Use `rg --files` or equivalent repository discovery to locate implementation,
-tests, manifests, documentation, and `.sigil` files. When a Sigil workspace
-exists, run `sigil check` and use `graph` or `context` for the relevant target.
+When the config is absent, run:
 
-Classify the target:
+```bash
+sigil init <repository-root>
+```
 
-- **No Sigil:** implementation exists, but no workspace-root `#module.sigil` or
-  other `.sigil` files exist.
-- **Partial coverage:** a Sigil workspace or components exist, but the selected
-  implementation boundary has no contract, has only an unmatched expand, or
-  lacks information required for the planned change.
-- **Established coverage:** the selected boundary has a relevant component
-  contract, collected expands, and enough approved context for ordinary Sigil
-  review.
+Use `--name`, `--include`, or `--exclude` only when repository facts or an
+explicit user decision require non-default values. `sigil init` must create the
+config before RootSigil discovery and must never overwrite an existing config.
 
-Use this brownfield procedure for no or partial coverage. For established
-coverage, return to the normal Sigil workflow unless repository evidence
-suggests drift or the user explicitly requests reconciliation.
+When a config already exists, do not run `init`. Validate it in place.
 
-Do not measure coverage with a numeric percentage. File counts do not show
-whether the important contracts and rationale are represented.
+After initialization or discovery, run:
 
-## 2. Select A Pilot
+```bash
+sigil version <repository-root> --format json --pretty
+sigil check <repository-root> --format json --pretty
+```
 
-Do not convert the whole repository in one pass. Select the smallest coherent
-boundary that can produce useful reviewed Sigil.
+Stop with a compatibility report when initialization fails, the existing config
+is invalid, or the configured CLI, core, config, or language versions are not
+supported. Do not create `.sigil` files until the workspace contract is valid.
 
-Use this priority order:
+## 2. Establish And Review RootSigil
 
-1. the component or module explicitly named by the user;
-2. the boundary affected by the next requested implementation change;
-3. a high-risk or high-churn boundary with unclear behavior or ownership;
-4. the smallest coherent ownership boundary that exposes a meaningful public
-   contract.
+Before focusing on the requested implementation task, ensure the workspace-root
+`#module.sigil` is a meaningful, approved RootSigil. An empty, import-only, or
+materially ambiguous root module does not satisfy this requirement.
 
-When a broad request such as “add Sigil to this repository” has no explicit
-target, inspect the repository and present one to three pilot candidates. Give a
-recommendation with evidence and wait for the user to approve the pilot before
-proposing files.
+### Gather Repository-Level Evidence
 
-Prefer boundaries that can be reviewed independently. Do not choose a broad
-“application” component merely because the repository has no obvious modules.
-The minimal root application summary required for a new workspace is not the
-pilot: it records confirmed repository-level purpose and public surfaces, while
-the pilot remains the first detailed change frontier.
-
-## 3. Gather And Classify Evidence
-
-Read only the repository context needed to understand the pilot and its direct
-relationships. Inspect, when relevant:
-
-- root and nearby architecture or product documentation;
-- manifests, package metadata, entrypoints, and exported APIs;
-- implementation paths and public types;
-- tests, fixtures, and acceptance scenarios;
-- existing screens, screenshots, repository image assets, and accessible design
-  files or links when the pilot includes UI behavior;
-- schemas, migrations, persistence adapters, and data contracts;
-- configuration, deployment, permissions, and integration boundaries;
-- related Sigil, module summaries, imports, and collected expands;
-- focused version history when it contains rationale unavailable elsewhere.
-
-When the root application summary is absent, empty, import-only, or lacks a
-confirmed goal or interface, the following repository-level evidence is
-mandatory before asking about or proposing the application summary:
+Inspect the smallest root-level evidence set that explains what the application
+is, why it exists, and how users or external systems encounter it:
 
 - root README, product, architecture, and operational documentation;
 - dependency definitions, workspace manifests, lockfiles, and declared scripts;
 - executable runtime, build, deployment, routing, and environment configuration;
-- application entrypoints, exported APIs, commands, routes, event consumers, or
-  top-level UI shells that reveal externally meaningful surfaces.
+- application entrypoints, exports, commands, routes, event consumers, workers,
+  or top-level UI shells;
+- an existing RootSigil and related repository-level tests when present.
 
-Do not read every file indiscriminately. Use manifests and entrypoints to find
-the smallest set of evidence that explains what is built, how it is invoked,
-and which users or systems interact with it.
+Do not read the entire repository indiscriminately. Do not promote a framework,
+dependency, environment variable, or implementation pattern into a binding root
+decision merely because it exists.
 
-### Application Picture For A New Workspace
+### Build The Application Picture Through Conversation
 
-After the repository scan, summarize a provisional application picture with:
+Assess whether evidence is specific enough to describe:
 
-- an application name grounded in repository naming;
-- a one- or two-line candidate goal describing responsibility, intended user or
-  system outcome, and repository-level boundary;
-- a concise candidate interface describing externally meaningful surfaces such
-  as a UI, API, CLI, library export, worker, events, or deployable service;
-- the evidence paths supporting each statement;
-- conflicts, unsupported inferences, and facts that remain unknown.
+- the application name;
+- its responsibility and intended outcome;
+- its users, callers, or external systems;
+- its repository-level boundary and important non-responsibilities;
+- its externally meaningful UI, API, CLI, library, worker, event, or service
+  surfaces.
 
-Then ask the user to confirm or correct the candidate goal and interface. Prefer
-a focused question that includes the evidence-based draft, for example:
+When any material part remains vague, unsupported, or contradictory, begin a
+focused conversation. State what repository evidence suggests and what remains
+unknown, then ask the user for the missing product, boundary, and interface
+information.
 
-```text
-From the README, package manifest, runtime configuration, and entrypoints, I
-understand this application to exist to <candidate goal>. Its external surface
-appears to be <candidate interface>. What should I correct before I preserve
-this as the root application contract?
-```
+Continue with targeted follow-up questions while answers leave material
+RootSigil decisions unresolved. Do not guess missing purpose or interface lines.
+Do not use a single confirmation question as a substitute for discovery
+conversation when the evidence is insufficient.
 
-This confirmation is mandatory even when the repository evidence appears
-consistent. Repository evidence describes the current system; the user's answer
-establishes the intended application contract. If evidence is sparse, say what
-could not be determined and ask directly for the goal and interface. Do not
-propose exact root-module text, create a placeholder, or use imports as a
-substitute while either remains unconfirmed.
+After the conversation, synthesize:
 
-After the user confirms the goal and interface, classify the remaining material
-repository evidence as candidates for a root `expand`:
+- a candidate application name;
+- a concise goal covering responsibility, intended outcome, and boundary;
+- a concise interface covering users or systems and external surfaces;
+- evidence paths and user-provided decisions supporting each statement;
+- remaining conflicts, unsupported inferences, and intentionally excluded facts.
 
-- `state`: meaningful application-wide runtime modes, deployable units,
-  persistence modes, or operational configurations that can vary;
-- `logic`: cross-cutting application behavior, flows, routing, orchestration,
-  and lifecycle transitions;
-- `constraints`: rules, policies, binding technologies, architecture and
-  dependency direction, compatibility requirements, supported platforms, or
-  deployment rules;
-- `cases`: observable application-level outcomes, representative workflows,
-  failures, or acceptance scenarios.
+Ask the user to confirm or correct this synthesized goal and interface as a
+separate decision. Confirmation is mandatory even when repository evidence and
+conversation appear consistent.
 
-For each candidate, record the evidence path and whether it is observed,
-documented, or user-confirmed. These are still proposed semantic lines and do
-not enter Sigil until the user approves the exact pre-edit proposal.
+### Propose RootSigil
 
-Do not promote a package, framework, database, environment variable, build flag,
-or implementation pattern merely because it exists. A technology belongs in
-root `constraints` only when repository evidence or user confirmation shows
-that it is a binding application-level decision. Exclude secrets, literal
-credentials, volatile values, exhaustive dependency inventories, low-level
-configuration, private algorithms, and facts owned by a pilot component.
+After goal and interface confirmation, classify confirmed application-wide
+detail for an optional root `expand`:
 
-Classify every material finding:
+- `state`: runtime, deployment, persistence, or operational modes;
+- `logic`: cross-cutting flows, routing, orchestration, and lifecycle behavior;
+- `constraints`: policies, architecture, dependency direction, compatibility,
+  supported platforms, and binding technologies;
+- `cases`: observable application outcomes, workflows, failures, and acceptance
+  scenarios.
 
-- **Observed behavior:** behavior demonstrated by implementation, executable
+Keep secrets, volatile values, incidental dependencies, low-level
+configuration, private algorithms, and task-specific behavior outside
+RootSigil. A technology belongs in root `constraints` only when repository
+evidence or user confirmation establishes it as a binding application decision.
+
+Present the exact RootSigil text and location before editing. The root component
+must remain meaningful without imports and may import only already-reviewed
+contracts that the application summary genuinely depends on.
+
+Wait for approval, write only the approved RootSigil, run `sigil check`, use
+`graph` or `context` when relationships changed, and stop at the RootSigil review
+gate. Do not move to task modeling until the user approves the written RootSigil.
+
+## 3. Focus On The Requested Task
+
+After RootSigil approval, return to the user's requested task. Select the
+smallest coherent change-frontier boundary in this order:
+
+1. the component or module explicitly named by the user;
+2. the boundary affected by the requested implementation change;
+3. a high-risk or high-churn boundary whose ownership is unclear;
+4. the smallest coherent boundary exposing a meaningful public contract.
+
+Do not convert the whole repository. If the request is broad and has no concrete
+task boundary, present one to three evidence-backed candidates and recommend one.
+Wait for the user's decision before proposing task-specific Sigil.
+
+Classify task coverage:
+
+- **No Sigil:** the boundary has no component contract or relevant expand.
+- **Partial coverage:** a related contract exists but lacks required public or
+  operational decisions.
+- **Established coverage:** the boundary has a relevant component, collected
+  expands, and enough approved context for ordinary review.
+
+For established coverage, use the shared workflow unless evidence suggests
+drift or the user requests reconciliation. Do not use numeric coverage scores.
+
+## 4. Gather And Classify Task Evidence
+
+Read only evidence needed for the requested boundary and direct relationships:
+
+- nearby requirements, architecture, and product documentation;
+- public types, entrypoints, exports, routes, handlers, screens, or events;
+- tests, fixtures, screenshots, and acceptance scenarios;
+- schemas, migrations, persistence, permissions, and integration boundaries;
+- configuration and deployment facts that materially affect the task;
+- related Sigil, imports, RootSigil summaries, and collected expands;
+- focused version history when rationale is otherwise unavailable.
+
+Classify material findings as:
+
+- **Observed behavior:** demonstrated by implementation, executable
   configuration, or a passing test.
-- **Documented intent:** an explicit statement in maintained documentation,
-  comments, architecture notes, or issue context.
-- **User-confirmed intent:** behavior or rationale explicitly confirmed by the
-  user for the proposed contract.
-- **Unresolved ambiguity:** multiple interpretations remain possible and would
-  materially change the contract, ownership, state, or implementation.
-- **Suspected accidental behavior:** current behavior appears incidental,
-  inconsistent, unsafe, obsolete, or unsupported by intent.
+- **Documented intent:** stated in maintained documentation or architecture
+  records.
+- **User-confirmed intent:** explicitly confirmed for the proposed contract.
+- **Unresolved ambiguity:** multiple interpretations could materially change the
+  contract, ownership, state, or implementation.
+- **Suspected accidental behavior:** behavior appears incidental, obsolete,
+  unsafe, or unsupported by intent.
 
-Report evidence with relevant repository paths and line numbers when practical.
-Keep evidence records in the review summary rather than adding them to Sigil
-syntax.
+Report evidence paths and line numbers when practical. Keep evidence records in
+the review summary rather than Sigil source. Do not assign confidence scores.
 
-Do not assign confidence scores. Explain the concrete evidence and uncertainty.
+## 5. Reconcile Current And Intended Behavior
 
-Repository evidence has different meanings:
+Compare implementation, tests, documentation, configuration, existing Sigil,
+RootSigil, and the user's requested outcome.
 
-- code and executable configuration show what currently happens;
-- tests show behavior someone chose to exercise, but may be incomplete or
-  stale;
-- documentation may express intent, but may also be outdated;
-- screenshots and design artifacts may show current presentation or documented
-  intent depending on their provenance, but do not prove the desired contract;
-- names and directory structure suggest boundaries, but do not prove them;
-- version history may reveal rationale, but absence of history is not evidence
-  of intent;
-- user approval establishes the contract Sigil should preserve.
+For each material behavior identify whether it is:
 
-Never invent why existing code was written. Never convert an implementation
-detail into a binding constraint merely because it exists.
+- aligned with confirmed intent;
+- current behavior that still needs confirmation;
+- legacy behavior the user wants to change;
+- conflicting evidence requiring a decision;
+- irrelevant implementation detail that stays out of Sigil.
 
-## 4. Reconcile Current And Intended Behavior
+When evidence conflicts, preserve the conflict in the review summary. Ask a
+focused question when resolution could change public behavior, ownership,
+permissions, sensitive data, persistent state, lifecycle, compatibility,
+failure behavior, or acceptance criteria.
 
-Compare observed behavior, tests, documentation, configuration, existing Sigil,
-and the user's requested outcome.
+Do not silently treat code, tests, documentation, directory structure, or a
+preferred architecture as authoritative. Suspected accidental behavior does not
+become a contract without user confirmation.
 
-For each material behavior, identify whether it is:
+## 6. Model Task Boundaries
 
-- already aligned with confirmed intent;
-- current behavior that should remain but still needs confirmation;
-- legacy behavior that the user wants to change;
-- conflicting evidence that requires a decision;
-- irrelevant implementation detail that should stay out of Sigil.
+Model stable responsibilities, not the repository file tree. Choose a component
+when the boundary has a coherent goal, recognizable users or callers, a public
+interface, meaningful ownership, and a durable reason to change.
 
-When evidence conflicts, preserve the conflict in the review summary. Do not
-silently treat code, tests, documentation, or a preferred architecture pattern
-as authoritative.
+Do not create one component per class, function, table, endpoint, or directory.
+Reuse an existing component when ownership matches. Use `expand` for state,
+logic, constraints, cases, and implementation-specific detail.
 
-Ask a focused user question when resolving the conflict would change:
+Place shared component contracts at their contract or module-summary location.
+Place implementation-specific expands beside the code they explain. Use
+root-relative imports and never duplicate a public component declaration.
 
-- the public interface or observable behavior;
-- ownership or dependency direction;
-- permissions, security, or data handling;
-- persistent state or lifecycle transitions;
-- compatibility, failure behavior, or acceptance criteria.
+## 7. Prepare The Task-Sigil Proposal
 
-Initial brownfield Sigil contains only the contract the user approves. Do not
-write every observed behavior and plan to clean it up later. Keep legacy and
-migration differences in the review summary until the user decides which
-behavior is intended.
-
-## 5. Model Component Boundaries
-
-Model stable software responsibilities, not the repository's file tree.
-
-Choose a `component` boundary when the candidate has:
-
-- a coherent goal and reason to exist;
-- a recognizable caller, user, or dependent module;
-- a public interface or externally relied-on behavior;
-- meaningful ownership of policy or state;
-- a change boundary that should remain understandable over time.
-
-Do not create one component for every class, function, table, endpoint, or
-directory. Do not create a component whose only goal is to mirror an existing
-technical layer.
-
-Use `expand` for operational details, state, logic, constraints, and cases. Keep
-implementation-specific expands beside the code they explain. Keep a shared
-public component at a contract or module-summary location only when multiple
-implementations genuinely depend on it.
-
-### Workspace Marker
-
-When no Sigil workspace exists, propose `sigil.config` as the workspace marker
-and a minimal root `#module.sigil` following the `RootSigil` contract as the
-confirmed application summary. The root module should:
-
-- declare one repository-level application component with a confirmed goal and
-  externally meaningful interface;
-- describe only confirmed product, deployable, bounded-context, or
-  cross-cutting facts;
-- avoid pretending to inventory the entire repository;
-- avoid declaring components whose boundaries have not been reviewed.
-- import only reviewed pilot components that the root summary genuinely
-  depends on.
-- include a root `expand` when confirmed repository-level state, logic,
-  constraints, or cases materially improve the application summary.
-
-The root component name should follow confirmed product or repository naming.
-Its interface describes how users or external systems encounter the
-application; a list of internal imports is not an interface. Include only the
-root `expand` sections supported by material evidence. Omit empty sections and
-omit the entire `expand` when it would add no repository-level meaning.
-
-A minimal `RootSigil` normally has this shape:
-
-```sigil
-component ConfirmedApplicationName {
-  goal {
-    confirmed responsibility, intended outcome, and repository-level boundary
-  }
-
-  interface {
-    confirmed externally meaningful UI, API, CLI, library, worker, event, or service surface
-  }
-}
-
-expand ConfirmedApplicationName {
-  state {
-    confirmed application-wide runtime or deployment modes, when applicable
-  }
-
-  logic {
-    confirmed cross-cutting behavior or flows, when applicable
-  }
-
-  constraints {
-    confirmed rules, policies, architecture, or technology decisions, when applicable
-  }
-
-  cases {
-    confirmed observable application outcomes, when applicable
-  }
-}
-```
-
-The `expand` above is illustrative: remove every unsupported or empty section,
-and remove the whole block when no candidate survives evidence review. Keep
-module-owned operational detail in the colocated pilot expand.
-
-Add an import above the component only when a reviewed pilot contract is a real
-dependency of this application summary. The component remains meaningful if the
-import is removed.
-
-If repository-level purpose or interface is unclear, the config proposal may
-continue, but the `RootSigil` proposal waits for the focused confirmation step.
-Never create or preserve an empty root module or one containing only imports.
-
-### Placement And Imports
-
-Place pilot component contracts beside their owning module or source boundary.
-Place implementation-specific expands beside the relevant code. Use root-relative
-Sigil imports and reuse existing component declarations rather than creating
-duplicates.
-
-When partial coverage exists, inspect the graph before choosing a new file or
-component name. Extend or import the existing contract when ownership matches.
-Create a new component only when it owns a distinct responsibility.
-
-## 6. Prepare The Pre-Edit Proposal
-
-Do not create or modify Sigil during brownfield discovery. Before editing,
-report these sections and write `none` for empty groups:
+Before editing task Sigil, report these sections and write `none` for empty
+groups:
 
 ### Coverage State
 
-State no Sigil, partial coverage, or established coverage and cite the evidence.
+State no, partial, or established coverage and cite evidence.
 
-### Pilot Scope And Rationale
+### Requested Task Boundary
 
-Name the selected boundary, why it is the smallest useful frontier, and which
+Name the selected boundary, why it is the smallest coherent frontier, and which
 alternatives were rejected.
 
 ### Repository Evidence
 
-List observed behavior, documented intent, user-confirmed intent, and relevant
-paths. For a new workspace, include the provisional application picture and the
-user's confirmation or corrections. Also list each proposed root-expand line by
-target section and evidence path, plus material repository facts intentionally
-excluded as incidental or module-specific.
+Separate observed behavior, documented intent, user-confirmed intent, and facts
+intentionally excluded as incidental or private.
 
 ### Observed Versus Intended Behavior
 
-Separate what currently happens from what the proposed contract will require.
+Describe what currently happens and what the proposed contract will require.
 
 ### Conflicts, Unknowns, And Suspected Accidents
 
-Report unresolved evidence, possible legacy bugs, stale documentation, and
+Report unresolved evidence, legacy differences, stale documentation, and
 decisions that could change the contract.
 
 ### Proposed Boundaries And Ownership
 
-Describe each component's responsibility, public dependents, owned state or
-policy, and non-responsibilities where needed.
+Describe responsibility, public dependents, owned state or policy, and important
+non-responsibilities.
 
 ### Proposed Sigil
 
-Show the exact component, expand, and import text that would be written. Include
-the minimal root module proposal when required. Its goal and interface must
-reflect the confirmed application picture, and its imports must be limited to
-reviewed component contracts. Include only evidence-backed root `state`,
-`logic`, `constraints`, and `cases` lines that materially describe the
-application as a whole.
+Show exact component, expand, and import text. Include only the task boundary;
+do not reopen approved RootSigil unless the task reveals a genuine application-
+wide decision.
 
 ### Proposed Locations And Imports
 
-List each target path, why it belongs there, and every import that will be added
-or updated.
+List every target path and import addition or update.
 
 ### Approval Request
 
-Ask the user to approve, reject, or revise the pilot, boundaries, locations,
-imports, and exact semantic lines. Do not treat approval of the general adoption
-goal as approval of the proposed Sigil.
+Ask the user to approve, reject, or revise the boundary, evidence
+interpretation, locations, imports, and exact semantic lines.
 
-Before requesting approval, apply the semantic-readiness, standards,
-cross-Sigil coherence, and modularity procedures to the proposed content as far
-as the available evidence permits. Include any resulting warning or sourced
-suggestion in the proposal rather than silently adding it.
+Before requesting approval, apply semantic-readiness, standards,
+cross-Sigil-coherence, and modularity review. Present sourced suggestions and
+conflicts rather than silently changing the proposal.
 
-## 7. Apply An Approved Proposal
+## 8. Apply Approved Proposals
 
-After explicit approval:
+After explicit task-Sigil approval:
 
-1. create or update only the approved Sigil files;
-2. create the approved minimal root `#module.sigil` when no workspace exists;
-3. colocate components and implementation-specific expands as proposed;
-4. add or update only the approved imports;
-5. run `sigil check` on the workspace;
-6. use `sigil graph` or `sigil context` when relationships were introduced or
-   changed;
-7. reread the written files and run the complete standards-aware semantic,
-   coherence, and modularity review;
-8. stop at the Sigil review gate and report the exact files changed,
-   assumptions captured, remaining questions, and validation results.
+1. create or update only approved Sigil files;
+2. colocate components and implementation-specific expands as proposed;
+3. update only approved imports;
+4. run `sigil check`;
+5. use `sigil graph` or `sigil context` when relationships changed;
+6. reread the files and repeat semantic, coherence, and modularity review;
+7. stop at the task-Sigil review gate.
 
-Do not modify implementation code in the same pass. Approval of the brownfield
-proposal authorizes the proposed Sigil files, not code changes.
+Do not modify implementation in the same pass. After the user approves the
+written task Sigil and explicitly requests implementation, align code with that
+contract while preserving unrelated behavior and user changes.
 
-If validation or final review reveals a new semantic decision, propose the
-change and wait for approval rather than extending the approved scope.
+If implementation reveals a missing material decision, return to conversation
+and Sigil proposal before continuing.
 
-## 8. Limits And Failure Handling
+## 9. Limits And Examples
 
-Keep the first adoption pass bounded. Do not create:
+Do not create whole-repository coverage, adoption dashboards, numeric readiness
+scores, mappings for every code symbol, guessed rationale, or unrelated cleanup.
 
-- whole-repository Sigil coverage;
-- migration dashboards or adoption tracking files;
-- numeric coverage, confidence, readiness, or modularity scores;
-- automatic mappings from every code symbol to a Sigil component;
-- implementation rewrites, cleanup, or architecture migrations;
-- guessed rationale presented as fact.
-
-If the repository is too large to inspect safely, narrow the pilot using the
-selection priority and explain what remains outside the reviewed context.
-
-If tests cannot run or runtime behavior cannot be verified, classify the
-behavior as documented or inferred rather than observed. Do not block a
-low-risk proposal solely because the entire legacy system cannot be executed,
-but surface uncertainty that could affect the contract.
-
-If security, data, compliance, or destructive behavior remains ambiguous, treat
-the proposal as blocked until the user or a qualified reviewer resolves it.
-
-## 9. Examples
+If tests cannot run, label behavior as documented or inferred rather than
+observed. If security, sensitive data, destructive behavior, or compliance
+remains ambiguous, block implementation until the user or a qualified reviewer
+resolves it.
 
 ### Repository With No Sigil
 
-A user asks to add Sigil to a large service. Inspect the architecture and next
-planned change, plus root product documentation, dependency definitions,
-executable configuration, and entrypoints. Present the evidence-based candidate
-application goal and interface and ask the user to correct or confirm them.
-After confirmation, recommend one coherent pilot and show a minimal root config,
-a meaningful root application component, an evidence-backed root expand when
-applicable, and colocated pilot text. Do not create the files before approval,
-and do not use an empty or import-only root module. A framework in the manifest
-becomes a root constraint only when evidence shows it is a binding application
-decision; module-specific states and cases remain with the pilot.
+Run `sigil init` first. Validate the config. Inspect root application evidence,
+hold focused conversation where evidence is insufficient, synthesize and confirm
+the application goal and interface, propose RootSigil, write it only after
+approval, and stop for RootSigil review. After approval, focus on the requested
+task and begin its bounded evidence and proposal workflow.
 
-### Partial Coverage
+### Vague Application
 
-The workspace already defines `Auth`, but a nearby module duplicates session
-rules without Sigil. Read the `Auth` contract and collected expands first. Propose
-an additional expand or a separate component only if ownership evidence supports
-it; do not create a second `Auth` component.
+Repository naming suggests an internal operations tool, but no evidence
+identifies its users or external surfaces. Ask targeted questions about users,
+outcomes, boundaries, and interaction surfaces. Continue until the answers are
+sufficient, then synthesize a candidate goal and interface for separate
+confirmation. Do not guess RootSigil.
 
-### Conflicting Evidence
+### Conflicting Task Evidence
 
 Code deletes canceled bookings, a test expects deletion, and documentation says
-history must be retained. Report both behaviors and ask which contract is
-intended. Do not encode either behavior before approval.
+history must be retained. Report the conflict and ask which contract is intended
+after RootSigil is approved. Do not encode either behavior silently.
 
-### Suspected Accidental Behavior
+### Established Task Coverage
 
-An endpoint returns an internal database record because the current controller
-passes it through. Unless documentation or the user confirms that shape as a
-public guarantee, treat it as a possible leak rather than a required interface.
-
-### Established Coverage
-
-The selected component already has a reviewed contract and matching expands.
-Return to the normal Sigil workflow, check for drift, and avoid loading the full
-brownfield adoption procedure unless reconciliation is requested.
+The requested component already has a reviewed contract and matching expands.
+After confirming the workspace RootSigil, return to the shared review workflow
+unless evidence suggests drift or the user requests reconciliation.

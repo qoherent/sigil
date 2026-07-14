@@ -1,6 +1,6 @@
 @spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 @packages/sigil-cli import { SigilCli }
-@integrations/codex/sigil-skill/sigil-skill.sigil import { SigilCodexSkill }
+@integrations/codex/sigil-skill import { SigilCodexSkill }
 
 component Sigil {
   goal {

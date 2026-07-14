@@ -15,6 +15,12 @@
 - Classify confirmed application-wide evidence into minimal root `state`,
   `logic`, `constraints`, and `cases` sections while excluding incidental and
   module-specific details.
+- Rename the Codex skill contract to its member-root `#module.sigil` and define
+  dedicated Greenfield and Brownfield expands under one general skill contract.
+- Make Greenfield clarification conversational and iterative, including design
+  choices, tradeoffs, recommendations, and user-directed alternatives.
+- Run `sigil init` before Brownfield discovery, establish and review RootSigil
+  through evidence plus conversation, and only then focus on the requested task.
 
 ## 1.0.0 - 2026-07-13
 

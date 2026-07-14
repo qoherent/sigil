@@ -2,6 +2,10 @@
 
 Version 1.0.0 of the standalone Sigil workflow for Codex.
 
+The skill provides one general workflow with two focused paths: conversational
+Greenfield design and initialization-first Brownfield adoption. Both produce
+exact proposed Sigil and stop for semantic review before implementation.
+
 Install it by asking Codex:
 
 ```text

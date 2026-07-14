@@ -26,6 +26,11 @@ Read `references/standards-review.md` completely whenever creating, reviewing,
 or preparing Sigil for implementation. It defines the semantic-readiness,
 standards, conflict, evidence, and modularity procedure.
 
+Read `references/greenfield-design.md` completely when the selected behavior or
+component has no existing implementation that constrains its intended contract.
+It defines the collaborative design conversation, alternatives, synthesis, and
+approval sequence. Do not reduce Greenfield work to one-shot clarification.
+
 Read `references/brownfield-adoption.md` completely when implementation already
 exists but the relevant Sigil is absent or incomplete. Do not load it for a
 greenfield design or a component with established Sigil unless the user asks
@@ -65,7 +70,7 @@ Repository-local CLI command shape:
 deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
 ```
 
-Before semantic work, run:
+For a configured workspace, run before semantic work:
 
 ```bash
 sigil version . --format json --pretty
@@ -73,9 +78,11 @@ sigil check . --format json --pretty
 ```
 
 This skill version requires CLI and core `^1.0.0`, config schema `1.0.0`, and
-Sigil Language `1.0.0`. Stop with a compatibility report when the CLI is
-missing, `sigil.config` is missing or invalid, or any resolved version is not
-supported. Do not fall back to the old `#module.sigil` root behavior.
+Sigil Language `1.0.0`. In a Brownfield repository without `sigil.config`, use
+the initialization sequence in `references/brownfield-adoption.md` before this
+preflight. Otherwise stop with a compatibility report when the CLI is missing,
+`sigil.config` is missing or invalid, or any resolved version is unsupported.
+Do not fall back to the old `#module.sigil` root behavior.
 
 Common invocations:
 
@@ -105,25 +112,19 @@ applies after creating or semantically changing Sigil files.
 
 ## Core Workflow
 
-If the target is brownfield, follow `references/brownfield-adoption.md` for
-coverage detection, pilot selection, repository evidence, and the pre-edit
-proposal gate. Return to this workflow after the user approves the exact Sigil
-proposal.
+Select the workflow before detailed semantic work:
 
-For a new brownfield workspace, do not propose a root `#module.sigil` until you
-have inspected the repository's product documentation, dependency manifests,
-executable configuration, and entrypoints, then asked the user to confirm or
-correct the provisional application goal and externally meaningful interface.
-The root module must follow the `RootSigil` contract as a minimal confirmed
-application summary, never an empty marker or import-only barrel. Its
-project-named component goal describes why the project exists and its interface
-describes how users or external systems interact with it.
-After goal and interface confirmation, classify other material repository
-evidence into an optional root `expand`: runtime and deployment modes in
-`state`, cross-cutting behavior and flows in `logic`, rules, policies, binding
-technologies, and architecture decisions in `constraints`, and observable
-application outcomes in `cases`. Keep incidental dependencies, secrets,
-low-level configuration, and module-specific details out of the root summary.
+- For Greenfield behavior, follow `references/greenfield-design.md`. Use
+  collaborative design conversation even when the first request appears clear.
+  Ask materially useful questions in manageable rounds, surface weak or
+  conflicting assumptions, present concrete choices and tradeoffs, and
+  synthesize the decisions into exact proposed Sigil for confirmation.
+- For Brownfield behavior, follow `references/brownfield-adoption.md`. When the
+  repository has no config, run `sigil init` first. Establish and review a
+  meaningful RootSigil through repository evidence plus user conversation, then
+  focus on the requested task boundary.
+- For established Sigil coverage, use the shared workflow below unless the user
+  requests Brownfield reconciliation or repository evidence suggests drift.
 
 1. Discover relevant context.
    - When a `sigil` command or repo-local CLI is available, start with `check`
@@ -199,9 +200,15 @@ low-level configuration, and module-specific details out of the root summary.
 5. Improve Sigil before generating code.
    - If the user is asking for implementation and the Sigil is incomplete,
      repair or propose the Sigil first.
-   - Ask concise questions only when the ambiguity changes architecture,
-     ownership, behavior, or public contract.
-   - If the ambiguity is low-risk, make a conservative assumption and state it.
+   - In Greenfield work, use the approved conversational design procedure rather
+     than asking only blocking clarification questions.
+   - In Brownfield RootSigil discovery, continue targeted conversation until the
+     application goal, boundary, users or systems, and external surfaces are
+     clear enough to synthesize without guessing; request confirmation after
+     that conversation.
+   - With established Sigil, ask concise questions when ambiguity changes
+     architecture, ownership, behavior, or public contract. State conservative
+     low-risk assumptions explicitly.
    - After the user approves externally informed additions, place each semantic
      line in the appropriate `state`, `logic`, `constraints`, or `cases` section.
 
@@ -329,6 +336,19 @@ When reviewing or improving Sigil, check:
 
 Sigil is collaborative. Do not silently invent major product, architecture, or
 domain decisions.
+
+For Greenfield design, conversation is part of the work rather than a fallback.
+Ask as many materially useful questions as needed in manageable rounds. Build on
+the user's answers, identify assumptions and contradictions, and offer concrete
+alternatives with consequences, tradeoffs, and a reasoned recommendation. Let
+the user combine, reject, or replace the choices. Synthesize the conversation
+and request explicit confirmation before writing Sigil.
+
+For a new Brownfield RootSigil, initialize or validate the workspace first, then
+inspect repository evidence. When the application picture remains vague or
+incomplete, ask focused follow-up questions until purpose, users or systems,
+repository boundary, and external interaction surfaces are clear. Then present a
+synthesized goal and interface for a separate confirmation decision.
 
 Ask targeted questions when:
 

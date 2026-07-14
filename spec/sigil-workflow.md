@@ -6,12 +6,12 @@ They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks
 
 ## Intended Flow
 
-1. The user writes the minimum useful Sigil or identifies an existing-code boundary that needs Sigil.
+1. For greenfield work, the agent begins a collaborative design conversation; for brownfield work, it identifies the repository and initializes a missing `sigil.config` before detailed discovery.
 2. The agent runs structural CLI checks, follows imports, and reads related code, tests, configuration, package metadata, and documentation.
-3. For brownfield adoption, the agent selects a change-frontier pilot and separates observed behavior from documented and user-confirmed intent.
+3. For brownfield adoption, the agent establishes an approved RootSigil before selecting the requested change frontier and separates observed behavior from documented and user-confirmed intent.
 4. The agent checks semantic readiness: goal clarity, interface completeness, state and lifecycle behavior, constraints, cases, cross-Sigil coherence, modularity, and code/spec drift.
 5. The agent assesses whether current standards, formal guidance, or official platform practices materially affect the selected contract.
-6. The agent asks targeted questions only when the answer changes architecture, ownership, security, persistent data, behavior, public contract, or acceptance criteria.
+6. The agent uses manageable conversational rounds to discover greenfield intent and to resolve vague brownfield application purpose, boundaries, users, and external surfaces; established contracts need questions only when answers materially change them.
 7. Brownfield reconstruction and externally informed additions are shown as exact proposed semantic lines before the agent edits Sigil.
 8. The user approves, rejects, or revises the proposal.
 9. The agent writes only the approved Sigil, validates it, and stops at the semantic review gate.
@@ -95,18 +95,47 @@ Repository evidence is classified as observed behavior, documented intent, user-
 Code demonstrates current behavior; it does not prove desired behavior or rationale.
 Initial brownfield Sigil contains only the contract the user approves.
 
-When no workspace exists, the agent first inspects root product and architecture documentation, dependency definitions, executable configuration, and application entrypoints.
-It uses that evidence to present a provisional application goal and externally meaningful interface, then asks the user to confirm or correct both before proposing root-module text.
-The proposal includes a minimal `sigil.config` and a root `#module.sigil` that
-follows the `RootSigil` contract with a meaningful confirmed application
-summary; it never creates an empty or import-only root module.
+When no workspace exists, the agent first runs `sigil init` at the repository
+root, then validates the created config before gathering detailed project
+evidence. It never overwrites an existing config.
+
+The agent then inspects root product and architecture documentation, dependency
+definitions, executable configuration, and application entrypoints. When this
+evidence does not establish the application purpose, users or external systems,
+repository boundary, and external interaction surfaces, the agent begins a
+focused conversation and continues with targeted follow-up questions. It
+synthesizes the evidence and answers into a candidate goal and interface, then
+asks the user to confirm or correct them as a separate decision.
+
+Only after confirmation does the agent propose a root `#module.sigil` that
+follows the `RootSigil` contract with a meaningful application summary; it never
+creates an empty or import-only root module.
 After goal and interface confirmation, material application-wide evidence may
 be proposed in a root `expand` using the general section meanings at project
 scope: runtime and deployment modes in `state`, cross-cutting behavior and flows
 in `logic`, rules, policies, binding technologies, and architecture decisions in
 `constraints`, and observable outcomes in `cases`.
 Incidental dependencies, secrets, low-level configuration, and module-specific behavior remain outside the root summary.
+The approved RootSigil is written, validated, and reviewed before the agent
+focuses on the requested implementation task.
 Component contracts and implementation-specific expands are placed beside the code they describe.
+
+## Greenfield Design
+
+Greenfield work treats conversation as a design activity rather than a fallback
+for unclear prompts. The agent asks materially useful questions in manageable
+rounds that build on prior answers and explores purpose, users or callers,
+outcomes, boundaries, lifecycle, failure behavior, risk, architecture, and
+verification where they shape the contract.
+
+When several designs are viable, the agent presents concrete choices with
+benefits, costs, consequences, and a reasoned recommendation. The user may
+combine, reject, revise, or replace every choice. The agent continues until
+contract-level decisions are clear enough to model without guessing, then
+synthesizes the conversation into exact proposed Sigil for separate approval.
+Writing and validating approved Sigil ends at the semantic review gate;
+implementation requires approval of the written contract and an explicit
+implementation request.
 
 ## Standards And External Guidance
 
