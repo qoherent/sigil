@@ -49,6 +49,38 @@ export async function run(): Promise<void> {
   );
   assert(definitions.length > 0, "Expected go-to-definition results");
 
+  const sectionPosition = new vscode.Position(16, 22);
+  const sectionHovers = await eventually(async () =>
+    await vscode.commands.executeCommand<vscode.Hover[]>(
+      "vscode.executeHoverProvider",
+      source,
+      sectionPosition,
+    )
+  );
+  assert(
+    sectionHovers.some((hover) =>
+      hover.contents.some((content) =>
+        (typeof content === "string" ? content : content.value).includes(
+          "UserProfile",
+        )
+      )
+    ),
+    "A component reference inside a section should provide hover",
+  );
+  const sectionDefinitions = await eventually(async () =>
+    await vscode.commands.executeCommand<
+      Array<vscode.Location | vscode.LocationLink>
+    >(
+      "vscode.executeDefinitionProvider",
+      source,
+      sectionPosition,
+    )
+  );
+  assert(
+    sectionDefinitions.length > 0,
+    "A component reference inside a section should provide a definition",
+  );
+
   await vscode.commands.executeCommand("sigil.showComponentPreview");
   await eventually(() => {
     const active = vscode.window.activeTextEditor;

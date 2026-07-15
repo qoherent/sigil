@@ -9,7 +9,7 @@ component SigilVsCodeExtension {
   interface {
     publishes the Sigil VS Code extension 1.0.0 within the Sigil v1 release line
     registers the sigil language for .sigil files
-    provides TextMate syntax highlighting for imports, components, expands, sections, and names
+    provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component names
     starts a bundled SigilLsp-compatible server through vscode-languageclient
     surfaces diagnostics, document symbols, definition navigation, and hover through SigilLsp
     contributes the Sigil: Show Component Preview command

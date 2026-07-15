@@ -13,9 +13,6 @@
       "include": "#sections"
     },
     {
-      "include": "#type-names"
-    },
-    {
       "include": "#braces"
     }
   ],
@@ -34,9 +31,6 @@
             "3": {
               "name": "punctuation.section.braces.begin.sigil"
             },
-            "4": {
-              "name": "entity.name.type.imported.sigil"
-            },
             "5": {
               "name": "punctuation.section.braces.end.sigil"
             }
@@ -51,9 +45,6 @@
           "captures": {
             "1": {
               "name": "keyword.declaration.sigil"
-            },
-            "2": {
-              "name": "entity.name.type.sigil"
             }
           }
         }
@@ -71,14 +62,6 @@
               "name": "punctuation.section.braces.begin.sigil"
             }
           }
-        }
-      ]
-    },
-    "type-names": {
-      "patterns": [
-        {
-          "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
-          "name": "entity.name.type.sigil"
         }
       ]
     },

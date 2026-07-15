@@ -100,6 +100,14 @@ export interface DocumentSymbolParams {
   readonly textDocument: TextDocumentIdentifier;
 }
 
+export interface SemanticTokensParams {
+  readonly textDocument: TextDocumentIdentifier;
+}
+
+export interface SemanticTokens {
+  readonly data: readonly number[];
+}
+
 export interface DocumentSymbol {
   readonly name: string;
   readonly detail?: string;

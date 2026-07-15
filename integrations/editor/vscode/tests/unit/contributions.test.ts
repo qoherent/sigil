@@ -14,7 +14,7 @@ test("manifest contributes the Sigil language, grammar, and preview command", as
   );
 });
 
-test("TextMate grammar covers approved constructs and does not invent comments", async () => {
+test("TextMate grammar colors syntax without treating capitalized prose as names", async () => {
   const grammar = JSON.parse(
     await readFile("syntaxes/sigil.tmLanguage.json", "utf8"),
   );
@@ -22,6 +22,11 @@ test("TextMate grammar covers approved constructs and does not invent comments",
   assert(grammar.repository.imports);
   assert(grammar.repository.declarations);
   assert(grammar.repository.sections);
-  assert(grammar.repository["type-names"]);
+  assert.equal(grammar.repository["type-names"], undefined);
+  assert.equal(
+    JSON.stringify(grammar).includes("\\\\b[A-Z][A-Za-z0-9_]*\\\\b"),
+    false,
+  );
+  assert.equal(JSON.stringify(grammar).includes("entity.name.type"), false);
   assert.equal(JSON.stringify(grammar).includes("comment"), false);
 });

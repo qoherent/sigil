@@ -38,6 +38,12 @@ Deno.test("initializes with the approved v1 capabilities and lifecycle", async (
   assertEquals(capabilities.definitionProvider, true);
   assertEquals(capabilities.documentSymbolProvider, true);
   assertEquals(capabilities.hoverProvider, true);
+  assert(
+    JSON.stringify(capabilities.semanticTokensProvider) === JSON.stringify({
+      legend: { tokenTypes: ["type"], tokenModifiers: [] },
+      full: true,
+    }),
+  );
   assertEquals(server.state, "running");
 
   const shutdown = await server.handle(request(3, "shutdown"));
@@ -137,6 +143,85 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
   const contents = hover.contents as Record<string, unknown>;
   assert(String(contents.value).includes("component Thing"));
   assert(String(contents.value).includes("Collected expansions"));
+
+  const proseDefinition = responseResult(
+    await server.handle(request(
+      6,
+      "textDocument/definition",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 4, character: 14 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  assertEquals(proseDefinition.uri, contractUri);
+
+  const proseHover = responseResult(
+    await server.handle(request(
+      7,
+      "textDocument/hover",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 4, character: 14 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  assert(
+    String((proseHover.contents as Record<string, unknown>).value).includes(
+      "component Thing",
+    ),
+  );
+
+  const ordinaryProseDefinition = responseResult(
+    await server.handle(request(
+      8,
+      "textDocument/definition",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 4, character: 6 },
+      },
+    )),
+  );
+  assertEquals(ordinaryProseDefinition, null);
+
+  const ordinaryProseHover = responseResult(
+    await server.handle(request(
+      9,
+      "textDocument/hover",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 4, character: 6 },
+      },
+    )),
+  );
+  assertEquals(ordinaryProseHover, null);
+
+  const tokens = responseResult(
+    await server.handle(request(
+      10,
+      "textDocument/semanticTokens/full",
+      { textDocument: { uri: consumerUri } },
+    )),
+  ) as Record<string, unknown>;
+  assert(
+    JSON.stringify(tokens.data) === JSON.stringify([
+      0,
+      25,
+      5,
+      0,
+      0,
+      2,
+      10,
+      8,
+      0,
+      0,
+      2,
+      12,
+      5,
+      0,
+      0,
+    ]),
+  );
 });
 
 Deno.test("returns protocol errors for bad requests and observes cancellation", async () => {

@@ -15,6 +15,8 @@ component SigilLsp {
     supports textDocument/documentSymbol for components, expands, and sections
     supports textDocument/definition for imports, imported component names, component declarations, and expand declarations
     supports textDocument/hover with component contracts and collected expansion summaries
+    supports textDocument/definition and textDocument/hover for component names in section semantic lines when the name resolves to a component declared in or explicitly imported by that file
+    supports textDocument/semanticTokens/full for resolver-backed component names in imports, declarations, expand declarations, and section semantic lines
     operates on file-backed Sigil workspaces governed by SigilWorkspaceConfig and SigilLanguage
   }
 }
@@ -33,6 +35,8 @@ expand SigilLsp {
     Workspace operations resolve open-document overlays before filesystem content.
     definition maps Sigil source ranges to declaration locations through core workspace and resolution data.
     hover presents the selected component goal, interface, and collected expansion detail without inventing new semantics.
+    Definition, hover, and semantic-token classification share one component-reference resolver.
+    A component name inside a section resolves only when it matches a component declared in the same file or explicitly imported by that file.
     documentSymbol returns hierarchical symbols for top-level declarations and their sections.
     shutdown completes outstanding work, returns null, and enters shutdown-requested state.
     exit terminates successfully only after shutdown; exit without shutdown is unsuccessful.
@@ -42,6 +46,7 @@ expand SigilLsp {
     Protocol messages conform to Language Server Protocol 3.18 and JSON-RPC 2.0 framing.
     Standard output contains protocol messages only; logging uses standard error.
     Position conversion uses the encoding negotiated during initialize and defaults to UTF-16.
+    Semantic highlighting uses the standard LSP type token and full-document responses.
     The initial release supports file URIs and standard-input/output transport only.
     The server depends on @sigil/core for parsing, workspace discovery, resolution, graphs, projections, and diagnostics.
     The server does not duplicate Sigil parser, resolver, or workspace rules.
@@ -56,6 +61,8 @@ expand SigilLsp {
     Fixing an open document clears diagnostics that no longer apply.
     Go-to-definition on an imported component navigates to its component declaration.
     Go-to-definition on an expand name navigates to its matching component declaration.
+    An imported component name used inside a section is highlighted and navigates to its declaration.
+    A capitalized word without a matching local or imported component remains ordinary prose with no definition or component hover.
     Hovering over a component exposes its public contract and collected expansion sources.
     A workspace configuration error is surfaced as a diagnostic without crashing the server.
     A request received before initialize is rejected according to the protocol lifecycle.

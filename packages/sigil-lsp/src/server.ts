@@ -10,6 +10,7 @@ import {
   diagnosticsByUri,
   documentSymbols,
   hoverAt,
+  semanticTokens,
 } from "./features.ts";
 import {
   DenoSigilFileSystem,
@@ -27,6 +28,7 @@ import type {
   JsonRpcIncoming,
   JsonRpcOutgoing,
   JsonRpcRequest,
+  SemanticTokensParams,
   TextDocumentPositionParams,
 } from "./types.ts";
 import { isRecord, isRequest } from "./types.ts";
@@ -136,6 +138,9 @@ export class SigilLanguageServer {
         case "textDocument/hover":
           result = await this.#hover(request.params);
           break;
+        case "textDocument/semanticTokens/full":
+          result = await this.#semanticTokens(request.params);
+          break;
         default:
           return failure(
             request.id,
@@ -196,6 +201,10 @@ export class SigilLanguageServer {
         definitionProvider: true,
         documentSymbolProvider: true,
         hoverProvider: true,
+        semanticTokensProvider: {
+          legend: { tokenTypes: ["type"], tokenModifiers: [] },
+          full: true,
+        },
       },
       serverInfo: { name: "sigil-lsp", version: SIGIL_LSP_VERSION },
     };
@@ -266,6 +275,17 @@ export class SigilLanguageServer {
       this.#fs,
       fileUriToPath(value.textDocument.uri),
       value.position,
+    );
+  }
+
+  async #semanticTokens(params: unknown): Promise<unknown> {
+    const value = semanticTokensParams(params);
+    if (!this.#resolved) return { data: [] };
+    const path = fileUriToPath(value.textDocument.uri);
+    return semanticTokens(
+      this.#resolved,
+      path,
+      await this.#fs.readTextFile(path),
     );
   }
 
@@ -396,6 +416,11 @@ function didCloseParams(params: unknown): DidCloseTextDocumentParams {
 
 function documentSymbolParams(params: unknown): DocumentSymbolParams {
   const value = requiredRecord(params, "documentSymbol params");
+  return { textDocument: textDocumentIdentifier(value.textDocument) };
+}
+
+function semanticTokensParams(params: unknown): SemanticTokensParams {
+  const value = requiredRecord(params, "semanticTokens params");
   return { textDocument: textDocumentIdentifier(value.textDocument) };
 }
 
