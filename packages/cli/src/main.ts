@@ -3,6 +3,27 @@ import { parseArgs } from "./args.ts";
 import { runCommand } from "./commands.ts";
 import { EXIT_RUNTIME, EXIT_USAGE, exitCodeForDiagnostics } from "./exit.ts";
 import { formatResult } from "./formatters.ts";
+import metadata from "../deno.json" with { type: "json" };
+
+const HELP = `Usage: sigil <command> [path] [options]
+
+Commands:
+  init [path]       Create a workspace configuration
+  version [path]    Report workspace and contract versions
+  parse <file>      Parse one Sigil file
+  check [path]      Report workspace diagnostics
+  graph [path]      Report the component and import graph
+  context [path]    Return context for a component or file
+  render [path]     Render workspace documentation
+
+Options:
+  --help            Show this help
+  --version         Show the sigil version
+  --root <path>     Use an explicit workspace root
+  --format <value>  Output json, text, or markdown
+  --pretty          Pretty-print JSON output
+  --quiet           Suppress command output
+`;
 
 export interface CliRunResult {
   readonly exitCode: number;
@@ -12,6 +33,12 @@ export interface CliRunResult {
 
 export async function runCli(argv: readonly string[]): Promise<CliRunResult> {
   const parsed = parseArgs(argv);
+  if (parsed.kind === "help") {
+    return { exitCode: 0, stdout: HELP, stderr: "" };
+  }
+  if (parsed.kind === "cli-version") {
+    return { exitCode: 0, stdout: `${metadata.version}\n`, stderr: "" };
+  }
   if (parsed.kind === "usage-error") {
     return {
       exitCode: EXIT_USAGE,

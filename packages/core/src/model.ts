@@ -1,3 +1,5 @@
+import metadata from "../deno.json" with { type: "json" };
+
 export type SigilFormKind = "component" | "expand";
 export type SigilSectionName =
   | "goal"
@@ -31,7 +33,7 @@ export type SigilDiagnosticCode =
 
 export const SIGIL_CONFIG_VERSION = "1.0.0" as const;
 export const SIGIL_LANGUAGE_VERSION = "1.0.0" as const;
-export const SIGIL_CORE_VERSION = "1.0.0" as const;
+export const SIGIL_CORE_VERSION = metadata.version;
 
 export interface SigilWorkspaceConfig {
   readonly name: string;

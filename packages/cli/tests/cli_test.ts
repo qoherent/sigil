@@ -83,8 +83,8 @@ Deno.test("version reports tool and resolved contract versions", async () => {
   ]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.cliVersion, "1.0.0");
-  assertEquals(json.coreVersion, "1.0.0");
+  assertEquals(json.cliVersion, "0.1.0");
+  assertEquals(json.coreVersion, "0.1.0");
   assertEquals(json.configVersion, "1.0.0");
   assertEquals(json.languageVersion, "1.0.0");
 });
@@ -231,6 +231,19 @@ Deno.test("invalid usage and runtime failures keep stable exit codes", async () 
   assertEquals(runtime.exitCode, EXIT_RUNTIME);
 });
 
+Deno.test("top-level help and version report CLI information", async () => {
+  const help = await runCli(["--help"]);
+  assertEquals(help.exitCode, EXIT_OK);
+  assert(help.stdout.startsWith("Usage: sigil"));
+  assert(help.stdout.includes("parse <file>"));
+  assertEquals(help.stderr, "");
+
+  const version = await runCli(["--version"]);
+  assertEquals(version.exitCode, EXIT_OK);
+  assertEquals(version.stdout, "0.1.0\n");
+  assertEquals(version.stderr, "");
+});
+
 Deno.test("executable subprocess returns version JSON", async () => {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
@@ -250,7 +263,7 @@ Deno.test("executable subprocess returns version JSON", async () => {
   assertEquals(output.code, EXIT_OK);
   assertEquals(
     JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
-    "1.0.0",
+    "0.1.0",
   );
 });
 

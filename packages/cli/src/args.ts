@@ -63,9 +63,16 @@ export interface UsageError {
 export type ParseArgsResult = {
   readonly kind: "ok";
   readonly request: CommandRequest;
+} | {
+  readonly kind: "help";
+} | {
+  readonly kind: "cli-version";
 } | UsageError;
 
 export function parseArgs(argv: readonly string[]): ParseArgsResult {
+  if (argv[0] === "--help") return { kind: "help" };
+  if (argv[0] === "--version") return { kind: "cli-version" };
+
   const [commandName, ...rest] = argv;
   if (!isCommand(commandName)) {
     return usage(

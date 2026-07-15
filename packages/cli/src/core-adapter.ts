@@ -16,8 +16,9 @@ import {
   type SigilWorkspace,
 } from "@qoherent/sigil-core";
 import { DenoSigilFileSystem, joinPath, normalizePath } from "./fs-adapter.ts";
+import metadata from "../deno.json" with { type: "json" };
 
-export const SIGIL_CLI_VERSION = "1.0.0" as const;
+export const SIGIL_CLI_VERSION = metadata.version;
 
 interface WritableSigilFileSystem extends SigilFileSystem {
   writeTextFile(path: string, source: string): Promise<void>;
