@@ -8,7 +8,7 @@
 | `@sigil/cli`      | 1.0.0   | core `^1.0.0`                            |
 | `@sigil/lsp`      | 1.0.0   | core `^1.0.0`; LSP 3.18                  |
 | VS Code extension | 1.0.0   | `@sigil/lsp` 1.x; VS Code `^1.91.0`       |
-| Codex Sigil skill | 1.0.0   | CLI/core `^1.0.0`; config/language 1.0.0 |
+| Codex Sigil skill | 1.1.0   | CLI/core `^1.0.0`; config/language 1.0.0 |
 
 These contracts start aligned at 1.0.0 but release independently. A tool must
 reject configured versions it does not explicitly support.

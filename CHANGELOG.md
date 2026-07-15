@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Advance the standalone Codex Sigil skill to 1.1.0 with implementation
+  component discovery and an implementation coverage gate before coding.
+- Treat dependent-facing programming abstractions, internal APIs, state
+  machines, screens, views, and reusable UI surfaces as possible components.
+- Distinguish component contracts, implementation-specific expands, and
+  intentionally omitted trivial mechanics through a reviewable coverage map.
 - Implement the Sigil VS Code extension 1.0.0 in the v1 release line as the
   first concrete human authoring and review surface.
 - Define its initial scope as TextMate highlighting, bundled LSP integration,

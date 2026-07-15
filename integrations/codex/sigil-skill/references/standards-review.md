@@ -140,6 +140,12 @@ Assess modularity qualitatively:
 - **Reasons to change:** unrelated product or technical changes do not routinely
   force one component to change.
 
+Apply these heuristics at implementation boundaries as well as product and
+service boundaries. An internal API, programming abstraction, state machine, or
+UI surface may need its own component contract when dependents rely on it. Use
+`references/implementation-design.md` for the component/expand/omit decision
+and implementation coverage map before coding.
+
 Warn about god components, duplicated ownership, chatty or oversized
 interfaces, cyclic dependencies, shared mutable state, and implementation-shaped
 contracts. Do not assign arbitrary scores or thresholds.

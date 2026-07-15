@@ -16,7 +16,7 @@ component Sigil {
     publishes @sigil/core 1.0.0 and @sigil/cli 1.0.0
     publishes @sigil/lsp 1.0.0 within the v1 release line through SigilLsp
     publishes the Sigil VS Code extension 1.0.0 within the v1 release line through SigilVsCodeExtension
-    publishes the standalone Sigil Codex skill 1.0.0 through SigilCodexSkill
+    publishes the standalone Sigil Codex skill 1.1.0 through SigilCodexSkill
     defines the Sigil language through spec/sigil-language.md
     defines the human-agent workflow through spec/sigil-workflow.md
     defines platform architecture through spec/sigil-platform-architecture.md

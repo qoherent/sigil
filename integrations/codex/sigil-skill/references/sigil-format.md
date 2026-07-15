@@ -125,6 +125,12 @@ through its `goal` and `interface`. `expand` adds collective operational detail
 without changing or overriding that public contract. Put state, behavior,
 constraints, and representative cases in `expand`.
 
+Public is relative to the component's dependents. A component may represent a
+product surface, domain module, programming abstraction, internal API, state
+machine, screen, view, or reusable UI surface even when it is not externally
+visible. Do not mechanically create a component for every code symbol or visual
+element; use cohesive responsibility and a relied-upon contract as the boundary.
+
 ## Required And Optional Sections
 
 `component` requires:
@@ -237,6 +243,8 @@ When reviewing Sigil, check:
 - Does every component explain why it exists?
 - Does every component expose how callers, users, modules, or other parts
   interact with it?
+- Were coherent internal abstractions and UI surfaces considered as components
+  rather than hidden beneath only high-level project or service contracts?
 - Does each imported name resolve to a matching component in the imported Sigil
   source?
 - Does each `expand Name` have a matching `component Name`?

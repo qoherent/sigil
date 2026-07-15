@@ -67,8 +67,11 @@ the uncertainty in the review summary rather than inventing a Sigil line.
 ## 3. Establish Boundaries And Contracts
 
 Choose the smallest coherent component boundary supported by the conversation.
-Model stable responsibilities rather than anticipated files, classes, tables,
-screens, or framework layers.
+Model stable responsibilities rather than mechanically mirroring anticipated
+files, classes, tables, screens, or framework layers. A programming abstraction,
+internal API, state machine, screen, view, or reusable UI surface is still a
+component when it owns a coherent responsibility and exposes a stable contract
+relied upon by dependents.
 
 For each proposed component identify:
 
@@ -89,6 +92,12 @@ implementation and review:
 
 Use one semantic idea per non-empty line. Keep private algorithms and storage
 layout out of public interfaces unless they are deliberate guarantees.
+
+When implementation shape is material and already clear, follow
+`references/implementation-design.md` and include implementation components,
+implementation-specific expands, and the coverage map in the same proposal.
+Otherwise complete implementation design after the higher-level contract is
+approved and use a separate Sigil review cycle.
 
 ## 4. Review And Synthesize Proposed Sigil
 
@@ -141,8 +150,11 @@ After explicit approval:
    open questions, and validation results.
 
 Do not write implementation code in the same pass. After the user approves the
-written Sigil and explicitly requests implementation, implement against the
-agreed contract and colocate implementation-specific Sigil with its owner.
+written Sigil and explicitly requests implementation, run the implementation
+coverage procedure if it was not already completed. Implement only after every
+material implementation concern has an approved component, expand, or
+intentional omit decision, and colocate implementation-specific Sigil with its
+owner.
 
 If implementation reveals a missing material decision, return to conversation,
 update the Sigil proposal, and repeat the review gate.

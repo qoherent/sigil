@@ -144,7 +144,8 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil Language, config schema, `@sigil/core`, `@sigil/cli`, and the standalone Codex skill are versioned at 1.0.0.
+Sigil Language, config schema, `@sigil/core`, and `@sigil/cli` are versioned at 1.0.0.
+The independently versioned standalone Codex skill is at 1.1.0.
 See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
@@ -166,6 +167,7 @@ editor-native language features, and a read-only component preview derived from
 standard hover responses.
 
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
+The skill also discovers coherent implementation and UI components, distinguishes component contracts from implementation-specific expands and trivial mechanics, and requires an implementation coverage map before coding.
 The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
 
 Editor integrations other than VS Code, stricter body semantics, project
