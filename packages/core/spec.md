@@ -18,15 +18,15 @@ V1 is the parser and resolver foundation.
 
 It must:
 
-- parse `.sigil` files using an explicit supported language version;
-- parse and validate strict `sigil.config` schema 1.0.0;
+- parse `.sigil` files using an explicit supported Sigil version;
+- parse and validate strict `.sigil/config.json` using the canonical Sigil version;
 - preserve source locations and semantic lines;
 - discover the nearest eligible ancestor config or use an explicit configured root;
 - apply include and exclude globs and permit independent workspaces only inside excluded subtrees;
 - load workspace files through an abstract filesystem boundary;
 - resolve `@path import { Name }` declarations from the workspace root;
 - read additional project roots exclusively from `workspace.members` in
-  `sigil.config`;
+  `.sigil/config.json`;
 - reject `#module.sigil` files and directory imports outside valid `RootSigil`
   locations;
 - identify public components and matching expansions;
@@ -151,7 +151,7 @@ V1 diagnostics must include stable codes for:
 
 ## 8. Workspace And Import Requirements
 
-The workspace root contains mandatory `sigil.config` schema 1.0.0.
+The workspace root contains mandatory `.sigil/config.json` with the canonical Sigil version.
 Without an explicit root, the nearest ancestor config owns the target when every
 higher configured workspace excludes that nearer root. An explicit root must
 contain the config directly. Nested configs inside included paths are errors;
@@ -162,7 +162,7 @@ Import paths begin with `@` and resolve from the workspace root.
 A directory import resolves to `#module.sigil` only at the workspace root or a
 member root declared by `workspace.members`. Package manifests and repository
 workspace declarations do not authorize RootSigil locations. A nested directory
-with its own `sigil.config` is an excluded independent workspace rather than a
+with its own `.sigil/config.json` is an excluded independent workspace rather than a
 member project. Ordinary internal contracts use explicit `.sigil` filenames.
 
 A file import resolves to the exact `.sigil` file.
@@ -175,7 +175,7 @@ V1 is acceptable when tests demonstrate that `sigil-core` can:
 
 - parse `examples/promise/promise.sigil`;
 - preserve semantic lines with owner, section, text, file, and source range;
-- discover the repository `sigil.config` from nested targets that remain in the root workspace;
+- discover the repository `.sigil/config.json` from nested targets that remain in the root workspace;
 - discover Promise and Slotted through their independent example configs;
 - treat `examples/slotted/#module.sigil` as the Slotted workspace summary;
 - resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;

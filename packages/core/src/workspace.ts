@@ -4,6 +4,7 @@ import {
   parseSigilConfig,
 } from "./config.ts";
 import { diagnostic } from "./diagnostics.ts";
+import { SIGIL_CONFIG_PATH } from "./model.ts";
 import type {
   LoadedSigilFile,
   SigilConfig,
@@ -36,12 +37,16 @@ export async function discoverSigilWorkspace(
 ): Promise<WorkspaceDiscoveryResult> {
   if (options.explicitRoot) {
     const root = normalizePath(options.explicitRoot);
-    return await readDiscoveredConfig(fs, root, joinPath(root, "sigil.config"));
+    return await readDiscoveredConfig(
+      fs,
+      root,
+      joinPath(root, SIGIL_CONFIG_PATH),
+    );
   }
 
   const candidates: string[] = [];
   for (const ancestor of ancestorsFrom(options.startPath)) {
-    if (await fs.exists(joinPath(ancestor, "sigil.config"))) {
+    if (await fs.exists(joinPath(ancestor, SIGIL_CONFIG_PATH))) {
       candidates.push(ancestor);
     }
   }
@@ -52,10 +57,10 @@ export async function discoverSigilWorkspace(
       root,
       diagnostics: [diagnostic(
         "SIGIL_CONFIG_NOT_FOUND",
-        `No ancestor sigil.config was found from ${
+        `No ancestor ${SIGIL_CONFIG_PATH} was found from ${
           normalizePath(options.startPath)
         }.`,
-        { filePath: joinPath(root, "sigil.config") },
+        { filePath: joinPath(root, SIGIL_CONFIG_PATH) },
       )],
     };
   }
@@ -64,7 +69,7 @@ export async function discoverSigilWorkspace(
   const selected = await readDiscoveredConfig(
     fs,
     root,
-    joinPath(root, "sigil.config"),
+    joinPath(root, SIGIL_CONFIG_PATH),
   );
   if (!selected.config) return selected;
 
@@ -72,7 +77,7 @@ export async function discoverSigilWorkspace(
     const parent = await readDiscoveredConfig(
       fs,
       parentRoot,
-      joinPath(parentRoot, "sigil.config"),
+      joinPath(parentRoot, SIGIL_CONFIG_PATH),
     );
     if (!parent.config) {
       return { root, diagnostics: parent.diagnostics };
@@ -114,12 +119,10 @@ export async function loadSigilWorkspace(
     joinPath(discovery.root, member)
   );
   const nestedConfigs = allPaths
-    .filter((path) =>
-      basename(path) === "sigil.config" && path !== discovery.configPath
-    )
+    .filter((path) => isSigilConfigPath(path) && path !== discovery.configPath)
     .sort();
   const nestedRoots = nestedConfigs.map((path) =>
-    path.slice(0, -"/sigil.config".length)
+    path.slice(0, -`/${SIGIL_CONFIG_PATH}`.length)
   );
   for (let index = 0; index < nestedConfigs.length; index++) {
     const path = nestedConfigs[index];
@@ -127,7 +130,7 @@ export async function loadSigilWorkspace(
     if (memberRoots.includes(nestedRoot)) {
       diagnostics.push(diagnostic(
         "SIGIL_NESTED_CONFIG",
-        `Workspace member ${nestedRoot} must not contain its own sigil.config.`,
+        `Workspace member ${nestedRoot} must not contain its own ${SIGIL_CONFIG_PATH}.`,
         { filePath: path },
       ));
       continue;
@@ -140,7 +143,7 @@ export async function loadSigilWorkspace(
     ) continue;
     diagnostics.push(diagnostic(
       "SIGIL_NESTED_CONFIG",
-      `Nested sigil.config must be inside a subtree excluded by workspace ${discovery.root}.`,
+      `Nested ${SIGIL_CONFIG_PATH} must be inside a subtree excluded by workspace ${discovery.root}.`,
       { filePath: path },
     ));
   }
@@ -157,7 +160,7 @@ export async function loadSigilWorkspace(
   for (const path of paths) {
     const source = await fs.readTextFile(path);
     const parsed = parseSigilDocument(path, source, {
-      languageVersion: discovery.config.languageVersion,
+      sigilVersion: discovery.config.sigilVersion,
     });
     loadedFiles.push({ path, document: parsed.document });
     diagnostics.push(...parsed.diagnostics);
@@ -193,7 +196,7 @@ async function readDiscoveredConfig(
       root,
       diagnostics: [diagnostic(
         "SIGIL_CONFIG_NOT_FOUND",
-        `Expected sigil.config directly inside workspace root ${root}.`,
+        `Expected ${SIGIL_CONFIG_PATH} directly inside workspace root ${root}.`,
         { filePath: configPath },
       )],
     };
@@ -208,4 +211,8 @@ async function readDiscoveredConfig(
     config: parsed.config,
     diagnostics: parsed.diagnostics,
   };
+}
+
+function isSigilConfigPath(path: string): boolean {
+  return path === SIGIL_CONFIG_PATH || path.endsWith(`/${SIGIL_CONFIG_PATH}`);
 }

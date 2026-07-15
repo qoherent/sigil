@@ -6,7 +6,7 @@
   ],
   "lock": true,
   "tasks": {
-    "fmt": "deno fmt --check deno.json sigil.config examples/promise/sigil.config examples/slotted/sigil.config spec/sigil-config.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
+    "fmt": "deno fmt --check deno.json .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json spec/sigil-config.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
     "lint": "deno lint",
     "check": "deno check packages/core/src/mod.ts packages/cli/src/main.ts packages/lsp/src/main.ts && deno task check:vscode",
     "check:vscode": "npm --prefix integrations/editor/vscode run check",

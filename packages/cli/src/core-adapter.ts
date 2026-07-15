@@ -9,9 +9,8 @@ import {
   parseSigilDocument,
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
-  SIGIL_CONFIG_VERSION,
-  SIGIL_CORE_VERSION,
-  SIGIL_LANGUAGE_VERSION,
+  SIGIL_CONFIG_PATH,
+  SIGIL_VERSION,
   type SigilFileSystem,
   type SigilWorkspace,
 } from "@qoherent/sigil-core";
@@ -21,6 +20,7 @@ import metadata from "../deno.json" with { type: "json" };
 export const SIGIL_CLI_VERSION = metadata.version;
 
 interface WritableSigilFileSystem extends SigilFileSystem {
+  makeDirectory(path: string): Promise<void>;
   writeTextFile(path: string, source: string): Promise<void>;
 }
 
@@ -52,7 +52,7 @@ export class CoreAdapter {
     }
     const source = await this.#fs.readTextFile(filePath);
     const parsed = parseSigilDocument(filePath, source, {
-      languageVersion: discovery.config.languageVersion,
+      sigilVersion: discovery.config.sigilVersion,
     });
     return {
       discovery,
@@ -86,7 +86,7 @@ export class CoreAdapter {
     exclude: readonly string[],
   ) {
     const root = this.resolveTarget(path ?? this.#currentDirectory);
-    const configPath = joinPath(root, "sigil.config");
+    const configPath = joinPath(root, SIGIL_CONFIG_PATH);
     if (await this.#fs.exists(configPath)) {
       return {
         root,
@@ -102,8 +102,7 @@ export class CoreAdapter {
       };
     }
     const config = {
-      configVersion: SIGIL_CONFIG_VERSION,
-      languageVersion: SIGIL_LANGUAGE_VERSION,
+      sigilVersion: SIGIL_VERSION,
       workspace: {
         name: name?.trim() || basename(root),
         members: [],
@@ -115,9 +114,12 @@ export class CoreAdapter {
       tools: {},
     };
     const writable = this.#fs as Partial<WritableSigilFileSystem>;
-    if (!writable.writeTextFile) {
-      throw new Error("Filesystem does not support writing sigil.config.");
+    if (!writable.makeDirectory || !writable.writeTextFile) {
+      throw new Error(
+        `Filesystem does not support writing ${SIGIL_CONFIG_PATH}.`,
+      );
     }
+    await writable.makeDirectory(joinPath(root, ".sigil"));
     await writable.writeTextFile(
       configPath,
       `${JSON.stringify(config, null, 2)}\n`,
@@ -128,9 +130,7 @@ export class CoreAdapter {
   versions() {
     return {
       cliVersion: SIGIL_CLI_VERSION,
-      coreVersion: SIGIL_CORE_VERSION,
-      supportedConfigVersions: [SIGIL_CONFIG_VERSION],
-      supportedLanguageVersions: [SIGIL_LANGUAGE_VERSION],
+      coreVersion: SIGIL_VERSION,
     };
   }
   componentContracts(resolved: ResolvedSigilWorkspace) {

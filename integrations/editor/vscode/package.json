@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/farhoud/qode.git",
+    "url": "https://github.com/qoherent/sigil.git",
     "directory": "integrations/editor/vscode"
   },
   "engines": {

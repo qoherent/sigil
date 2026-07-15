@@ -24,6 +24,10 @@ export class DenoSigilFileSystem implements SigilFileSystem {
   async writeTextFile(path: string, source: string): Promise<void> {
     await Deno.writeTextFile(path, source, { createNew: true });
   }
+
+  async makeDirectory(path: string): Promise<void> {
+    await Deno.mkdir(path, { recursive: true });
+  }
 }
 
 async function collectFiles(path: string, files: string[]): Promise<void> {

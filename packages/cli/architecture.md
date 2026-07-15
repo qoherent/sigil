@@ -279,7 +279,7 @@ JSON field names should use camelCase.
 Workspace-based JSON outputs should include:
 
 - `workspaceRoot`;
-- `configPath`, `configVersion`, `languageVersion`, and `workspaceName`;
+- `configPath`, `sigilVersion`, and `workspaceName`;
 - `diagnostics`;
 - command-specific data.
 

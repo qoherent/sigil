@@ -32,8 +32,9 @@ import type {
   TextDocumentPositionParams,
 } from "./types.ts";
 import { isRecord, isRequest } from "./types.ts";
+import metadata from "../deno.json" with { type: "json" };
 
-export const SIGIL_LSP_VERSION = "1.0.0" as const;
+export const SIGIL_LSP_VERSION = metadata.version;
 
 const ERROR_INVALID_REQUEST = -32600;
 const ERROR_METHOD_NOT_FOUND = -32601;

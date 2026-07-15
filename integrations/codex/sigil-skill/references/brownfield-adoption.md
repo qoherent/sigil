@@ -22,7 +22,7 @@ rationale. Preserve existing user changes and unrelated worktree content.
 ## 1. Initialize Or Validate The Workspace
 
 Determine the repository root and check whether it directly contains
-`sigil.config` before gathering detailed project evidence.
+`.sigil/config.json` before gathering detailed project evidence.
 
 When the config is absent, run:
 
@@ -44,7 +44,7 @@ sigil check <repository-root> --format json --pretty
 ```
 
 Stop with a compatibility report when initialization fails, the existing config
-is invalid, or the configured CLI, core, config, or language versions are not
+is invalid, or the configured CLI, core, or Sigil versions are not
 supported. Do not create `.sigil` files until the workspace contract is valid.
 
 ## 2. Establish And Review RootSigil

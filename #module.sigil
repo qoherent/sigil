@@ -12,7 +12,7 @@ component Sigil {
 
   interface {
     publishes Sigil Language 1.0.0 through SigilLanguage
-    publishes sigil.config schema 1.0.0 through SigilWorkspaceConfig
+    publishes .sigil/config.json schema 1.0.0 through SigilWorkspaceConfig
     publishes @qoherent/sigil-core 0.1.0
     publishes @qoherent/sigil 0.1.0 through SigilCli
     publishes @qoherent/sigil-lsp 0.1.0 within the v1 release line through SigilLsp
@@ -29,9 +29,9 @@ component Sigil {
 
 expand Sigil {
   constraints {
-    A mandatory sigil.config defines a Sigil workspace root.
+    A mandatory .sigil/config.json defines a Sigil workspace root.
     #module.sigil is reserved for the workspace root and member roots explicitly declared by workspace.members.
-    sigil.config defines workspace roots; RootSigil summaries have no workspace-discovery authority.
+    .sigil/config.json defines workspace roots; RootSigil summaries have no workspace-discovery authority.
     Language, config schema, core, CLI, and skill versions evolve independently under semantic versioning.
     Anchors, editor integrations other than VS Code, plugin packaging, and durable approval records remain outside version 1.
     @qoherent/sigil-lsp and the Sigil VS Code extension are part of the v1 release line while other concrete editor integrations remain independently scoped.

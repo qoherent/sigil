@@ -26,14 +26,12 @@ export type SigilDiagnosticCode =
   | "SIGIL_CONFIG_NOT_FOUND"
   | "SIGIL_CONFIG_PARSE"
   | "SIGIL_CONFIG_INVALID"
-  | "SIGIL_UNSUPPORTED_CONFIG_VERSION"
-  | "SIGIL_UNSUPPORTED_LANGUAGE_VERSION"
+  | "SIGIL_UNSUPPORTED_VERSION"
   | "SIGIL_NESTED_CONFIG"
   | "SIGIL_CONFIG_EXISTS";
 
-export const SIGIL_CONFIG_VERSION = "1.0.0" as const;
-export const SIGIL_LANGUAGE_VERSION = "1.0.0" as const;
-export const SIGIL_CORE_VERSION = metadata.version;
+export const SIGIL_VERSION = metadata.version;
+export const SIGIL_CONFIG_PATH = ".sigil/config.json" as const;
 
 export interface SigilWorkspaceConfig {
   readonly name: string;
@@ -46,8 +44,7 @@ export interface SigilFileDiscoveryConfig {
 }
 
 export interface SigilConfig {
-  readonly configVersion: string;
-  readonly languageVersion: string;
+  readonly sigilVersion: string;
   readonly workspace: SigilWorkspaceConfig;
   readonly files: SigilFileDiscoveryConfig;
   readonly tools: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
@@ -126,7 +123,7 @@ export interface ParseResult {
 }
 
 export interface ParseOptions {
-  readonly languageVersion: string;
+  readonly sigilVersion: string;
 }
 
 export interface SigilFileSystem {

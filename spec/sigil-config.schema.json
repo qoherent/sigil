@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/farhoud/qode/blob/v1.0.0/spec/sigil-config.schema.json",
+  "$id": "https://github.com/qoherent/sigil/blob/main/spec/sigil-config.schema.json",
   "title": "Sigil workspace configuration",
   "type": "object",
   "$defs": {
@@ -16,10 +16,12 @@
     }
   },
   "additionalProperties": false,
-  "required": ["configVersion", "languageVersion", "workspace", "files"],
+  "required": ["sigilVersion", "workspace", "files"],
   "properties": {
-    "configVersion": { "const": "1.0.0" },
-    "languageVersion": { "const": "1.0.0" },
+    "sigilVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
     "workspace": {
       "type": "object",
       "additionalProperties": false,

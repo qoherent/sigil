@@ -24,8 +24,7 @@ export interface DiagnosticCounts {
 export interface WorkspaceMetadata {
   readonly workspaceRoot: string;
   readonly configPath: string | null;
-  readonly configVersion: string | null;
-  readonly languageVersion: string | null;
+  readonly sigilVersion: string | null;
   readonly workspaceName: string | null;
 }
 export interface InitCommandResult extends WorkspaceMetadata {
@@ -37,8 +36,6 @@ export interface VersionCommandResult extends WorkspaceMetadata {
   readonly command: "version";
   readonly cliVersion: string;
   readonly coreVersion: string;
-  readonly supportedConfigVersions: readonly string[];
-  readonly supportedLanguageVersions: readonly string[];
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 export interface ParseCommandResult extends WorkspaceMetadata {
@@ -80,8 +77,7 @@ export function workspaceMetadata(
   return {
     workspaceRoot: workspace.root,
     configPath: workspace.configPath ?? null,
-    configVersion: workspace.config?.configVersion ?? null,
-    languageVersion: workspace.config?.languageVersion ?? null,
+    sigilVersion: workspace.config?.sigilVersion ?? null,
     workspaceName: workspace.config?.workspace.name ?? null,
   };
 }

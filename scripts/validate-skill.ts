@@ -60,10 +60,9 @@ const compatibility = JSON.parse(
 for (
   const [key, expected] of Object.entries({
     skillVersion: "1.1.0",
-    cliVersion: "^1.0.0",
-    coreVersion: "^1.0.0",
-    configVersion: "1.0.0",
-    languageVersion: "1.0.0",
+    cliVersion: "^0.1.0",
+    coreVersion: "^0.1.0",
+    sigilVersion: "0.1.0",
   })
 ) {
   if (compatibility[key] !== expected) {

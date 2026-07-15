@@ -1,6 +1,6 @@
 # Sigil Language Specification
 
-**Language version:** 1.0.0
+**Sigil version:** 0.1.0
 **Status:** Accepted
 **Released:** 2026-07-13
 
@@ -42,9 +42,9 @@ follows the `RootSigil` contract.
 Do not use `#module.sigil` for ordinary internal directories, features,
 components, or implementation modules.
 
-A strict JSON `sigil.config` is required at the workspace root.
-It selects config schema and language versions and defines workspace file discovery.
-The version 1 config contract is defined in [sigil-config.md](sigil-config.md).
+A strict JSON `.sigil/config.json` is required at the workspace root.
+It selects the Sigil version and defines workspace file discovery. The config
+contract is defined in [sigil-config.md](sigil-config.md).
 
 Sigil files are plain text.
 The outer structure is restricted, but section bodies are free-form text.
@@ -65,7 +65,7 @@ filename.
 
 `RootSigil` defines the role of `#module.sigil` for one project. The
 workspace-root file describes the root project. A member-root file describes a
-workspace member explicitly declared by `workspace.members` in `sigil.config`.
+workspace member explicitly declared by `workspace.members` in `.sigil/config.json`.
 Package manifests and directory structure alone do not authorize a RootSigil
 location.
 
@@ -82,18 +82,18 @@ Its matching `expand` uses the general `state`, `logic`, `constraints`, and
 concerns; it does not redefine those sections.
 
 Root summaries exclude secrets, incidental dependencies, low-level
-configuration, and module-specific implementation details. `sigil.config`
+configuration, and module-specific implementation details. `.sigil/config.json`
 defines the workspace root; `RootSigil` summarizes the project without gaining
 workspace-discovery authority.
 
-An excluded nested directory with its own `sigil.config` is an independent
+An excluded nested directory with its own `.sigil/config.json` is an independent
 workspace. It describes its own root project and is not a workspace member of
 the parent.
 
 ### Workspace and project vocabulary
 
 A **Sigil workspace** is the tooling boundary controlled by one
-`sigil.config`. The **workspace root** is the directory containing that file.
+`.sigil/config.json`. The **workspace root** is the directory containing that file.
 
 A **project** is a coherent app, service, library, package, or other system
 described by a `RootSigil`. A **project root** is a directory where
@@ -105,7 +105,7 @@ A **workspace member** is an additional project explicitly declared by
 with one or more members is a **monorepo workspace**.
 
 An **independent workspace** is an excluded nested directory containing its own
-`sigil.config`. It is not a workspace member of its parent.
+`.sigil/config.json`. It is not a workspace member of its parent.
 
 ## 3. Top-Level Forms
 
@@ -164,8 +164,8 @@ Import syntax:
 Import paths begin with `@`.
 The `@` prefix resolves from the Sigil workspace root.
 
-Tools discover the workspace by walking upward from the current file or command target and selecting the nearest ancestor `sigil.config` whose root is excluded by every higher configured workspace.
-An explicit root must contain `sigil.config` directly.
+Tools discover the workspace by walking upward from the current file or command target and selecting the nearest ancestor `.sigil/config.json` whose root is excluded by every higher configured workspace.
+An explicit root must contain `.sigil/config.json` directly.
 Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
 
 A directory import is reserved for a valid `RootSigil` location and resolves to
@@ -430,7 +430,7 @@ An import path with a `.sigil` filename resolves to that exact file.
 
 Import paths resolve from the Sigil workspace root.
 
-The Sigil workspace root is the directory containing the nearest applicable `sigil.config`.
+The Sigil workspace root is the directory containing the nearest applicable `.sigil/config.json`.
 Missing or unexcluded nested configs are invalid, and an explicit root must contain its config directly.
 
 An imported name must resolve to a matching `component Name`.

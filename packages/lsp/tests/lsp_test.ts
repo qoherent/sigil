@@ -1,4 +1,4 @@
-import { InMemorySigilFileSystem } from "@qoherent/sigil-core";
+import { InMemorySigilFileSystem, SIGIL_VERSION } from "@qoherent/sigil-core";
 import {
   encodeLspMessage,
   fileUriToPath,
@@ -244,7 +244,7 @@ Deno.test("surfaces workspace configuration failures without crashing", async ()
   const server = new SigilLanguageServer({
     currentDirectory: root,
     fs: new InMemorySigilFileSystem({
-      [`${root}/sigil.config`]: "{",
+      [`${root}/.sigil/config.json`]: "{",
       [contractPath]: contractSource,
     }),
   });
@@ -254,9 +254,10 @@ Deno.test("surfaces workspace configuration failures without crashing", async ()
   assertEquals(errorCode(initialized), undefined);
   const notifications = await server.handle(notification("initialized"));
   assert(
-    diagnosticsFor(notifications, pathToFileUri(`${root}/sigil.config`)).some(
-      (item) => item.code === "SIGIL_CONFIG_PARSE",
-    ),
+    diagnosticsFor(notifications, pathToFileUri(`${root}/.sigil/config.json`))
+      .some(
+        (item) => item.code === "SIGIL_CONFIG_PARSE",
+      ),
   );
   assertEquals(server.state, "running");
 });
@@ -399,9 +400,8 @@ function makeServer(): SigilLanguageServer {
   return new SigilLanguageServer({
     currentDirectory: root,
     fs: new InMemorySigilFileSystem({
-      [`${root}/sigil.config`]: JSON.stringify({
-        configVersion: "1.0.0",
-        languageVersion: "1.0.0",
+      [`${root}/.sigil/config.json`]: JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
         workspace: { name: "lsp-test", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {},

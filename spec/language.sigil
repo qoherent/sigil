@@ -5,7 +5,7 @@ component SigilLanguage {
   }
 
   interface {
-    languageVersion = "1.0.0"
+    sigilVersion = "0.1.0"
     accepts UTF-8 .sigil source containing import, component, and expand forms
     preserves free-form non-empty section lines as distinct semantic lines
     reports structural diagnostics while retaining partial documents when practical
@@ -25,8 +25,8 @@ expand SigilLanguage {
   constraints {
     spec/language.sigil records the current approved Sigil language and workspace contract.
     The SigilLanguage contract evolves when approved syntax, configuration, workspace, source-file, or interpretation behavior changes.
-    Language, configuration schema, core, CLI, and integration versions remain explicit and may evolve independently.
-    Tools reject configured language or configuration versions they do not support.
+    Sigil version is sourced from packages/core/deno.json and governs language and workspace configuration interpretation.
+    Tools reject configured sigilVersion values they do not support.
     Breaking interpretation changes require a new language major version.
     Compatible additions and clarifications use the appropriate semantic version increment.
     Every component requires goal and interface sections.
@@ -35,9 +35,9 @@ expand SigilLanguage {
   }
 
   cases {
-    A tool configured for language 1.0.0 parses the existing Promise and Slotted examples without changing their meaning.
-    A tool that does not support the configured language version reports an error before parsing workspace Sigil files.
-    A future breaking grammar change does not alter the meaning of a document explicitly configured for language 1.0.0.
+    A tool configured for Sigil 0.1.0 parses the existing Promise and Slotted examples without changing their meaning.
+    A tool that does not support the configured sigilVersion reports an error before parsing workspace Sigil files.
+    A future breaking grammar change does not alter the meaning of a document explicitly configured for Sigil 0.1.0.
     Importing Name makes component Name and its matching collected expands available to the importing source.
     A component can be understood through its goal and interface without reading its expands or implementation.
     When multiple expand Name blocks target one component, tools expose all matching blocks as collected detail without override or shadowing.
@@ -51,10 +51,9 @@ component SigilWorkspaceConfig {
   }
 
   interface {
-    filename: sigil.config
+    filename: .sigil/config.json
     location: workspace root
-    configVersion: supported semantic version
-    languageVersion: supported SigilLanguage version
+    sigilVersion: the supported Sigil version from packages/core/deno.json
     workspace.name: non-empty stable workspace identifier
     workspace.members: optional array of unique workspace-relative project-root paths
     files.include: non-empty array of workspace-relative POSIX glob strings
@@ -65,14 +64,14 @@ component SigilWorkspaceConfig {
 
 expand SigilWorkspaceConfig {
   constraints {
-    sigil.config is the sole authority for the Sigil workspace boundary and its members.
-    The directory containing sigil.config is the workspace root and root project location.
+    .sigil/config.json is the sole authority for the Sigil workspace boundary and its members.
+    The directory containing .sigil/config.json is the workspace root and root project location.
     Each workspace.members entry declares one additional project root in the same workspace.
     Workspace member paths are unique, non-root, workspace-relative directories.
     Workspace member paths cannot escape the workspace or overlap another member path.
     Package and repository workspace manifests do not independently declare Sigil workspace members.
-    A workspace member does not contain its own sigil.config.
-    A nested directory with its own sigil.config is an independent workspace and must be excluded from the parent workspace.
+    A workspace member does not contain its own .sigil/config.json.
+    A nested directory with its own .sigil/config.json is an independent workspace and must be excluded from the parent workspace.
     files.include and files.exclude control source discovery but do not declare project roots.
   }
 }

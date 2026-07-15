@@ -6,7 +6,7 @@
 
 - `parseSigilConfig(source, filePath?)` validates config schema and supported
   versions;
-- `parseSigilDocument(filePath, source, { languageVersion })` parses one source
+- `parseSigilDocument(filePath, source, { sigilVersion })` parses one source
   explicitly;
 - `discoverSigilWorkspace(filesystem, options)` selects and validates one root
   config;
@@ -31,8 +31,8 @@ the host.
 
 ## CLI
 
-Workspace JSON includes `workspaceRoot`, `configPath`, `configVersion`,
-`languageVersion`, `workspaceName`, diagnostics, and command data. `parse` returns
+Workspace JSON includes `workspaceRoot`, `configPath`, `sigilVersion`,
+`workspaceName`, diagnostics, and command data. `parse` returns
 `document: null` when configuration prevents parsing.
 
 Exit codes are 0 for success or warnings, 1 for configuration/Sigil errors, 2

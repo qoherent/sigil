@@ -26,7 +26,7 @@ V1 must provide commands to:
 - produce deterministic agent-oriented context output;
 - render a simple Markdown review view.
 - initialize a non-interactive versioned workspace config;
-- report CLI, core, config, and language versions.
+- report CLI, core, and Sigil versions.
 
 V1 should favor predictable, machine-readable behavior over rich terminal UI.
 
@@ -85,7 +85,7 @@ All commands should support:
 All machine-readable outputs that depend on workspace behavior must include:
 
 - resolved workspace root;
-- config path, config version, language version, and workspace name;
+- config path, Sigil version, and workspace name;
 - diagnostics;
 - command-specific data.
 
@@ -133,7 +133,7 @@ the command target.
 Required output data for JSON:
 
 - workspace root;
-- config path and selected config/language versions;
+- config path and selected Sigil version;
 - workspace name;
 - diagnostic list;
 - diagnostic counts by severity.
@@ -192,16 +192,15 @@ human authoring UI.
 
 ### `sigil init [path]`
 
-Creates `sigil.config` without prompting. `--name` selects the stable workspace
+Creates `.sigil/config.json` without prompting. `--name` selects the stable workspace
 identifier, while repeated `--include` and `--exclude` options replace the v1
 file-rule defaults. The directory basename is the default name. The command
 must never overwrite an existing config.
 
 ### `sigil version [path]`
 
-Reports CLI and core package versions, their supported config and language
-versions, and—when a workspace resolves—the workspace name and configured
-versions.
+Reports CLI and core package versions and—when a workspace resolves—the
+workspace name and configured Sigil version.
 
 ## 8. Output Contracts
 
@@ -236,7 +235,7 @@ boundaries.
 V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 - parse `examples/promise/promise.sigil` and emit JSON;
-- check the repository workspace from the mandatory root `sigil.config`;
+- check the repository workspace from the mandatory root `.sigil/config.json`;
 - resolve `examples/slotted/auth.sigil` imports from the independent Slotted workspace root;
 - report diagnostics with stable codes;
 - return exit code `1` when error diagnostics exist;

@@ -1,8 +1,7 @@
 {
-  "configVersion": "1.0.0",
-  "languageVersion": "1.0.0",
+  "sigilVersion": "0.1.0",
   "workspace": {
-    "name": "promise",
+    "name": "slotted",
     "members": []
   },
   "files": {

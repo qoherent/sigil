@@ -42,7 +42,7 @@
 ## 1.0.0 - 2026-07-13
 
 - Publish Sigil Language 1.0.0.
-- Add mandatory strict `sigil.config` schema 1.0.0 and config-based discovery.
+- Add mandatory strict `.sigil/config.json` schema 1.0.0 and config-based discovery.
 - Allow independent nested workspaces only when their subtrees are excluded by configured parents.
 - Configure Promise and Slotted as independent example projects.
 - Release `@qoherent/sigil-core` and `@qoherent/sigil` 0.1.0.

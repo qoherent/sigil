@@ -26,8 +26,7 @@ export async function runCommand(
       command: "init",
       workspaceRoot: result.root,
       configPath: result.configPath,
-      configVersion: result.config?.configVersion ?? null,
-      languageVersion: result.config?.languageVersion ?? null,
+      sigilVersion: result.config?.sigilVersion ?? null,
       workspaceName: result.config?.workspace.name ?? null,
       config: result.config,
       diagnostics: result.diagnostics,
@@ -132,7 +131,7 @@ function renderMarkdown(
     "",
     `Workspace root: ${resolved.workspace.root}`,
     `Workspace: ${resolved.workspace.config?.workspace.name ?? "unresolved"}`,
-    `Language: ${resolved.workspace.config?.languageVersion ?? "unresolved"}`,
+    `Sigil: ${resolved.workspace.config?.sigilVersion ?? "unresolved"}`,
     "",
   ];
   for (const contract of core.componentContracts(resolved)) {

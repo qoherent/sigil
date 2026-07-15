@@ -1,7 +1,7 @@
 import { diagnostic } from "./diagnostics.ts";
 import {
-  SIGIL_CONFIG_VERSION,
-  SIGIL_LANGUAGE_VERSION,
+  SIGIL_CONFIG_PATH,
+  SIGIL_VERSION,
   type SigilConfig,
   type SigilConfigParseResult,
   type SigilDiagnostic,
@@ -21,7 +21,7 @@ const SEMVER =
 
 export function parseSigilConfig(
   source: string,
-  filePath = "sigil.config",
+  filePath: string = SIGIL_CONFIG_PATH,
 ): SigilConfigParseResult {
   let value: unknown;
   try {
@@ -30,7 +30,7 @@ export function parseSigilConfig(
     return {
       diagnostics: [diagnostic(
         "SIGIL_CONFIG_PARSE",
-        `Unable to parse sigil.config JSON: ${
+        `Unable to parse ${SIGIL_CONFIG_PATH} JSON: ${
           error instanceof Error ? error.message : String(error)
         }`,
         { filePath },
@@ -44,12 +44,11 @@ export function parseSigilConfig(
   } else {
     rejectUnknown(
       value,
-      ["configVersion", "languageVersion", "workspace", "files", "tools"],
+      ["sigilVersion", "workspace", "files", "tools"],
       "configuration",
       messages,
     );
-    requireSemver(value.configVersion, "configVersion", messages);
-    requireSemver(value.languageVersion, "languageVersion", messages);
+    requireSemver(value.sigilVersion, "sigilVersion", messages);
     validateWorkspace(value.workspace, messages);
     validateFiles(value.files, messages);
     validateTools(value.tools, messages);
@@ -60,24 +59,13 @@ export function parseSigilConfig(
   }
 
   const raw = value as Record<string, unknown>;
-  if (raw.configVersion !== SIGIL_CONFIG_VERSION) {
+  if (raw.sigilVersion !== SIGIL_VERSION) {
     return {
       diagnostics: [diagnostic(
-        "SIGIL_UNSUPPORTED_CONFIG_VERSION",
-        `Unsupported configVersion ${
-          JSON.stringify(raw.configVersion)
-        }; supported version is ${SIGIL_CONFIG_VERSION}.`,
-        { filePath },
-      )],
-    };
-  }
-  if (raw.languageVersion !== SIGIL_LANGUAGE_VERSION) {
-    return {
-      diagnostics: [diagnostic(
-        "SIGIL_UNSUPPORTED_LANGUAGE_VERSION",
-        `Unsupported languageVersion ${
-          JSON.stringify(raw.languageVersion)
-        }; supported version is ${SIGIL_LANGUAGE_VERSION}.`,
+        "SIGIL_UNSUPPORTED_VERSION",
+        `Unsupported sigilVersion ${
+          JSON.stringify(raw.sigilVersion)
+        }; supported version is ${SIGIL_VERSION}.`,
         { filePath },
       )],
     };
@@ -87,8 +75,7 @@ export function parseSigilConfig(
   const files = raw.files as Record<string, unknown>;
   return {
     config: {
-      configVersion: raw.configVersion as string,
-      languageVersion: raw.languageVersion as string,
+      sigilVersion: raw.sigilVersion as string,
       workspace: {
         name: workspace.name as string,
         members: (workspace.members as string[] | undefined) ?? [],

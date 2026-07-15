@@ -28,7 +28,7 @@ deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference
-describes config schema and language version `1.0.0`; do not apply it to an
+describes Sigil version `0.1.0`; do not apply it to an
 unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
@@ -43,8 +43,8 @@ project or a workspace member explicitly declared by `workspace.members`, and
 every file with that name follows the `RootSigil` contract. Do not create it for ordinary internal
 directories, features, components, or implementation modules.
 
-A strict JSON `sigil.config` is mandatory at the workspace root. It selects
-config schema and language versions, provides `workspace.name`, declares
+A strict JSON `.sigil/config.json` is mandatory at the workspace root. It selects
+Sigil version, provides `workspace.name`, declares
 optional `workspace.members`, and defines file include and exclude globs. A nested config defines an independent workspace only
 when its entire subtree is excluded by each configured parent; otherwise it is
 invalid.
@@ -72,7 +72,7 @@ The matching root `expand` uses the general `state`, `logic`, `constraints`, and
 the sections.
 
 Exclude secrets, incidental dependencies, low-level configuration, and
-module-specific implementation details. `sigil.config` remains the workspace
+module-specific implementation details. `.sigil/config.json` remains the workspace
 marker and sole workspace-membership authority. Package manifests and directory
 structure alone do not authorize a member-root `RootSigil`. An excluded nested
 directory with its own config is an independent workspace, not a parent
@@ -180,7 +180,7 @@ A path without a `.sigil` filename may target only the workspace root or a
 member root declared by `workspace.members` and resolves to its `#module.sigil`. Ordinary
 internal contracts are imported with an explicit `.sigil` filename. The `@`
 prefix resolves from the workspace root selected by the single ancestor
-`sigil.config`. An explicit root must contain `sigil.config` directly.
+`.sigil/config.json`. An explicit root must contain `.sigil/config.json` directly.
 
 Imported names must resolve to matching `component` declarations. Imported names
 are case-sensitive. All matching expands for the imported component are

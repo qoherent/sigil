@@ -7,7 +7,7 @@ command implementation in this repository.
 `#module.sigil`; both packages had tests and draft v1 requirements but no stable
 config/version contract.
 
-**Approved intent:** introduce mandatory config/language versioning, preserve
+**Approved intent:** introduce a mandatory Sigil version, preserve
 module summaries, correct discovery and output gaps, and release core, CLI, and
 the standalone skill as independently versioned contracts.
 

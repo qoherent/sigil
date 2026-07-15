@@ -1,12 +1,11 @@
-# sigil.config 1.0.0
+# .sigil/config.json
 
-`sigil.config` is mandatory strict UTF-8 JSON at the Sigil workspace root. Its
+`.sigil/config.json` is mandatory strict UTF-8 JSON at the Sigil workspace root. Its
 directory defines the root used for imports and file discovery.
 
 ```json
 {
-  "configVersion": "1.0.0",
-  "languageVersion": "1.0.0",
+  "sigilVersion": "0.1.0",
   "workspace": {
     "name": "example",
     "members": ["packages/example-cli"]
@@ -25,7 +24,7 @@ directory defines the root used for imports and file discovery.
 }
 ```
 
-Required fields are `configVersion`, `languageVersion`, `workspace.name`, and a
+Required fields are `sigilVersion`, `workspace.name`, and a
 non-empty `files.include`. `workspace.members`, `files.exclude`, and `tools` are
 optional and receive the defaults shown above.
 
@@ -55,7 +54,7 @@ With `--root`, the supplied directory must contain the config directly.
 Missing configs and configs nested inside included paths are errors. Configs
 inside excluded subtrees define independent workspaces and are skipped when the
 parent is checked. An independent workspace is not a member of its parent, and
-a declared workspace member cannot contain its own `sigil.config`.
+a declared workspace member cannot contain its own `.sigil/config.json`.
 
 The machine-readable schema is
 [sigil-config.schema.json](sigil-config.schema.json).

@@ -1,3 +1,4 @@
+import { SIGIL_VERSION } from "@qoherent/sigil-core";
 import { runCli } from "../src/main.ts";
 import {
   EXIT_DIAGNOSTICS,
@@ -16,7 +17,7 @@ Deno.test("parse discovers config and emits workspace metadata", async () => {
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
   assertEquals(json.command, "parse");
-  assertEquals(json.languageVersion, "1.0.0");
+  assertEquals(json.sigilVersion, SIGIL_VERSION);
   assertEquals(json.workspaceName, "promise");
   assertEquals(json.document.components[0].name, "Promise");
 });
@@ -26,7 +27,7 @@ Deno.test("check resolves repository config from a nested working directory", as
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
   assertEquals(json.workspaceRoot, "../..");
-  assertEquals(json.configPath, "../../sigil.config");
+  assertEquals(json.configPath, "../../.sigil/config.json");
   assertEquals(json.diagnosticCounts.error, 0);
 });
 
@@ -43,13 +44,14 @@ Deno.test("init creates defaults, accepts a custom name, and refuses overwrite",
     ]);
     assertEquals(first.exitCode, EXIT_OK);
     const output = parseJson(first.stdout);
-    assertEquals(output.configVersion, "1.0.0");
-    assertEquals(output.languageVersion, "1.0.0");
+    assertEquals(output.sigilVersion, SIGIL_VERSION);
     assertEquals(output.workspaceName, "example");
-    const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
+    const config = JSON.parse(
+      await Deno.readTextFile(`${root}/.sigil/config.json`),
+    );
     assertEquals(config.workspace.name, "example");
     assertEquals(config.workspace.members.length, 0);
-    assertEquals(config.languageVersion, "1.0.0");
+    assertEquals(config.sigilVersion, SIGIL_VERSION);
     assert(config.files.include.includes("**/*.sigil"));
 
     const second = await runCli(["init", root, "--format", "json"]);
@@ -66,7 +68,9 @@ Deno.test("init defaults workspace name to directory basename", async () => {
   await Deno.mkdir(root);
   try {
     assertEquals((await runCli(["init", root])).exitCode, EXIT_OK);
-    const config = JSON.parse(await Deno.readTextFile(`${root}/sigil.config`));
+    const config = JSON.parse(
+      await Deno.readTextFile(`${root}/.sigil/config.json`),
+    );
     assertEquals(config.workspace.name, "sample-project");
   } finally {
     await Deno.remove(parent, { recursive: true });
@@ -85,14 +89,14 @@ Deno.test("version reports tool and resolved contract versions", async () => {
   const json = parseJson(result.stdout);
   assertEquals(json.cliVersion, "0.1.0");
   assertEquals(json.coreVersion, "0.1.0");
-  assertEquals(json.configVersion, "1.0.0");
-  assertEquals(json.languageVersion, "1.0.0");
+  assertEquals(json.sigilVersion, SIGIL_VERSION);
 });
 
 Deno.test("configuration failure returns document null and exit 1", async () => {
   const root = await Deno.makeTempDir({ prefix: "sigil-bad-config-" });
   try {
-    await Deno.writeTextFile(`${root}/sigil.config`, "{");
+    await Deno.mkdir(`${root}/.sigil`);
+    await Deno.writeTextFile(`${root}/.sigil/config.json`, "{");
     await Deno.writeTextFile(`${root}/item.sigil`, validSigil("Item"));
     const result = await runCli([
       "parse",
@@ -269,11 +273,11 @@ Deno.test("executable subprocess returns version JSON", async () => {
 
 async function makeWorkspace(name: string): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "sigil-cli-" });
+  await Deno.mkdir(`${root}/.sigil`);
   await Deno.writeTextFile(
-    `${root}/sigil.config`,
+    `${root}/.sigil/config.json`,
     JSON.stringify({
-      configVersion: "1.0.0",
-      languageVersion: "1.0.0",
+      sigilVersion: SIGIL_VERSION,
       workspace: { name, members: [] },
       files: { include: ["**/*.sigil"] },
       tools: {},

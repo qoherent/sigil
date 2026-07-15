@@ -6,7 +6,7 @@ They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks
 
 ## Intended Flow
 
-1. For greenfield work, the agent begins a collaborative design conversation; for brownfield work, it identifies the repository and initializes a missing `sigil.config` before detailed discovery.
+1. For greenfield work, the agent begins a collaborative design conversation; for brownfield work, it identifies the repository and initializes a missing `.sigil/config.json` before detailed discovery.
 2. The agent runs structural CLI checks, follows imports, and reads related code, tests, configuration, package metadata, and documentation.
 3. For brownfield adoption, the agent establishes an approved RootSigil before selecting the requested change frontier and separates observed behavior from documented and user-confirmed intent.
 4. The agent checks semantic readiness: goal clarity, interface completeness, state and lifecycle behavior, constraints, cases, cross-Sigil coherence, modularity, and code/spec drift.
@@ -154,7 +154,7 @@ Unavailable authoritative material blocks high-risk or compliance-critical imple
 Approved Sigil should live beside the module, feature, abstraction, or implementation it explains.
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
-The workspace-root `sigil.config` remains the discovery marker; a root
+The workspace-root `.sigil/config.json` remains the discovery marker; a root
 `#module.sigil` is the `RootSigil` project summary and has no discovery
 authority.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.

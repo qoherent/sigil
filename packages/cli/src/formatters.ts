@@ -20,12 +20,9 @@ export function formatResult(
     const lines = [
       `CLI: ${result.cliVersion}`,
       `Core: ${result.coreVersion}`,
-      `Supported config: ${result.supportedConfigVersions.join(", ")}`,
-      `Supported language: ${result.supportedLanguageVersions.join(", ")}`,
       `Workspace: ${result.workspaceRoot}`,
       `Workspace name: ${result.workspaceName ?? "unresolved"}`,
-      `Configured config: ${result.configVersion ?? "unresolved"}`,
-      `Configured language: ${result.languageVersion ?? "unresolved"}`,
+      `Configured Sigil: ${result.sigilVersion ?? "unresolved"}`,
     ];
     for (const item of result.diagnostics) {
       lines.push(`${item.severity} ${item.code}: ${item.message}`);

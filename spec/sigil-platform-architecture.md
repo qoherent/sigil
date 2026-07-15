@@ -108,7 +108,7 @@ The workspace root is used to:
 - create agent context packs;
 - power editor and documentation views.
 
-A mandatory strict JSON `sigil.config` defines the workspace root, config schema version, language version, workspace identifier, optional workspace members, and file discovery rules.
+A mandatory strict JSON `.sigil/config.json` defines the workspace root, Sigil version, workspace identifier, optional workspace members, and file discovery rules.
 Platform packages walk upward and select the nearest ancestor config when every higher configured workspace excludes that nearer root, unless an explicit root containing the config is supplied.
 Missing and unexcluded nested configs are errors; configs inside excluded
 subtrees define independent workspaces. `#module.sigil` is reserved for the
@@ -116,7 +116,7 @@ workspace root and member roots explicitly declared by `workspace.members`;
 ordinary internal contracts use descriptive `.sigil` filenames. Package
 manifests do not independently authorize RootSigil locations.
 
-All workspace-dependent machine-readable outputs include the resolved root, config path, config version, language version, and workspace name.
+All workspace-dependent machine-readable outputs include the resolved root, config path, Sigil version, and workspace name.
 
 ## 6. Interface Strategy
 
@@ -155,7 +155,7 @@ Decision: Model the workspace root explicitly in the platform core.
 Rationale: Import resolution, file discovery, agent context, and future code relation all need a stable root.
 
 Tradeoff: a declared workspace member may have a `RootSigil` without defining
-an independent Sigil workspace; `sigil.config` remains the sole workspace and
+an independent Sigil workspace; `.sigil/config.json` remains the sole workspace and
 membership authority.
 
 ### ADR-003: Use One Shared Core For Agent And Human Outputs

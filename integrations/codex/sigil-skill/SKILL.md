@@ -83,11 +83,11 @@ sigil version . --format json --pretty
 sigil check . --format json --pretty
 ```
 
-This skill version requires CLI and core `^1.0.0`, config schema `1.0.0`, and
-Sigil Language `1.0.0`. In a Brownfield repository without `sigil.config`, use
+This skill version requires CLI and core `^0.1.0` and Sigil `0.1.0`. In a
+Brownfield repository without `.sigil/config.json`, use
 the initialization sequence in `references/brownfield-adoption.md` before this
 preflight. Otherwise stop with a compatibility report when the CLI is missing,
-`sigil.config` is missing or invalid, or any resolved version is unsupported.
+`.sigil/config.json` is missing or invalid, or any resolved version is unsupported.
 Do not fall back to the old `#module.sigil` root behavior.
 
 Common invocations:
@@ -148,10 +148,10 @@ Select the workflow before detailed semantic work:
      external designs when their contents affect the requested contract.
      Report references that cannot be accessed instead of guessing their
      contents.
-   - Treat the nearest eligible ancestor `sigil.config` as the workspace root contract; a nearer independent workspace must be excluded by every configured parent.
-   - Treat the directory containing `sigil.config` as the workspace root and root-project location.
+   - Treat the nearest eligible ancestor `.sigil/config.json` as the workspace root contract; a nearer independent workspace must be excluded by every configured parent.
+   - Treat the directory containing `.sigil/config.json` as the workspace root and root-project location.
    - Reserve `#module.sigil` for the workspace root or a member root explicitly declared by `workspace.members`; never infer a member from directory structure or package manifests.
-   - Treat an excluded subtree with its own `sigil.config` as an independent workspace, not as a member of its parent.
+   - Treat an excluded subtree with its own `.sigil/config.json` as an independent workspace, not as a member of its parent.
    - Use descriptive `.sigil` filenames for ordinary internal directories, features, components, and implementation modules, and import them by explicit filename.
 
 2. Build the component picture.
@@ -276,7 +276,7 @@ Select the workflow before detailed semantic work:
      directories, split it so each component or implementation-specific expand
      lives near its owner. Do not duplicate a public component declaration.
    - Do not move the workspace-root `#module.sigil` merely to colocate code; it
-     remains the root-project `RootSigil` summary beside the `sigil.config`
+     remains the root-project `RootSigil` summary beside the `.sigil/config.json`
      workspace marker.
    - Update every affected `@path import { Name }` after moving or splitting a
      Sigil file.

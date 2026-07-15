@@ -98,7 +98,7 @@ Responsibilities:
 - reject missing, invalid, unsupported, and unexcluded nested configuration;
 - load relevant `.sigil` files through `filesystem`;
 - identify the root project and workspace-member roots exclusively from
-  `sigil.config`;
+  `.sigil/config.json`;
 - identify valid `RootSigil` locations.
 
 Rules:

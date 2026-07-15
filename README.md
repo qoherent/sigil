@@ -91,7 +91,7 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 ## Repository Layout
 
-The root [sigil.config](./sigil.config) defines this repository as a language-1.0.0 Sigil workspace and excludes the independent example projects.
+The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.1.0 workspace and excludes the independent example projects.
 The root [#module.sigil](./%23module.sigil) is its `RootSigil`: the high-level
 project summary of purpose, interaction surfaces, project-wide behavior, and
 binding architecture decisions.
@@ -105,11 +105,11 @@ binding architecture decisions.
 
 `Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil) shows how Sigil can describe a programming abstraction with an API, lifecycle states, and transition logic.
 
-Its [sigil.config](examples/promise/sigil.config) makes it an independent workspace named `promise`.
+Its [.sigil/config.json](examples/promise/.sigil/config.json) makes it an independent workspace named `promise`.
 
 `Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil) is an example room booking product used to test Sigil against product and module modeling.
 
-Its [sigil.config](examples/slotted/sigil.config) makes it an independent workspace named `slotted`; imports beginning with `@` resolve from that directory.
+Its [.sigil/config.json](examples/slotted/.sigil/config.json) makes it an independent workspace named `slotted`; imports beginning with `@` resolve from that directory.
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil) show a smaller module-level specification inside the Slotted example.
 
@@ -145,7 +145,7 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil Language, config schema, `@qoherent/sigil-core`, and `@qoherent/sigil` are versioned at 0.1.0.
+Sigil, `@qoherent/sigil-core`, and `@qoherent/sigil` are versioned at 0.1.0.
 The independently versioned standalone Codex skill is at 1.1.0.
 See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 

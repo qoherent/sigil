@@ -7,7 +7,7 @@ component SigilCli {
   }
 
   interface {
-    CLI version = "1.0.0"
+    CLI version = "0.1.0"
     sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
     sigil version [path]
     sigil parse file
@@ -23,17 +23,17 @@ component SigilCli {
 
 expand SigilCli {
   logic {
-    init writes one schema-1.0.0 sigil.config and refuses to overwrite an existing config.
+    init writes one .sigil/config.json with the canonical Sigil version and refuses to overwrite an existing config.
     init defaults workspace.name to the target directory basename and workspace.members to an empty array.
-    init defaults language, config, include, exclude, and tools values from SigilWorkspaceConfig.
-    version reports CLI and core versions, supported config and language versions, and resolved workspace versions when available.
-    parse discovers and validates workspace configuration before invoking the raw parser with its explicit language version.
+    init defaults Sigil, include, exclude, and tools values from SigilWorkspaceConfig.
+    version reports CLI and core versions and the resolved workspace version when available.
+    parse discovers and validates workspace configuration before invoking the raw parser with its explicit Sigil version.
     check, graph, context, and render resolve workspace behavior through core.
     A configuration error prevents source loading and parse JSON reports document: null with diagnostics.
   }
 
   constraints {
-    Every workspace-dependent JSON result includes workspaceRoot, configPath, configVersion, languageVersion, and workspaceName.
+    Every workspace-dependent JSON result includes workspaceRoot, configPath, sigilVersion, and workspaceName.
     CLI commands do not mutate .sigil files in version 1.
     CLI commands are deterministic and non-interactive in version 1.
     Exit code 0 means success or warnings only.
@@ -45,7 +45,7 @@ expand SigilCli {
   cases {
     init in an empty directory creates a valid config using the directory basename as workspace.name.
     init against an existing config reports an error and leaves the file unchanged.
-    version in a valid workspace reports compatible CLI, core, config, and language versions.
+    version in a valid workspace reports compatible CLI, core, and Sigil versions.
     check from a nested directory resolves the nearest eligible ancestor config.
     render with JSON format includes workspace metadata and Markdown review content.
     context for a component with expands in multiple files reports every related expansion file.

@@ -13,7 +13,7 @@ import type {
   SigilSectionName,
   SourceRange,
 } from "./model.ts";
-import { SIGIL_LANGUAGE_VERSION } from "./model.ts";
+import { SIGIL_VERSION } from "./model.ts";
 
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
@@ -49,12 +49,12 @@ export function parseSigilDocument(
   const expands: ExpandDeclaration[] = [];
   const lines = source.split(/\r?\n/);
 
-  if (options.languageVersion !== SIGIL_LANGUAGE_VERSION) {
+  if (options.sigilVersion !== SIGIL_VERSION) {
     const unsupported = diagnostic(
-      "SIGIL_UNSUPPORTED_LANGUAGE_VERSION",
-      `Unsupported languageVersion ${
-        JSON.stringify(options.languageVersion)
-      }; supported version is ${SIGIL_LANGUAGE_VERSION}.`,
+      "SIGIL_UNSUPPORTED_VERSION",
+      `Unsupported sigilVersion ${
+        JSON.stringify(options.sigilVersion)
+      }; supported version is ${SIGIL_VERSION}.`,
       { filePath },
     );
     const document: SigilDocument = {

@@ -1,6 +1,6 @@
 # Brownfield fixture
 
-The target repository contains implementation code but no `sigil.config` or
+The target repository contains implementation code but no `.sigil/config.json` or
 `#module.sigil`. The user asks Codex to add Sigil and then change one existing
 component.
 

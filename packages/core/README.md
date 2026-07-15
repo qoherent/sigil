@@ -1,13 +1,13 @@
 # sigil-core
 
-Current package version: **1.0.0**. Import with:
+Current package version: **0.1.0**. Import with:
 
 ```ts
 import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.1";
 ```
 
-Raw parsing requires an explicit `languageVersion`. Workspace APIs discover and
-validate mandatory `sigil.config` before loading `.sigil` files.
+Raw parsing requires an explicit `sigilVersion`. Workspace APIs discover and
+validate mandatory `.sigil/config.json` before loading `.sigil` files.
 
 Shared Sigil implementation package.
 

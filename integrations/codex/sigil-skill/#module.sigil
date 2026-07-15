@@ -11,9 +11,9 @@ component SigilCodexSkill {
     skill version = "1.1.0"
     installable from integrations/codex/sigil-skill through skill-installer repository-path installation
     invoked by Codex for Sigil authoring, review, reconciliation, validation, and Sigil-guided implementation
-    requires SigilCli and core versions compatible with ^1.0.0
-    requires SigilWorkspaceConfig version 1.0.0
-    requires SigilLanguage version 1.0.0
+    requires SigilCli and core versions compatible with ^0.1.0
+    requires SigilWorkspaceConfig sigilVersion 0.1.0
+    requires SigilLanguage sigilVersion 0.1.0
     selects the Greenfield or Brownfield workflow from repository and Sigil evidence
     validates workspace and version compatibility before relying on workspace semantics
     reviews component contracts, collected expands, relevant evidence, modularity, and applicable guidance
@@ -116,8 +116,8 @@ expand SigilCodexSkill {
   }
 
   logic {
-    Determine the repository root and whether it already contains sigil.config before gathering detailed project evidence.
-    When sigil.config is absent, run sigil init at the repository root to create the versioned workspace configuration first.
+    Determine the repository root and whether it already contains .sigil/config.json before gathering detailed project evidence.
+    When .sigil/config.json is absent, run sigil init at the repository root to create the versioned workspace configuration first.
     Validate the existing or initialized workspace configuration before interpreting or creating Sigil source.
     When the workspace RootSigil is absent, gather repository-level documentation, manifests, executable configuration, and entrypoints to form a provisional application picture.
     Assess whether repository evidence is specific enough to describe the application's responsibility, intended outcome, users or systems, boundary, and external interaction surfaces.
@@ -136,7 +136,7 @@ expand SigilCodexSkill {
   }
 
   constraints {
-    sigil init creates a missing workspace config and never overwrites an existing sigil.config.
+    sigil init creates a missing workspace config and never overwrites an existing .sigil/config.json.
     A new Brownfield workspace establishes an approved RootSigil before detailed modeling or implementation of the requested task.
     RootSigil contains only confirmed application-wide purpose, external surfaces, behavior, and decisions.
     RootSigil is not proposed while the application goal, users or systems, boundary, or external interaction surfaces remain materially vague.
@@ -149,8 +149,8 @@ expand SigilCodexSkill {
   }
 
   cases {
-    A Brownfield repository without sigil.config runs sigil init before project evidence is gathered for RootSigil.
-    A repository with an existing sigil.config validates it without running init or overwriting it.
+    A Brownfield repository without .sigil/config.json runs sigil init before project evidence is gathered for RootSigil.
+    A repository with an existing .sigil/config.json validates it without running init or overwriting it.
     A workspace without RootSigil receives an evidence-based application summary question before #module.sigil is proposed.
     A vague project description starts a focused conversation about purpose, users or systems, boundaries, and external interaction surfaces.
     An incomplete answer produces targeted follow-up questions instead of guessed RootSigil lines.
