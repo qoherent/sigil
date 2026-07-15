@@ -1,0 +1,27 @@
+{
+  "name": "@qoherent/lsp",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./main": "./src/main.ts"
+  },
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "tests/",
+      "#module.sigil"
+    ]
+  },
+  "tasks": {
+    "start": "deno run --allow-read src/main.ts",
+    "test": "deno test --allow-read --allow-run",
+    "publish:dry-run": "deno publish --dry-run"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}

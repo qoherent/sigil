@@ -1,5 +1,5 @@
 {
-  "name": "@sigil/cli",
+  "name": "@qoherent/cli",
   "version": "1.0.0",
   "exports": "./src/main.ts",
   "publish": {

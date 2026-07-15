@@ -97,8 +97,8 @@ binding architecture decisions.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core` and `sigil-cli`, the proposed vNext `sigil-indexer`, and the future `sigil-lsp` package boundary.
-- `integrations/` contains host-specific adapters such as the Codex skills and future editor integrations.
+- `packages/` contains the implemented `sigil-core`, `sigil-cli`, and v1 `sigil-lsp`, plus the proposed vNext `sigil-indexer`.
+- `integrations/` contains host-specific adapters such as the Codex skills, the implemented v1 VS Code extension, and future editor integrations.
 
 ## Examples
 
@@ -144,7 +144,8 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil Language, config schema, `@sigil/core`, `@sigil/cli`, and the standalone Codex skill are versioned at 1.0.0.
+Sigil Language, config schema, `@qoherent/core`, and `@qoherent/cli` are versioned at 1.0.0.
+The independently versioned standalone Codex skill is at 1.1.0.
 See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
@@ -156,10 +157,23 @@ filtering, source ranges and semantic lines, import and component resolution,
 and stable diagnostics.
 `sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
+`sigil-lsp` is an implemented v1 release-line deliverable. Its initial contract
+covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
+symbols, definition navigation, hover, and resolver-backed semantic highlighting
+over a stdio transport.
+
+The Sigil VS Code extension is an implemented v1 release-line deliverable. Its
+initial contract covers TextMate syntax highlighting, bundled LSP startup,
+resolver-backed component highlighting through LSP semantic tokens,
+editor-native language features, and a read-only component preview derived from
+standard hover responses.
+
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
+The skill also discovers coherent implementation and UI components, distinguishes component contracts from implementation-specific expands and trivial mechanics, and requires an implementation coverage map before coding.
 The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
 
-LSP/editor support, stricter body semantics, project configuration, and code-generation integrations remain deferred.
+Editor integrations other than VS Code, stricter body semantics, project
+configuration, and code-generation integrations remain deferred.
 
 Anchors are now a proposed vNext capability: reviewed trace links between Sigil semantic lines and implementation evidence.
 [ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.

@@ -149,6 +149,11 @@ Classify task coverage:
 - **Established coverage:** the boundary has a relevant component, collected
   expands, and enough approved context for ordinary review.
 
+This classification covers the selected task contract, not implementation
+readiness by itself. Before changing code, follow
+`references/implementation-design.md` to discover internal abstractions, UI
+components, state machines, and operational decisions within that boundary.
+
 For established coverage, use the shared workflow unless evidence suggests
 drift or the user requests reconciliation. Do not use numeric coverage scores.
 
@@ -207,9 +212,14 @@ Model stable responsibilities, not the repository file tree. Choose a component
 when the boundary has a coherent goal, recognizable users or callers, a public
 interface, meaningful ownership, and a durable reason to change.
 
-Do not create one component per class, function, table, endpoint, or directory.
-Reuse an existing component when ownership matches. Use `expand` for state,
-logic, constraints, cases, and implementation-specific detail.
+Public means visible to the component's dependents, including internal callers
+and parent or child UI surfaces. A programming abstraction, internal API, state
+machine, screen, view, or reusable UI surface may therefore be a component.
+
+Do not mechanically create one component per class, function, table, endpoint,
+directory, hook, or visual element. Reuse an existing component when ownership
+matches. Use `expand` for operational detail owned by that component, and omit
+trivial mechanics that have no independent contract or durable rationale.
 
 Place shared component contracts at their contract or module-summary location.
 Place implementation-specific expands beside the code they explain. Use
@@ -248,6 +258,12 @@ decisions that could change the contract.
 Describe responsibility, public dependents, owned state or policy, and important
 non-responsibilities.
 
+### Implementation Coverage Map
+
+For implementation work, list each material concern, owner, dependents, selected
+component/expand/omit decision, owning location, and established/partial/missing
+coverage. Explain intentional omissions that could otherwise appear material.
+
 ### Proposed Sigil
 
 Show exact component, expand, and import text. Include only the task boundary;
@@ -280,8 +296,9 @@ After explicit task-Sigil approval:
 7. stop at the task-Sigil review gate.
 
 Do not modify implementation in the same pass. After the user approves the
-written task Sigil and explicitly requests implementation, align code with that
-contract while preserving unrelated behavior and user changes.
+written task Sigil and explicitly requests implementation, verify the approved
+implementation coverage map and align code with those contracts and expands
+while preserving unrelated behavior and user changes.
 
 If implementation reveals a missing material decision, return to conversation
 and Sigil proposal before continuing.

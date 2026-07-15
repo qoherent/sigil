@@ -8,7 +8,7 @@ component SigilCodexSkill {
   }
 
   interface {
-    skill version = "1.0.0"
+    skill version = "1.1.0"
     installable from integrations/codex/sigil-skill through skill-installer repository-path installation
     invoked by Codex for Sigil authoring, review, reconciliation, validation, and Sigil-guided implementation
     requires SigilCli and core versions compatible with ^1.0.0
@@ -17,6 +17,10 @@ component SigilCodexSkill {
     selects the Greenfield or Brownfield workflow from repository and Sigil evidence
     validates workspace and version compatibility before relying on workspace semantics
     reviews component contracts, collected expands, relevant evidence, modularity, and applicable guidance
+    discovers coherent product, domain, programming, internal API, state-machine, screen, view, and reusable UI components
+    treats a component interface as public to its dependents even when the component is internal to the implementation
+    distinguishes independent component contracts, implementation-specific expands, and trivial mechanics that need no Sigil
+    reports implementation coverage before writing code
     uses collaborative conversation to discover intent, challenge assumptions, compare choices, and improve a contract before confirmation
     proposes exact semantic changes before editing when evidence reconstruction or external guidance requires approval
     stops for explicit human review after creating or semantically changing Sigil
@@ -32,6 +36,34 @@ expand SigilCodexSkill {
 
   cases {
     A requested implementation change without clear Sigil coverage pauses for collaborative Sigil definition and approval before code changes begin.
+  }
+}
+
+expand SigilCodexSkill {
+  logic {
+    Before implementation, identify the coherent responsibilities, stable dependent-facing interfaces, meaningful state, and material decisions in the selected boundary.
+    Model a product surface, domain module, programming abstraction, internal API, state machine, screen, view, or reusable UI surface as a component when it owns a coherent responsibility and exposes a contract relied upon by dependents.
+    Use an implementation-specific expand when operational rationale belongs to an existing component without creating an independent dependent-facing contract.
+    Omit trivial mechanics whose behavior and rationale are local, obvious, and safely reconstructable from code.
+    Present an implementation coverage map that identifies each material concern, its owner, its dependents, its selected Sigil form, and its owning location.
+    Propose missing implementation components and expands as exact Sigil before writing code.
+  }
+
+  constraints {
+    High-level project or service coverage does not satisfy implementation readiness when material implementation abstractions or decisions remain unspecified.
+    Component selection follows cohesive responsibility and relied-upon contract boundaries rather than external visibility alone.
+    Component discovery does not mechanically create one component per file, class, function, hook, table, endpoint, or visual element.
+    UI component interfaces may define props, events, visible structure, actions, navigation, feedback states, accessibility, responsive behavior, and visual references.
+    Contract-level and implementation-level Sigil may share one proposal and review when both are clear.
+    A later implementation-specific proposal receives its own review when it depends on an approved higher-level decision.
+  }
+
+  cases {
+    A Promise-like programming abstraction with a stable caller API and lifecycle is modeled as a component with operational state and logic in its expand.
+    A booking calendar view with coherent presentation and interaction behavior is modeled as a UI component with observable states, constraints, and cases.
+    A material retry algorithm owned by an existing component is captured in an implementation-specific expand beside its implementation.
+    A trivial formatting helper with no independent contract or durable rationale does not receive separate Sigil.
+    An implementation request remains at the Sigil review gate when only its high-level service contract is covered and material implementation components remain undefined.
   }
 }
 

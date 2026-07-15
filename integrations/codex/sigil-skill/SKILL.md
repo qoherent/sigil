@@ -26,6 +26,12 @@ Read `references/standards-review.md` completely whenever creating, reviewing,
 or preparing Sigil for implementation. It defines the semantic-readiness,
 standards, conflict, evidence, and modularity procedure.
 
+Read `references/implementation-design.md` completely whenever preparing to
+write or change implementation or deciding whether existing Sigil covers the
+implementation boundary. It defines implementation component discovery, the
+component/expand/omit decision, UI component coverage, and the required
+implementation coverage map.
+
 Read `references/greenfield-design.md` completely when the selected behavior or
 component has no existing implementation that constrains its intended contract.
 It defines the collaborative design conversation, alternatives, synthesis, and
@@ -159,6 +165,10 @@ Select the workflow before detailed semantic work:
      Do not invent keywords or authority fields for visual references.
    - Treat `component` as the reusable public contract and all matching
      `expand Name` blocks as the collected operational description.
+   - Treat an interface as public to the component's dependents even when the
+     component is internal to the implementation.
+   - Consider coherent programming abstractions, internal APIs, state machines,
+     screens, views, and reusable UI surfaces as possible components.
    - Note unresolved imports, missing components, collected-expand
      contradictions, vague lines, and code/spec drift.
 
@@ -204,6 +214,13 @@ Select the workflow before detailed semantic work:
      changing code.
    - If the user is asking for implementation and the Sigil is incomplete,
      repair or propose the Sigil first.
+   - Follow `references/implementation-design.md` and report the implementation
+     coverage map before writing code.
+   - Do not treat high-level project, service, or feature coverage as sufficient
+     when material implementation components or decisions remain unspecified.
+   - Choose a component for a coherent responsibility with a stable contract
+     relied upon by dependents, an expand for operational rationale owned by an
+     existing component, and no separate Sigil for trivial mechanics.
    - In Greenfield work, use the approved conversational design procedure rather
      than asking only blocking clarification questions.
    - In Brownfield RootSigil discovery, continue targeted conversation until the
@@ -335,6 +352,11 @@ When reviewing or improving Sigil, check:
   states, policies, and public expectations?
 - Is each component cohesive, appropriately sized, and coupled through explicit
   contracts rather than another component's private details?
+- Did implementation coverage consider programming abstractions, internal APIs,
+  state machines, screens, views, and reusable UI surfaces rather than only
+  high-level product or service boundaries?
+- Does each material implementation concern have an intentional component,
+  expand, or omit decision with a clear owner and location?
 - Did you assess whether applicable standards, formal guidance, or official
   platform practices reveal gaps, conflicts, or pitfalls?
 

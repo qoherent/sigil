@@ -1,0 +1,92 @@
+{
+  "name": "sigil",
+  "displayName": "Sigil",
+  "description": "Language support and component previews for Sigil.",
+  "version": "1.0.0",
+  "publisher": "sigil-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farhoud/qode.git",
+    "directory": "integrations/editor/vscode"
+  },
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "sigil",
+    "language",
+    "rationale",
+    "architecture"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:sigil",
+    "onCommand:sigil.showComponentPreview"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "sigil",
+        "aliases": [
+          "Sigil",
+          "sigil"
+        ],
+        "extensions": [
+          ".sigil"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "sigil",
+        "scopeName": "source.sigil",
+        "path": "./syntaxes/sigil.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "sigil.showComponentPreview",
+        "title": "Sigil: Show Component Preview",
+        "category": "Sigil"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "sigil.showComponentPreview",
+          "when": "editorLangId == sigil"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "check": "tsc --noEmit",
+    "test:unit": "tsx --test tests/unit/**/*.test.ts",
+    "test:extension": "npm run build && node scripts/run-extension-tests.mjs",
+    "test": "npm run check && npm run test:unit",
+    "package": "npm run build && vsce package --no-dependencies --out build/sigil-vscode-1.0.0.vsix",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.0"
+  },
+  "devDependencies": {
+    "@types/deno": "2.7.0",
+    "@types/node": "^24.10.0",
+    "@types/vscode": "1.91.0",
+    "@vscode/test-electron": "3.0.0",
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "0.28.1",
+    "tsx": "^4.20.6",
+    "typescript": "7.0.2"
+  }
+}

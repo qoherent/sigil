@@ -3,7 +3,7 @@
 Before v1, tools used the topmost ancestor `#module.sigil` as a root marker and
 could infer a workspace when none existed. Version 1 removes both behaviors.
 
-1. Install `@sigil/cli` 1.x.
+1. Install `@qoherent/cli` 1.x.
 2. Run `sigil init` at the intended workspace root, or create the documented
    `sigil.config` manually.
 3. Keep an existing root `#module.sigil` when it remains useful as a product or

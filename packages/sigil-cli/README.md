@@ -18,7 +18,7 @@ Package docs:
 Install the published CLI:
 
 ```bash
-deno install --global --allow-read --allow-write --name sigil jsr:@sigil/cli@1
+deno install --global --allow-read --allow-write --name sigil jsr:@qoherent/cli@1
 ```
 
 Local development install:

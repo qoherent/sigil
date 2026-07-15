@@ -6,10 +6,12 @@ const required = [
   "agents/openai.yaml",
   "references/sigil-format.md",
   "references/standards-review.md",
+  "references/implementation-design.md",
   "references/greenfield-design.md",
   "references/brownfield-adoption.md",
   "evals/brownfield-fixture.md",
   "evals/greenfield-fixture.md",
+  "evals/implementation-coverage-fixture.md",
   "evals/expected.json",
 ];
 
@@ -22,6 +24,11 @@ requireText(skill, "sigil version", "version preflight");
 requireText(skill, "sigil check", "structural preflight");
 requireText(skill, "references/greenfield-design.md", "greenfield routing");
 requireText(skill, "references/brownfield-adoption.md", "brownfield routing");
+requireText(
+  skill,
+  "references/implementation-design.md",
+  "implementation design routing",
+);
 requireText(skill, "sigil init", "brownfield initialization");
 requireText(skill, "manageable rounds", "conversational clarification");
 requireText(skill, "choices", "design choices");
@@ -43,8 +50,8 @@ requireText(
 );
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "1.0.0") {
-  throw new Error(`Expected skill VERSION 1.0.0, got ${version}`);
+if (version !== "1.1.0") {
+  throw new Error(`Expected skill VERSION 1.1.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -52,7 +59,7 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "1.0.0",
+    skillVersion: "1.1.0",
     cliVersion: "^1.0.0",
     coreVersion: "^1.0.0",
     configVersion: "1.0.0",
@@ -187,6 +194,52 @@ requireText(
   "greenfield missing coverage collaboration",
 );
 
+const implementationFixture = await Deno.readTextFile(
+  `${root}/evals/implementation-coverage-fixture.md`,
+);
+const requiredImplementationBehaviors = [
+  "reject-high-level-only-coverage",
+  "inspect-implementation-boundary",
+  "treat-interface-public-to-dependents",
+  "model-programming-abstraction-as-component",
+  "model-ui-surface-as-component",
+  "use-expand-for-owned-implementation-detail",
+  "omit-trivial-mechanics",
+  "report-implementation-coverage-map",
+  "propose-exact-implementation-sigil",
+  "support-combined-or-dependent-review",
+  "stop-at-semantic-review-gate",
+  "implement-only-after-implementation-approval",
+];
+if (!Array.isArray(expected.implementationRequiredBehaviors)) {
+  throw new Error("Implementation fixture must declare required behaviors.");
+}
+for (const behavior of requiredImplementationBehaviors) {
+  if (!expected.implementationRequiredBehaviors.includes(behavior)) {
+    throw new Error(`Implementation fixture is missing behavior ${behavior}.`);
+  }
+}
+requireText(
+  implementationFixture,
+  "approved high-level service contract as sufficient",
+  "implementation high-level coverage rejection",
+);
+requireText(
+  implementationFixture,
+  "queue programming abstraction as a component",
+  "implementation abstraction component",
+);
+requireText(
+  implementationFixture,
+  "delivery-status surface as a UI component",
+  "implementation UI component",
+);
+requireText(
+  implementationFixture,
+  "component/expand/omit decision",
+  "implementation coverage map",
+);
+
 const brownfield = await Deno.readTextFile(
   `${root}/references/brownfield-adoption.md`,
 );
@@ -240,8 +293,32 @@ requireText(
   "greenfield exact proposal",
 );
 
+const implementationDesign = await Deno.readTextFile(
+  `${root}/references/implementation-design.md`,
+);
+requireText(
+  implementationDesign,
+  "An interface is public relative to the component's dependents.",
+  "dependent-relative public contract",
+);
+requireText(
+  implementationDesign,
+  "Select Component, Expand, Or Omit",
+  "implementation selection rule",
+);
+requireText(
+  implementationDesign,
+  "Build The Implementation Coverage Map",
+  "implementation coverage map procedure",
+);
+requireText(
+  implementationDesign,
+  "Review UI Component Coverage",
+  "UI component coverage procedure",
+);
+
 console.log(
-  "Sigil skill 1.0.0 structure, compatibility, gates, Greenfield design, Brownfield adoption, and fixture rubrics are valid.",
+  "Sigil skill 1.1.0 structure, compatibility, gates, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

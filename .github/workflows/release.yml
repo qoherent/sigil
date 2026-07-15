@@ -33,6 +33,13 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.9.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: integrations/editor/vscode/package-lock.json
+      - run: npm ci
+        working-directory: integrations/editor/vscode
       - name: Select and validate package
         id: package
         shell: bash
@@ -57,7 +64,7 @@ jobs:
       - run: deno task fmt
       - run: deno task lint
       - run: deno task check
-      - run: deno task test
+      - run: xvfb-run -a deno task test
       - name: Verify publish contents
         working-directory: ${{ steps.package.outputs.directory }}
         run: deno publish --dry-run

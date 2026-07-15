@@ -39,5 +39,20 @@
     "collaborate-on-missing-sigil-before-implementation",
     "stop-at-semantic-review-gate",
     "implement-only-after-approval"
+  ],
+  "implementationFixture": "implementation-coverage-fixture.md",
+  "implementationRequiredBehaviors": [
+    "reject-high-level-only-coverage",
+    "inspect-implementation-boundary",
+    "treat-interface-public-to-dependents",
+    "model-programming-abstraction-as-component",
+    "model-ui-surface-as-component",
+    "use-expand-for-owned-implementation-detail",
+    "omit-trivial-mechanics",
+    "report-implementation-coverage-map",
+    "propose-exact-implementation-sigil",
+    "support-combined-or-dependent-review",
+    "stop-at-semantic-review-gate",
+    "implement-only-after-implementation-approval"
   ]
 }

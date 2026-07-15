@@ -15,7 +15,8 @@ They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks
 7. Brownfield reconstruction and externally informed additions are shown as exact proposed semantic lines before the agent edits Sigil.
 8. The user approves, rejects, or revises the proposal.
 9. The agent writes only the approved Sigil, validates it, and stops at the semantic review gate.
-10. After approval, the agent colocates Sigil with the implementation and uses the agreed contract to generate or change code.
+10. Before coding, the agent discovers coherent implementation and UI components, classifies each material concern as a component, implementation-specific expand, or intentional omission, and reports an implementation coverage map.
+11. After approval, the agent colocates Sigil with the implementation and uses the agreed contracts and expands to generate or change code.
 
 If implementation reveals a missing decision, the agent should stop and reflect that decision back into Sigil before continuing.
 This keeps documentation ahead of the code instead of turning it into an after-the-fact summary.
