@@ -1,7 +1,7 @@
 # sigil-lsp
 
 Implemented v1 release-line language-server package for editor-facing Sigil
-semantics, versioned for publication as `@sigil/lsp` 1.0.0.
+semantics, versioned for publication as `@qoherent/lsp` 1.0.0.
 
 The language server should be the reusable bridge between `sigil-core` and concrete editor integrations.
 
@@ -14,11 +14,13 @@ Initial v1 responsibilities:
 - provide go-to-definition for imports and components;
 - provide document symbols for components, expands, and sections;
 - support hover or preview content for collected expansions;
+- provide resolver-backed semantic highlighting for component names through
+  full-document semantic tokens;
 
 Deferred responsibilities:
 
 - formatting and structure actions;
-- completion, references, rename, code actions, and semantic tokens;
+- completion, references, rename, and code actions;
 - non-file URI schemes and transports other than standard input and output.
 
 Non-responsibilities:

@@ -28,7 +28,7 @@ await Promise.all([
     format: "cjs",
     target: "node20",
     alias: {
-      "@sigil/core": path.join(repository, "packages/sigil-core/src/mod.ts"),
+      "@qoherent/core": path.join(repository, "packages/sigil-core/src/mod.ts"),
     },
     sourcemap: false,
   }),

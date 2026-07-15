@@ -97,7 +97,7 @@ binding architecture decisions.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core` and `sigil-cli`, the planned v1 `sigil-lsp`, and the proposed vNext `sigil-indexer`.
+- `packages/` contains the implemented `sigil-core`, `sigil-cli`, and v1 `sigil-lsp`, plus the proposed vNext `sigil-indexer`.
 - `integrations/` contains host-specific adapters such as the Codex skills, the implemented v1 VS Code extension, and future editor integrations.
 
 ## Examples
@@ -144,7 +144,7 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil Language, config schema, `@sigil/core`, and `@sigil/cli` are versioned at 1.0.0.
+Sigil Language, config schema, `@qoherent/core`, and `@qoherent/cli` are versioned at 1.0.0.
 The independently versioned standalone Codex skill is at 1.1.0.
 See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 
@@ -159,10 +159,12 @@ and stable diagnostics.
 
 `sigil-lsp` is an implemented v1 release-line deliverable. Its initial contract
 covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
-symbols, definition navigation, and hover over a stdio transport.
+symbols, definition navigation, hover, and resolver-backed semantic highlighting
+over a stdio transport.
 
 The Sigil VS Code extension is an implemented v1 release-line deliverable. Its
 initial contract covers TextMate syntax highlighting, bundled LSP startup,
+resolver-backed component highlighting through LSP semantic tokens,
 editor-native language features, and a read-only component preview derived from
 standard hover responses.
 

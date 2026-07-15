@@ -1,5 +1,5 @@
 {
-  "name": "@sigil/lsp",
+  "name": "@qoherent/lsp",
   "version": "1.0.0",
   "exports": {
     ".": "./src/mod.ts",

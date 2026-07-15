@@ -4,8 +4,10 @@ Implemented v1 VS Code extension for Sigil.
 
 Initial v1 responsibilities:
 
-- provide `.sigil` syntax highlighting;
-- bundle and connect to `sigil-lsp` for diagnostics, symbols, navigation, and hover;
+- provide `.sigil` TextMate syntax highlighting and resolver-backed component
+  highlighting through LSP semantic tokens;
+- bundle and connect to `sigil-lsp` for diagnostics, symbols, navigation, hover,
+  and semantic highlighting;
 - expose `Sigil: Show Component Preview` using the standard LSP hover response;
 - provide editor-native affordances without duplicating `sigil-core` behavior.
 

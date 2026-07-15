@@ -54,7 +54,7 @@ Platform packages:
 - `packages/sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
 - `packages/sigil-cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
 - `packages/sigil-indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
-- `packages/sigil-lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, and hover across multiple editors.
+- `packages/sigil-lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
 
 Integrations:
 
@@ -65,7 +65,7 @@ Integrations:
 The CLI is an automation interface.
 It may help humans during early development, but it is not the primary human product.
 
-The primary human experience should become editor-native through syntax highlighting, inline diagnostics, navigation, previews, and collected-expansion views.
+The primary human experience should become editor-native through syntax and semantic highlighting, inline diagnostics, navigation, previews, and collected-expansion views.
 
 ## 4. Shared Core Rules
 
@@ -269,7 +269,8 @@ Guardrail: start with compact Sigil context plus suggested code paths.
 
 Markdown rendering helps review, but it cannot provide the authoring experience humans need.
 
-Guardrail: plan editor-native syntax, diagnostics, navigation, and previews as the main human UI.
+Guardrail: plan editor-native syntax and semantic highlighting, diagnostics,
+navigation, and previews as the main human UI.
 
 ### Workspace Root Ambiguity
 

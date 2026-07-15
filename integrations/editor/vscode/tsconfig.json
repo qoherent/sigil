@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "paths": {
-      "@sigil/core": [
+      "@qoherent/core": [
         "../../../packages/sigil-core/src/mod.ts"
       ]
     },

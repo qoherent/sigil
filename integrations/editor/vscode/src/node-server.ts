@@ -1,7 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { Readable, Writable } from "node:stream";
-import type { SigilFileSystem } from "@sigil/core";
-import { normalizePath } from "@sigil/core";
+import type { SigilFileSystem } from "@qoherent/core";
+import { normalizePath } from "@qoherent/core";
 import { runLanguageServer } from "../../../../packages/sigil-lsp/src/protocol.ts";
 import { SigilLanguageServer } from "../../../../packages/sigil-lsp/src/server.ts";
 

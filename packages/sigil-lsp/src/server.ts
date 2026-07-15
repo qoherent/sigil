@@ -4,7 +4,7 @@ import {
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
   type SigilFileSystem,
-} from "@sigil/core";
+} from "@qoherent/core";
 import {
   definitionAt,
   diagnosticsByUri,

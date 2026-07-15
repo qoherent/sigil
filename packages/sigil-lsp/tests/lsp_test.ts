@@ -1,4 +1,4 @@
-import { InMemorySigilFileSystem } from "@sigil/core";
+import { InMemorySigilFileSystem } from "@qoherent/core";
 import {
   encodeLspMessage,
   fileUriToPath,

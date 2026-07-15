@@ -16,7 +16,7 @@
     "test:vscode": "npm --prefix integrations/editor/vscode test",
     "test:vscode:extension": "npm --prefix integrations/editor/vscode run test:extension",
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
-    "test": "deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:skill",
+    "test": "deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill",
     "package:vscode": "npm --prefix integrations/editor/vscode run package",
     "publish:dry-run": "deno task --cwd packages/sigil-core publish:dry-run && deno task --cwd packages/sigil-cli publish:dry-run && deno task --cwd packages/sigil-lsp publish:dry-run && deno task package:vscode"
   }

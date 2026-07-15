@@ -2,7 +2,7 @@
 
 ## Core
 
-`@sigil/core` exports immutable model types and these main operations:
+`@qoherent/core` exports immutable model types and these main operations:
 
 - `parseSigilConfig(source, filePath?)` validates config schema and supported
   versions;
@@ -40,11 +40,12 @@ for usage, and 3 for host failures.
 
 ## LSP
 
-`@sigil/lsp` 1.0.0 implements Language Server Protocol 3.18 over standard input
+`@qoherent/lsp` 1.0.0 implements Language Server Protocol 3.18 over standard input
 and output. It provides lifecycle handling, full-document synchronization,
 overlay-backed workspace resolution, diagnostics, hierarchical document
-symbols, definition navigation, and Markdown hover content.
+symbols, definition navigation, Markdown hover content, and full-document
+semantic tokens for resolver-backed component names.
 
-The server advertises UTF-16 positions and uses `@sigil/core` for all Sigil
+The server advertises UTF-16 positions and uses `@qoherent/core` for all Sigil
 parsing, configuration, workspace, import, component, expansion, and diagnostic
 semantics. Its first release supports file URIs and one selected workspace.
