@@ -1,7 +1,7 @@
 # sigil-lsp
 
 Implemented v1 release-line language-server package for editor-facing Sigil
-semantics, versioned for publication as `@qoherent/lsp` 1.0.0.
+semantics, versioned for publication as `@qoherent/sigil-lsp` 0.1.0.
 
 The language server should be the reusable bridge between `sigil-core` and concrete editor integrations.
 

@@ -3,7 +3,7 @@
 Current package version: **1.0.0**. Import with:
 
 ```ts
-import { parseSigilDocument } from "jsr:@qoherent/core@1";
+import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.1";
 ```
 
 Raw parsing requires an explicit `languageVersion`. Workspace APIs discover and

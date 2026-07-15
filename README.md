@@ -145,7 +145,7 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil Language, config schema, `@qoherent/core`, and `@qoherent/cli` are versioned at 1.0.0.
+Sigil Language, config schema, `@qoherent/sigil-core`, and `@qoherent/sigil` are versioned at 0.1.0.
 The independently versioned standalone Codex skill is at 1.1.0.
 See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
 

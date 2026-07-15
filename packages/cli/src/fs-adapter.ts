@@ -1,4 +1,4 @@
-import type { SigilFileSystem } from "@qoherent/core";
+import type { SigilFileSystem } from "@qoherent/sigil-core";
 
 export class DenoSigilFileSystem implements SigilFileSystem {
   async readTextFile(path: string): Promise<string> {

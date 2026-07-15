@@ -7,7 +7,7 @@ component SigilLsp {
   }
 
   interface {
-    publishes @qoherent/lsp 1.0.0 within the Sigil v1 release line
+    publishes @qoherent/sigil-lsp 0.1.0 within the Sigil v1 release line
     implements Language Server Protocol 3.18 over standard input and standard output
     supports initialize, initialized, shutdown, and exit lifecycle messages
     supports textDocument/didOpen, textDocument/didChange, and textDocument/didClose with full-document synchronization
@@ -48,7 +48,7 @@ expand SigilLsp {
     Position conversion uses the encoding negotiated during initialize and defaults to UTF-16.
     Semantic highlighting uses the standard LSP type token and full-document responses.
     The initial release supports file URIs and standard-input/output transport only.
-    The server depends on @qoherent/core for parsing, workspace discovery, resolution, graphs, projections, and diagnostics.
+    The server depends on @qoherent/sigil-core for parsing, workspace discovery, resolution, graphs, projections, and diagnostics.
     The server does not duplicate Sigil parser, resolver, or workspace rules.
     The server does not depend on VS Code APIs or Codex-specific behavior.
     Client cancellation prevents obsolete request results from being returned when cancellation is observed before completion.

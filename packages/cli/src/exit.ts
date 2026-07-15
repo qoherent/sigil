@@ -1,4 +1,4 @@
-import type { SigilDiagnostic } from "@qoherent/core";
+import type { SigilDiagnostic } from "@qoherent/sigil-core";
 
 export const EXIT_OK = 0;
 export const EXIT_DIAGNOSTICS = 1;

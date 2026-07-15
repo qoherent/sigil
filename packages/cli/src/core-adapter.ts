@@ -14,7 +14,7 @@ import {
   SIGIL_LANGUAGE_VERSION,
   type SigilFileSystem,
   type SigilWorkspace,
-} from "@qoherent/core";
+} from "@qoherent/sigil-core";
 import { DenoSigilFileSystem, joinPath, normalizePath } from "./fs-adapter.ts";
 
 export const SIGIL_CLI_VERSION = "1.0.0" as const;

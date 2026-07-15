@@ -24,7 +24,7 @@ release, CI, and licensing artifacts.
 
 **Acceptance evidence (2026-07-13):** formatting, linting, type checking, 13
 core tests, 12 CLI tests, and skill validation passed on Deno 2.9.2. JSR dry
-runs passed for `@qoherent/core@1.0.0` and `@qoherent/cli@1.0.0`. A local package
+runs passed for `@qoherent/sigil-core@0.1.0` and `@qoherent/sigil@0.1.0`. A local package
 import and installed-CLI smoke test reported core/CLI 1.0.0, initialized a
 workspace named `smoke`, and checked it with zero diagnostics. The repository
 CI matrix remains the release gate for Linux, macOS, and Windows.

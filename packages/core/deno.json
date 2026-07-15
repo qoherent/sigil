@@ -1,7 +1,7 @@
 {
-  "name": "@qoherent/cli",
-  "version": "1.0.0",
-  "exports": "./src/main.ts",
+  "name": "@qoherent/sigil-core",
+  "version": "0.1.0",
+  "exports": "./src/mod.ts",
   "publish": {
     "include": [
       "README.md",
@@ -15,8 +15,7 @@
     ]
   },
   "tasks": {
-    "install": "deno install --global --config ../../deno.json --allow-read --allow-write --name sigil src/main.ts",
-    "test": "deno test --allow-read --allow-write --allow-run",
+    "test": "deno test --allow-read",
     "publish:dry-run": "deno publish --dry-run"
   },
   "compilerOptions": {

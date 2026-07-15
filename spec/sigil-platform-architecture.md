@@ -51,10 +51,10 @@ Boundary rules:
 
 Platform packages:
 
-- `packages/sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
-- `packages/sigil-cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
-- `packages/sigil-indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
-- `packages/sigil-lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
+- `packages/core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
+- `packages/cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
+- `packages/indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
+- `packages/lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
 
 Integrations:
 
@@ -282,10 +282,10 @@ Guardrail: expose the resolved workspace root in machine-readable output and sup
 
 Detailed package and integration specs should live close to the implementation surface:
 
-- `packages/sigil-core/README.md`: parser, resolver, graph, diagnostics, projections.
-- `packages/sigil-cli/README.md`: command behavior for agents, CI, scripts, and debugging.
-- `packages/sigil-indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
-- `packages/sigil-lsp/README.md`: future editor semantic protocol.
+- `packages/core/README.md`: parser, resolver, graph, diagnostics, projections.
+- `packages/cli/README.md`: command behavior for agents, CI, scripts, and debugging.
+- `packages/indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
+- `packages/lsp/README.md`: future editor semantic protocol.
 - `integrations/editor/vscode/README.md`: future concrete editor UX.
 - `integrations/codex/sigil-skill/`: Codex prompt and reference behavior.
 - `integrations/codex/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.

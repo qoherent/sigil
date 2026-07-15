@@ -1,9 +1,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { Readable, Writable } from "node:stream";
-import type { SigilFileSystem } from "@qoherent/core";
-import { normalizePath } from "@qoherent/core";
-import { runLanguageServer } from "../../../../packages/sigil-lsp/src/protocol.ts";
-import { SigilLanguageServer } from "../../../../packages/sigil-lsp/src/server.ts";
+import type { SigilFileSystem } from "@qoherent/sigil-core";
+import { normalizePath } from "@qoherent/sigil-core";
+import { runLanguageServer } from "../../../../packages/lsp/src/protocol.ts";
+import { SigilLanguageServer } from "../../../../packages/lsp/src/server.ts";
 
 class NodeSigilFileSystem implements SigilFileSystem {
   async readTextFile(path: string): Promise<string> {

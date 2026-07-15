@@ -12,7 +12,7 @@ When a `sigil` command is available on `PATH`, prefer it for mechanical parsing,
 validation, graph, context, and render operations.
 
 An installed Codex skill does not include the Sigil platform repository's
-`packages/` directory. Only use `packages/sigil-cli/src/main.ts` when the
+`packages/` directory. Only use `packages/cli/src/main.ts` when the
 current workspace contains that path.
 
 Typical installed command shape:
@@ -24,7 +24,7 @@ sigil check . --format json --pretty
 Typical repository-local command shape:
 
 ```bash
-deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
+deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference

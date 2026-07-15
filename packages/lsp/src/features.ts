@@ -6,8 +6,8 @@ import type {
   SigilDocument,
   SigilFileSystem,
   SourceRange,
-} from "@qoherent/core";
-import { normalizePath } from "@qoherent/core";
+} from "@qoherent/sigil-core";
+import { normalizePath } from "@qoherent/sigil-core";
 import { pathToFileUri } from "./filesystem.ts";
 import type {
   DocumentSymbol,

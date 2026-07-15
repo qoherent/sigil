@@ -1,4 +1,4 @@
-@packages/sigil-lsp import { SigilLsp }
+@packages/lsp import { SigilLsp }
 
 component SigilVsCodeExtension {
   goal {

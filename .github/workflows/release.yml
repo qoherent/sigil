@@ -54,8 +54,8 @@ jobs:
             version="${GITHUB_REF_NAME#*-v}"
           fi
           case "$package" in
-            core) directory="packages/sigil-core" ;;
-            cli) directory="packages/sigil-cli" ;;
+            core) directory="packages/core" ;;
+            cli) directory="packages/cli" ;;
             *) echo "Unsupported package: $package" >&2; exit 2 ;;
           esac
           actual="$(deno eval "const c=JSON.parse(await Deno.readTextFile('$directory/deno.json')); console.log(c.version)")"

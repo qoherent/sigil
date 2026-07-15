@@ -1,23 +1,23 @@
 {
   "workspace": [
-    "./packages/sigil-core",
-    "./packages/sigil-cli",
-    "./packages/sigil-lsp"
+    "./packages/core",
+    "./packages/cli",
+    "./packages/lsp"
   ],
   "lock": true,
   "tasks": {
-    "fmt": "deno fmt --check deno.json sigil.config examples/promise/sigil.config examples/slotted/sigil.config spec/sigil-config.schema.json packages/sigil-core/deno.json packages/sigil-core/src packages/sigil-core/tests packages/sigil-cli/deno.json packages/sigil-cli/src packages/sigil-cli/tests packages/sigil-lsp/deno.json packages/sigil-lsp/src packages/sigil-lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
+    "fmt": "deno fmt --check deno.json sigil.config examples/promise/sigil.config examples/slotted/sigil.config spec/sigil-config.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
     "lint": "deno lint",
-    "check": "deno check packages/sigil-core/src/mod.ts packages/sigil-cli/src/main.ts packages/sigil-lsp/src/main.ts && deno task check:vscode",
+    "check": "deno check packages/core/src/mod.ts packages/cli/src/main.ts packages/lsp/src/main.ts && deno task check:vscode",
     "check:vscode": "npm --prefix integrations/editor/vscode run check",
-    "test:core": "deno task --cwd packages/sigil-core test",
-    "test:cli": "deno task --cwd packages/sigil-cli test",
-    "test:lsp": "deno task --cwd packages/sigil-lsp test",
+    "test:core": "deno task --cwd packages/core test",
+    "test:cli": "deno task --cwd packages/cli test",
+    "test:lsp": "deno task --cwd packages/lsp test",
     "test:vscode": "npm --prefix integrations/editor/vscode test",
     "test:vscode:extension": "npm --prefix integrations/editor/vscode run test:extension",
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
     "test": "deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill",
     "package:vscode": "npm --prefix integrations/editor/vscode run package",
-    "publish:dry-run": "deno task --cwd packages/sigil-core publish:dry-run && deno task --cwd packages/sigil-cli publish:dry-run && deno task --cwd packages/sigil-lsp publish:dry-run && deno task package:vscode"
+    "publish:dry-run": "deno task --cwd packages/core publish:dry-run && deno task --cwd packages/cli publish:dry-run && deno task --cwd packages/lsp publish:dry-run && deno task package:vscode"
   }
 }

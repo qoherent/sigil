@@ -51,14 +51,14 @@ review Markdown instead of manually reimplementing those operations in the
 agent.
 
 An installed Codex skill does not include this repository's `packages/`
-directory. Treat `packages/sigil-cli/src/main.ts` as available only when the
+directory. Treat `packages/cli/src/main.ts` as available only when the
 current workspace is the Sigil platform repository or another checkout that
 contains that path.
 
 CLI discovery order:
 
 1. If `sigil` is available on `PATH`, use `sigil`.
-2. Else, if the current workspace contains `packages/sigil-cli/src/main.ts`,
+2. Else, if the current workspace contains `packages/cli/src/main.ts`,
    invoke it with Deno from the workspace root.
 3. Else, stop and ask the user to install a compatible Sigil CLI. Version 1
    does not silently reinterpret a configured workspace without its required
@@ -73,7 +73,7 @@ sigil check . --format json --pretty
 Repository-local CLI command shape:
 
 ```bash
-deno run --allow-read packages/sigil-cli/src/main.ts check . --format json --pretty
+deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 For a configured workspace, run before semantic work:

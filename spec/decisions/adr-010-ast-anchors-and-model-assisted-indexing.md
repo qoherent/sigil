@@ -26,7 +26,7 @@ The platform will split responsibilities as follows:
 
 - `sigil-core` continues to own Sigil parsing, semantic lines, workspace
   resolution, and source fidelity without source-language or model dependencies;
-- `packages/sigil-indexer` owns deterministic source indexing, candidate
+- `packages/indexer` owns deterministic source indexing, candidate
   generation, anchor validation, persistence, and reconciliation;
 - source-language adapters own AST and symbol extraction, beginning with a
   TypeScript adapter pinned to `npm:typescript@5.9.3`;
@@ -79,7 +79,7 @@ Proposal provenance contains a host identifier, an optional model identifier,
 and a proposal timestamp. It intentionally omits prompts and hidden reasoning.
 Accepted relationship and proposal IDs use UUIDs. Hashes use SHA-256 over
 canonical normalized values; exact normalization is specified by
-`packages/sigil-indexer/spec.md`.
+`packages/indexer/spec.md`.
 
 The index is many-to-many. One Sigil line may have implementation and test
 anchors, and one source target may support more than one semantic line.

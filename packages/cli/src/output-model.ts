@@ -6,7 +6,7 @@ import type {
   SigilDiagnostic,
   SigilDocument,
   SigilGraph,
-} from "@qoherent/core";
+} from "@qoherent/sigil-core";
 
 export type CommandResult =
   | InitCommandResult

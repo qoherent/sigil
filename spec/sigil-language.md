@@ -112,7 +112,7 @@ An **independent workspace** is an excluded nested directory containing its own
 Sigil currently defines three top-level forms:
 
 ```sigil
-@packages/sigil-cli import { SigilCli }
+@packages/cli import { SigilCli }
 @sub/folder/auth.sigil import { Auth }
 
 component Name {
@@ -172,18 +172,18 @@ A directory import is reserved for a valid `RootSigil` location and resolves to
 the root project's or declared workspace member's `#module.sigil`.
 
 ```sigil
-@packages/sigil-cli import { SigilCli }
+@packages/cli import { SigilCli }
 ```
 
 Given this file layout:
 
 ```text
-packages/sigil-cli/#module.sigil
-packages/sigil-cli/deno.json
+packages/cli/#module.sigil
+packages/cli/deno.json
 ```
 
-Because `packages/sigil-cli` is declared in `workspace.members`,
-`@packages/sigil-cli import { SigilCli }` resolves through its `#module.sigil`.
+Because `packages/cli` is declared in `workspace.members`,
+`@packages/cli import { SigilCli }` resolves through its `#module.sigil`.
 Package manifests and directory structure alone are not enough to make another
 directory importable this way.
 
