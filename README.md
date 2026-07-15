@@ -1,4 +1,5 @@
-# Sigil
+
+# <img src="docs/sigil.png" height="20" /> Sigil
 
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system is, why it exists, how it behaves, and how its implementation should be understood and changed over time.
@@ -51,7 +52,7 @@ Authors can explain a visual reference's intended role in their own words when a
 
 The language currently has three top-level forms:
 
-```sigil
+```ts
 @sub/folder import { ComponentName }
 @sub/folder/auth.sigil import { Auth }
 
