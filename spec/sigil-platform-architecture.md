@@ -54,7 +54,7 @@ Platform packages:
 - `packages/sigil-core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
 - `packages/sigil-cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
 - `packages/sigil-indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
-- `packages/sigil-lsp`: future language-server interface for editor features across multiple editors.
+- `packages/sigil-lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, and hover across multiple editors.
 
 Integrations:
 

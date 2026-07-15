@@ -1,0 +1,64 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+
+component SigilLsp {
+  goal {
+    Provide editor-neutral language intelligence for Sigil workspaces through the Language Server Protocol.
+    Reuse sigil-core semantics so editors, the CLI, and agents interpret Sigil consistently.
+  }
+
+  interface {
+    publishes @sigil/lsp 1.0.0 within the Sigil v1 release line
+    implements Language Server Protocol 3.18 over standard input and standard output
+    supports initialize, initialized, shutdown, and exit lifecycle messages
+    supports textDocument/didOpen, textDocument/didChange, and textDocument/didClose with full-document synchronization
+    publishes structural and workspace diagnostics through textDocument/publishDiagnostics
+    supports textDocument/documentSymbol for components, expands, and sections
+    supports textDocument/definition for imports, imported component names, component declarations, and expand declarations
+    supports textDocument/hover with component contracts and collected expansion summaries
+    operates on file-backed Sigil workspaces governed by SigilWorkspaceConfig and SigilLanguage
+  }
+}
+
+expand SigilLsp {
+  state {
+    Server lifecycle is uninitialized, running, shutdown-requested, or exited.
+    Open documents retain their URI, client version, and current in-memory text.
+    The initialized workspace is resolved from workspaceFolders or rootUri.
+  }
+
+  logic {
+    initialize resolves the selected filesystem workspace and advertises only implemented capabilities.
+    didOpen and didChange parse the current in-memory document and publish updated diagnostics.
+    didClose removes the in-memory overlay and republishes diagnostics from the filesystem version when available.
+    Workspace operations resolve open-document overlays before filesystem content.
+    definition maps Sigil source ranges to declaration locations through core workspace and resolution data.
+    hover presents the selected component goal, interface, and collected expansion detail without inventing new semantics.
+    documentSymbol returns hierarchical symbols for top-level declarations and their sections.
+    shutdown completes outstanding work, returns null, and enters shutdown-requested state.
+    exit terminates successfully only after shutdown; exit without shutdown is unsuccessful.
+  }
+
+  constraints {
+    Protocol messages conform to Language Server Protocol 3.18 and JSON-RPC 2.0 framing.
+    Standard output contains protocol messages only; logging uses standard error.
+    Position conversion uses the encoding negotiated during initialize and defaults to UTF-16.
+    The initial release supports file URIs and standard-input/output transport only.
+    The server depends on @sigil/core for parsing, workspace discovery, resolution, graphs, projections, and diagnostics.
+    The server does not duplicate Sigil parser, resolver, or workspace rules.
+    The server does not depend on VS Code APIs or Codex-specific behavior.
+    Client cancellation prevents obsolete request results from being returned when cancellation is observed before completion.
+    Malformed requests return protocol errors without terminating the server.
+  }
+
+  cases {
+    Opening a valid Sigil document publishes no error diagnostics.
+    Opening or changing a malformed Sigil document publishes source-ranged diagnostics for the in-memory content.
+    Fixing an open document clears diagnostics that no longer apply.
+    Go-to-definition on an imported component navigates to its component declaration.
+    Go-to-definition on an expand name navigates to its matching component declaration.
+    Hovering over a component exposes its public contract and collected expansion sources.
+    A workspace configuration error is surfaced as a diagnostic without crashing the server.
+    A request received before initialize is rejected according to the protocol lifecycle.
+    Shutdown followed by exit terminates successfully.
+  }
+}

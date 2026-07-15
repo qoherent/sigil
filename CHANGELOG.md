@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Implement `@sigil/lsp` 1.0.0 in the v1 release line without changing the
+  original v1.0.0 release history.
+- Define the initial LSP 3.18 package contract for stdio lifecycle, full
+  document synchronization, diagnostics, document symbols, definition
+  navigation, and hover.
 - Require user collaboration to define and approve clear Sigil coverage before
   adding or modifying affected implementation.
 - Define `RootSigil` as the root-project or declared workspace-member contract
