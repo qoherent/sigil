@@ -47,7 +47,7 @@ async function collectFiles(path: string, files: string[]): Promise<void> {
   if (!stat.isDirectory) return;
 
   for await (const entry of Deno.readDir(path)) {
-    if (entry.name === ".git") continue;
+    if (entry.name === ".git" || entry.isSymlink) continue;
     await collectFiles(joinPath(path, entry.name), files);
   }
 }

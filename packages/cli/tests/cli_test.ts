@@ -1,4 +1,5 @@
 import { SIGIL_VERSION } from "@qoherent/sigil-core";
+import { resolveInstalledSkillsDirectory } from "../src/installer.ts";
 import { runCli } from "../src/main.ts";
 import {
   EXIT_DIAGNOSTICS,
@@ -248,6 +249,96 @@ Deno.test("top-level help and version report CLI information", async () => {
   assertEquals(version.stderr, "");
 });
 
+Deno.test("install links bundled skills and ignores them idempotently", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-install-" });
+  const source = `${root}/installation/integrations/skills`;
+  const target = `${root}/project`;
+  try {
+    await Deno.mkdir(`${source}/sigil`, { recursive: true });
+    await Deno.mkdir(`${source}/sigil-anchor-indexer`, { recursive: true });
+    await Deno.mkdir(`${source}/future-skill`, { recursive: true });
+    await Deno.writeTextFile(`${source}/sigil/SKILL.md`, "# Sigil\n");
+    await Deno.writeTextFile(
+      `${source}/sigil/#module.sigil`,
+      validSigil("InstalledSkill"),
+    );
+    await Deno.writeTextFile(
+      `${source}/sigil-anchor-indexer/spec.md`,
+      "# Anchor indexer\n",
+    );
+
+    const first = await runCli(["install", "--pretty"], {
+      install: { sourceDirectory: source, targetRoot: target },
+    });
+    assertEquals(first.exitCode, EXIT_OK);
+    const firstOutput = parseJson(first.stdout);
+    assertEquals(firstOutput.command, "install");
+    assert(
+      firstOutput.skills.every((skill: { status: string }) =>
+        skill.status === "created"
+      ),
+    );
+    assert((await Deno.lstat(`${target}/.agents/skills/sigil`)).isSymlink);
+    assertEquals(
+      await Deno.realPath(`${target}/.agents/skills/sigil`),
+      await Deno.realPath(`${source}/sigil`),
+    );
+    const gitignore = await Deno.readTextFile(
+      `${target}/.agents/skills/.gitignore`,
+    );
+    assert(gitignore.includes("/sigil\n"));
+    assert(gitignore.includes("/sigil-anchor-indexer\n"));
+    assert(gitignore.includes("/future-skill\n"));
+
+    const second = await runCli(["install"], {
+      install: { sourceDirectory: source, targetRoot: target },
+    });
+    assertEquals(second.exitCode, EXIT_OK);
+    assert(
+      parseJson(second.stdout).skills.every((skill: { status: string }) =>
+        skill.status === "existing"
+      ),
+    );
+    assertEquals(
+      await Deno.readTextFile(`${target}/.agents/skills/.gitignore`),
+      gitignore,
+    );
+
+    await writeWorkspaceConfig(target, "installed-skills");
+    const check = await runCli(["check", target, "--format", "json"]);
+    assertEquals(check.exitCode, EXIT_OK);
+    assertEquals(parseJson(check.stdout).diagnosticCounts.error, 0);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("install resolves skills from the selected source installation", async () => {
+  const source = await resolveInstalledSkillsDirectory();
+  const names: string[] = [];
+  for await (const entry of Deno.readDir(source)) {
+    if (entry.isDirectory) names.push(entry.name);
+  }
+  assert(names.includes("sigil"));
+  assert(names.includes("sigil-anchor-indexer"));
+});
+
+Deno.test("install resolves skills beside a selected versioned binary", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-versioned-install-" });
+  const installation = `${root}/0.1.0`;
+  const skills = `${installation}/integrations/skills`;
+  try {
+    await Deno.mkdir(`${skills}/sigil`, { recursive: true });
+    const resolved = await resolveInstalledSkillsDirectory(
+      "https://jsr.io/@qoherent/sigil/0.1.0/src/main.ts",
+      `${installation}/bin/sigil`,
+    );
+    assertEquals(await Deno.realPath(resolved), await Deno.realPath(skills));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("executable subprocess returns version JSON", async () => {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
@@ -273,7 +364,12 @@ Deno.test("executable subprocess returns version JSON", async () => {
 
 async function makeWorkspace(name: string): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "sigil-cli-" });
-  await Deno.mkdir(`${root}/.sigil`);
+  await writeWorkspaceConfig(root, name);
+  return root;
+}
+
+async function writeWorkspaceConfig(root: string, name: string): Promise<void> {
+  await Deno.mkdir(`${root}/.sigil`, { recursive: true });
   await Deno.writeTextFile(
     `${root}/.sigil/config.json`,
     JSON.stringify({
@@ -283,7 +379,6 @@ async function makeWorkspace(name: string): Promise<string> {
       tools: {},
     }),
   );
-  return root;
 }
 
 function validSigil(name: string): string {

@@ -122,7 +122,7 @@ It is not the purpose of this repository.
 
 ## Codex Skill
 
-The Codex skill lives in [integrations/codex/sigil-skill/SKILL.md](integrations/codex/sigil-skill/SKILL.md).
+The Codex skill lives in [integrations/skills/sigil/SKILL.md](integrations/skills/sigil/SKILL.md).
 
 The skill teaches Codex to:
 
@@ -139,8 +139,8 @@ The skill teaches Codex to:
 - colocate approved Sigil with the implementation it explains;
 - use approved Sigil as implementation context.
 
-The skill reference file at [integrations/codex/sigil-skill/references/sigil-format.md](integrations/codex/sigil-skill/references/sigil-format.md) is a concise agent-facing guide.
-The [standards review](integrations/codex/sigil-skill/references/standards-review.md) and [brownfield adoption](integrations/codex/sigil-skill/references/brownfield-adoption.md) references define the corresponding host-side workflows.
+The skill reference file at [integrations/skills/sigil/references/sigil-format.md](integrations/skills/sigil/references/sigil-format.md) is a concise agent-facing guide.
+The [standards review](integrations/skills/sigil/references/standards-review.md) and [brownfield adoption](integrations/skills/sigil/references/brownfield-adoption.md) references define the corresponding host-side workflows.
 The canonical language specification remains [spec/sigil-language.md](spec/sigil-language.md).
 
 ## Current Status

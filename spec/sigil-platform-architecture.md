@@ -58,8 +58,8 @@ Platform packages:
 
 Integrations:
 
-- `integrations/codex/sigil-skill`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
-- `integrations/codex/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
+- `integrations/skills/sigil`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
+- `integrations/skills/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
 - `integrations/editor/vscode`: implemented v1 VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
 
 The CLI is an automation interface.
@@ -287,8 +287,8 @@ Detailed package and integration specs should live close to the implementation s
 - `packages/indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
 - `packages/lsp/README.md`: future editor semantic protocol.
 - `integrations/editor/vscode/README.md`: future concrete editor UX.
-- `integrations/codex/sigil-skill/`: Codex prompt and reference behavior.
-- `integrations/codex/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.
+- `integrations/skills/sigil/`: Codex prompt and reference behavior.
+- `integrations/skills/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.
 
 Root-level docs should stay stable and architectural.
 Package docs can change as the implementation and product surface become more concrete.

@@ -12,7 +12,7 @@ Install it by asking Codex:
 
 ```text
 Use $skill-installer to install the skill from
-https://github.com/qoherent/sigil/tree/main/integrations/codex/sigil-skill
+https://github.com/qoherent/sigil/tree/main/integrations/skills/sigil
 ```
 
 The installer downloads the repository path into `$CODEX_HOME/skills` and the

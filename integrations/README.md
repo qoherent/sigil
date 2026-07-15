@@ -6,12 +6,12 @@ Integrations adapt the Sigil language, workflow, or platform to a host environme
 
 Current integration:
 
-- `codex/sigil-skill`: Codex skill with agent-facing format guidance, standards-aware semantic review, incremental brownfield adoption, proposal and review gates, and implementation colocation.
+- `skills/sigil`: Codex skill with agent-facing format guidance, standards-aware semantic review, incremental brownfield adoption, proposal and review gates, and implementation colocation.
   Version 1.1.0 is distributed as a standalone repository skill and can be installed from its GitHub path with `$skill-installer`.
 
 Proposed integration:
 
-- `codex/sigil-anchor-indexer`: bounded model-assisted anchor proposals over deterministic `sigil-indexer` candidates, with human approval before persistence.
+- `skills/sigil-anchor-indexer`: bounded model-assisted anchor proposals over deterministic `sigil-indexer` candidates, with human approval before persistence.
 
 Planned integrations:
 

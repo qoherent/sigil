@@ -1,4 +1,5 @@
 export type CommandName =
+  | "install"
   | "init"
   | "version"
   | "parse"
@@ -16,6 +17,7 @@ export interface GlobalOptions {
 }
 
 export type CommandRequest =
+  | InstallRequest
   | InitRequest
   | VersionRequest
   | ParseRequest
@@ -23,6 +25,9 @@ export type CommandRequest =
   | GraphRequest
   | ContextRequest
   | RenderRequest;
+export interface InstallRequest extends GlobalOptions {
+  readonly command: "install";
+}
 export interface InitRequest extends GlobalOptions {
   readonly command: "init";
   readonly path?: string;
@@ -76,7 +81,7 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   const [commandName, ...rest] = argv;
   if (!isCommand(commandName)) {
     return usage(
-      "Expected command: init, version, parse, check, graph, context, or render.",
+      "Expected command: install, init, version, parse, check, graph, context, or render.",
     );
   }
 
@@ -164,6 +169,14 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   if (commandName !== "init" && (name || include.length || exclude.length)) {
     return usage(`${commandName} does not accept init options.`);
   }
+  if (commandName === "install") {
+    if (root) return usage("install does not accept --root.");
+    if (positional.length > 0) return usage("install does not accept a path.");
+    return {
+      kind: "ok",
+      request: { command: "install", ...base },
+    };
+  }
   if (commandName === "init") {
     if (root) {
       return usage("init uses its path argument and does not accept --root.");
@@ -234,7 +247,8 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
 }
 
 function isCommand(value: string | undefined): value is CommandName {
-  return value === "init" || value === "version" || value === "parse" ||
+  return value === "install" || value === "init" || value === "version" ||
+    value === "parse" ||
     value === "check" || value === "graph" || value === "context" ||
     value === "render";
 }

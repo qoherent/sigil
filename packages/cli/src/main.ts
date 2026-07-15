@@ -1,6 +1,6 @@
 /** Command-line interface for versioned Sigil 1.0 workspaces. @module */
 import { parseArgs } from "./args.ts";
-import { runCommand } from "./commands.ts";
+import { type CommandHandlerOptions, runCommand } from "./commands.ts";
 import { EXIT_RUNTIME, EXIT_USAGE, exitCodeForDiagnostics } from "./exit.ts";
 import { formatResult } from "./formatters.ts";
 import metadata from "../deno.json" with { type: "json" };
@@ -8,6 +8,7 @@ import metadata from "../deno.json" with { type: "json" };
 const HELP = `Usage: sigil <command> [path] [options]
 
 Commands:
+  install           Link bundled skills into .agents/skills
   init [path]       Create a workspace configuration
   version [path]    Report workspace and contract versions
   parse <file>      Parse one Sigil file
@@ -31,7 +32,12 @@ export interface CliRunResult {
   readonly stderr: string;
 }
 
-export async function runCli(argv: readonly string[]): Promise<CliRunResult> {
+export type CliRunOptions = CommandHandlerOptions;
+
+export async function runCli(
+  argv: readonly string[],
+  options: CliRunOptions = {},
+): Promise<CliRunResult> {
   const parsed = parseArgs(argv);
   if (parsed.kind === "help") {
     return { exitCode: 0, stdout: HELP, stderr: "" };
@@ -48,7 +54,7 @@ export async function runCli(argv: readonly string[]): Promise<CliRunResult> {
   }
 
   try {
-    const result = await runCommand(parsed.request);
+    const result = await runCommand(parsed.request, options);
     return {
       exitCode: exitCodeForDiagnostics(result.diagnostics),
       stdout: formatResult(result, parsed.request),

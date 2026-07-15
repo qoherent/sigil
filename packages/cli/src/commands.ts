@@ -1,5 +1,6 @@
 import type { CommandRequest, ContextRequest } from "./args.ts";
 import { CoreAdapter } from "./core-adapter.ts";
+import { installSkills, type InstallSkillsOptions } from "./installer.ts";
 import {
   type CommandResult,
   diagnosticCounts,
@@ -8,12 +9,17 @@ import {
 
 export interface CommandHandlerOptions {
   readonly core?: CoreAdapter;
+  readonly install?: InstallSkillsOptions;
 }
 
 export async function runCommand(
   request: CommandRequest,
   options: CommandHandlerOptions = {},
 ): Promise<CommandResult> {
+  if (request.command === "install") {
+    const result = await installSkills(options.install);
+    return { command: "install", ...result, diagnostics: [] };
+  }
   const core = options.core ?? new CoreAdapter();
   if (request.command === "init") {
     const result = await core.initConfig(

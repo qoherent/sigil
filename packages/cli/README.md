@@ -31,6 +31,7 @@ This installs a `sigil` command that can be discovered on `PATH`.
 
 Implemented responsibilities:
 
+- link version-owned agent skills into a target repository;
 - expose parser output;
 - run workspace checks;
 - produce agent-oriented context packs;
@@ -39,6 +40,8 @@ Implemented responsibilities:
 
 Commands:
 
+- `sigil install` links every installed `integrations/skills/*` directory into
+  the current repository's `.agents/skills/` and gitignores those links;
 - `sigil init [path]` creates a config without overwriting;
 - `sigil version [path]` reports tool and configured contract versions;
 - `sigil parse <path>` returns parsed JSON;
@@ -49,6 +52,10 @@ Commands:
 
 The CLI returns exit code `0` for success or warnings, `1` for error diagnostics, `2` for usage errors, and `3` for host/runtime failures.
 Use JSON output for automation; human text and Markdown are convenience projections.
+
+A versioned binary distribution should place its assets at
+`<version>/integrations/skills` beside `<version>/bin/sigil`. This keeps each
+binary paired with the language semantics and skills shipped for that version.
 
 Run the package tests with:
 

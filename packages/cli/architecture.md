@@ -75,14 +75,14 @@ Owns command handlers.
 
 Responsibilities:
 
-- implement `parse`, `check`, `graph`, `context`, and `render`;
+- implement `install`, `parse`, `check`, `graph`, `context`, and `render`;
 - call `sigil-core` through shared helpers;
 - return typed command result objects;
 - avoid command-specific duplication of parser and resolver behavior.
 
 Rules:
 
-- may depend on `args`, `core-adapter`, `output-model`, and `exit`;
+- may depend on `args`, `core-adapter`, `installer`, `output-model`, and `exit`;
 - must not write directly to stdout or stderr;
 - must not directly call Deno filesystem APIs.
 
@@ -102,6 +102,25 @@ Rules:
 - may depend on `sigil-core`;
 - may depend on `fs-adapter`;
 - must not render human output.
+
+### `installer`
+
+Owns repository-local installation of version-owned agent skills.
+
+Responsibilities:
+
+- resolve `integrations/skills` from the running source or binary installation;
+- enumerate every immediate skill directory;
+- create host-native relative directory symlinks in `.agents/skills`;
+- preserve existing links to the same sources and reject conflicting paths;
+- create or extend `.agents/skills/.gitignore` for every managed link.
+
+Rules:
+
+- may use Deno filesystem APIs and host-native path operations;
+- must resolve sources from the selected Sigil installation, not the target;
+- must not inspect or interpret skill contents;
+- must not overwrite unrelated target files or symlinks.
 
 ### `fs-adapter`
 

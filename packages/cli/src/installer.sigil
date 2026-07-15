@@ -1,0 +1,68 @@
+component SkillInstaller {
+  goal {
+    Install every agent skill bundled with the selected Sigil CLI distribution into a target repository without copying or replacing unrelated content.
+    Keep skill assets version-aligned with the executable selected for that repository while allowing future skills without command-code changes.
+  }
+
+  interface {
+    installSkills(sourceDirectory?, targetRoot?) returns sourceDirectory, targetDirectory, and one created or existing status per skill
+    sourceDirectory defaults to the integrations/skills directory resolved from the running Sigil installation
+    targetRoot defaults to the current working directory
+    targetDirectory is targetRoot/.agents/skills
+    resolveInstalledSkillsDirectory(moduleUrl?, executablePath?) returns the first available installation-relative skills directory
+    returned source, target, and link paths are resolved absolute host paths
+  }
+}
+
+expand SkillInstaller {
+  state {
+    installable skills are the sorted immediate non-hidden directories in the selected integrations/skills directory
+    each planned skill link is either absent and created or already linked to the selected source and existing
+  }
+
+  logic {
+    Resolve skills beside the selected executable before considering source-module development fallbacks.
+    Executable lookup checks executableDirectory/../integrations/skills before executableDirectory/integrations/skills.
+    File-module fallback checks moduleDirectory/../integrations/skills before moduleDirectory/../../../integrations/skills.
+    Deduplicate candidate paths, select the first existing directory, and report every checked path when none exists.
+    A versioned layout resolves version/bin/sigil to version/integrations/skills.
+    Source development may resolve the repository-level integrations/skills directory relative to installer.ts.
+    Reject an installation source that is missing or contains no installable skill directories.
+    Preflight every target skill path before creating the target directory or any link.
+    Create targetRoot/.agents/skills recursively after preflight succeeds.
+    Create one relative directory symlink from targetRoot/.agents/skills/name to sourceDirectory/name for every absent skill.
+    Preserve a symlink that already resolves to the selected source and report its status as existing.
+    Resolve an existing relative link target from its link directory before comparing it with the selected source.
+    Create or update targetRoot/.agents/skills/.gitignore with one root-anchored entry for every managed skill name.
+    A newly created managed .gitignore starts with # Managed by sigil install.
+    Preserve unrelated ignore rules, existing newline style, and existing managed entries without duplication.
+    Retain existing ignore entries when a previously installed skill is no longer present in the selected source.
+    Return skill records in stable name order with their source, link, and created or existing status.
+  }
+
+  constraints {
+    Skill names are discovered from integrations/skills and are never hardcoded into command logic.
+    Hidden entries, files, and source symlinks are not installable skills.
+    Links use host-native relative targets and remain valid while the repository and installation retain the same relative layout.
+    Directory symlink type is explicit for Windows and the host must permit symlink creation.
+    Path equality is case-insensitive on Windows and case-sensitive on macOS and Linux.
+    An existing file, directory, or symlink to another target is a conflict and is never replaced.
+    Conflict preflight completes for every skill before any managed link is created.
+    Git ignore entries cover the generated links while .agents/skills/.gitignore itself remains repository content.
+    The invoked executable owns source-version selection; install does not inspect workspace configuration to choose or switch binaries.
+    Copying version-selected language semantics remains outside the current install command.
+    Filesystem and host permission failures propagate as CLI runtime failures.
+  }
+
+  cases {
+    A distribution containing sigil, sigil-anchor-indexer, and a future skill creates and ignores all three without a CLI code change.
+    Repeating installation against correct links reports every skill as existing and leaves .gitignore unchanged.
+    One conflicting target path aborts installation before any absent skill link is created or any ignore rule is added.
+    An existing .gitignore keeps unrelated rules and receives only missing managed skill entries.
+    A selected version/bin/sigil resolves assets from the same version/integrations/skills directory before source fallbacks.
+    Two repositories invoking different versioned binaries link to the skill assets owned by their respective binaries.
+    A repository already linked to another Sigil version reports a conflict instead of retargeting the link automatically.
+    An empty integrations/skills directory reports a runtime failure and creates no target content.
+    Windows uses directory-link semantics while macOS and Linux use their native directory symlink behavior.
+  }
+}

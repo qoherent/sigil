@@ -9,6 +9,7 @@ import type {
 } from "@qoherent/sigil-core";
 
 export type CommandResult =
+  | InstallCommandResult
   | InitCommandResult
   | VersionCommandResult
   | ParseCommandResult
@@ -20,6 +21,18 @@ export interface DiagnosticCounts {
   readonly error: number;
   readonly warning: number;
   readonly info: number;
+}
+export interface InstallCommandResult {
+  readonly command: "install";
+  readonly sourceDirectory: string;
+  readonly targetDirectory: string;
+  readonly skills: readonly {
+    readonly name: string;
+    readonly source: string;
+    readonly link: string;
+    readonly status: "created" | "existing";
+  }[];
+  readonly diagnostics: readonly SigilDiagnostic[];
 }
 export interface WorkspaceMetadata {
   readonly workspaceRoot: string;

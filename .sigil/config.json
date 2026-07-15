@@ -7,7 +7,7 @@
       "packages/core",
       "packages/indexer",
       "packages/lsp",
-      "integrations/codex/sigil-skill",
+      "integrations/skills/sigil",
       "integrations/editor/vscode"
     ]
   },

@@ -105,6 +105,29 @@ Warnings alone should not produce exit code `1`.
 
 ## 7. Commands
 
+### `sigil install`
+
+Enumerates every immediate directory in the running Sigil installation's
+`integrations/skills` directory. For each entry, it creates a directory symlink
+with the same name in `.agents/skills` under the current working directory.
+
+The command creates `.agents/skills/.gitignore` when needed and adds one ignore
+entry for every managed symlink. Existing unrelated ignore rules are preserved.
+Running the command repeatedly is idempotent when links already target the
+installed skills. It must refuse to replace an existing file, directory, or
+symlink with a different target.
+
+The installed skill source is resolved from the running CLI installation, not
+from the target repository. A versioned binary distribution should place the
+binary at `<version>/bin/sigil` and its skills at
+`<version>/integrations/skills`. Source-based development installs may resolve
+the repository's top-level `integrations/skills` directory.
+
+The command accepts no positional path; the target repository is `Deno.cwd()`.
+It uses host-native relative symlinks and supplies the directory link type
+required by Windows. CLI workspace discovery does not traverse symlink entries,
+so installed skills are not loaded as duplicate workspace sources.
+
 ### `sigil parse <file>`
 
 Parses one Sigil source file and returns the parsed document plus diagnostics.
@@ -192,10 +215,10 @@ human authoring UI.
 
 ### `sigil init [path]`
 
-Creates `.sigil/config.json` without prompting. `--name` selects the stable workspace
-identifier, while repeated `--include` and `--exclude` options replace the v1
-file-rule defaults. The directory basename is the default name. The command
-must never overwrite an existing config.
+Creates `.sigil/config.json` without prompting. `--name` selects the stable
+workspace identifier, while repeated `--include` and `--exclude` options replace
+the v1 file-rule defaults. The directory basename is the default name. The
+command must never overwrite an existing config.
 
 ### `sigil version [path]`
 
@@ -236,7 +259,8 @@ V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 - parse `examples/promise/promise.sigil` and emit JSON;
 - check the repository workspace from the mandatory root `.sigil/config.json`;
-- resolve `examples/slotted/auth.sigil` imports from the independent Slotted workspace root;
+- resolve `examples/slotted/auth.sigil` imports from the independent Slotted
+  workspace root;
 - report diagnostics with stable codes;
 - return exit code `1` when error diagnostics exist;
 - return exit code `0` when only warnings or no diagnostics exist;
@@ -247,9 +271,9 @@ V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 ## 11. Implementation Notes
 
-The current implementation is a thin CLI with explicit argument parsing,
-command handlers, output models, formatting, filesystem adaptation, and exit
-status decisions over `sigil-core`.
+The current implementation is a thin CLI with explicit argument parsing, command
+handlers, output models, formatting, filesystem adaptation, and exit status
+decisions over `sigil-core`.
 
 Keep command modules explicit rather than consolidating behavior into one large
 entrypoint as commands grow.
@@ -267,9 +291,9 @@ depend on `sigil-indexer` and add a nested `anchors` command group.
 ### `sigil anchors candidates [path] --component <name>`
 
 Read-only. Returns the selected component, collected expansions, semantic-line
-locators, and no more than twenty deterministically ordered TypeScript candidates
-per line. Each candidate reports inspectable ordering signals. The command does
-not invoke a model.
+locators, and no more than twenty deterministically ordered TypeScript
+candidates per line. Each candidate reports inspectable ordering signals. The
+command does not invoke a model.
 
 ### `sigil anchors check [path]`
 

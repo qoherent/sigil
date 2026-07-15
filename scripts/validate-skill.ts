@@ -1,4 +1,4 @@
-const root = "integrations/codex/sigil-skill";
+const root = "integrations/skills/sigil";
 const required = [
   "SKILL.md",
   "VERSION",
