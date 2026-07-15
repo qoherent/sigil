@@ -98,7 +98,7 @@ binding architecture decisions.
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
 - `packages/` contains the implemented `sigil-core` and `sigil-cli`, the planned v1 `sigil-lsp`, and the proposed vNext `sigil-indexer`.
-- `integrations/` contains host-specific adapters such as the Codex skills and future editor integrations.
+- `integrations/` contains host-specific adapters such as the Codex skills, the implemented v1 VS Code extension, and future editor integrations.
 
 ## Examples
 
@@ -160,11 +160,16 @@ and stable diagnostics.
 covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
 symbols, definition navigation, and hover over a stdio transport.
 
+The Sigil VS Code extension is an implemented v1 release-line deliverable. Its
+initial contract covers TextMate syntax highlighting, bundled LSP startup,
+editor-native language features, and a read-only component preview derived from
+standard hover responses.
+
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
 The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
 
-Concrete editor integrations, stricter body semantics, project configuration,
-and code-generation integrations remain deferred.
+Editor integrations other than VS Code, stricter body semantics, project
+configuration, and code-generation integrations remain deferred.
 
 Anchors are now a proposed vNext capability: reviewed trace links between Sigil semantic lines and implementation evidence.
 [ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.

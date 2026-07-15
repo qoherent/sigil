@@ -1,0 +1,94 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Sigil",
+  "scopeName": "source.sigil",
+  "patterns": [
+    {
+      "include": "#imports"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#sections"
+    },
+    {
+      "include": "#type-names"
+    },
+    {
+      "include": "#braces"
+    }
+  ],
+  "repository": {
+    "imports": {
+      "patterns": [
+        {
+          "match": "^\\s*(@[^\\s]+)\\s+(import)\\s+(\\{)([^}]+)(\\})",
+          "captures": {
+            "1": {
+              "name": "string.unquoted.import-path.sigil"
+            },
+            "2": {
+              "name": "keyword.control.import.sigil"
+            },
+            "3": {
+              "name": "punctuation.section.braces.begin.sigil"
+            },
+            "4": {
+              "name": "entity.name.type.imported.sigil"
+            },
+            "5": {
+              "name": "punctuation.section.braces.end.sigil"
+            }
+          }
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(component|expand)\\s+([A-Za-z][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.sigil"
+            },
+            "2": {
+              "name": "entity.name.type.sigil"
+            }
+          }
+        }
+      ]
+    },
+    "sections": {
+      "patterns": [
+        {
+          "match": "^\\s*(goal|interface|state|logic|constraints|cases)\\s*(\\{)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.section.sigil"
+            },
+            "2": {
+              "name": "punctuation.section.braces.begin.sigil"
+            }
+          }
+        }
+      ]
+    },
+    "type-names": {
+      "patterns": [
+        {
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.sigil"
+        }
+      ]
+    },
+    "braces": {
+      "patterns": [
+        {
+          "match": "[{}]",
+          "name": "punctuation.section.braces.sigil"
+        }
+      ]
+    }
+  }
+}

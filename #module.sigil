@@ -1,6 +1,7 @@
 @spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 @packages/sigil-cli import { SigilCli }
 @packages/sigil-lsp import { SigilLsp }
+@integrations/editor/vscode import { SigilVsCodeExtension }
 @integrations/codex/sigil-skill import { SigilCodexSkill }
 
 component Sigil {
@@ -14,6 +15,7 @@ component Sigil {
     publishes sigil.config schema 1.0.0 through SigilWorkspaceConfig
     publishes @sigil/core 1.0.0 and @sigil/cli 1.0.0
     publishes @sigil/lsp 1.0.0 within the v1 release line through SigilLsp
+    publishes the Sigil VS Code extension 1.0.0 within the v1 release line through SigilVsCodeExtension
     publishes the standalone Sigil Codex skill 1.0.0 through SigilCodexSkill
     defines the Sigil language through spec/sigil-language.md
     defines the human-agent workflow through spec/sigil-workflow.md
@@ -30,8 +32,8 @@ expand Sigil {
     #module.sigil is reserved for the workspace root and member roots explicitly declared by workspace.members.
     sigil.config defines workspace roots; RootSigil summaries have no workspace-discovery authority.
     Language, config schema, core, CLI, and skill versions evolve independently under semantic versioning.
-    Anchors, editor integrations, plugin packaging, and durable approval records remain outside version 1.
-    @sigil/lsp is part of the v1 release line while concrete editor integrations remain independently scoped.
+    Anchors, editor integrations other than VS Code, plugin packaging, and durable approval records remain outside version 1.
+    @sigil/lsp and the Sigil VS Code extension are part of the v1 release line while other concrete editor integrations remain independently scoped.
     Language-level documentation lives under spec/.
     Buildable or distributable platform units live under packages/.
     Host-specific adapters live under integrations/.

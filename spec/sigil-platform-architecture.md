@@ -60,7 +60,7 @@ Integrations:
 
 - `integrations/codex/sigil-skill`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
 - `integrations/codex/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
-- `integrations/editor/vscode`: future VS Code extension, syntax highlighting, editor commands, and visual affordances.
+- `integrations/editor/vscode`: implemented v1 VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
 
 The CLI is an automation interface.
 It may help humans during early development, but it is not the primary human product.

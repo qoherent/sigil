@@ -283,7 +283,7 @@ export class SigilLanguageServer {
     const grouped = diagnosticsByUri(this.#resolved?.diagnostics ?? []);
     const currentUris = new Set<string>([
       ...grouped.keys(),
-      ...this.#openDocuments.values().map((item) => item.uri),
+      ...[...this.#openDocuments.values()].map((item) => item.uri),
       ...extraUris,
     ]);
     for (const uri of this.#publishedUris) currentUris.add(uri);

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Implement the Sigil VS Code extension 1.0.0 in the v1 release line as the
+  first concrete human authoring and review surface.
+- Define its initial scope as TextMate highlighting, bundled LSP integration,
+  editor-native language features, and hover-backed component previews.
 - Implement `@sigil/lsp` 1.0.0 in the v1 release line without changing the
   original v1.0.0 release history.
 - Define the initial LSP 3.18 package contract for stdio lifecycle, full

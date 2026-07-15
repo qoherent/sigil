@@ -1,0 +1,11 @@
+.gitignore
+.vscode-test/**
+build/**
+dist/test/**
+esbuild.mjs
+node_modules/**
+scripts/**
+src/**
+tests/**
+tsconfig.json
+[#]module.sigil
