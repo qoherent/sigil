@@ -16,6 +16,7 @@ Every CLI command, editor feature, renderer, agent context pack, and host integr
 
 Package docs:
 
+- [#module.sigil](./%23module.sigil): public `SigilCore` contract and package-wide operational decisions.
 - [spec.md](spec.md): version 0.1 product requirements and acceptance scenarios.
 - [architecture.md](architecture.md): architecture style, internal modules, dependency rules, and implementation guidelines.
 

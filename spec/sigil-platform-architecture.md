@@ -285,8 +285,8 @@ Detailed package and integration specs should live close to the implementation s
 - `packages/core/README.md`: parser, resolver, graph, diagnostics, projections.
 - `packages/cli/README.md`: command behavior for agents, CI, scripts, and debugging.
 - `packages/indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
-- `packages/lsp/README.md`: future editor semantic protocol.
-- `integrations/editor/vscode/README.md`: future concrete editor UX.
+- `packages/lsp/README.md`: implemented pre-production editor semantic protocol.
+- `integrations/editor/vscode/README.md`: implemented pre-production concrete editor UX.
 - `integrations/skills/sigil/`: Codex prompt and reference behavior.
 - `integrations/skills/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.
 

@@ -1,4 +1,5 @@
 @spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@packages/core import { SigilCore }
 @packages/cli import { SigilCli }
 @packages/lsp import { SigilLsp }
 @integrations/editor/vscode import { SigilVsCodeExtension }
@@ -12,7 +13,7 @@ component Sigil {
 
   interface {
     publishes the Sigil Language and .sigil/config.json contract 0.1.0 through SigilLanguage and SigilWorkspaceConfig
-    publishes @qoherent/sigil-core 0.1.0
+    publishes @qoherent/sigil-core 0.1.0 through SigilCore
     publishes @qoherent/sigil 0.1.0 through SigilCli
     publishes @qoherent/sigil-lsp 0.1.0 through SigilLsp
     publishes the Sigil VS Code extension 0.1.0 through SigilVsCodeExtension

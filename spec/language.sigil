@@ -98,6 +98,7 @@ expand RootSigil {
     Excludes secrets, incidental dependencies, low-level configuration, and module-specific implementation details.
     RootSigil describes one project and does not define a Sigil workspace.
     #module.sigil is permitted only at the workspace root or a member root declared by workspace.members.
+    Declaring a workspace member authorizes a member-root #module.sigil but does not require one.
     The workspace-root #module.sigil describes the root project.
     A member-root #module.sigil describes that workspace member project.
     Every #module.sigil follows the RootSigil contract.
@@ -109,5 +110,7 @@ expand RootSigil {
   cases {
     A reader can understand the project's purpose, interaction surfaces, major behavior, and architecture without first inspecting internal modules.
     An excluded independent workspace describes its own root project and does not contribute a member project to its parent workspace.
+    A declared workspace member without #module.sigil remains valid but exposes no project contract through a directory import.
+    A directory import to a declared member without #module.sigil reports an unresolved import path.
   }
 }

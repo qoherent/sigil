@@ -56,10 +56,12 @@ When the public `component` must live in a root, shared, or contract-oriented Si
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
 Use the workspace-root `#module.sigil` for the `RootSigil` project summary.
-In a monorepo workspace, a declared workspace member may also have a
-`RootSigil` at its member root. Internal contracts use descriptive `.sigil`
-filenames colocated with their implementation and are imported by explicit
-filename.
+In a monorepo workspace, declaring a workspace member permits a `RootSigil` at
+its member root but does not require one. A member without `#module.sigil`
+remains valid, but a directory import to that member reports an unresolved
+import path because no project contract is available. Internal contracts use
+descriptive `.sigil` filenames colocated with their implementation and are
+imported by explicit filename.
 
 ### RootSigil
 

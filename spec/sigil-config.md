@@ -42,6 +42,8 @@ Sigil workspace members.
 
 The workspace root is always the root project location. Each declared member
 path is an additional project root where `#module.sigil` is permitted.
+Membership does not require `#module.sigil`; a member without one remains
+valid but cannot provide a project contract through a directory import.
 `files.include` and `files.exclude` control source discovery; they do not
 declare projects or authorize RootSigil locations.
 
