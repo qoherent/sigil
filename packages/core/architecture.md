@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Owner:** _TBD_
-**Last updated:** 2026-07-09
+**Last updated:** 2026-07-16
 
 This document defines the architecture style, internal modules, dependency rules, and implementation guidelines for `sigil-core`.
 Product requirements live in [spec.md](spec.md).
@@ -139,9 +139,27 @@ Responsibilities:
 
 Rules:
 
-- may depend on `model` and `resolver`;
+- may depend on `model` and consumes relationship data produced by `resolver`;
 - must not perform file IO;
 - must not parse source text.
+
+### `pipeline`
+
+Composes relationship resolution and graph construction behind the stable public
+workspace-resolution operation.
+
+Responsibilities:
+
+- call `resolver` to obtain imports, components, expansions, and diagnostics;
+- call `graph` with that intermediate resolution;
+- return the public `ResolvedSigilWorkspace` shape without exposing internal
+  stage changes to hosts.
+
+Rules:
+
+- may depend on `model`, `resolver`, and `graph`;
+- must not add independent parsing, resolution, graph, or presentation behavior;
+- must preserve the public `resolveSigilWorkspace` contract.
 
 ### `diagnostics`
 
@@ -195,17 +213,18 @@ Rules:
 
 ## 4. Dependency Direction
 
-Allowed dependency direction:
+Allowed production dependency direction:
 
 ```text
-model
-  <- diagnostics
-  <- filesystem
-  <- parser
-  <- workspace
-  <- resolver
-  <- graph
-  <- projections
+diagnostics -> model
+filesystem  -> model, path
+config      -> diagnostics, model
+parser      -> diagnostics, model
+workspace   -> config, diagnostics, filesystem, model, parser, path
+resolver    -> diagnostics, model, path
+graph       -> model
+pipeline    -> graph, model, resolver
+projections -> model
 ```
 
 More explicitly:
@@ -214,8 +233,10 @@ More explicitly:
 - `parser`, `diagnostics`, and `filesystem` may depend on `model`.
 - `workspace` may depend on `model`, `filesystem`, `parser`, and `diagnostics`.
 - `resolver` may depend on `model`, `workspace`, and `diagnostics`.
-- `graph` may depend on `model` and `resolver`.
-- `projections` may depend on `model`, `resolver`, and `graph`.
+- `graph` may depend on `model` and consumes the resolver's result contract.
+- `pipeline` may depend on `model`, `resolver`, and `graph`.
+- `projections` may depend on `model` and consume the pipeline's resolved
+  result.
 - `testing` may depend on any core module.
 
 Forbidden dependencies:

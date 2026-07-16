@@ -6,9 +6,8 @@ import type {
   ResolvedComponent,
   ResolvedImport,
   ResolvedImportName,
-  ResolvedSigilWorkspace,
   SigilDiagnostic,
-  SigilGraph,
+  SigilResolution,
   SigilWorkspace,
 } from "./model.ts";
 import { dirname, isModuleFile, joinPath, normalizePath } from "./path.ts";
@@ -23,9 +22,9 @@ interface IndexedExpand {
   readonly declaration: ExpandDeclaration;
 }
 
-export function resolveSigilWorkspace(
+export function resolveSigilRelationships(
   workspace: SigilWorkspace,
-): ResolvedSigilWorkspace {
+): SigilResolution {
   const diagnostics: SigilDiagnostic[] = [...workspace.diagnostics];
   const componentsByName = new Map<string, IndexedComponent[]>();
   const expandsByName = new Map<string, IndexedExpand[]>();
@@ -168,13 +167,10 @@ export function resolveSigilWorkspace(
     }
   }
 
-  const graph = buildGraph(resolvedImports, resolvedComponents, expandsByName);
-
   return {
     workspace,
     imports: resolvedImports,
     components: resolvedComponents,
-    graph,
     diagnostics,
   };
 }
@@ -184,43 +180,6 @@ function resolveImportPath(root: string, importPath: string): string {
     ? importPath
     : joinPath(importPath, "#module.sigil");
   return normalizePath(joinPath(root, target));
-}
-
-function buildGraph(
-  imports: readonly ResolvedImport[],
-  components: readonly ResolvedComponent[],
-  expandsByName: ReadonlyMap<string, IndexedExpand[]>,
-): SigilGraph {
-  return {
-    componentNodes: components.map((component) => ({
-      name: component.name,
-      filePath: component.filePath,
-    })),
-    fileEdges: imports
-      .filter((item) => item.targetFile !== undefined)
-      .map((item) => ({
-        from: item.sourceFile,
-        to: item.targetFile!,
-        importPath: item.declaration.path,
-      })),
-    importedComponentEdges: imports.flatMap((item) =>
-      item.targetFile === undefined ? [] : item.names
-        .filter((name) => name.component !== undefined)
-        .map((name) => ({
-          sourceFile: item.sourceFile,
-          targetFile: item.targetFile!,
-          componentName: name.name,
-          importPath: item.declaration.path,
-        }))
-    ),
-    componentExpansionEdges: components.flatMap((component) =>
-      (expandsByName.get(component.name) ?? []).map((expand) => ({
-        componentName: component.name,
-        componentFile: component.filePath,
-        expandFile: expand.filePath,
-      }))
-    ),
-  };
 }
 
 function detectImportCycles(

@@ -181,6 +181,13 @@ export interface ResolvedComponent {
   readonly expansions: CollectedExpansion;
 }
 
+export interface SigilResolution {
+  readonly workspace: SigilWorkspace;
+  readonly imports: readonly ResolvedImport[];
+  readonly components: readonly ResolvedComponent[];
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+
 export interface SigilGraph {
   readonly componentNodes: readonly ComponentNode[];
   readonly fileEdges: readonly FileDependencyEdge[];
