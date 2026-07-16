@@ -566,7 +566,7 @@ Larger examples live in:
 
 ## 12. Proposed Platform Capability: Anchors
 
-Anchors are a proposed vNext platform concept for connecting Sigil semantic lines to implementation evidence.
+Anchors are a proposed future platform concept for connecting Sigil semantic lines to implementation evidence.
 
 An anchor would not change the meaning of a Sigil line.
 It would record traceability between specification intent and implementation evidence.

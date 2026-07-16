@@ -16,7 +16,7 @@ Every CLI command, editor feature, renderer, agent context pack, and host integr
 
 Package docs:
 
-- [spec.md](spec.md): v1 product requirements and acceptance scenarios.
+- [spec.md](spec.md): version 0.1 product requirements and acceptance scenarios.
 - [architecture.md](architecture.md): architecture style, internal modules, dependency rules, and implementation guidelines.
 
 Platform context lives in [../../spec/sigil-platform-architecture.md](../../spec/sigil-platform-architecture.md).

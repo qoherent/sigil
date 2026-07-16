@@ -10,7 +10,7 @@
 
 ## 1. Decision
 
-Sigil will introduce anchors as a staged vNext platform capability.
+Sigil may introduce anchors as a staged future platform capability.
 
 An anchor is a reviewed, durable relationship between one Sigil semantic line
 and one implementation-evidence target. Targets may eventually include source
@@ -31,7 +31,7 @@ The platform will split responsibilities as follows:
 - source-language adapters own AST and symbol extraction, beginning with a
   TypeScript adapter pinned to `npm:typescript@5.9.3`;
 - `sigil-cli` exposes deterministic `sigil anchors` automation commands in its
-  vNext surface;
+  future surface;
 - host integrations may use models to interpret natural-language Sigil and
   propose anchors, but models do not accept, persist, or silently repair them;
 - humans approve every initial anchor and every ambiguous remapping.
@@ -184,7 +184,7 @@ material Sigil changes return to model-assisted and human review.
 
 ## 9. CLI Surface
 
-The staged vNext CLI adds:
+The staged future CLI adds:
 
 ```text
 sigil anchors candidates [path] --component <name> --format json

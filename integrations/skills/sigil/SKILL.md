@@ -60,7 +60,7 @@ CLI discovery order:
 1. If `sigil` is available on `PATH`, use `sigil`.
 2. Else, if the current workspace contains `packages/cli/src/main.ts`,
    invoke it with Deno from the workspace root.
-3. Else, stop and ask the user to install a compatible Sigil CLI. Version 1
+3. Else, stop and ask the user to install a compatible Sigil CLI. Version 0.1
    does not silently reinterpret a configured workspace without its required
    parser and resolver.
 

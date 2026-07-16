@@ -7,7 +7,7 @@ Integrations adapt the Sigil language, workflow, or platform to a host environme
 Current integration:
 
 - `skills/sigil`: Codex skill with agent-facing format guidance, standards-aware semantic review, incremental brownfield adoption, proposal and review gates, and implementation colocation.
-  Version 1.1.0 is distributed as a standalone repository skill and can be installed from its GitHub path with `$skill-installer`.
+  Version 0.1.0 is distributed as a standalone repository skill and can be installed from its GitHub path with `$skill-installer`.
 
 Proposed integration:
 

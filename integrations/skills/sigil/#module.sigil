@@ -8,7 +8,7 @@ component SigilSkill {
   }
 
   interface {
-    skill version = "1.1.0"
+    skill version = "0.1.0"
     distributed as integrations/skills/sigil beside its selected Sigil CLI installation
     installed by SigilCli as .agents/skills/sigil in the target repository
     loaded from .agents/skills/sigil/SKILL.md by compatible coding agents, including Codex

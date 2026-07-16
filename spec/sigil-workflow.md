@@ -66,7 +66,7 @@ Any added, removed, or changed semantic line creates another review gate.
 
 ## Proposed Anchor Workflow
 
-Anchors are a staged vNext workflow defined by
+Anchors are a staged future workflow defined by
 [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
 They do not change Sigil semantics or replace review of Sigil and code.
 

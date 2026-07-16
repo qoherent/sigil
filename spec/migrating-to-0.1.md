@@ -1,7 +1,8 @@
-# Migrating to Sigil 1.0
+# Migrating to Sigil 0.1
 
-Before v1, tools used the topmost ancestor `#module.sigil` as a root marker and
-could infer a workspace when none existed. Version 1 removes both behaviors.
+Earlier experimental tools used the topmost ancestor `#module.sigil` as a root
+marker and could infer a workspace when none existed. Version 0.1.0 removes
+both behaviors.
 
 1. Install `@qoherent/sigil` 0.1.x.
 2. Run `sigil init` at the intended workspace root, or create the documented

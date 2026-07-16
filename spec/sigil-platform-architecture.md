@@ -53,14 +53,14 @@ Platform packages:
 
 - `packages/core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
 - `packages/cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
-- `packages/indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
-- `packages/lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
+- `packages/indexer`: proposed future deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
+- `packages/lsp`: implemented pre-production language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
 
 Integrations:
 
 - `integrations/skills/sigil`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
 - `integrations/skills/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
-- `integrations/editor/vscode`: implemented v1 VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
+- `integrations/editor/vscode`: implemented pre-production VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
 
 The CLI is an automation interface.
 It may help humans during early development, but it is not the primary human product.

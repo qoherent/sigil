@@ -23,7 +23,7 @@ Deno.test("file URI conversion preserves Sigil paths", () => {
   );
 });
 
-Deno.test("initializes with the approved v1 capabilities and lifecycle", async () => {
+Deno.test("initializes with the approved 0.1 capabilities and lifecycle", async () => {
   const server = makeServer();
   const before = await server.handle(request(1, "shutdown"));
   assertEquals(errorCode(before), -32002);

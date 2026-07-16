@@ -10,7 +10,7 @@ main human UI.
 
 Package docs:
 
-- [spec.md](spec.md): v1 CLI requirements, command behavior, output contracts,
+- [spec.md](spec.md): version 0.1 CLI requirements, command behavior, output contracts,
   and acceptance scenarios.
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.

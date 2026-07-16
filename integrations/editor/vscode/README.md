@@ -1,8 +1,8 @@
 # VS Code Integration
 
-Implemented v1 VS Code extension for Sigil.
+Implemented pre-production VS Code extension for Sigil.
 
-Initial v1 responsibilities:
+Version 0.1 responsibilities:
 
 - provide `.sigil` TextMate syntax highlighting and resolver-backed component
   highlighting through LSP semantic tokens;
@@ -13,7 +13,7 @@ Initial v1 responsibilities:
 
 This integration should become the first concrete human UI for Sigil.
 
-Version 1 targets desktop and remote Node extension hosts with file-backed
+Version 0.1 targets desktop and remote Node extension hosts with file-backed
 workspaces. VS Code for the Web, virtual workspaces, telemetry, document
 mutation, and custom LSP methods remain outside the initial version.
 
@@ -28,6 +28,6 @@ npm run test:extension
 npm run package
 ```
 
-`npm run package` creates `build/sigil-vscode-1.0.0.vsix`. The manifest uses
+`npm run package` creates `build/sigil-vscode-0.1.0.vsix`. The manifest uses
 the development publisher identifier `sigil-dev`; Marketplace publication
 remains deferred until an approved publisher identity exists.

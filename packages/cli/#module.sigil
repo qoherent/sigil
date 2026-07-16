@@ -42,9 +42,9 @@ expand SigilCli {
 
   constraints {
     Every workspace-dependent JSON result includes workspaceRoot, configPath, sigilVersion, and workspaceName.
-    CLI commands do not mutate .sigil files in version 1.
+    CLI commands do not mutate .sigil files in version 0.1.0.
     install does not require or modify .sigil/config.json.
-    CLI commands are deterministic and non-interactive in version 1.
+    CLI commands are deterministic and non-interactive in version 0.1.0.
     Exit code 0 means success or warnings only.
     Exit code 1 means configuration or Sigil error diagnostics.
     Exit code 2 means invalid command usage.

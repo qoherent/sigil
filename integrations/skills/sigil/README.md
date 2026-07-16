@@ -1,6 +1,6 @@
 # Sigil Codex skill
 
-Version 1.1.0 of the standalone Sigil workflow for Codex.
+Version 0.1.0 of the standalone pre-production Sigil workflow for Codex.
 
 The skill provides one general workflow with two focused paths: conversational
 Greenfield design and initialization-first Brownfield adoption. Both discover
@@ -22,4 +22,4 @@ desired branch or commit instead of the release tag.
 The skill requires compatible Sigil CLI and core 0.1.x packages and Sigil
 0.1.0. See [compatibility.json](compatibility.json).
 
-Plugin packaging and marketplace distribution are deferred beyond v1.
+Plugin packaging and marketplace distribution are deferred beyond version 0.1.

@@ -2,18 +2,17 @@
 
 ## Unreleased
 
-- Advance the standalone Codex Sigil skill to 1.1.0 with implementation
+- Extend the standalone Codex Sigil skill 0.1.0 with implementation
   component discovery and an implementation coverage gate before coding.
 - Treat dependent-facing programming abstractions, internal APIs, state
   machines, screens, views, and reusable UI surfaces as possible components.
 - Distinguish component contracts, implementation-specific expands, and
   intentionally omitted trivial mechanics through a reviewable coverage map.
-- Implement the Sigil VS Code extension 1.0.0 in the v1 release line as the
+- Implement the pre-production Sigil VS Code extension 0.1.0 as the
   first concrete human authoring and review surface.
 - Define its initial scope as TextMate highlighting, bundled LSP integration,
   editor-native language features, and hover-backed component previews.
-- Implement `@qoherent/sigil-lsp` 0.1.0 in the v1 release line without changing the
-  original v1.0.0 release history.
+- Implement the pre-production `@qoherent/sigil-lsp` 0.1.0 package.
 - Define the initial LSP 3.18 package contract for stdio lifecycle, full
   document synchronization, diagnostics, document symbols, definition
   navigation, hover, and resolver-backed semantic highlighting.
@@ -39,10 +38,10 @@
 - Run `sigil init` before Brownfield discovery, establish and review RootSigil
   through evidence plus conversation, and only then focus on the requested task.
 
-## 1.0.0 - 2026-07-13
+## 0.1.0 - 2026-07-13
 
-- Publish Sigil Language 1.0.0.
-- Add mandatory strict `.sigil/config.json` schema 1.0.0 and config-based discovery.
+- Publish the pre-production Sigil Language 0.1.0.
+- Add mandatory strict `.sigil/config.json` schema 0.1.0 and config-based discovery.
 - Allow independent nested workspaces only when their subtrees are excluded by configured parents.
 - Configure Promise and Slotted as independent example projects.
 - Release `@qoherent/sigil-core` and `@qoherent/sigil` 0.1.0.

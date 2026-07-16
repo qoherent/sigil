@@ -50,8 +50,8 @@ requireText(
 );
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "1.1.0") {
-  throw new Error(`Expected skill VERSION 1.1.0, got ${version}`);
+if (version !== "0.1.0") {
+  throw new Error(`Expected skill VERSION 0.1.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -59,7 +59,7 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "1.1.0",
+    skillVersion: "0.1.0",
     cliVersion: "^0.1.0",
     coreVersion: "^0.1.0",
     sigilVersion: "0.1.0",
@@ -317,7 +317,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 1.1.0 structure, compatibility, gates, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.1.0 structure, compatibility, gates, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {
