@@ -1,6 +1,8 @@
 import {
+  type CollectedExpansion,
   collectedExpansionFor,
   componentContracts,
+  type ComponentContractView,
   DEFAULT_SIGIL_EXCLUDES,
   DEFAULT_SIGIL_INCLUDES,
   diagnostic,
@@ -11,8 +13,12 @@ import {
   resolveSigilWorkspace,
   SIGIL_CONFIG_PATH,
   SIGIL_VERSION,
+  type SigilConfig,
+  type SigilDiagnostic,
+  type SigilDocument,
   type SigilFileSystem,
   type SigilWorkspace,
+  type WorkspaceDiscoveryResult,
 } from "@qoherent/sigil-core";
 import { DenoSigilFileSystem, joinPath, normalizePath } from "./fs-adapter.ts";
 import metadata from "../deno.json" with { type: "json" };
@@ -29,6 +35,24 @@ export interface CoreAdapterOptions {
   readonly currentDirectory?: string;
 }
 
+export interface ParseFileResult {
+  readonly discovery: WorkspaceDiscoveryResult;
+  readonly document: SigilDocument | null;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+
+export interface InitConfigResult {
+  readonly root: string;
+  readonly configPath: string;
+  readonly config: SigilConfig | null;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+
+export interface VersionInfo {
+  readonly cliVersion: string;
+  readonly coreVersion: string;
+}
+
 export class CoreAdapter {
   readonly #fs: SigilFileSystem;
   readonly #currentDirectory: string;
@@ -40,7 +64,10 @@ export class CoreAdapter {
     );
   }
 
-  async parseFile(path: string, explicitRoot?: string) {
+  async parseFile(
+    path: string,
+    explicitRoot?: string,
+  ): Promise<ParseFileResult> {
     const filePath = this.resolveTarget(path);
     const discovery = await discoverSigilWorkspace(this.#fs, {
       startPath: filePath,
@@ -84,7 +111,7 @@ export class CoreAdapter {
     name: string | undefined,
     include: readonly string[],
     exclude: readonly string[],
-  ) {
+  ): Promise<InitConfigResult> {
     const root = this.resolveTarget(path ?? this.#currentDirectory);
     const configPath = joinPath(root, SIGIL_CONFIG_PATH);
     if (await this.#fs.exists(configPath)) {
@@ -127,19 +154,21 @@ export class CoreAdapter {
     return { root, configPath, config, diagnostics: [] };
   }
 
-  versions() {
+  versions(): VersionInfo {
     return {
       cliVersion: SIGIL_CLI_VERSION,
       coreVersion: SIGIL_VERSION,
     };
   }
-  componentContracts(resolved: ResolvedSigilWorkspace) {
+  componentContracts(
+    resolved: ResolvedSigilWorkspace,
+  ): readonly ComponentContractView[] {
     return componentContracts(resolved);
   }
   collectedExpansionFor(
     resolved: ResolvedSigilWorkspace,
     componentName: string,
-  ) {
+  ): CollectedExpansion | undefined {
     return collectedExpansionFor(resolved, componentName);
   }
   normalizePath(path: string): string {
