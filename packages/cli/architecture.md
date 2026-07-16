@@ -267,7 +267,7 @@ Do not add mutation or formatting commands in version 0.1.
 
 ## 9. Proposed Future Anchor Extension
 
-After ADR-010 approval, `sigil-cli` may depend on `sigil-indexer` through a
+After ADR-011 approval, `sigil-cli` may depend on `sigil-indexer` through a
 separate `indexer-adapter`. Existing Sigil parsing and resolution continue
 through `core-adapter`.
 

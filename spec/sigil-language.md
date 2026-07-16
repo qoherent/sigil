@@ -589,7 +589,9 @@ Anchors are intended to provide:
 - signals when code and Sigil drift apart;
 - support for future code/spec synchronization workflows.
 
-The proposed design and remaining decisions are recorded in [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+The proposed anchor design is consolidated with generated Receipts, readiness,
+evidence, and review records in
+[ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 The capability remains unavailable until that ADR and the colocated Sigil contracts pass review and implementation is complete.
 
 ## 13. Unresolved Language Questions

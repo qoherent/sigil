@@ -51,7 +51,7 @@ Version 0.1 must not implement:
 - generated diagrams;
 - import aliases, re-exports, or wildcard imports.
 
-Anchors remain outside `sigil-core`. The proposed future design in ADR-010 adds
+Anchors remain outside `sigil-core`. The proposed future design in ADR-011 adds
 them through a separate deterministic `sigil-indexer` package that consumes
 core semantic-line and workspace models.
 

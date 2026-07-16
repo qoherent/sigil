@@ -1,12 +1,16 @@
 # ADR-009: Sigil Readiness And Model Boundary
 
-**Status:** Exploratory
+**Status:** Superseded by ADR-011
 
 **Owner:** _TBD_
 
 **Reviewers:** _TBD_
 
 **Last updated:** 2026-07-10
+
+> This exploratory record is preserved for history. Its readiness boundary,
+> alternatives, and experiments are consolidated into
+> [ADR-011: Generated Rationale, Evidence, And Review Records](adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## 1. Purpose
 

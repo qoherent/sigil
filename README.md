@@ -37,7 +37,9 @@ The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.m
 
 The Sigil platform architecture is drafted in [spec/sigil-platform-architecture.md](spec/sigil-platform-architecture.md).
 
-The current exploration of semantic readiness and model ownership is recorded in [ADR-009](spec/decisions/adr-009-sigil-readiness-and-model-boundary.md).
+The proposed architecture for semantic readiness, generated Receipts, evidence,
+anchors, and human review is recorded in
+[ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## Language Shape
 
@@ -170,11 +172,18 @@ standard hover responses.
 
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
 The skill also discovers coherent implementation and UI components, distinguishes component contracts from implementation-specific expands and trivial mechanics, and requires an implementation coverage map before coding.
-The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
+The proposed boundary keeps deterministic facts in shared packages and
+model-assisted interpretation in attributed host contributions, as described in
+ADR-011.
 
 Editor integrations other than VS Code, stricter body semantics, project
 configuration, and code-generation integrations remain deferred.
 
-Anchors are now a proposed future capability: reviewed trace links between Sigil semantic lines and implementation evidence.
-[ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.
-The proposal does not add inline Sigil syntax and is not implemented until its ADR and colocated Sigil contracts are approved.
+Receipts and anchors are proposed future capabilities: Receipts explain how
+semantic lines were interpreted and checked, while anchors provide reviewed
+trace links to implementation evidence.
+[ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md)
+proposes deterministic shared packages, attributed host-assisted interpretation,
+a future `sigil-indexer`, and generated review records without adding inline
+Sigil syntax. The proposal is not implemented until ADR-011 and its colocated
+Sigil contracts are approved.

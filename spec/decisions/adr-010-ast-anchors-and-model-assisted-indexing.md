@@ -1,12 +1,16 @@
 # ADR-010: AST Anchors And Model-Assisted Indexing
 
-**Status:** Proposed
+**Status:** Superseded by ADR-011
 
 **Owner:** _TBD_
 
 **Reviewers:** _TBD_
 
 **Last updated:** 2026-07-13
+
+> This proposal is preserved for history. Its anchor, evidence, provenance, and
+> reconciliation decisions are consolidated into
+> [ADR-011: Generated Rationale, Evidence, And Review Records](adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## 1. Decision
 

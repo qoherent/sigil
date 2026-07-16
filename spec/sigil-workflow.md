@@ -38,7 +38,9 @@ Semantic review includes:
 - qualitative cohesion, ownership, interface size, coupling, dependency direction, and state ownership;
 - applicable standards, official guidance, and implementation pitfalls.
 
-The long-term boundary between deterministic readiness in core and model-assisted host orchestration remains exploratory in [ADR-009](decisions/adr-009-sigil-readiness-and-model-boundary.md).
+The proposed boundary between deterministic readiness facts, attributed
+host-assisted interpretation, generated Receipts, and human approval is defined
+in [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## Proposal And Review Gates
 
@@ -66,8 +68,9 @@ Any added, removed, or changed semantic line creates another review gate.
 
 ## Proposed Anchor Workflow
 
-Anchors are a staged future workflow defined by
-[ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+Anchors are a staged future workflow consolidated with generated Receipts and
+review evidence in
+[ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 They do not change Sigil semantics or replace review of Sigil and code.
 
 The proposed flow is:

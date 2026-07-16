@@ -285,7 +285,7 @@ Do not add interactive prompts in version 0.1.
 
 ## 12. Proposed Future Anchor Commands
 
-After ADR-010 and the AnchorIndexer Sigil contract are approved, the CLI may
+After ADR-011 and the AnchorIndexer Sigil contract are approved, the CLI may
 depend on `sigil-indexer` and add a nested `anchors` command group.
 
 ### `sigil anchors candidates [path] --component <name>`
