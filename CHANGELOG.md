@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add standalone CLI archives for macOS ARM64/x86_64, Linux ARM64/x86_64,
+  and Windows x86_64, with versioned GitHub Release automation.
+- Add checksum-verifying shell and PowerShell installers that require no Deno
+  or Node.js runtime on destination machines.
+- Replace `sigil install` with `sigil skill list` and `sigil skill install`,
+  using global multi-agent installation by default and `--project` for local
+  installation.
+- Support Codex, Claude Code, OpenCode, and Pi skill locations, including
+  managed upgrades, conflict preflight, and a Windows copy fallback.
+- Publish the packaged VS Code VSIX through versioned GitHub Releases while
+  Marketplace distribution remains deferred.
 - Extend the standalone Codex Sigil skill 0.1.0 with implementation
   component discovery and an implementation coverage gate before coding.
 - Treat dependent-facing programming abstractions, internal APIs, state

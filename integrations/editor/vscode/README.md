@@ -31,3 +31,11 @@ npm run package
 `npm run package` creates `build/sigil-vscode-0.1.0.vsix`. The manifest uses
 the development publisher identifier `sigil-dev`; Marketplace publication
 remains deferred until an approved publisher identity exists.
+
+Tagged `vscode-vX.Y.Z` releases package the extension and attach the VSIX to a
+GitHub Release. Install a downloaded package with **Extensions: Install from
+VSIX...** in VS Code or:
+
+```bash
+code --install-extension sigil-vscode-0.1.0.vsix
+```

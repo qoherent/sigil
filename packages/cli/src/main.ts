@@ -8,7 +8,8 @@ import metadata from "../deno.json" with { type: "json" };
 const HELP = `Usage: sigil <command> [path] [options]
 
 Commands:
-  install           Link bundled skills into .agents/skills
+  skill list        List bundled agent skills
+  skill install     Install bundled skills globally (use --project for this repository)
   init [path]       Create a workspace configuration
   version [path]    Report workspace and contract versions
   parse <file>      Parse one Sigil file
@@ -24,6 +25,8 @@ Options:
   --format <value>  Output json, text, or markdown
   --pretty          Pretty-print JSON output
   --quiet           Suppress command output
+  --project         Install skills into the current repository
+  --agent <value>   Install for codex, claude, opencode, pi, or all
 `;
 
 export interface CliRunResult {

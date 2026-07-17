@@ -18,6 +18,7 @@
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
     "test": "deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill",
     "package:vscode": "npm --prefix integrations/editor/vscode run package",
+    "package:cli": "deno run --allow-read --allow-write --allow-run scripts/build-cli-release.ts",
     "publish:dry-run": "deno task --cwd packages/core publish:dry-run && deno task --cwd packages/cli publish:dry-run && deno task --cwd packages/lsp publish:dry-run && deno task package:vscode"
   }
 }

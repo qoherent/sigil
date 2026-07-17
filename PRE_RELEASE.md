@@ -32,3 +32,8 @@ persistent approval records. Human approval is session-scoped.
 Pre-release acceptance requires formatting, lint, type checks, core, CLI, LSP, and
 VS Code extension tests, skill validation, JSR dry runs, VSIX packaging, and the
 documented brownfield pilot to pass.
+
+Native CLI release acceptance also requires all five supported archives to
+compile, contain the version-matched Sigil skill, pass SHA-256 verification, and
+run a native executable smoke test. GitHub-hosted VS Code releases require a
+version-matched installable VSIX; Marketplace publication remains deferred.

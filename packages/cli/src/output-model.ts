@@ -9,7 +9,8 @@ import type {
 } from "@qoherent/sigil-core";
 
 export type CommandResult =
-  | InstallCommandResult
+  | SkillListCommandResult
+  | SkillInstallCommandResult
   | InitCommandResult
   | VersionCommandResult
   | ParseCommandResult
@@ -22,15 +23,29 @@ export interface DiagnosticCounts {
   readonly warning: number;
   readonly info: number;
 }
-export interface InstallCommandResult {
-  readonly command: "install";
+export interface SkillListCommandResult {
+  readonly command: "skill-list";
   readonly sourceDirectory: string;
-  readonly targetDirectory: string;
+  readonly skills: readonly string[];
+  readonly supportedAgents: readonly string[];
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+export interface SkillInstallCommandResult {
+  readonly command: "skill-install";
+  readonly scope: "global" | "project";
+  readonly agents: readonly string[];
+  readonly sourceDirectory: string;
   readonly skills: readonly {
     readonly name: string;
+    readonly agents: readonly string[];
     readonly source: string;
-    readonly link: string;
-    readonly status: "created" | "existing";
+    readonly target: string;
+    readonly status:
+      | "installed"
+      | "updated"
+      | "existing"
+      | "copied"
+      | "conflicted";
   }[];
   readonly diagnostics: readonly SigilDiagnostic[];
 }

@@ -1,5 +1,5 @@
 export type CommandName =
-  | "install"
+  | "skill"
   | "init"
   | "version"
   | "parse"
@@ -8,6 +8,7 @@ export type CommandName =
   | "context"
   | "render";
 export type OutputFormat = "json" | "text" | "markdown";
+export type SkillAgent = "codex" | "claude" | "opencode" | "pi";
 
 export interface GlobalOptions {
   readonly root?: string;
@@ -17,7 +18,8 @@ export interface GlobalOptions {
 }
 
 export type CommandRequest =
-  | InstallRequest
+  | SkillListRequest
+  | SkillInstallRequest
   | InitRequest
   | VersionRequest
   | ParseRequest
@@ -25,8 +27,13 @@ export type CommandRequest =
   | GraphRequest
   | ContextRequest
   | RenderRequest;
-export interface InstallRequest extends GlobalOptions {
-  readonly command: "install";
+export interface SkillListRequest extends GlobalOptions {
+  readonly command: "skill-list";
+}
+export interface SkillInstallRequest extends GlobalOptions {
+  readonly command: "skill-install";
+  readonly project: boolean;
+  readonly agents: readonly SkillAgent[];
 }
 export interface InitRequest extends GlobalOptions {
   readonly command: "init";
@@ -81,7 +88,7 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   const [commandName, ...rest] = argv;
   if (!isCommand(commandName)) {
     return usage(
-      "Expected command: install, init, version, parse, check, graph, context, or render.",
+      "Expected command: skill, init, version, parse, check, graph, context, or render.",
     );
   }
 
@@ -95,6 +102,8 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   let name: string | undefined;
   const include: string[] = [];
   const exclude: string[] = [];
+  let project = false;
+  let agent: SkillAgent | "all" | undefined;
 
   for (let index = 0; index < rest.length; index++) {
     const arg = rest[index];
@@ -126,6 +135,18 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       case "--quiet":
         quiet = true;
         break;
+      case "--project":
+        project = true;
+        break;
+      case "--agent": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        if (!isSkillAgent(value) && value !== "all") {
+          return usage("--agent must be codex, claude, opencode, pi, or all.");
+        }
+        agent = value;
+        break;
+      }
       case "--component": {
         const value = take(arg);
         if (typeof value !== "string") return value;
@@ -169,12 +190,32 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   if (commandName !== "init" && (name || include.length || exclude.length)) {
     return usage(`${commandName} does not accept init options.`);
   }
-  if (commandName === "install") {
-    if (root) return usage("install does not accept --root.");
-    if (positional.length > 0) return usage("install does not accept a path.");
+  if (commandName !== "skill" && (project || agent)) {
+    return usage(`${commandName} does not accept skill options.`);
+  }
+  if (commandName === "skill") {
+    if (root) return usage("skill commands do not accept --root.");
+    if (
+      positional.length !== 1 || !["list", "install"].includes(positional[0])
+    ) {
+      return usage("skill requires exactly one subcommand: list or install.");
+    }
+    if (positional[0] === "list") {
+      if (project || agent) {
+        return usage("skill list does not accept installation options.");
+      }
+      return { kind: "ok", request: { command: "skill-list", ...base } };
+    }
     return {
       kind: "ok",
-      request: { command: "install", ...base },
+      request: {
+        command: "skill-install",
+        project,
+        agents: !agent || agent === "all"
+          ? ["codex", "claude", "opencode", "pi"]
+          : [agent],
+        ...base,
+      },
     };
   }
   if (commandName === "init") {
@@ -247,10 +288,14 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
 }
 
 function isCommand(value: string | undefined): value is CommandName {
-  return value === "install" || value === "init" || value === "version" ||
+  return value === "skill" || value === "init" || value === "version" ||
     value === "parse" ||
     value === "check" || value === "graph" || value === "context" ||
     value === "render";
+}
+function isSkillAgent(value: string): value is SkillAgent {
+  return value === "codex" || value === "claude" || value === "opencode" ||
+    value === "pi";
 }
 function isFormat(value: string): value is OutputFormat {
   return value === "json" || value === "text" || value === "markdown";

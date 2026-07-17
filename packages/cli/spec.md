@@ -105,17 +105,22 @@ Warnings alone should not produce exit code `1`.
 
 ## 7. Commands
 
-### `sigil install`
+### `sigil skill list` and `sigil skill install`
 
-Enumerates every immediate directory in the running Sigil installation's
-`integrations/skills` directory. For each entry, it creates a directory symlink
-with the same name in `.agents/skills` under the current working directory.
+`skill list` enumerates immediate directories containing `SKILL.md` in the
+running Sigil installation's `integrations/skills` directory without changing
+the filesystem.
 
-The command creates `.agents/skills/.gitignore` when needed and adds one ignore
-entry for every managed symlink. Existing unrelated ignore rules are preserved.
-Running the command repeatedly is idempotent when links already target the
-installed skills. It must refuse to replace an existing file, directory, or
-symlink with a different target.
+`skill install` installs globally by default. Codex, OpenCode, and Pi share
+`~/.agents/skills`; Claude Code uses `~/.claude/skills`. `--project` selects the
+equivalent locations under the current repository. `--agent` limits the target
+to one supported agent.
+
+Project installation creates skill-directory `.gitignore` entries. Existing
+unrelated ignore rules are preserved. Installation records managed destinations
+so a later selected CLI version can update them while refusing to replace
+unmanaged files, directories, or links. Relative directory links are preferred;
+a managed copy is used when the host does not permit directory links.
 
 The installed skill source is resolved from the running CLI installation, not
 from the target repository. A versioned binary distribution should place the
@@ -123,10 +128,9 @@ binary at `<version>/bin/sigil` and its skills at
 `<version>/integrations/skills`. Source-based development installs may resolve
 the repository's top-level `integrations/skills` directory.
 
-The command accepts no positional path; the target repository is `Deno.cwd()`.
-It uses host-native relative symlinks and supplies the directory link type
-required by Windows. CLI workspace discovery does not traverse symlink entries,
-so installed skills are not loaded as duplicate workspace sources.
+Skill commands accept no positional path beyond `list` or `install` and do not
+accept `--root`. CLI workspace discovery does not traverse symlink entries, so
+linked project skills are not loaded as duplicate workspace sources.
 
 ### `sigil parse <file>`
 

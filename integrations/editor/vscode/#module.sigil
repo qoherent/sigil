@@ -8,6 +8,7 @@ component SigilVsCodeExtension {
 
   interface {
     publishes the pre-production Sigil VS Code extension 0.1.0
+    distributed initially as an installable VSIX attached to a versioned GitHub Release
     registers the sigil language for .sigil files
     provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component names
     starts a bundled SigilLsp-compatible server through vscode-languageclient
@@ -45,6 +46,8 @@ expand SigilVsCodeExtension {
     VS Code for the Web and virtual workspaces remain outside the initial version.
     Version 0.1.0 collects no telemetry and does not modify Sigil documents.
     A development publisher identifier is used until an approved Marketplace publisher identity exists.
+    Initial distribution does not require Visual Studio Marketplace or Open VSX access.
+    The packaged VSIX version matches the extension manifest and GitHub release tag.
   }
 
   cases {
@@ -56,5 +59,6 @@ expand SigilVsCodeExtension {
     Running the preview command without an active Sigil component leaves editors unchanged and shows an informational message.
     A missing or failed bundled server produces visible output and an error message without crashing VS Code.
     Deactivating the extension stops the language client and server process.
+    A user downloads the VSIX from GitHub Releases and installs it through VS Code Install from VSIX.
   }
 }

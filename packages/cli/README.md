@@ -15,10 +15,22 @@ Package docs:
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
 
-Install the published CLI:
+Install a standalone GitHub release on macOS or Linux:
 
 ```bash
-deno install --global --allow-read --allow-write --name sigil jsr:@qoherent/sigil@0.1
+curl -fsSL https://github.com/qoherent/sigil/releases/latest/download/install.sh | sh
+```
+
+Install on Windows PowerShell:
+
+```powershell
+irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
+```
+
+Alternatively, install the published JSR package when Deno is available:
+
+```bash
+deno install --global --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil jsr:@qoherent/sigil@0.1
 ```
 
 Local development install:
@@ -31,7 +43,7 @@ This installs a `sigil` command that can be discovered on `PATH`.
 
 Implemented responsibilities:
 
-- link version-owned agent skills into a target repository;
+- install version-owned agent skills globally or into a target repository;
 - expose parser output;
 - run workspace checks;
 - produce agent-oriented context packs;
@@ -40,8 +52,11 @@ Implemented responsibilities:
 
 Commands:
 
-- `sigil install` links every installed `integrations/skills/*` directory into
-  the current repository's `.agents/skills/` and gitignores those links;
+- `sigil skill list` reports bundled directories containing `SKILL.md`;
+- `sigil skill install` installs skills globally for Codex, Claude Code,
+  OpenCode, and Pi;
+- `sigil skill install --project` installs into the current repository;
+- `sigil skill install --agent <name>` limits installation to one agent;
 - `sigil init [path]` creates a config without overwriting;
 - `sigil version [path]` reports tool and configured contract versions;
 - `sigil parse <path>` returns parsed JSON;
@@ -53,7 +68,7 @@ Commands:
 The CLI returns exit code `0` for success or warnings, `1` for error diagnostics, `2` for usage errors, and `3` for host/runtime failures.
 Use JSON output for automation; human text and Markdown are convenience projections.
 
-A versioned binary distribution should place its assets at
+Versioned binary distributions place assets at
 `<version>/integrations/skills` beside `<version>/bin/sigil`. This keeps each
 binary paired with the language semantics and skills shipped for that version.
 

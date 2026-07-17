@@ -17,6 +17,42 @@ It gives reviewers and future maintainers a compact place to understand purpose,
 
 The problem statement is captured in [PROBLEM.md](PROBLEM.md).
 
+## Install The CLI
+
+Sigil publishes standalone, unsigned prerelease executables through GitHub
+Releases. Deno and Node.js are not required on the destination machine.
+
+macOS or Linux:
+
+```bash
+curl -fsSL https://github.com/qoherent/sigil/releases/latest/download/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
+```
+
+Set `SIGIL_VERSION` to install a specific release. To inspect an installer
+before running it, download the script first instead of piping it directly to a
+shell. Every archive is verified against the release's SHA-256 manifest before
+installation.
+
+Install the bundled Sigil skill globally for Codex, Claude Code, OpenCode, and
+Pi:
+
+```bash
+sigil skill install
+```
+
+Use `sigil skill install --project` for repository-local installation, or
+`--agent codex|claude|opencode|pi` to target one agent.
+
+VS Code extension releases are currently available as manually installable
+`.vsix` files on the [GitHub Releases page](https://github.com/qoherent/sigil/releases).
+Marketplace publishing remains deferred.
+
 ## How It Works
 
 Sigil is documentation-first.
