@@ -1,9 +1,9 @@
 # sigil-core Requirements
 
-**Status:** Accepted for 1.0.0
+**Status:** Accepted for 0.1.0
 **Last updated:** 2026-07-13
 
-This document defines the v1 product requirements for `sigil-core`.
+This document defines the 0.1 product requirements for `sigil-core`.
 Architecture style, module boundaries, and dependency rules live in [architecture.md](architecture.md).
 
 ## 1. Purpose
@@ -12,9 +12,9 @@ Architecture style, module boundaries, and dependency rules live in [architectur
 
 It must give CLI, LSP, editor integrations, renderers, agent context builders, and tests one consistent way to understand Sigil.
 
-## 2. V1 Scope
+## 2. Version 0.1 Scope
 
-V1 is the parser and resolver foundation.
+Version 0.1 is the parser and resolver foundation.
 
 It must:
 
@@ -37,7 +37,7 @@ It must:
 
 ## 3. Out Of Scope
 
-V1 must not implement:
+Version 0.1 must not implement:
 
 - CLI argument parsing;
 - LSP transport;
@@ -51,7 +51,7 @@ V1 must not implement:
 - generated diagrams;
 - import aliases, re-exports, or wildcard imports.
 
-Anchors remain outside `sigil-core`. The proposed vNext design in ADR-010 adds
+Anchors remain outside `sigil-core`. The proposed future design in ADR-011 adds
 them through a separate deterministic `sigil-indexer` package that consumes
 core semantic-line and workspace models.
 
@@ -134,7 +134,7 @@ Malformed Sigil should produce partial models plus diagnostics.
 
 `sigil-core` should fail only when the host-provided filesystem boundary itself cannot satisfy an operation required by the requested API.
 
-V1 diagnostics must include stable codes for:
+Version 0.1 diagnostics must include stable codes for:
 
 - parse structure errors;
 - unknown section;
@@ -171,7 +171,7 @@ Imported names must resolve to matching `component Name` declarations.
 
 ## 9. Acceptance Scenarios
 
-V1 is acceptable when tests demonstrate that `sigil-core` can:
+Version 0.1 is acceptable when tests demonstrate that `sigil-core` can:
 
 - parse `examples/promise/promise.sigil`;
 - preserve semantic lines with owner, section, text, file, and source range;

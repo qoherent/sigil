@@ -16,7 +16,6 @@ import type {
 import { parseSigilDocument } from "./parser.ts";
 import {
   ancestorsFrom,
-  basename,
   dirname,
   isModuleFile,
   joinPath,

@@ -10,8 +10,8 @@ Expected skill behavior:
 
 1. Treat conversation as the first design activity even though the request names
    a service, channel, and API style.
-2. Ask multiple manageable rounds of materially useful questions that build on
-   the user's answers.
+2. Use the shared design conversation, asking one primary decision per turn and
+   acknowledging how each answer changes the emerging contract.
 3. Explore purpose, users or callers, desired outcomes, boundaries,
    non-responsibilities, lifecycle, failure behavior, permissions, and
    verification.
@@ -20,14 +20,15 @@ Expected skill behavior:
 5. Present concrete synchronous, queued, and event-driven choices with
    consequences and tradeoffs, plus a reasoned recommendation.
 6. Let the user combine, reject, revise, or replace every presented choice.
-7. Continue conversation until contract-level decisions are clear enough to
-   model without guessing.
+7. Maintain decision states and continue until no unresolved decision can
+   materially change the contract.
 8. Establish the smallest coherent component boundaries from agreed intent.
 9. Apply semantic-readiness, standards, coherence, and modularity review.
 10. Synthesize conversation and review findings into exact proposed Sigil and
     request confirmation.
-11. Write only approved Sigil, validate it, and stop at the semantic review gate.
-12. Treat the missing Sigil coverage as a reason to collaborate with the user
-    on the affected Sigil before adding implementation.
+11. Write only approved Sigil, validate it, and stop at the semantic review
+    gate.
+12. Treat the missing Sigil coverage as a reason to collaborate with the user on
+    the affected Sigil before adding implementation.
 13. Implement only after the written Sigil is approved and implementation is
     explicitly requested.

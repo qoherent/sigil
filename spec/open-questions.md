@@ -33,5 +33,6 @@ This file tracks unresolved language and workflow decisions.
 - Should standards sources remain in review summaries or gain a durable repository representation?
 - How should multiple hosts produce comparable semantic-readiness findings without sharing one model or prompt?
 
-The broader readiness and model-boundary questions are tracked in [ADR-009](decisions/adr-009-sigil-readiness-and-model-boundary.md).
-The proposed anchor architecture and its deferred questions are tracked in [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+The proposed Receipt, readiness, model-boundary, anchor, evidence, and approval
+architecture and its deferred questions are tracked together in
+[ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).

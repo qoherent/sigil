@@ -1,6 +1,10 @@
 import type { CommandRequest, ContextRequest } from "./args.ts";
 import { CoreAdapter } from "./core-adapter.ts";
-import { installSkills, type InstallSkillsOptions } from "./installer.ts";
+import {
+  installSkills,
+  type InstallSkillsOptions,
+  listInstalledSkills,
+} from "./installer.ts";
 import {
   type CommandResult,
   diagnosticCounts,
@@ -16,9 +20,22 @@ export async function runCommand(
   request: CommandRequest,
   options: CommandHandlerOptions = {},
 ): Promise<CommandResult> {
-  if (request.command === "install") {
-    const result = await installSkills(options.install);
-    return { command: "install", ...result, diagnostics: [] };
+  if (request.command === "skill-list") {
+    const result = await listInstalledSkills(options.install?.sourceDirectory);
+    return {
+      command: "skill-list",
+      ...result,
+      supportedAgents: ["codex", "claude", "opencode", "pi"],
+      diagnostics: [],
+    };
+  }
+  if (request.command === "skill-install") {
+    const result = await installSkills({
+      ...options.install,
+      scope: request.project ? "project" : "global",
+      agents: request.agents,
+    });
+    return { command: "skill-install", ...result, diagnostics: [] };
   }
   const core = options.core ?? new CoreAdapter();
   if (request.command === "init") {

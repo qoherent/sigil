@@ -17,6 +17,42 @@ It gives reviewers and future maintainers a compact place to understand purpose,
 
 The problem statement is captured in [PROBLEM.md](PROBLEM.md).
 
+## Install The CLI
+
+Sigil publishes standalone, unsigned prerelease executables through GitHub
+Releases. Deno and Node.js are not required on the destination machine.
+
+macOS or Linux:
+
+```bash
+curl -fsSL https://github.com/qoherent/sigil/releases/latest/download/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
+```
+
+Set `SIGIL_VERSION` to install a specific release. To inspect an installer
+before running it, download the script first instead of piping it directly to a
+shell. Every archive is verified against the release's SHA-256 manifest before
+installation.
+
+Install the bundled Sigil skill globally for Codex, Claude Code, OpenCode, and
+Pi:
+
+```bash
+sigil skill install
+```
+
+Use `sigil skill install --project` for repository-local installation, or
+`--agent codex|claude|opencode|pi` to target one agent.
+
+VS Code extension releases are currently available as manually installable
+`.vsix` files on the [GitHub Releases page](https://github.com/qoherent/sigil/releases).
+Marketplace publishing remains deferred.
+
 ## How It Works
 
 Sigil is documentation-first.
@@ -37,7 +73,9 @@ The full workflow is described in [spec/sigil-workflow.md](spec/sigil-workflow.m
 
 The Sigil platform architecture is drafted in [spec/sigil-platform-architecture.md](spec/sigil-platform-architecture.md).
 
-The current exploration of semantic readiness and model ownership is recorded in [ADR-009](spec/decisions/adr-009-sigil-readiness-and-model-boundary.md).
+The proposed architecture for semantic readiness, generated Receipts, evidence,
+anchors, and human review is recorded in
+[ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## Language Shape
 
@@ -98,8 +136,8 @@ binding architecture decisions.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core`, `sigil-cli`, and v1 `sigil-lsp`, plus the proposed vNext `sigil-indexer`.
-- `integrations/` contains host-specific adapters such as the Codex skills, the implemented v1 VS Code extension, and future editor integrations.
+- `packages/` contains the implemented `sigil-core`, `sigil-cli`, and initial `sigil-lsp`, plus the proposed future `sigil-indexer`.
+- `integrations/` contains host-specific adapters such as the Codex skills, the initial VS Code extension, and future editor integrations.
 
 ## Examples
 
@@ -145,9 +183,8 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-Sigil, `@qoherent/sigil-core`, and `@qoherent/sigil` are versioned at 0.1.0.
-The independently versioned standalone Codex skill is at 1.1.0.
-See [V1.md](V1.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-v1.md).
+All published Sigil artifacts are pre-production and versioned at 0.1.0.
+See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.1.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
@@ -158,12 +195,12 @@ filtering, source ranges and semantic lines, import and component resolution,
 and stable diagnostics.
 `sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
-`sigil-lsp` is an implemented v1 release-line deliverable. Its initial contract
+`sigil-lsp` is an implemented pre-production deliverable. Its initial contract
 covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
 symbols, definition navigation, hover, and resolver-backed semantic highlighting
 over a stdio transport.
 
-The Sigil VS Code extension is an implemented v1 release-line deliverable. Its
+The Sigil VS Code extension is an implemented pre-production deliverable. Its
 initial contract covers TextMate syntax highlighting, bundled LSP startup,
 resolver-backed component highlighting through LSP semantic tokens,
 editor-native language features, and a read-only component preview derived from
@@ -171,11 +208,18 @@ standard hover responses.
 
 Semantic readiness, standards research, brownfield reconciliation, proposal gates, and implementation colocation currently live in the Codex skill rather than `sigil-core`.
 The skill also discovers coherent implementation and UI components, distinguishes component contracts from implementation-specific expands and trivial mechanics, and requires an implementation coverage map before coding.
-The boundary for future deterministic readiness and optional model orchestration remains exploratory in ADR-009.
+The proposed boundary keeps deterministic facts in shared packages and
+model-assisted interpretation in attributed host contributions, as described in
+ADR-011.
 
 Editor integrations other than VS Code, stricter body semantics, project
 configuration, and code-generation integrations remain deferred.
 
-Anchors are now a proposed vNext capability: reviewed trace links between Sigil semantic lines and implementation evidence.
-[ADR-010](spec/decisions/adr-010-ast-anchors-and-model-assisted-indexing.md) proposes a deterministic `sigil-indexer`, a TypeScript-first AST adapter, a committed `.sigil/anchors.json` sidecar, and host-side model assistance for natural-language matching.
-The proposal does not add inline Sigil syntax and is not implemented until its ADR and colocated Sigil contracts are approved.
+Receipts and anchors are proposed future capabilities: Receipts explain how
+semantic lines were interpreted and checked, while anchors provide reviewed
+trace links to implementation evidence.
+[ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md)
+proposes deterministic shared packages, attributed host-assisted interpretation,
+a future `sigil-indexer`, and generated review records without adding inline
+Sigil syntax. The proposal is not implemented until ADR-011 and its colocated
+Sigil contracts are approved.

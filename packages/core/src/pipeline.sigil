@@ -1,0 +1,27 @@
+@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
+@packages/core/src/filesystem.sigil import { SigilFileSystem }
+@packages/core/src/parser.sigil import { SigilParser }
+@packages/core/src/workspace.sigil import { SigilWorkspaceLoader }
+@packages/core/src/resolver.sigil import { SigilResolver }
+@packages/core/src/graph.sigil import { SigilGraphBuilder }
+@packages/core/src/projections.sigil import { SigilProjections }
+
+expand SigilCore {
+  logic {
+    parseSigilDocument delegates versioned single-source interpretation to SigilParser.
+    discoverSigilWorkspace and loadSigilWorkspace delegate configured discovery and loading to SigilWorkspaceLoader.
+    resolveSigilWorkspace obtains relationship data from SigilResolver and graph data from SigilGraphBuilder, then returns one ResolvedSigilWorkspace.
+    componentContracts and collectedExpansionFor delegate structured views to SigilProjections.
+  }
+
+  constraints {
+    SigilCore is the public composition boundary for SigilDiagnostics, SigilFileSystem, SigilParser, SigilWorkspaceLoader, SigilResolver, SigilGraphBuilder, and SigilProjections.
+    The public resolveSigilWorkspace(workspace) signature and ResolvedSigilWorkspace result remain compatible with version 0.1.0.
+    Internal pipeline stages depend only in the declared direction and do not create cyclic ownership.
+  }
+
+  cases {
+    Resolving a loaded workspace returns imports, components, collected expansions, graph relationships, and accumulated diagnostics through the existing public API.
+    Existing CLI and LSP callers continue consuming ResolvedSigilWorkspace without adapting to the internal stage split.
+  }
+}

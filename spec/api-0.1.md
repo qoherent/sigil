@@ -1,4 +1,4 @@
-# Sigil 1.0 API
+# Sigil 0.1 API
 
 ## Core
 
@@ -48,4 +48,4 @@ semantic tokens for resolver-backed component names.
 
 The server advertises UTF-16 positions and uses `@qoherent/sigil-core` for all Sigil
 parsing, configuration, workspace, import, component, expansion, and diagnostic
-semantics. Its first release supports file URIs and one selected workspace.
+semantics. Version 0.1.0 supports file URIs and one selected workspace.

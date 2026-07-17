@@ -1,0 +1,35 @@
+@packages/core/src/resolver.sigil import { SigilResolver }
+@packages/core/src/graph.sigil import { SigilGraphBuilder }
+
+component SigilProjections {
+  goal {
+    Provide small structured views over resolved Sigil data for CLI, LSP, renderer, and agent integrations.
+    Prevent host integrations from reinterpreting raw declarations to obtain common contract and expansion views.
+  }
+
+  interface {
+    componentContracts(resolvedWorkspace) returns one ComponentContractView per resolved component
+    ComponentContractView exposes component name, file path, goal lines, and interface lines
+    collectedExpansionFor(resolvedWorkspace, componentName) returns the component's collective expansion or undefined
+    consumes resolved workspaces composed from SigilResolver and SigilGraphBuilder results
+  }
+}
+
+expand SigilProjections {
+  logic {
+    Preserve resolved component order when producing contract views.
+    Return goal and interface semantic text without adding interpretation.
+    Return every collected expand source for the selected component.
+  }
+
+  constraints {
+    SigilProjections performs no filesystem access, parsing, resolution, Markdown rendering, or agent ranking.
+    Missing goal or interface sections project as empty line collections while their diagnostics remain in the resolved workspace.
+  }
+
+  cases {
+    A resolved component projects its goal and interface lines with its declaration path.
+    A component with expands in multiple files returns every collected expansion.
+    An unknown component name returns no collected expansion.
+  }
+}

@@ -4,7 +4,7 @@
 **Owner:** _TBD_
 **Last updated:** 2026-07-13
 
-This integration will provide the first model-assisted host for ADR-010.
+This integration will provide the first model-assisted anchor host for ADR-011.
 
 The future skill must use deterministic `sigil anchors candidates` output,
 delegate only bounded component-local batches, require structured proposal
@@ -18,5 +18,5 @@ results and owns the user review gate.
 The proposal schema remains host-neutral so another agent host can produce the
 same input for deterministic validation and persistence.
 
-Implementation is blocked until ADR-010 and the colocated Sigil contract are
+Implementation is blocked until ADR-011 and the colocated Sigil contract are
 approved.

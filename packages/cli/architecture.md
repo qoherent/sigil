@@ -28,7 +28,7 @@ collected expansions independently.
 - Treat human text output as convenience, not API.
 - Keep command modules thin over `sigil-core`.
 - Keep Deno filesystem and process APIs at the outer edge.
-- Never mutate `.sigil` files in v1.
+- Never mutate `.sigil` files in version 0.1.
 - Keep CLI behavior deterministic and non-interactive.
 
 ## 3. Internal Modules
@@ -75,7 +75,7 @@ Owns command handlers.
 
 Responsibilities:
 
-- implement `install`, `parse`, `check`, `graph`, `context`, and `render`;
+- implement `skill list`, `skill install`, `parse`, `check`, `graph`, `context`, and `render`;
 - call `sigil-core` through shared helpers;
 - return typed command result objects;
 - avoid command-specific duplication of parser and resolver behavior.
@@ -105,21 +105,22 @@ Rules:
 
 ### `installer`
 
-Owns repository-local installation of version-owned agent skills.
+Owns global and repository-local installation of version-owned agent skills.
 
 Responsibilities:
 
 - resolve `integrations/skills` from the running source or binary installation;
-- enumerate every immediate skill directory;
-- create host-native relative directory symlinks in `.agents/skills`;
-- preserve existing links to the same sources and reject conflicting paths;
-- create or extend `.agents/skills/.gitignore` for every managed link.
+- enumerate immediate directories containing `SKILL.md`;
+- map Codex, Claude Code, OpenCode, and Pi to their global or project locations;
+- prefer host-native relative directory links and fall back to managed copies;
+- preserve or update managed installations and reject unmanaged conflicts;
+- create or extend project-local skill `.gitignore` files.
 
 Rules:
 
 - may use Deno filesystem APIs and host-native path operations;
 - must resolve sources from the selected Sigil installation, not the target;
-- must not inspect or interpret skill contents;
+- may inspect only the presence of the `SKILL.md` entrypoint;
 - must not overwrite unrelated target files or symlinks.
 
 ### `fs-adapter`
@@ -261,13 +262,13 @@ Each command should have:
 
 Commands should keep option behavior boring and explicit.
 
-Do not add interactive prompts in v1.
+Do not add interactive prompts in version 0.1.
 
-Do not add mutation or formatting commands in v1.
+Do not add mutation or formatting commands in version 0.1.
 
-## 9. Proposed VNext Anchor Extension
+## 9. Proposed Future Anchor Extension
 
-After ADR-010 approval, `sigil-cli` may depend on `sigil-indexer` through a
+After ADR-011 approval, `sigil-cli` may depend on `sigil-indexer` through a
 separate `indexer-adapter`. Existing Sigil parsing and resolution continue
 through `core-adapter`.
 
@@ -285,7 +286,7 @@ Rules:
 - only `anchors apply` may write, and it may write only `.sigil/anchors.json`;
 - the write uses a temporary sibling plus atomic rename after complete validation;
 - no CLI module invokes a model, imports a Codex skill, or interprets proposal evidence;
-- existing v1 commands and exit behavior remain backward compatible.
+- existing 0.1 commands and exit behavior remain backward compatible.
 
 ## 6. Output Guidelines
 

@@ -53,14 +53,14 @@ Platform packages:
 
 - `packages/core`: implemented shared parser, workspace loader, resolver, graph, diagnostics, source-location model, and projection primitives.
 - `packages/cli`: implemented command-line interface for agents, CI, scripts, debugging, context extraction, and Markdown review rendering.
-- `packages/indexer`: proposed vNext deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
-- `packages/lsp`: implemented v1 language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
+- `packages/indexer`: proposed future deterministic source AST indexing, anchor candidates, validation, persistence, and reconciliation.
+- `packages/lsp`: implemented pre-production language-server interface for shared editor-neutral diagnostics, navigation, symbols, hover, and resolver-backed semantic highlighting across multiple editors.
 
 Integrations:
 
 - `integrations/skills/sigil`: implemented Codex workflow for structural tool use, host-side semantic and standards review, brownfield adoption, review gates, and implementation colocation.
 - `integrations/skills/sigil-anchor-indexer`: proposed Codex workflow for bounded model-assisted anchor proposals and human approval.
-- `integrations/editor/vscode`: implemented v1 VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
+- `integrations/editor/vscode`: implemented pre-production VS Code extension for syntax highlighting, bundled LSP features, component previews, and editor-native affordances.
 
 The CLI is an automation interface.
 It may help humans during early development, but it is not the primary human product.
@@ -129,12 +129,15 @@ Sigil has different user modes, so one interface should not pretend to serve eve
 - Host integrations should stay thin over shared packages.
 
 The Codex skill currently owns nondeterministic host behavior such as user elicitation, web research, brownfield evidence reconciliation, and semantic readiness review.
-Whether core should later expose deterministic readiness primitives or a separate optional agent package remains exploratory in ADR-009.
+ADR-011 proposes shared deterministic receipt facts and a separate Receipt
+assembly layer while keeping model-assisted interpretation and elicitation in
+attributed host integrations.
 
-The proposed anchor workflow follows the same boundary: shared packages produce
-and validate deterministic candidate data, while Codex or another host may
-interpret natural language and propose relationships. Human review remains
-outside shared packages. See ADR-010.
+The proposed Receipt and anchor workflow follows the same boundary: shared
+packages produce and validate deterministic facts, candidate data, evidence,
+and generated runs, while Codex or another host may interpret natural language
+and propose relationships. Human review remains outside shared packages. See
+ADR-011.
 
 This keeps the platform coherent while allowing each surface to feel natural for its audience.
 
@@ -208,21 +211,33 @@ Tradeoff: Documentation and installation references must point to longer integra
 
 ### ADR-009: Explore Sigil Readiness And The Model Boundary
 
-Status: Exploratory; no option has been selected.
+Status: Superseded by ADR-011.
 
-Question: When does Sigil contain enough information for implementation, and which layer should gather missing information from users, repositories, models, and research?
+Historical question: When does Sigil contain enough information for implementation, and which layer should gather missing information from users, repositories, models, and research?
 
-Discussion: See [ADR-009: Sigil Readiness And Model Boundary](decisions/adr-009-sigil-readiness-and-model-boundary.md).
+History: See [ADR-009: Sigil Readiness And Model Boundary](decisions/adr-009-sigil-readiness-and-model-boundary.md).
 
 ### ADR-010: Use AST Evidence With Model-Assisted Anchor Proposals
 
-Status: Proposed; implementation is blocked on semantic review.
+Status: Superseded by ADR-011.
 
-Decision proposal: Keep anchors outside `.sigil` syntax, use deterministic
+Historical proposal: Keep anchors outside `.sigil` syntax, use deterministic
 source-language adapters and a committed anchor sidecar, and allow hosts to use
 models only to propose natural-language relationships for human approval.
 
-Discussion: See [ADR-010: AST Anchors And Model-Assisted Indexing](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+History: See [ADR-010: AST Anchors And Model-Assisted Indexing](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+
+### ADR-011: Generate Rationale, Evidence, And Review Records
+
+Status: Proposed; implementation is blocked on semantic review.
+
+Decision proposal: Keep `.sigil` source human-authored, generate attributed
+Receipts from deterministic facts and host contributions, keep models outside
+core, reuse one semantic-line identity across Receipts and anchors, and preserve
+human approval as an independent action.
+
+Discussion: See
+[ADR-011: Generated Rationale, Evidence, And Review Records](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 
 ## 8. Risks And Guardrails
 
@@ -285,8 +300,8 @@ Detailed package and integration specs should live close to the implementation s
 - `packages/core/README.md`: parser, resolver, graph, diagnostics, projections.
 - `packages/cli/README.md`: command behavior for agents, CI, scripts, and debugging.
 - `packages/indexer/README.md`: deterministic anchor index, source adapters, reconciliation, and persistence.
-- `packages/lsp/README.md`: future editor semantic protocol.
-- `integrations/editor/vscode/README.md`: future concrete editor UX.
+- `packages/lsp/README.md`: implemented pre-production editor semantic protocol.
+- `integrations/editor/vscode/README.md`: implemented pre-production concrete editor UX.
 - `integrations/skills/sigil/`: Codex prompt and reference behavior.
 - `integrations/skills/sigil-anchor-indexer/`: model-assisted anchor proposal workflow.
 

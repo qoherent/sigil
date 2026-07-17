@@ -7,8 +7,10 @@ const required = [
   "references/sigil-format.md",
   "references/standards-review.md",
   "references/implementation-design.md",
+  "references/design-conversation.md",
   "references/greenfield-design.md",
   "references/brownfield-adoption.md",
+  "evals/design-conversation-fixture.md",
   "evals/brownfield-fixture.md",
   "evals/greenfield-fixture.md",
   "evals/implementation-coverage-fixture.md",
@@ -29,8 +31,13 @@ requireText(
   "references/implementation-design.md",
   "implementation design routing",
 );
+requireText(
+  skill,
+  "references/design-conversation.md",
+  "design conversation routing",
+);
 requireText(skill, "sigil init", "brownfield initialization");
-requireText(skill, "manageable rounds", "conversational clarification");
+requireText(skill, "one primary decision per turn", "sequential clarification");
 requireText(skill, "choices", "design choices");
 requireText(
   skill,
@@ -50,8 +57,8 @@ requireText(
 );
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "1.1.0") {
-  throw new Error(`Expected skill VERSION 1.1.0, got ${version}`);
+if (version !== "0.1.0") {
+  throw new Error(`Expected skill VERSION 0.1.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -59,7 +66,7 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "1.1.0",
+    skillVersion: "0.1.0",
     cliVersion: "^0.1.0",
     coreVersion: "^0.1.0",
     sigilVersion: "0.1.0",
@@ -117,12 +124,12 @@ requireText(
 );
 requireText(
   fixture,
-  "begin a focused conversation",
+  "use the shared design conversation",
   "fixture conversational discovery",
 );
 requireText(
   fixture,
-  "Continue with targeted follow-up questions",
+  "Resolve one primary decision per turn",
   "fixture follow-up conversation",
 );
 requireText(
@@ -169,7 +176,7 @@ for (const behavior of requiredGreenfieldBehaviors) {
 }
 requireText(
   greenfieldFixture,
-  "Ask multiple manageable rounds",
+  "asking one primary decision per turn",
   "greenfield iterative conversation",
 );
 requireText(
@@ -189,8 +196,67 @@ requireText(
 );
 requireText(
   greenfieldFixture,
-  "collaborate with the user\n    on the affected Sigil before adding implementation",
+  "collaborate with the user on\n    the affected Sigil before adding implementation",
   "greenfield missing coverage collaboration",
+);
+
+const designConversationFixture = await Deno.readTextFile(
+  `${root}/evals/design-conversation-fixture.md`,
+);
+const requiredDesignConversationBehaviors = [
+  "track-conversation-phase",
+  "maintain-decision-ledger",
+  "prioritize-foundational-decisions",
+  "ask-one-primary-decision-per-turn",
+  "acknowledge-answer-effects",
+  "explain-question-dependencies",
+  "offer-choices-and-recommendation",
+  "preserve-user-authority",
+  "handle-user-uncertainty",
+  "defer-only-non-blocking-decisions",
+  "resolve-conflicts-before-advancing",
+  "reduce-scope-when-overwhelmed",
+  "provide-decision-checkpoints",
+  "avoid-reasking-confirmed-decisions",
+  "synthesize-only-without-blockers",
+  "preserve-deferrals-in-synthesis",
+];
+if (!Array.isArray(expected.designConversationRequiredBehaviors)) {
+  throw new Error(
+    "Design conversation fixture must declare required behaviors.",
+  );
+}
+for (const behavior of requiredDesignConversationBehaviors) {
+  if (!expected.designConversationRequiredBehaviors.includes(behavior)) {
+    throw new Error(
+      `Design conversation fixture is missing behavior ${behavior}.`,
+    );
+  }
+}
+requireText(
+  designConversationFixture,
+  "one primary decision per turn",
+  "design conversation sequential turn",
+);
+requireText(
+  designConversationFixture,
+  "Acknowledge each answer and state its effect",
+  "design conversation answer acknowledgement",
+);
+requireText(
+  designConversationFixture,
+  "confirmed decisions, assumptions,\n    deferrals, blockers, and the next decision",
+  "design conversation checkpoint",
+);
+requireText(
+  designConversationFixture,
+  "reduce the turn to the single most\n    foundational decision",
+  "design conversation overwhelm handling",
+);
+requireText(
+  designConversationFixture,
+  "Synthesize exact proposed Sigil only after no unresolved decision",
+  "design conversation blocker exit condition",
 );
 
 const implementationFixture = await Deno.readTextFile(
@@ -254,7 +320,7 @@ requireText(
 );
 requireText(
   brownfield,
-  "Continue with targeted follow-up questions",
+  "one primary decision at a time",
   "brownfield follow-up conversation",
 );
 requireText(
@@ -264,7 +330,7 @@ requireText(
 );
 requireText(
   brownfield,
-  "Do not move to task modeling until the user approves the written RootSigil.",
+  "Do not move to task modeling until the user approves the written\nRootSigil.",
   "brownfield root-before-task ordering",
 );
 
@@ -273,17 +339,17 @@ const greenfield = await Deno.readTextFile(
 );
 requireText(
   greenfield,
-  "Ask questions in manageable rounds that",
+  "one-primary-decision turns",
   "greenfield iterative design",
 );
 requireText(
   greenfield,
-  "which choice you recommend and why",
+  "shared design conversation",
   "greenfield recommendation",
 );
 requireText(
   greenfield,
-  "combine, reject, revise, or replace them",
+  "Greenfield choices should explain",
   "greenfield rejectable choices",
 );
 requireText(
@@ -317,7 +383,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 1.1.0 structure, compatibility, gates, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.1.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

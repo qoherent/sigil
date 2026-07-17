@@ -13,6 +13,8 @@ import {
   SIGIL_VERSION,
   type SigilFileSystem,
 } from "../src/mod.ts";
+import { buildSigilGraph } from "../src/graph.ts";
+import { resolveSigilRelationships } from "../src/resolver.ts";
 
 Deno.test("normalizes and walks POSIX and Windows paths", () => {
   assertEquals(normalizePath("/work/./sigil/../project"), "/work/project");
@@ -340,6 +342,28 @@ Deno.test("collects expansion file paths and exposes projections", async () => {
   assert(
     componentContracts(resolved).some((contract) => contract.name === "Sigil"),
   );
+});
+
+Deno.test("separates relationship resolution from graph construction", async () => {
+  const workspace = await loadSigilWorkspace(workspaceFs(), {
+    startPath: "examples/slotted/auth.sigil",
+  });
+  const resolution = resolveSigilRelationships(workspace);
+  assert(!("graph" in resolution));
+  assert(
+    resolution.components.some((component) => component.name === "Auth"),
+  );
+
+  const graph = buildSigilGraph(resolution);
+  assert(graph.componentNodes.some((node) => node.name === "Auth"));
+  assert(
+    graph.importedComponentEdges.some((edge) =>
+      edge.componentName === "UserProfile"
+    ),
+  );
+
+  const composed = resolveSigilWorkspace(workspace);
+  assertEquals(JSON.stringify(composed.graph), JSON.stringify(graph));
 });
 
 Deno.test("filesystem read failures propagate to the host", async () => {

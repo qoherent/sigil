@@ -32,15 +32,21 @@ implementation boundary. It defines implementation component discovery, the
 component/expand/omit decision, UI component coverage, and the required
 implementation coverage map.
 
+Read `references/design-conversation.md` completely whenever material
+clarification is needed before proposing Sigil or implementation. It defines
+conversation phases, decision states, one-decision turns, prioritization,
+checkpoints, deferral, conflict handling, and the synthesis exit condition.
+
 Read `references/greenfield-design.md` completely when the selected behavior or
 component has no existing implementation that constrains its intended contract.
-It defines the collaborative design conversation, alternatives, synthesis, and
-approval sequence. Do not reduce Greenfield work to one-shot clarification.
+It applies the shared design conversation to Greenfield intent, component
+boundaries, synthesis, and approval. Do not reduce Greenfield work to one-shot
+clarification.
 
 Read `references/brownfield-adoption.md` completely when implementation already
 exists but the relevant Sigil is absent or incomplete. Do not load it for a
-greenfield design or a component with established Sigil unless the user asks
-for brownfield reconciliation.
+greenfield design or a component with established Sigil unless the user asks for
+brownfield reconciliation.
 
 ## Tooling
 
@@ -51,16 +57,16 @@ review Markdown instead of manually reimplementing those operations in the
 agent.
 
 An installed Codex skill does not include this repository's `packages/`
-directory. Treat `packages/cli/src/main.ts` as available only when the
-current workspace is the Sigil platform repository or another checkout that
-contains that path.
+directory. Treat `packages/cli/src/main.ts` as available only when the current
+workspace is the Sigil platform repository or another checkout that contains
+that path.
 
 CLI discovery order:
 
 1. If `sigil` is available on `PATH`, use `sigil`.
-2. Else, if the current workspace contains `packages/cli/src/main.ts`,
-   invoke it with Deno from the workspace root.
-3. Else, stop and ask the user to install a compatible Sigil CLI. Version 1
+2. Else, if the current workspace contains `packages/cli/src/main.ts`, invoke it
+   with Deno from the workspace root.
+3. Else, stop and ask the user to install a compatible Sigil CLI. Version 0.1
    does not silently reinterpret a configured workspace without its required
    parser and resolver.
 
@@ -84,11 +90,11 @@ sigil check . --format json --pretty
 ```
 
 This skill version requires CLI and core `^0.1.0` and Sigil `0.1.0`. In a
-Brownfield repository without `.sigil/config.json`, use
-the initialization sequence in `references/brownfield-adoption.md` before this
-preflight. Otherwise stop with a compatibility report when the CLI is missing,
-`.sigil/config.json` is missing or invalid, or any resolved version is unsupported.
-Do not fall back to the old `#module.sigil` root behavior.
+Brownfield repository without `.sigil/config.json`, use the initialization
+sequence in `references/brownfield-adoption.md` before this preflight. Otherwise
+stop with a compatibility report when the CLI is missing, `.sigil/config.json`
+is missing or invalid, or any resolved version is unsupported. Do not fall back
+to the old `#module.sigil` root behavior.
 
 Common invocations:
 
@@ -110,8 +116,8 @@ Interpret CLI exit codes as:
 - `3`: host/runtime failure; fall back only if the CLI cannot read the requested
   input.
 
-If the CLI fails for host reasons, report the failure and stop before relying
-on workspace semantics.
+If the CLI fails for host reasons, report the failure and stop before relying on
+workspace semantics.
 
 Do not use CLI output as approval to implement code. The review gate still
 applies after creating or semantically changing Sigil files.
@@ -120,15 +126,14 @@ applies after creating or semantically changing Sigil files.
 
 Select the workflow before detailed semantic work:
 
-- For Greenfield behavior, follow `references/greenfield-design.md`. Use
-  collaborative design conversation even when the first request appears clear.
-  Ask materially useful questions in manageable rounds, surface weak or
-  conflicting assumptions, present concrete choices and tradeoffs, and
-  synthesize the decisions into exact proposed Sigil for confirmation.
+- For Greenfield behavior, follow `references/greenfield-design.md` and use
+  `references/design-conversation.md` even when the first request appears clear.
+  Resolve material decisions sequentially before synthesizing exact proposed
+  Sigil for confirmation.
 - For Brownfield behavior, follow `references/brownfield-adoption.md`. When the
   repository has no config, run `sigil init` first. Establish and review a
-  meaningful RootSigil through repository evidence plus user conversation, then
-  focus on the requested task boundary.
+  meaningful RootSigil through repository evidence plus the shared design
+  conversation, then focus on the requested task boundary.
 - For established Sigil coverage, use the shared workflow below unless the user
   requests Brownfield reconciliation or repository evidence suggests drift.
 
@@ -145,14 +150,21 @@ Select the workflow before detailed semantic work:
    - Also read nearby code, docs, tests, package metadata, or architecture notes
      when the user asks to align Sigil with an existing repo.
    - For UI components, inspect referenced repository images and accessible
-     external designs when their contents affect the requested contract.
-     Report references that cannot be accessed instead of guessing their
-     contents.
-   - Treat the nearest eligible ancestor `.sigil/config.json` as the workspace root contract; a nearer independent workspace must be excluded by every configured parent.
-   - Treat the directory containing `.sigil/config.json` as the workspace root and root-project location.
-   - Reserve `#module.sigil` for the workspace root or a member root explicitly declared by `workspace.members`; never infer a member from directory structure or package manifests.
-   - Treat an excluded subtree with its own `.sigil/config.json` as an independent workspace, not as a member of its parent.
-   - Use descriptive `.sigil` filenames for ordinary internal directories, features, components, and implementation modules, and import them by explicit filename.
+     external designs when their contents affect the requested contract. Report
+     references that cannot be accessed instead of guessing their contents.
+   - Treat the nearest eligible ancestor `.sigil/config.json` as the workspace
+     root contract; a nearer independent workspace must be excluded by every
+     configured parent.
+   - Treat the directory containing `.sigil/config.json` as the workspace root
+     and root-project location.
+   - Reserve `#module.sigil` for the workspace root or a member root explicitly
+     declared by `workspace.members`; never infer a member from directory
+     structure or package manifests.
+   - Treat an excluded subtree with its own `.sigil/config.json` as an
+     independent workspace, not as a member of its parent.
+   - Use descriptive `.sigil` filenames for ordinary internal directories,
+     features, components, and implementation modules, and import them by
+     explicit filename.
 
 2. Build the component picture.
    - Use CLI JSON diagnostics and context output when available to identify
@@ -195,11 +207,12 @@ Select the workflow before detailed semantic work:
    - For compatible guidance, show the exact proposed semantic lines and target
      sections, cite the sources in the review summary, and wait for approval
      before editing Sigil.
-   - For potential or definite conflicts, preserve Sigil, warn the user, identify
-     the affected lines and guidance, explain the impact, and offer alternatives.
+   - For potential or definite conflicts, preserve Sigil, warn the user,
+     identify the affected lines and guidance, explain the impact, and offer
+     alternatives.
    - For unavailable or paywalled authoritative material, block high-risk or
-     compliance-critical implementation; otherwise warn, record uncertainty,
-     and require explicit user acceptance.
+     compliance-critical implementation; otherwise warn, record uncertainty, and
+     require explicit user acceptance.
    - Keep source details in the review summary, not in Sigil. Write approved
      additions as project decisions rather than claims that a standard mandates
      them.
@@ -221,17 +234,14 @@ Select the workflow before detailed semantic work:
    - Choose a component for a coherent responsibility with a stable contract
      relied upon by dependents, an expand for operational rationale owned by an
      existing component, and no separate Sigil for trivial mechanics.
-   - In Greenfield work, use the approved conversational design procedure rather
-     than asking only blocking clarification questions.
-   - In Brownfield RootSigil discovery, continue targeted conversation until the
-     application goal, boundary, users or systems, and external surfaces are
-     clear enough to synthesize without guessing; request confirmation after
-     that conversation.
-   - With established Sigil, ask concise questions when ambiguity changes
-     architecture, ownership, behavior, or public contract. State conservative
-     low-risk assumptions explicitly.
+   - When material clarification is needed, use
+     `references/design-conversation.md` to prioritize one primary decision per
+     turn, maintain decision states, and resolve blockers before synthesis.
+   - Apply that shared protocol to Greenfield design, Brownfield RootSigil and
+     task discovery, established-Sigil ambiguity, and implementation decisions.
    - After the user approves externally informed additions, place each semantic
-     line in the appropriate `state`, `logic`, `constraints`, or `cases` section.
+     line in the appropriate `state`, `logic`, `constraints`, or `cases`
+     section.
 
 6. Keep sections disciplined.
    - A UI `interface` may describe visible structure and interactions with
@@ -239,7 +249,8 @@ Select the workflow before detailed semantic work:
      links such as Figma URLs.
    - Put binding decisions in `constraints`, including stack choices and
      architecture rules.
-   - Put behavior, flows, transitions, algorithms, transformations, and decision paths in `logic`.
+   - Put behavior, flows, transitions, algorithms, transformations, and decision
+     paths in `logic`.
    - Put meaningful runtime/domain configurations in `state`.
    - Put rules, policies, invariants, architecture, ownership, dependencies,
      module boundaries, and binding technology decisions in `constraints`.
@@ -270,18 +281,19 @@ Select the workflow before detailed semantic work:
      unknown as temporary; move it beside the owning module or source files once
      that location is known.
    - Keep a shared public `component` at its contract or module-summary location
-     when multiple implementations depend on it, and place implementation-specific
-     `expand Name` blocks beside the code they explain.
+     when multiple implementations depend on it, and place
+     implementation-specific `expand Name` blocks beside the code they explain.
    - When one Sigil file describes components owned by different implementation
      directories, split it so each component or implementation-specific expand
      lives near its owner. Do not duplicate a public component declaration.
    - Do not move the workspace-root `#module.sigil` merely to colocate code; it
-     remains the root-project `RootSigil` summary beside the `.sigil/config.json`
-     workspace marker.
+     remains the root-project `RootSigil` summary beside the
+     `.sigil/config.json` workspace marker.
    - Update every affected `@path import { Name }` after moving or splitting a
      Sigil file.
-   - Run `sigil check` after relocation, and use `sigil graph` or `sigil context`
-     to verify imports, collected expands, and related file paths when relevant.
+   - Run `sigil check` after relocation, and use `sigil graph` or
+     `sigil context` to verify imports, collected expands, and related file
+     paths when relevant.
 
 10. Implement only after approval.
    - Do not add or modify implementation without clear, user-approved Sigil
@@ -305,8 +317,8 @@ user can review the complete file.
 The review gate is mandatory when Sigil is created or semantically changed.
 After approval, a placement-only move or split that preserves the approved
 semantic lines may proceed with implementation without another review gate.
-Import-path updates required by that relocation are also placement-only.
-Any changed, added, or removed semantic line still requires review.
+Import-path updates required by that relocation are also placement-only. Any
+changed, added, or removed semantic line still requires review.
 
 At the gate, respond with:
 
@@ -363,20 +375,15 @@ When reviewing or improving Sigil, check:
 ## Working With Users
 
 Sigil is collaborative. Do not silently invent major product, architecture, or
-domain decisions.
+domain decisions. When clarification is material, follow
+`references/design-conversation.md`: ask one primary decision per turn unless
+the user requests a faster grouped review, acknowledge each answer, maintain the
+decision states, surface conflicts before advancing, and synthesize only after
+blocking decisions are resolved.
 
-For Greenfield design, conversation is part of the work rather than a fallback.
-Ask as many materially useful questions as needed in manageable rounds. Build on
-the user's answers, identify assumptions and contradictions, and offer concrete
-alternatives with consequences, tradeoffs, and a reasoned recommendation. Let
-the user combine, reject, or replace the choices. Synthesize the conversation
-and request explicit confirmation before writing Sigil.
-
-For a new Brownfield RootSigil, initialize or validate the workspace first, then
-inspect repository evidence. When the application picture remains vague or
-incomplete, ask focused follow-up questions until purpose, users or systems,
-repository boundary, and external interaction surfaces are clear. Then present a
-synthesized goal and interface for a separate confirmation decision.
+Greenfield and Brownfield workflows decide what evidence and contract questions
+matter. `references/design-conversation.md` decides how those questions are
+sequenced, discussed, recorded, and completed.
 
 Ask targeted questions when:
 

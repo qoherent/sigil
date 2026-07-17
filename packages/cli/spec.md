@@ -1,8 +1,8 @@
 # sigil-cli Requirements
 
-**Status:** Accepted for 1.0.0 **Last updated:** 2026-07-13
+**Status:** Accepted for 0.1.0 **Last updated:** 2026-07-13
 
-This document defines the v1 product requirements for `sigil-cli`.
+This document defines the 0.1 product requirements for `sigil-cli`.
 
 `sigil-cli` is the command-line interface over `sigil-core`. It exists for
 agents, CI, scripts, debugging, and review/documentation workflows. It is not
@@ -16,9 +16,9 @@ extract information from Sigil workspaces.
 It should make the shared `sigil-core` model usable from a terminal without
 reinterpreting Sigil independently.
 
-## 2. V1 Scope
+## 2. Version 0.1 Scope
 
-V1 must provide commands to:
+Version 0.1 must provide commands to:
 
 - parse one Sigil file;
 - check a file or workspace for diagnostics;
@@ -28,11 +28,11 @@ V1 must provide commands to:
 - initialize a non-interactive versioned workspace config;
 - report CLI, core, and Sigil versions.
 
-V1 should favor predictable, machine-readable behavior over rich terminal UI.
+Version 0.1 should favor predictable, machine-readable behavior over rich terminal UI.
 
 ## 3. Out Of Scope
 
-V1 must not implement:
+Version 0.1 must not implement:
 
 - editor UI;
 - LSP transport;
@@ -45,8 +45,8 @@ V1 must not implement:
 - anchors or code/spec synchronization;
 - mutation or formatting of `.sigil` files.
 
-Anchors remain outside the implemented v1 surface. The staged vNext anchor
-surface is defined below and does not change the v1 acceptance criteria.
+Anchors remain outside the implemented 0.1 surface. The proposed future anchor
+surface is defined below and does not change the 0.1 acceptance criteria.
 
 ## 4. Runtime And Dependency Requirements
 
@@ -105,17 +105,22 @@ Warnings alone should not produce exit code `1`.
 
 ## 7. Commands
 
-### `sigil install`
+### `sigil skill list` and `sigil skill install`
 
-Enumerates every immediate directory in the running Sigil installation's
-`integrations/skills` directory. For each entry, it creates a directory symlink
-with the same name in `.agents/skills` under the current working directory.
+`skill list` enumerates immediate directories containing `SKILL.md` in the
+running Sigil installation's `integrations/skills` directory without changing
+the filesystem.
 
-The command creates `.agents/skills/.gitignore` when needed and adds one ignore
-entry for every managed symlink. Existing unrelated ignore rules are preserved.
-Running the command repeatedly is idempotent when links already target the
-installed skills. It must refuse to replace an existing file, directory, or
-symlink with a different target.
+`skill install` installs globally by default. Codex, OpenCode, and Pi share
+`~/.agents/skills`; Claude Code uses `~/.claude/skills`. `--project` selects the
+equivalent locations under the current repository. `--agent` limits the target
+to one supported agent.
+
+Project installation creates skill-directory `.gitignore` entries. Existing
+unrelated ignore rules are preserved. Installation records managed destinations
+so a later selected CLI version can update them while refusing to replace
+unmanaged files, directories, or links. Relative directory links are preferred;
+a managed copy is used when the host does not permit directory links.
 
 The installed skill source is resolved from the running CLI installation, not
 from the target repository. A versioned binary distribution should place the
@@ -123,10 +128,9 @@ binary at `<version>/bin/sigil` and its skills at
 `<version>/integrations/skills`. Source-based development installs may resolve
 the repository's top-level `integrations/skills` directory.
 
-The command accepts no positional path; the target repository is `Deno.cwd()`.
-It uses host-native relative symlinks and supplies the directory link type
-required by Windows. CLI workspace discovery does not traverse symlink entries,
-so installed skills are not loaded as duplicate workspace sources.
+Skill commands accept no positional path beyond `list` or `install` and do not
+accept `--root`. CLI workspace discovery does not traverse symlink entries, so
+linked project skills are not loaded as duplicate workspace sources.
 
 ### `sigil parse <file>`
 
@@ -175,13 +179,13 @@ Required output data:
 - component-to-expansion edges;
 - diagnostics.
 
-The command should not generate diagrams in v1.
+The command should not generate diagrams in version 0.1.
 
 ### `sigil context`
 
 Produces deterministic agent-oriented context data from resolved Sigil.
 
-V1 should use graph and exact-match signals only.
+Version 0.1 should use graph and exact-match signals only.
 
 Supported selectors:
 
@@ -197,7 +201,7 @@ Required output data:
 - related file paths;
 - diagnostics.
 
-V1 must not implement embeddings, opaque ranking, or full semantic search.
+Version 0.1 must not implement embeddings, opaque ranking, or full semantic search.
 
 ### `sigil render [path]`
 
@@ -217,7 +221,7 @@ human authoring UI.
 
 Creates `.sigil/config.json` without prompting. `--name` selects the stable
 workspace identifier, while repeated `--include` and `--exclude` options replace
-the v1 file-rule defaults. The directory basename is the default name. The
+the 0.1 file-rule defaults. The directory basename is the default name. The
 command must never overwrite an existing config.
 
 ### `sigil version [path]`
@@ -255,7 +259,7 @@ boundaries.
 
 ## 10. Acceptance Scenarios
 
-V1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
+Version 0.1 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 - parse `examples/promise/promise.sigil` and emit JSON;
 - check the repository workspace from the mandatory root `.sigil/config.json`;
@@ -281,11 +285,11 @@ entrypoint as commands grow.
 Keep command shaping separate from `sigil-core` data models so the core API
 remains reusable by LSP and editor integrations.
 
-Do not add interactive prompts in v1.
+Do not add interactive prompts in version 0.1.
 
-## 12. Proposed VNext Anchor Commands
+## 12. Proposed Future Anchor Commands
 
-After ADR-010 and the AnchorIndexer Sigil contract are approved, the CLI may
+After ADR-011 and the AnchorIndexer Sigil contract are approved, the CLI may
 depend on `sigil-indexer` and add a nested `anchors` command group.
 
 ### `sigil anchors candidates [path] --component <name>`

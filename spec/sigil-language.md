@@ -56,10 +56,12 @@ When the public `component` must live in a root, shared, or contract-oriented Si
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
 Use the workspace-root `#module.sigil` for the `RootSigil` project summary.
-In a monorepo workspace, a declared workspace member may also have a
-`RootSigil` at its member root. Internal contracts use descriptive `.sigil`
-filenames colocated with their implementation and are imported by explicit
-filename.
+In a monorepo workspace, declaring a workspace member permits a `RootSigil` at
+its member root but does not require one. A member without `#module.sigil`
+remains valid, but a directory import to that member reports an unresolved
+import path because no project contract is available. Internal contracts use
+descriptive `.sigil` filenames colocated with their implementation and are
+imported by explicit filename.
 
 ### RootSigil
 
@@ -566,7 +568,7 @@ Larger examples live in:
 
 ## 12. Proposed Platform Capability: Anchors
 
-Anchors are a proposed vNext platform concept for connecting Sigil semantic lines to implementation evidence.
+Anchors are a proposed future platform concept for connecting Sigil semantic lines to implementation evidence.
 
 An anchor would not change the meaning of a Sigil line.
 It would record traceability between specification intent and implementation evidence.
@@ -587,7 +589,9 @@ Anchors are intended to provide:
 - signals when code and Sigil drift apart;
 - support for future code/spec synchronization workflows.
 
-The proposed design and remaining decisions are recorded in [ADR-010](decisions/adr-010-ast-anchors-and-model-assisted-indexing.md).
+The proposed anchor design is consolidated with generated Receipts, readiness,
+evidence, and review records in
+[ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 The capability remains unavailable until that ADR and the colocated Sigil contracts pass review and implementation is complete.
 
 ## 13. Unresolved Language Questions

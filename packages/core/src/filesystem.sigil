@@ -1,0 +1,26 @@
+component SigilFileSystem {
+  goal {
+    Isolate core workspace behavior from host-specific filesystem APIs.
+    Allow production hosts and deterministic tests to supply filesystem behavior through the same contract.
+  }
+
+  interface {
+    readTextFile(path) returns the file contents or rejects with the host failure
+    exists(path) returns whether the path exists
+    listFiles(root) returns the files visible below root
+    all operations are asynchronous
+  }
+}
+
+expand SigilFileSystem {
+  constraints {
+    Core parsing and resolution do not access the filesystem directly.
+    Filesystem implementations preserve host failures rather than translating them into Sigil source diagnostics.
+    Paths passed across the port use the core path-normalization contract.
+  }
+
+  cases {
+    An in-memory filesystem and a host filesystem can load the same workspace through SigilWorkspaceLoader.
+    Reading a missing or inaccessible file rejects with the filesystem implementation's failure.
+  }
+}
