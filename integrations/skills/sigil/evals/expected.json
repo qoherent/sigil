@@ -40,6 +40,25 @@
     "stop-at-semantic-review-gate",
     "implement-only-after-approval"
   ],
+  "designConversationFixture": "design-conversation-fixture.md",
+  "designConversationRequiredBehaviors": [
+    "track-conversation-phase",
+    "maintain-decision-ledger",
+    "prioritize-foundational-decisions",
+    "ask-one-primary-decision-per-turn",
+    "acknowledge-answer-effects",
+    "explain-question-dependencies",
+    "offer-choices-and-recommendation",
+    "preserve-user-authority",
+    "handle-user-uncertainty",
+    "defer-only-non-blocking-decisions",
+    "resolve-conflicts-before-advancing",
+    "reduce-scope-when-overwhelmed",
+    "provide-decision-checkpoints",
+    "avoid-reasking-confirmed-decisions",
+    "synthesize-only-without-blockers",
+    "preserve-deferrals-in-synthesis"
+  ],
   "implementationFixture": "implementation-coverage-fixture.md",
   "implementationRequiredBehaviors": [
     "reject-high-level-only-coverage",

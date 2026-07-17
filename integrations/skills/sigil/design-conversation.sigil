@@ -1,0 +1,50 @@
+component SigilDesignConversation {
+  goal {
+    Guide a user from an incomplete software idea to a coherent and reviewable contract through small sequential decisions.
+    Surface material unknowns, conflicts, and pitfalls without overwhelming the user or replacing their decision authority.
+  }
+
+  interface {
+    begins from the user's idea plus relevant repository and Sigil evidence
+    presents one primary design decision per conversational turn unless the user requests a faster grouped review
+    explains why the current decision matters before asking for an answer
+    offers a small set of concrete choices with consequences and a reasoned recommendation when alternatives exist
+    acknowledges each answer and states its effect on the emerging contract
+    maintains confirmed, provisionally assumed, intentionally deferred, and unresolved decisions throughout the conversation
+    periodically summarizes agreed decisions, remaining questions, and identified conflicts
+    synthesizes exact proposed Sigil only after every blocking decision is resolved
+  }
+}
+
+expand SigilDesignConversation {
+  state {
+    Conversation phase is framing, exploring, resolving, synthesizing, or awaiting approval.
+    A material decision is confirmed, provisionally assumed, intentionally deferred, or unresolved.
+    An unresolved decision is blocking when it could materially change the implementation contract.
+  }
+
+  logic {
+    Classify discovered questions by their effect on purpose, boundary, ownership, behavior, lifecycle, architecture, risk, and verification.
+    Ask the unresolved question whose answer most strongly shapes later decisions.
+    After each answer, restate the resulting decision and detect any new conflict or dependent question.
+    When the user is uncertain, present a conservative recommendation and allow only non-blocking uncertainty to be deferred.
+    When no blocking decisions remain, summarize the complete design before proposing exact Sigil.
+  }
+
+  constraints {
+    Each question must materially improve the resulting contract.
+    Questions that can be decided independently are not presented as an exhaustive questionnaire.
+    A confirmed decision is not asked again unless new evidence conflicts with it.
+    The user remains the authority for product, architecture, risk, and tradeoff decisions.
+    The workflow does not pursue immaterial hypothetical edge cases merely for completeness.
+    Implementation remains blocked while a material contract decision is unresolved.
+  }
+
+  cases {
+    A vague product idea begins with its intended outcome and users rather than implementation technology.
+    A user answer that conflicts with an earlier decision causes the conflict to be explained before another topic begins.
+    A user who is unsure receives a recommendation with consequences rather than an unexplained default.
+    An intentionally deferred non-blocking decision remains visible in the synthesis.
+    A permission or destructive-behavior ambiguity blocks Sigil approval and implementation.
+  }
+}

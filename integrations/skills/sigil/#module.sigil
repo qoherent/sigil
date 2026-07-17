@@ -1,5 +1,6 @@
 @spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
 @packages/cli import { SigilCli }
+@integrations/skills/sigil/design-conversation.sigil import { SigilDesignConversation }
 
 component SigilSkill {
   goal {
@@ -22,7 +23,7 @@ component SigilSkill {
     treats a component interface as public to its dependents even when the component is internal to the implementation
     distinguishes independent component contracts, implementation-specific expands, and trivial mechanics that need no Sigil
     reports implementation coverage before writing code
-    uses collaborative conversation to discover intent, challenge assumptions, compare choices, and improve a contract before confirmation
+    guides Greenfield and Brownfield clarification through SigilDesignConversation before contract confirmation
     proposes exact semantic changes before editing when evidence reconstruction or external guidance requires approval
     stops for explicit human review after creating or semantically changing Sigil
     implements only an explicitly approved Sigil contract
@@ -75,11 +76,7 @@ expand SigilSkill {
 
   logic {
     Begin with a design conversation about the problem, intended users or callers, desired outcomes, boundaries, non-responsibilities, and important constraints.
-    Ask as many targeted questions as materially useful, grouped into manageable rounds that build on the user's answers.
-    Surface hidden assumptions, conflicting goals, missing failure behavior, and decisions that could make the proposed system weaker than intended.
-    When several valid designs exist, present concrete choices with consequences, tradeoffs, and a reasoned recommendation.
-    Invite the user to combine, reject, or revise the choices rather than treating the presented options as exhaustive.
-    Continue the conversation until product, behavior, ownership, lifecycle, architecture, and verification decisions are clear enough to model without guessing.
+    Use SigilDesignConversation to resolve material Greenfield decisions about product intent, public behavior, ownership, lifecycle, architecture, risk, and verification.
     Establish the smallest coherent component boundary from the agreed outcome, callers, ownership, and non-responsibilities.
     Draft goal and interface before operational state, logic, constraints, and cases.
     Assess semantic readiness, modularity, cross-Sigil coherence, and applicable standards or platform guidance.
@@ -101,11 +98,7 @@ expand SigilSkill {
   }
 
   cases {
-    An initial product idea receives multiple focused rounds of questions before component boundaries are proposed.
-    Competing architecture or behavior choices are compared with their consequences before the user decides.
-    A weak or contradictory assumption is surfaced constructively instead of being copied into Sigil unchanged.
-    The user can reject all presented choices and describe a different direction.
-    A conversational synthesis receives explicit confirmation before it becomes reviewed Sigil.
+    A Greenfield request uses SigilDesignConversation until its blocking contract decisions are resolved and its confirmed or deferred decisions can be synthesized.
     A complete proposal becomes reviewed Sigil before implementation begins.
     A new implementation that reveals an undecided public behavior returns to Sigil review instead of choosing silently in code.
   }
@@ -122,8 +115,7 @@ expand SigilSkill {
     Validate the existing or initialized workspace configuration before interpreting or creating Sigil source.
     When the workspace RootSigil is absent, gather repository-level documentation, manifests, executable configuration, and entrypoints to form a provisional application picture.
     Assess whether repository evidence is specific enough to describe the application's responsibility, intended outcome, users or systems, boundary, and external interaction surfaces.
-    When the application picture is vague or incomplete, begin a focused conversation and ask the user for the missing product, boundary, and interface information.
-    Continue with targeted follow-up questions while answers leave material RootSigil decisions unresolved.
+    Use SigilDesignConversation when repository evidence leaves material RootSigil purpose, boundary, user, system, or external-interface decisions unresolved.
     Synthesize repository evidence and conversational answers into a candidate application goal and externally meaningful interface.
     Ask the user to confirm or correct the synthesized goal and interface as a separate decision after the discovery conversation.
     Classify confirmed application-wide state, cross-cutting logic, binding constraints, and observable cases for an optional root expand.
@@ -153,9 +145,7 @@ expand SigilSkill {
     A Brownfield repository without .sigil/config.json runs sigil init before project evidence is gathered for RootSigil.
     A repository with an existing .sigil/config.json validates it without running init or overwriting it.
     A workspace without RootSigil receives an evidence-based application summary question before #module.sigil is proposed.
-    A vague project description starts a focused conversation about purpose, users or systems, boundaries, and external interaction surfaces.
-    An incomplete answer produces targeted follow-up questions instead of guessed RootSigil lines.
-    Once the conversation supplies enough information, the synthesized goal and interface receive a separate confirmation request.
+    An incomplete Brownfield application picture uses SigilDesignConversation before its goal and interface are synthesized for confirmation.
     An approved RootSigil is written and reviewed before work narrows to the user's requested task.
     Conflicting code, tests, and documentation are reported for a user decision instead of silently reconciled.
     A requested task with established Sigil coverage returns to ordinary review after the workspace RootSigil is confirmed.

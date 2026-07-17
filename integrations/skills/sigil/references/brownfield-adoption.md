@@ -44,8 +44,8 @@ sigil check <repository-root> --format json --pretty
 ```
 
 Stop with a compatibility report when initialization fails, the existing config
-is invalid, or the configured CLI, core, or Sigil versions are not
-supported. Do not create `.sigil` files until the workspace contract is valid.
+is invalid, or the configured CLI, core, or Sigil versions are not supported. Do
+not create `.sigil` files until the workspace contract is valid.
 
 ## 2. Establish And Review RootSigil
 
@@ -80,17 +80,18 @@ Assess whether evidence is specific enough to describe:
 - its externally meaningful UI, API, CLI, library, worker, event, or service
   surfaces.
 
-When any material part remains vague, unsupported, or contradictory, begin a
-focused conversation. State what repository evidence suggests and what remains
-unknown, then ask the user for the missing product, boundary, and interface
-information.
+When any material part remains vague, unsupported, or contradictory, use
+`references/design-conversation.md`. Begin from what repository evidence
+suggests and what remains unknown, then resolve missing product, boundary, and
+interface decisions one primary decision at a time unless the user requests a
+faster grouped review.
 
-Continue with targeted follow-up questions while answers leave material
-RootSigil decisions unresolved. Do not guess missing purpose or interface lines.
-Do not use a single confirmation question as a substitute for discovery
-conversation when the evidence is insufficient.
+Maintain confirmed, provisionally assumed, intentionally deferred, and
+unresolved decisions through the shared protocol. Do not guess missing purpose
+or interface lines. Do not use a single confirmation question as a substitute
+for discovery conversation when evidence is insufficient.
 
-After the conversation, synthesize:
+After the shared protocol has no unresolved RootSigil blocker, synthesize:
 
 - a candidate application name;
 - a concise goal covering responsibility, intended outcome, and boundary;
@@ -114,18 +115,19 @@ detail for an optional root `expand`:
 - `cases`: observable application outcomes, workflows, failures, and acceptance
   scenarios.
 
-Keep secrets, volatile values, incidental dependencies, low-level
-configuration, private algorithms, and task-specific behavior outside
-RootSigil. A technology belongs in root `constraints` only when repository
-evidence or user confirmation establishes it as a binding application decision.
+Keep secrets, volatile values, incidental dependencies, low-level configuration,
+private algorithms, and task-specific behavior outside RootSigil. A technology
+belongs in root `constraints` only when repository evidence or user confirmation
+establishes it as a binding application decision.
 
 Present the exact RootSigil text and location before editing. The root component
 must remain meaningful without imports and may import only already-reviewed
 contracts that the application summary genuinely depends on.
 
 Wait for approval, write only the approved RootSigil, run `sigil check`, use
-`graph` or `context` when relationships changed, and stop at the RootSigil review
-gate. Do not move to task modeling until the user approves the written RootSigil.
+`graph` or `context` when relationships changed, and stop at the RootSigil
+review gate. Do not move to task modeling until the user approves the written
+RootSigil.
 
 ## 3. Focus On The Requested Task
 
@@ -138,8 +140,8 @@ smallest coherent change-frontier boundary in this order:
 4. the smallest coherent boundary exposing a meaningful public contract.
 
 Do not convert the whole repository. If the request is broad and has no concrete
-task boundary, present one to three evidence-backed candidates and recommend one.
-Wait for the user's decision before proposing task-specific Sigil.
+task boundary, present one to three evidence-backed candidates and recommend
+one. Wait for the user's decision before proposing task-specific Sigil.
 
 Classify task coverage:
 
@@ -154,8 +156,8 @@ readiness by itself. Before changing code, follow
 `references/implementation-design.md` to discover internal abstractions, UI
 components, state machines, and operational decisions within that boundary.
 
-For established coverage, use the shared workflow unless evidence suggests
-drift or the user requests reconciliation. Do not use numeric coverage scores.
+For established coverage, use the shared workflow unless evidence suggests drift
+or the user requests reconciliation. Do not use numeric coverage scores.
 
 ## 4. Gather And Classify Task Evidence
 
@@ -198,9 +200,9 @@ For each material behavior identify whether it is:
 - irrelevant implementation detail that stays out of Sigil.
 
 When evidence conflicts, preserve the conflict in the review summary. Ask a
-focused question when resolution could change public behavior, ownership,
-permissions, sensitive data, persistent state, lifecycle, compatibility,
-failure behavior, or acceptance criteria.
+focused question through `references/design-conversation.md` when resolution
+could change public behavior, ownership, permissions, sensitive data, persistent
+state, lifecycle, compatibility, failure behavior, or acceptance criteria.
 
 Do not silently treat code, tests, documentation, directory structure, or a
 preferred architecture as authoritative. Suspected accidental behavior does not
@@ -324,10 +326,10 @@ task and begin its bounded evidence and proposal workflow.
 ### Vague Application
 
 Repository naming suggests an internal operations tool, but no evidence
-identifies its users or external surfaces. Ask targeted questions about users,
-outcomes, boundaries, and interaction surfaces. Continue until the answers are
-sufficient, then synthesize a candidate goal and interface for separate
-confirmation. Do not guess RootSigil.
+identifies its users or external surfaces. Use the shared design conversation to
+resolve users, outcomes, boundaries, and interaction surfaces sequentially.
+After its blocking decisions are resolved, synthesize a candidate goal and
+interface for separate confirmation. Do not guess RootSigil.
 
 ### Conflicting Task Evidence
 

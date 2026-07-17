@@ -23,12 +23,12 @@ Do not merely encode the first idea. A request may sound concrete while hiding
 unresolved ownership, lifecycle, failure, security, persistence, compatibility,
 or verification decisions.
 
-Use the user's altitude and vocabulary. Ask questions in manageable rounds that
-build on prior answers rather than presenting an exhausting questionnaire. Ask
-as many rounds as materially useful; do not stop after one answer when it opens
-another contract-level decision.
+Follow `references/design-conversation.md` for conversation phases, decision
+states, prioritization, one-primary-decision turns, recommendations,
+checkpoints, conflict handling, and the synthesis exit condition. Conversation
+is a normal design activity even when the initial request appears clear.
 
-Keep the conversation relevant to:
+Use the shared protocol to resolve Greenfield decisions about:
 
 - product purpose and intended outcome;
 - users, callers, or adjacent systems;
@@ -41,28 +41,16 @@ Keep the conversation relevant to:
 
 ## 2. Explore Questions And Choices
 
-Surface hidden assumptions, conflicting goals, missing failure behavior, and
-decisions that could make the resulting system weaker than intended. Challenge
-an assumption constructively when its consequences conflict with the user's
-goal or create unclear ownership, unsafe behavior, needless coupling, or an
-untestable contract.
+Use the shared design conversation to surface hidden assumptions, conflicting
+goals, missing failure behavior, and decisions that could make the resulting
+system weaker than intended. Greenfield choices should explain the product,
+ownership, compatibility, complexity, lifecycle, and operational consequences
+that materially distinguish the alternatives.
 
-When several valid designs exist, present a small set of concrete choices. For
-each choice explain:
-
-- what behavior or ownership it establishes;
-- its important benefits and costs;
-- compatibility, complexity, lifecycle, or operational consequences;
-- which choice you recommend and why.
-
-Treat choices as aids to conversation, not an exhaustive menu. Explicitly let
-the user combine, reject, revise, or replace them. Do not hide a binding decision
-inside a recommendation or choose silently because one option is conventional.
-
-Continue until the material product, public behavior, ownership, lifecycle,
-architecture, risk, and verification decisions are clear enough to model
-without guessing. If the user intentionally defers a non-blocking choice, record
-the uncertainty in the review summary rather than inventing a Sigil line.
+Continue until no unresolved Greenfield decision can materially change the
+contract. Carry confirmed decisions, provisional assumptions, and intentionally
+deferred non-blocking decisions into the conversation synthesis. Do not invent a
+Sigil line for a deferred decision.
 
 ## 3. Establish Boundaries And Contracts
 
@@ -145,7 +133,8 @@ After explicit approval:
 1. create or update only the approved Sigil files;
 2. run `sigil check` on the workspace;
 3. use `sigil graph` or `sigil context` when relationships changed;
-4. reread the written files and repeat semantic, coherence, and modularity review;
+4. reread the written files and repeat semantic, coherence, and modularity
+   review;
 5. stop at the Sigil review gate and report changed files, captured decisions,
    open questions, and validation results.
 
@@ -165,8 +154,8 @@ Do not ask questions merely to appear thorough. Each question or choice should
 materially improve product intent, public behavior, ownership, lifecycle,
 architecture, risk handling, or verification.
 
-Do not overwhelm the user with every possible concern at once. Prioritize the
-decisions that shape later questions and follow with smaller rounds.
+Use the shared conversation protocol instead of presenting every possible
+concern at once.
 
 ### Competing Designs
 

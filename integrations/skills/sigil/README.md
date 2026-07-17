@@ -8,6 +8,12 @@ coherent product, programming, internal API, state-machine, and UI components,
 report implementation coverage, produce exact proposed Sigil, and stop for
 semantic review before implementation.
 
+Greenfield and Brownfield clarification share a guided design-conversation
+protocol. It prioritizes one primary decision per turn, acknowledges each
+answer, tracks confirmed, provisionally assumed, intentionally deferred, and
+unresolved decisions, surfaces conflicts before advancing, and synthesizes
+Sigil only after material blockers are resolved.
+
 Install it by asking Codex:
 
 ```text
