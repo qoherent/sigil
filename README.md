@@ -223,3 +223,16 @@ proposes deterministic shared packages, attributed host-assisted interpretation,
 a future `sigil-indexer`, and generated review records without adding inline
 Sigil syntax. The proposal is not implemented until ADR-011 and its colocated
 Sigil contracts are approved.
+
+## Contributing
+
+1) Clone the repo:
+```sh
+git clone git@github.com:qoherent/sigil.git
+```
+2) Install [Deno](https://docs.deno.com/runtime/getting_started/installation/)
+3) Install the Sigil CLI with deno, changes to code are hot reloaded this way:
+```sh
+deno task --cwd packages/cli install
+sigil --version
+```
