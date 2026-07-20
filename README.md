@@ -125,6 +125,9 @@ expand Name {
 
 The canonical language definition lives in [spec/sigil-language.md](spec/sigil-language.md).
 
+Project-specific terms, statuses, reserved names, and abbreviations are defined
+in the [Sigil glossary](spec/glossary.md).
+
 Open design questions are tracked in [spec/open-questions.md](spec/open-questions.md).
 
 ## Repository Layout
