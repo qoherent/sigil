@@ -229,6 +229,7 @@ Sigil contracts are approved.
 1) Clone the repo:
 ```sh
 git clone git@github.com:qoherent/sigil.git
+cd sigil
 ```
 2) Install [Deno](https://docs.deno.com/runtime/getting_started/installation/)
 3) Install the Sigil CLI with deno, changes to code are hot reloaded this way:
