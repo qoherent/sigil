@@ -7,7 +7,7 @@ component SigilCore {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-core 0.1.0 Deno TypeScript library
+    publishes the pre-production @qoherent/sigil-core 0.2.0 Deno TypeScript library
     parseSigilDocument(filePath, source, options) interprets one source using an explicit supported SigilLanguage version
     parseSigilConfig(source, filePath?) validates the SigilWorkspaceConfig contract
     discoverSigilWorkspace(filesystem, options) returns the selected root, configuration, and diagnostics
@@ -29,7 +29,7 @@ expand SigilCore {
   }
 
   constraints {
-    SigilCore implements the SigilLanguage and SigilWorkspaceConfig 0.1.0 contracts.
+    SigilCore implements the SigilLanguage and SigilWorkspaceConfig 0.2.0 contracts.
     Core logic accesses files only through the SigilFileSystem abstraction.
     Core returns partial semantic models with diagnostics where recovery is practical.
     Core does not own CLI arguments, LSP transport, editor APIs, Codex behavior, Markdown rendering, semantic search, anchors, or user-interface concerns.

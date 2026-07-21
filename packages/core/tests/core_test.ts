@@ -278,46 +278,70 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
   assertHasCode(resolved.diagnostics, "SIGIL_EXPAND_WITHOUT_COMPONENT");
 });
 
-Deno.test("uses only workspace.members for RootSigil locations and directory imports", async () => {
+Deno.test("resolves directory indexes independently of workspace members", async () => {
   const fs = new InMemorySigilFileSystem({
-    ".sigil/config.json": configSource({
-      workspace: { name: "test", members: ["declared"] },
-    }),
-    "deno.json": JSON.stringify({ workspace: ["workspace-only"] }),
+    ".sigil/config.json": configSource(),
     "#module.sigil": rootModule,
-    "internal/#module.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/#module.sigil": "@internal/contract.sigil import { Internal }\n",
+    "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
     "consumer.sigil":
       "@internal import { Internal }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
-    "declared/deno.json": "{}",
-    "declared/#module.sigil": rootModule.replaceAll("Sigil", "Declared"),
-    "declared-consumer.sigil":
-      "@declared import { Declared }\n\ncomponent DeclaredConsumer {\n  goal {\n    Consume declared project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
-    "workspace-only/#module.sigil": rootModule.replaceAll(
-      "Sigil",
-      "WorkspaceOnly",
-    ),
-    "workspace-consumer.sigil":
-      "@workspace-only import { WorkspaceOnly }\n\ncomponent WorkspaceConsumer {\n  goal {\n    Consume workspace project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "explicit-consumer.sigil":
+      "@internal/private.sigil import { Private }\n\ncomponent ExplicitConsumer {\n  goal {\n    Consume a public component by file.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "facade/#module.sigil": "@internal import { Internal }\n",
+    "facade-consumer.sigil":
+      "@facade import { Internal }\n\ncomponent FacadeConsumer {\n  goal {\n    Consume an explicitly chained index.\n  }\n\n  interface {\n    run()\n  }\n}\n",
   });
   const workspace = await loadSigilWorkspace(fs, { startPath: "." });
   const resolved = resolveSigilWorkspace(workspace);
 
-  assertEquals(workspace.memberRoots.join(","), "declared");
-  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_ROOT_MODULE");
-  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
+  assertEquals(resolved.diagnostics.length, 0);
   assert(
     resolved.graph.importedComponentEdges.some((edge) =>
-      edge.componentName === "Declared"
-    ),
-  );
-  assert(
-    !resolved.graph.importedComponentEdges.some((edge) =>
-      edge.componentName === "WorkspaceOnly"
-    ),
-  );
-  assert(
-    !resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "consumer.sigil" &&
+      edge.targetFile === "internal/contract.sigil" &&
       edge.componentName === "Internal"
+    ),
+  );
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "facade-consumer.sigil" &&
+      edge.targetFile === "internal/contract.sigil" &&
+      edge.componentName === "Internal"
+    ),
+  );
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "explicit-consumer.sigil" &&
+      edge.targetFile === "internal/private.sigil" &&
+      edge.componentName === "Private"
+    ),
+  );
+  assert(
+    resolved.graph.fileEdges.some((edge) =>
+      edge.from === "consumer.sigil" && edge.to === "internal/#module.sigil"
+    ),
+  );
+});
+
+Deno.test("does not add unnamed component dependencies to a module index", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "internal/#module.sigil": "@internal/contract.sigil import { Internal }\n",
+    "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
+    "consumer.sigil":
+      "@internal import { Private }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+
+  assertHasCode(resolved.diagnostics, "SIGIL_UNRESOLVED_IMPORTED_COMPONENT");
+  assert(
+    !resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "consumer.sigil" && edge.componentName === "Private"
     ),
   );
 });

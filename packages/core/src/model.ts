@@ -18,8 +18,6 @@ export type SigilDiagnosticCode =
   | "SIGIL_MISSING_INTERFACE"
   | "SIGIL_UNRESOLVED_IMPORT_PATH"
   | "SIGIL_UNRESOLVED_IMPORTED_COMPONENT"
-  | "SIGIL_INVALID_ROOT_MODULE"
-  | "SIGIL_INVALID_DIRECTORY_IMPORT"
   | "SIGIL_EXPAND_WITHOUT_COMPONENT"
   | "SIGIL_DUPLICATE_COMPONENT"
   | "SIGIL_IMPORT_CYCLE"
@@ -162,6 +160,7 @@ export interface ResolvedImport {
 export interface ResolvedImportName {
   readonly name: string;
   readonly component?: ComponentDeclaration;
+  readonly componentFile?: string;
 }
 
 export interface CollectedExpansion {

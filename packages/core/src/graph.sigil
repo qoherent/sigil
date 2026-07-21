@@ -16,8 +16,8 @@ component SigilGraphBuilder {
 expand SigilGraphBuilder {
   logic {
     Create one component node for each resolved component declaration.
-    Create file dependency edges for imports with resolved target files.
-    Create imported-component edges only for names resolved to component declarations.
+    Create file dependency edges to the immediate imported file or #module.sigil.
+    Create imported-component edges to each resolved component's original declaration file.
     Create component-expansion edges for every collected expand declaration.
     Preserve deterministic workspace and declaration ordering.
   }
@@ -30,6 +30,7 @@ expand SigilGraphBuilder {
 
   cases {
     A resolved imported component produces both a file dependency edge and an imported-component edge.
+    A directory import through #module.sigil points its file edge to the index and its imported-component edge to the component declaration.
     An unresolved imported name produces no imported-component edge.
     Two matching expands produce two component-expansion edges.
   }

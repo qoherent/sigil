@@ -30,10 +30,12 @@ expand SigilWorkspaceConfig {
     workspace.members contains unique non-root workspace-relative directory paths that do not overlap.
     files contains required include and optional exclude keys and rejects unknown keys.
     tools is optional and core preserves namespaced JSON objects without interpreting them.
-    Project descriptions and rationale belong in README, Sigil components, or RootSigil summaries rather than workspace configuration.
+    Project descriptions and rationale belong in README or cohesive Sigil components rather than workspace configuration.
     Package and release metadata belongs in deno.json, package.json, or other package manifests.
     Package manifests may inform member proposals but do not participate in workspace-member discovery.
     #module.sigil files do not define workspace roots or workspace members.
+    Any included directory may contain #module.sigil as its explicit directory-import index.
+    workspace.members identifies configured summary boundaries for Brownfield workflow but does not grant or restrict module-index eligibility.
   }
 
   cases {
@@ -48,8 +50,8 @@ expand SigilWorkspaceConfig {
     Missing, mistyped, empty, or unknown fields report SIGIL_CONFIG_INVALID and load no Sigil files.
     An unsupported sigilVersion reports an error diagnostic and loads no Sigil files.
     A matching excluded path is not loaded even when an include pattern also matches it.
-    The workspace root is a valid root-project RootSigil location.
-    A declared workspace member is a valid member-project RootSigil location.
-    An undeclared package directory is not a valid RootSigil location even when it contains a package manifest.
+    The workspace root is a configured summary boundary for Brownfield workflow.
+    A declared workspace member is a configured summary boundary for Brownfield workflow.
+    An undeclared package directory is not a configured summary boundary even when it contains a package manifest.
   }
 }

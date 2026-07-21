@@ -28,7 +28,7 @@ collected expansions independently.
 - Treat human text output as convenience, not API.
 - Keep command modules thin over `sigil-core`.
 - Keep Deno filesystem and process APIs at the outer edge.
-- Never mutate `.sigil` files in version 0.1.
+- Never mutate `.sigil` files in version 0.2.
 - Keep CLI behavior deterministic and non-interactive.
 
 ## 3. Internal Modules
@@ -262,9 +262,9 @@ Each command should have:
 
 Commands should keep option behavior boring and explicit.
 
-Do not add interactive prompts in version 0.1.
+Do not add interactive prompts in version 0.2.
 
-Do not add mutation or formatting commands in version 0.1.
+Do not add mutation or formatting commands in version 0.2.
 
 ## 9. Proposed Future Anchor Extension
 
@@ -286,7 +286,7 @@ Rules:
 - only `anchors apply` may write, and it may write only `.sigil/anchors.json`;
 - the write uses a temporary sibling plus atomic rename after complete validation;
 - no CLI module invokes a model, imports a Codex skill, or interprets proposal evidence;
-- existing 0.1 commands and exit behavior remain backward compatible.
+- existing 0.2 commands and exit behavior remain backward compatible.
 
 ## 6. Output Guidelines
 

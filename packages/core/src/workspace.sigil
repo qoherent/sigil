@@ -1,4 +1,4 @@
-@spec/language.sigil import { SigilWorkspaceConfig, RootSigil }
+@spec/language.sigil import { SigilWorkspaceConfig }
 @packages/core/src/diagnostics.sigil import { SigilDiagnostics }
 @packages/core/src/filesystem.sigil import { SigilFileSystem }
 @packages/core/src/parser.sigil import { SigilParser }
@@ -6,7 +6,7 @@
 component SigilWorkspaceLoader {
   goal {
     Select and load one configured Sigil workspace through an explicit filesystem boundary.
-    Ensure workspace membership, nested-workspace isolation, file discovery, and RootSigil eligibility follow the versioned workspace contract.
+    Ensure workspace membership, nested-workspace isolation, and file discovery follow the versioned workspace contract.
   }
 
   interface {
@@ -15,7 +15,7 @@ component SigilWorkspaceLoader {
     options identifies a start path and may provide an explicit root or current directory
     WorkspaceDiscoveryResult exposes the selected root, config path, parsed configuration, and diagnostics
     SigilWorkspace additionally exposes member roots, loaded partial documents, and accumulated diagnostics
-    depends on SigilFileSystem, SigilParser, SigilWorkspaceConfig, and RootSigil
+    depends on SigilFileSystem, SigilParser, and SigilWorkspaceConfig
   }
 }
 
@@ -35,7 +35,7 @@ expand SigilWorkspaceLoader {
     All filesystem access goes through SigilFileSystem.
     Configuration and Sigil source problems accumulate as diagnostics with partial workspace results when practical.
     Required filesystem failures propagate to the caller.
-    Only the workspace root and declared member roots are eligible RootSigil locations.
+    Workspace loading accepts #module.sigil at any included path and assigns it no workspace-discovery authority.
   }
 
   cases {

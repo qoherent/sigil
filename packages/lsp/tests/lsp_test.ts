@@ -23,7 +23,7 @@ Deno.test("file URI conversion preserves Sigil paths", () => {
   );
 });
 
-Deno.test("initializes with the approved 0.1 capabilities and lifecycle", async () => {
+Deno.test("initializes with the approved 0.2 capabilities and lifecycle", async () => {
   const server = makeServer();
   const before = await server.handle(request(1, "shutdown"));
   assertEquals(errorCode(before), -32002);
@@ -221,6 +221,57 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
       0,
       0,
     ]),
+  );
+});
+
+Deno.test("directory-index definitions navigate to the original declaration", async () => {
+  const modulePath = `${root}/module/#module.sigil`;
+  const indexedContractPath = `${root}/module/contract.sigil`;
+  const indexedConsumerPath = `${root}/indexed-consumer.sigil`;
+  const indexedConsumerUri = pathToFileUri(indexedConsumerPath);
+  const server = new SigilLanguageServer({
+    currentDirectory: root,
+    fs: new InMemorySigilFileSystem({
+      [`${root}/.sigil/config.json`]: JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "lsp-index-test", members: [] },
+        files: { include: ["**/*.sigil"], exclude: [] },
+        tools: {},
+      }),
+      [modulePath]: "@module/contract.sigil import { Thing }\n",
+      [indexedContractPath]: contractSource,
+      [indexedConsumerPath]:
+        "@module import { Thing }\n\ncomponent Consumer {\n  goal {\n    Consume Thing.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    }),
+  });
+  await initialize(server);
+
+  const definition = responseResult(
+    await server.handle(request(
+      2,
+      "textDocument/definition",
+      {
+        textDocument: { uri: indexedConsumerUri },
+        position: { line: 0, character: 18 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  assertEquals(definition.uri, pathToFileUri(indexedContractPath));
+
+  const hover = responseResult(
+    await server.handle(request(
+      3,
+      "textDocument/hover",
+      {
+        textDocument: { uri: indexedConsumerUri },
+        position: { line: 0, character: 18 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  assert(
+    String((hover.contents as Record<string, unknown>).value).includes(
+      "component Thing",
+    ),
   );
 });
 

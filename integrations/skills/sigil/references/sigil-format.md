@@ -28,7 +28,7 @@ deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference
-describes Sigil version `0.1.0`; do not apply it to an
+describes Sigil version `0.2.0`; do not apply it to an
 unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
@@ -38,10 +38,9 @@ starting point, then read source files before editing them.
 
 Sigil source files use `.sigil`.
 
-The project summary filename is `#module.sigil`. It is reserved for the root
-project or a workspace member explicitly declared by `workspace.members`, and
-every file with that name follows the `RootSigil` contract. Do not create it for ordinary internal
-directories, features, components, or implementation modules.
+The directory-index filename is `#module.sigil`. It may appear in any included
+directory. Its local components and successfully resolved direct import names
+form that directory's import surface.
 
 A strict JSON `.sigil/config.json` is mandatory at the workspace root. It selects
 Sigil version, provides `workspace.name`, declares
@@ -49,34 +48,37 @@ optional `workspace.members`, and defines file include and exclude globs. A nest
 when its entire subtree is excluded by each configured parent; otherwise it is
 invalid.
 
-Sigil files should live as near as practical to the code they describe. Use the
-workspace-root `#module.sigil` for the root-project `RootSigil` summary. A
-declared workspace member may have one at its member root. Internal contracts
-use descriptive `.sigil` filenames. If the main `component` must live elsewhere,
-a nearby `expand Name` may live beside the code it explains.
+Sigil files should live as near as practical to the code they describe.
+Configured workspace boundaries use ordinary summary components in the
+workspace-root and declared-member `#module.sigil` files. Internal contracts
+use descriptive `.sigil` filenames, while internal directories may add a module
+index when they need import shorthand. If the main `component` must live
+elsewhere, a nearby `expand Name` may live beside the code it explains.
 
 When implementation establishes a clear owner directory, relocate a temporary
 Sigil file beside that implementation and update affected imports. Keep the
-workspace-root `#module.sigil` in place. If a shared component contract cannot
-move, colocate its implementation-specific `expand Name` instead.
+configured-boundary `#module.sigil` in place. Internal module indexes may move
+with their owning directories. If a shared component contract cannot move,
+colocate its implementation-specific `expand Name` instead.
 
-### RootSigil
+### Module indexes and boundary summaries
 
-Each valid `#module.sigil` contains a project-named component. Its
-`goal` describes why the overall project exists and its intended outcome. Its
-`interface` describes how users and external systems interact with the project,
-including applicable web app, mobile app, API, CLI, library, or other surfaces.
+Every component is public and may be imported through its explicit `.sigil`
+source path whether or not a module index names it. `#module.sigil` controls
+only which names resolve through a directory import. Sigil has no export or
+re-export form.
 
-The matching root `expand` uses the general `state`, `logic`, `constraints`, and
-`cases` meanings at project scope. `RootSigil` narrows scope without redefining
-the sections.
+For Brownfield adoption, each configured workspace boundary receives an
+ordinary summary component in its `#module.sigil`. Its `goal` and `interface`
+describe that boundary, and a matching expand uses the general section meanings.
+This summary has no special parser or resolver status.
 
 Exclude secrets, incidental dependencies, low-level configuration, and
-module-specific implementation details. `.sigil/config.json` remains the workspace
-marker and sole workspace-membership authority. Package manifests and directory
-structure alone do not authorize a member-root `RootSigil`. An excluded nested
-directory with its own config is an independent workspace, not a parent
-workspace member.
+module-specific implementation details from configured-boundary summaries.
+`.sigil/config.json` remains the workspace marker and sole workspace-membership
+authority. Package manifests and directory structure alone do not declare
+additional Brownfield summary boundaries. An excluded nested directory with its
+own config is an independent workspace, not a parent workspace member.
 
 ## Top-Level Forms
 
@@ -113,8 +115,8 @@ expand Name {
 }
 ```
 
-`@packages/member import { ComponentName }` imports from a declared workspace
-member's `#module.sigil`.
+`@packages/member import { ComponentName }` imports from that directory's
+`#module.sigil`, regardless of whether the directory is a declared member.
 `@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
 
 Importing `Name` makes `component Name` and all matching `expand Name` blocks
@@ -176,11 +178,12 @@ Import syntax:
 @path import { Name, OtherName }
 ```
 
-A path without a `.sigil` filename may target only the workspace root or a
-member root declared by `workspace.members` and resolves to its `#module.sigil`. Ordinary
-internal contracts are imported with an explicit `.sigil` filename. The `@`
-prefix resolves from the workspace root selected by the single ancestor
-`.sigil/config.json`. An explicit root must contain `.sigil/config.json` directly.
+A path without a `.sigil` filename resolves to `#module.sigil` in the target
+directory. A name resolves from that index's local components or successfully
+resolved direct imports. Components omitted from the index remain public through
+their explicit `.sigil` filenames. The `@` prefix resolves from the workspace
+root selected by the single ancestor `.sigil/config.json`. An explicit root must
+contain `.sigil/config.json` directly.
 
 Imported names must resolve to matching `component` declarations. Imported names
 are case-sensitive. All matching expands for the imported component are

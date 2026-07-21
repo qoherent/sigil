@@ -7,7 +7,7 @@ component SigilLsp {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-lsp 0.1.0 package
+    publishes the pre-production @qoherent/sigil-lsp 0.2.0 package
     implements Language Server Protocol 3.18 over standard input and standard output
     supports initialize, initialized, shutdown, and exit lifecycle messages
     supports textDocument/didOpen, textDocument/didChange, and textDocument/didClose with full-document synchronization

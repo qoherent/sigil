@@ -17,7 +17,7 @@ Primary authorities are:
   configuration;
 - [Sigil Workflow](sigil-workflow.md) for design, review, and implementation
   gates;
-- [Sigil 0.1 API](api-0.1.md) for implemented public tool surfaces;
+- [Sigil 0.2 API](api-0.2.md) for implemented public tool surfaces;
 - [Sigil Platform Architecture](sigil-platform-architecture.md) for package and
   integration boundaries;
 - accepted ADRs for the decisions they own.
@@ -53,7 +53,7 @@ project, or the platform; qualify it when ambiguity is possible.
 
 The versioned contract governing `.sigil` syntax, structure, sections, imports,
 workspace interpretation, and meaning. The current supported version is
-`0.1.0`.
+`0.2.0`.
 
 ### Sigil source
 
@@ -280,9 +280,9 @@ A non-root, workspace-relative project path explicitly listed in
 
 ### Member root
 
-The directory identified by a `workspace.members` entry. It is a project root
-eligible to contain `#module.sigil`, but it does not contain a separate
-`.sigil/config.json`.
+The directory identified by a `workspace.members` entry. It is a configured
+project-summary boundary for Brownfield workflow, but it does not contain a
+separate `.sigil/config.json`.
 
 ### Project
 
@@ -300,17 +300,16 @@ The project located at the workspace root.
 The directory containing one project: either the workspace root or a declared
 member root.
 
-### RootSigil
-
-The project-level contract stored in an eligible `#module.sigil`. It summarizes
-one project's purpose, external interaction surfaces, and project-wide
-operational decisions. It does not define workspace discovery or membership.
-
 ### `#module.sigil`
 
-The reserved filename for RootSigil. It is valid only at the workspace root or
-a declared member root. Ordinary internal directories and components use
-descriptive `.sigil` filenames.
+The explicit directory-import index. It may appear in any included directory
+and makes its local components and directly imported component names resolvable
+through directory-import shorthand without changing component visibility.
+
+### Directory-import surface
+
+The component names resolvable through a directory's `#module.sigil`: its local
+component declarations and successfully resolved names in its direct imports.
 
 ### Descriptive Sigil filename
 
@@ -371,7 +370,7 @@ language version.
 ### Workspace loader
 
 The deterministic core stage that discovers configuration, selects source
-files, parses them, and identifies member and RootSigil locations.
+files, parses them, and identifies configured workspace-member boundaries.
 
 ### Resolver
 
@@ -873,7 +872,7 @@ Explicitly excluded from the selected contract or delivery stage.
 
 The terms in this section describe proposed capabilities from
 [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
-They are not part of the implemented Sigil 0.1 surface unless separately marked
+They are not part of the implemented Sigil 0.2 surface unless separately marked
 implemented.
 
 ### Receipt
@@ -1064,8 +1063,6 @@ An anchor whose target can no longer be located.
 | `SIGIL_MISSING_INTERFACE` | A component lacks its required `interface` section. |
 | `SIGIL_UNRESOLVED_IMPORT_PATH` | An import path does not resolve to a loaded Sigil source. |
 | `SIGIL_UNRESOLVED_IMPORTED_COMPONENT` | An imported name is not declared as a component in the target source. |
-| `SIGIL_INVALID_ROOT_MODULE` | `#module.sigil` appears outside the workspace root or a declared member root. |
-| `SIGIL_INVALID_DIRECTORY_IMPORT` | A directory import targets a location that is not an eligible project root. |
 | `SIGIL_EXPAND_WITHOUT_COMPONENT` | An expand has no matching component declaration in the workspace. |
 | `SIGIL_DUPLICATE_COMPONENT` | More than one component declares the same name, making references ambiguous. |
 | `SIGIL_IMPORT_CYCLE` | File import relationships contain a cycle. |
@@ -1090,7 +1087,7 @@ An anchor whose target can no longer be located.
 | Name or path | Meaning |
 | --- | --- |
 | `.sigil/config.json` | Mandatory workspace configuration and workspace-boundary authority. |
-| `#module.sigil` | RootSigil filename allowed only at eligible project roots. |
+| `#module.sigil` | Explicit directory-import index allowed in any included directory. |
 | `.sigil/anchors.json` | Proposed committed sidecar for accepted anchors. |
 | `.sigil/runs/` | Proposed directory for immutable receipt review runs. |
 | `.sigil/latest.json` | Proposed pointer to the latest completed receipt run. |

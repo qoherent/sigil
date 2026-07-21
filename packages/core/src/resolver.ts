@@ -5,12 +5,11 @@ import type {
   ExpandDeclaration,
   ResolvedComponent,
   ResolvedImport,
-  ResolvedImportName,
   SigilDiagnostic,
   SigilResolution,
   SigilWorkspace,
 } from "./model.ts";
-import { dirname, isModuleFile, joinPath, normalizePath } from "./path.ts";
+import { isModuleFile, joinPath, normalizePath } from "./path.ts";
 
 interface IndexedComponent {
   readonly filePath: string;
@@ -22,6 +21,16 @@ interface IndexedExpand {
   readonly declaration: ExpandDeclaration;
 }
 
+interface MutableResolvedImport extends Omit<ResolvedImport, "names"> {
+  names: MutableResolvedImportName[];
+}
+
+interface MutableResolvedImportName {
+  name: string;
+  component?: ComponentDeclaration;
+  componentFile?: string;
+}
+
 export function resolveSigilRelationships(
   workspace: SigilWorkspace,
 ): SigilResolution {
@@ -31,22 +40,8 @@ export function resolveSigilRelationships(
   const documentByPath = new Map(
     workspace.files.map((file) => [normalizePath(file.path), file.document]),
   );
-  const rootSigilRoots = new Set([
-    normalizePath(workspace.root),
-    ...workspace.memberRoots.map(normalizePath),
-  ]);
 
   for (const file of workspace.files) {
-    if (
-      isModuleFile(file.path) &&
-      !rootSigilRoots.has(dirname(normalizePath(file.path)))
-    ) {
-      diagnostics.push(diagnostic(
-        "SIGIL_INVALID_ROOT_MODULE",
-        `${file.path} is not at the workspace root or a declared workspace-member root; use a descriptive .sigil filename for internal contracts.`,
-        { filePath: file.path },
-      ));
-    }
     for (const component of file.document.components) {
       const components = componentsByName.get(component.name) ?? [];
       components.push({ filePath: file.path, declaration: component });
@@ -83,28 +78,11 @@ export function resolveSigilRelationships(
     }
   }
 
-  const resolvedImports: ResolvedImport[] = [];
+  const resolvedImports: MutableResolvedImport[] = [];
 
   for (const file of workspace.files) {
     for (const declaration of file.document.imports) {
       const targetFile = resolveImportPath(workspace.root, declaration.path);
-      if (
-        !declaration.path.endsWith(".sigil") &&
-        !rootSigilRoots.has(dirname(targetFile))
-      ) {
-        diagnostics.push(diagnostic(
-          "SIGIL_INVALID_DIRECTORY_IMPORT",
-          `Directory import @${declaration.path} does not target the workspace root or a declared workspace member; import an internal contract by its explicit .sigil filename.`,
-          { filePath: file.path, range: declaration.range },
-        ));
-        resolvedImports.push({
-          declaration,
-          sourceFile: file.path,
-          targetFile,
-          names: [],
-        });
-        continue;
-      }
       if (!documentByPath.has(targetFile)) {
         diagnostics.push(diagnostic(
           "SIGIL_UNRESOLVED_IMPORT_PATH",
@@ -121,20 +99,16 @@ export function resolveSigilRelationships(
       }
 
       const targetDocument = documentByPath.get(targetFile)!;
-      const names: ResolvedImportName[] = declaration.names.map((name) => {
-        const component = targetDocument.components.find((item) =>
-          item.name === name
-        );
-        if (!component) {
-          diagnostics.push(diagnostic(
-            "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
-            `Imported component ${name} was not found in ${targetFile}.`,
-            { filePath: file.path, range: declaration.range },
-          ));
-          return { name };
-        }
-        return { name, component };
-      });
+      const names: MutableResolvedImportName[] = declaration.names.map(
+        (name) => {
+          const component = targetDocument.components.find((item) =>
+            item.name === name
+          );
+          return component
+            ? { name, component, componentFile: targetFile }
+            : { name };
+        },
+      );
 
       resolvedImports.push({
         declaration,
@@ -142,6 +116,20 @@ export function resolveSigilRelationships(
         targetFile,
         names,
       });
+    }
+  }
+
+  resolveModuleIndexNames(resolvedImports);
+
+  for (const item of resolvedImports) {
+    if (!documentByPath.has(item.targetFile ?? "")) continue;
+    for (const name of item.names) {
+      if (name.component) continue;
+      diagnostics.push(diagnostic(
+        "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
+        `Imported component ${name.name} was not found in ${item.targetFile}.`,
+        { filePath: item.sourceFile, range: item.declaration.range },
+      ));
     }
   }
 
@@ -173,6 +161,32 @@ export function resolveSigilRelationships(
     components: resolvedComponents,
     diagnostics,
   };
+}
+
+function resolveModuleIndexNames(imports: MutableResolvedImport[]): void {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const item of imports) {
+      if (!item.targetFile || !isModuleFile(item.targetFile)) continue;
+      const indexedImports = imports.filter((candidate) =>
+        normalizePath(candidate.sourceFile) === normalizePath(item.targetFile!)
+      );
+      for (const name of item.names) {
+        if (name.component) continue;
+        const indexedName = indexedImports
+          .flatMap((candidate) => candidate.names)
+          .find((candidate) =>
+            candidate.name === name.name && candidate.component !== undefined &&
+            candidate.componentFile !== undefined
+          );
+        if (!indexedName?.component || !indexedName.componentFile) continue;
+        name.component = indexedName.component;
+        name.componentFile = indexedName.componentFile;
+        changed = true;
+      }
+    }
+  }
 }
 
 function resolveImportPath(root: string, importPath: string): string {

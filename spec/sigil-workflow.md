@@ -8,7 +8,7 @@ They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks
 
 1. For greenfield work, the agent begins a collaborative design conversation; for brownfield work, it identifies the repository and initializes a missing `.sigil/config.json` before detailed discovery.
 2. The agent runs structural CLI checks, follows imports, and reads related code, tests, configuration, package metadata, and documentation.
-3. For brownfield adoption, the agent establishes an approved RootSigil before selecting the requested change frontier and separates observed behavior from documented and user-confirmed intent.
+3. For brownfield adoption, the agent establishes approved ordinary summary components at the workspace root and declared members before selecting the requested change frontier and separates observed behavior from documented and user-confirmed intent.
 4. The agent checks semantic readiness: goal clarity, interface completeness, state and lifecycle behavior, constraints, cases, cross-Sigil coherence, modularity, and code/spec drift.
 5. The agent assesses whether current standards, formal guidance, or official platform practices materially affect the selected contract.
 6. The agent uses manageable conversational rounds to discover greenfield intent and to resolve vague brownfield application purpose, boundaries, users, and external surfaces; established contracts need questions only when answers materially change them.
@@ -103,25 +103,23 @@ When no workspace exists, the agent first runs `sigil init` at the repository
 root, then validates the created config before gathering detailed project
 evidence. It never overwrites an existing config.
 
-The agent then inspects root product and architecture documentation, dependency
-definitions, executable configuration, and application entrypoints. When this
-evidence does not establish the application purpose, users or external systems,
-repository boundary, and external interaction surfaces, the agent begins a
-focused conversation and continues with targeted follow-up questions. It
-synthesizes the evidence and answers into a candidate goal and interface, then
-asks the user to confirm or correct them as a separate decision.
+The agent then inspects product and architecture documentation, dependency
+definitions, executable configuration, and entrypoints for the workspace root
+and every declared member. When evidence does not establish a configured
+boundary's purpose, users or external systems, responsibility, and external
+interaction surfaces, the agent begins a focused conversation and continues
+with targeted follow-up questions. It synthesizes a candidate goal and
+interface for each boundary, then asks the user to confirm or correct them.
 
-Only after confirmation does the agent propose a root `#module.sigil` that
-follows the `RootSigil` contract with a meaningful application summary; it never
-creates an empty or import-only root module.
-After goal and interface confirmation, material application-wide evidence may
-be proposed in a root `expand` using the general section meanings at project
-scope: runtime and deployment modes in `state`, cross-cutting behavior and flows
-in `logic`, rules, policies, binding technologies, and architecture decisions in
-`constraints`, and observable outcomes in `cases`.
-Incidental dependencies, secrets, low-level configuration, and module-specific behavior remain outside the root summary.
-The approved RootSigil is written, validated, and reviewed before the agent
-focuses on the requested implementation task.
+After confirmation, the agent proposes an ordinary summary component in each
+configured boundary's `#module.sigil`. A boundary module index may combine that
+summary with direct imports defining its directory-import surface. Material
+boundary-wide evidence may be proposed in a matching `expand` using the general
+section meanings. Incidental dependencies, secrets, low-level configuration,
+and task-specific behavior remain outside boundary summaries. Approved boundary
+summaries are written, validated, and reviewed before the agent focuses on the
+requested implementation task. Internal module indexes outside configured
+boundaries require no project summary.
 Component contracts and implementation-specific expands are placed beside the code they describe.
 
 ## Greenfield Design
@@ -157,9 +155,9 @@ Unavailable authoritative material blocks high-risk or compliance-critical imple
 Approved Sigil should live beside the module, feature, abstraction, or implementation it explains.
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
-The workspace-root `.sigil/config.json` remains the discovery marker; a root
-`#module.sigil` is the `RootSigil` project summary and has no discovery
-authority.
+The workspace-root `.sigil/config.json` remains the discovery marker.
+`#module.sigil` is a directory-import index and has no discovery authority;
+configured boundary indexes conventionally contain ordinary summary components.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.
 
 ## Agent Review Heuristics

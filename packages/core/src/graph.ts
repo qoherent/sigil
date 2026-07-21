@@ -17,10 +17,12 @@ export function buildSigilGraph(resolution: SigilResolution): SigilGraph {
       })),
     importedComponentEdges: resolution.imports.flatMap((item) =>
       item.targetFile === undefined ? [] : item.names
-        .filter((name) => name.component !== undefined)
+        .filter((name) =>
+          name.component !== undefined && name.componentFile !== undefined
+        )
         .map((name) => ({
           sourceFile: item.sourceFile,
-          targetFile: item.targetFile!,
+          targetFile: name.componentFile!,
           componentName: name.name,
           importPath: item.declaration.path,
         }))

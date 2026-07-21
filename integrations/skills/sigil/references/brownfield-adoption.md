@@ -2,7 +2,8 @@
 
 Use this procedure when implementation exists but Sigil coverage is absent,
 partial, ambiguous, or suspected to have drifted. Establish the workspace and
-its approved RootSigil before modeling or implementing the requested task.
+approved ordinary summaries for its configured boundaries before modeling or
+implementing the requested task.
 
 Code is evidence of current behavior, not proof of desired behavior or
 rationale. Preserve existing user changes and unrelated worktree content.
@@ -10,7 +11,7 @@ rationale. Preserve existing user changes and unrelated worktree content.
 ## Contents
 
 1. Initialize or validate the workspace
-2. Establish and review RootSigil
+2. Establish and review configured-boundary summaries
 3. Focus on the requested task
 4. Gather and classify task evidence
 5. Reconcile current and intended behavior
@@ -32,7 +33,7 @@ sigil init <repository-root>
 
 Use `--name`, `--include`, or `--exclude` only when repository facts or an
 explicit user decision require non-default values. `sigil init` must create the
-config before RootSigil discovery and must never overwrite an existing config.
+config before boundary-summary discovery and must never overwrite an existing config.
 
 When a config already exists, do not run `init`. Validate it in place.
 
@@ -47,91 +48,81 @@ Stop with a compatibility report when initialization fails, the existing config
 is invalid, or the configured CLI, core, or Sigil versions are not supported. Do
 not create `.sigil` files until the workspace contract is valid.
 
-## 2. Establish And Review RootSigil
+## 2. Establish And Review Configured-Boundary Summaries
 
-Before focusing on the requested implementation task, ensure the workspace-root
-`#module.sigil` is a meaningful, approved RootSigil. An empty, import-only, or
-materially ambiguous root module does not satisfy this requirement.
+Before focusing on the requested implementation task, inspect the workspace
+root and every path declared by `workspace.members`. Each configured boundary
+must have a meaningful, approved ordinary summary component in its
+`#module.sigil`. The component and any matching expand use normal Sigil forms
+and receive no special parser or resolver status.
 
-### Gather Repository-Level Evidence
+An internal `#module.sigil` outside a configured boundary is only a directory
+index and requires no project summary. Do not infer additional summary
+boundaries from package manifests or arbitrary directory structure.
 
-Inspect the smallest root-level evidence set that explains what the application
-is, why it exists, and how users or external systems encounter it:
+### Gather Boundary Evidence
 
-- root README, product, architecture, and operational documentation;
+For each configured boundary, inspect the smallest evidence set that explains
+what it owns, why it exists, and how users, callers, or external systems
+encounter it:
+
+- applicable README, product, architecture, and operational documentation;
 - dependency definitions, workspace manifests, lockfiles, and declared scripts;
 - executable runtime, build, deployment, routing, and environment configuration;
-- application entrypoints, exports, commands, routes, event consumers, workers,
-  or top-level UI shells;
-- an existing RootSigil and related repository-level tests when present.
+- entrypoints, exports, commands, routes, event consumers, workers, or top-level
+  UI shells;
+- an existing summary component and related boundary-level tests when present.
 
 Do not read the entire repository indiscriminately. Do not promote a framework,
-dependency, environment variable, or implementation pattern into a binding root
-decision merely because it exists.
+dependency, environment variable, or implementation pattern into a binding
+boundary decision merely because it exists.
 
-### Build The Application Picture Through Conversation
+### Build Each Boundary Picture Through Conversation
 
-Assess whether evidence is specific enough to describe:
-
-- the application name;
-- its responsibility and intended outcome;
-- its users, callers, or external systems;
-- its repository-level boundary and important non-responsibilities;
-- its externally meaningful UI, API, CLI, library, worker, event, or service
-  surfaces.
+Assess whether evidence is specific enough to describe the boundary name,
+responsibility, intended outcome, users or callers, important
+non-responsibilities, and externally meaningful UI, API, CLI, library, worker,
+event, or service surfaces.
 
 When any material part remains vague, unsupported, or contradictory, use
-`references/design-conversation.md`. Begin from what repository evidence
-suggests and what remains unknown, then resolve missing product, boundary, and
-interface decisions one primary decision at a time unless the user requests a
-faster grouped review.
+`references/design-conversation.md`. Begin from what evidence suggests and what
+remains unknown, then resolve missing purpose, boundary, and interface decisions
+one primary decision at a time unless the user requests a faster grouped review.
 
 Maintain confirmed, provisionally assumed, intentionally deferred, and
 unresolved decisions through the shared protocol. Do not guess missing purpose
-or interface lines. Do not use a single confirmation question as a substitute
-for discovery conversation when evidence is insufficient.
+or interface lines. Ask the user to confirm or correct each synthesized boundary
+goal and interface as a separate decision.
 
-After the shared protocol has no unresolved RootSigil blocker, synthesize:
+### Propose Boundary Module Indexes
 
-- a candidate application name;
-- a concise goal covering responsibility, intended outcome, and boundary;
-- a concise interface covering users or systems and external surfaces;
-- evidence paths and user-provided decisions supporting each statement;
-- remaining conflicts, unsupported inferences, and intentionally excluded facts.
+After goal and interface confirmation, propose an ordinary summary component in
+each configured boundary's `#module.sigil`. A boundary module index may also
+directly import components that should resolve through its directory shorthand.
+Those imports do not grant visibility; every component remains public through
+its explicit `.sigil` path.
 
-Ask the user to confirm or correct this synthesized goal and interface as a
-separate decision. Confirmation is mandatory even when repository evidence and
-conversation appear consistent.
-
-### Propose RootSigil
-
-After goal and interface confirmation, classify confirmed application-wide
-detail for an optional root `expand`:
+Classify confirmed boundary-wide detail for an optional matching expand:
 
 - `state`: runtime, deployment, persistence, or operational modes;
 - `logic`: cross-cutting flows, routing, orchestration, and lifecycle behavior;
 - `constraints`: policies, architecture, dependency direction, compatibility,
   supported platforms, and binding technologies;
-- `cases`: observable application outcomes, workflows, failures, and acceptance
-  scenarios.
+- `cases`: observable outcomes, workflows, failures, and acceptance scenarios.
 
 Keep secrets, volatile values, incidental dependencies, low-level configuration,
-private algorithms, and task-specific behavior outside RootSigil. A technology
-belongs in root `constraints` only when repository evidence or user confirmation
-establishes it as a binding application decision.
+private algorithms, and task-specific behavior outside boundary summaries.
+Present the exact summary components, expands, module-index imports, and
+locations before editing.
 
-Present the exact RootSigil text and location before editing. The root component
-must remain meaningful without imports and may import only already-reviewed
-contracts that the application summary genuinely depends on.
-
-Wait for approval, write only the approved RootSigil, run `sigil check`, use
-`graph` or `context` when relationships changed, and stop at the RootSigil
-review gate. Do not move to task modeling until the user approves the written
-RootSigil.
+Wait for approval, write only the approved boundary module indexes, run
+`sigil check`, use `graph` or `context` when relationships changed, and stop at
+the Sigil review gate. Do not move to task modeling until the user approves the
+written configured-boundary summaries.
 
 ## 3. Focus On The Requested Task
 
-After RootSigil approval, return to the user's requested task. Select the
+After configured-boundary summary approval, return to the user's requested task. Select the
 smallest coherent change-frontier boundary in this order:
 
 1. the component or module explicitly named by the user;
@@ -168,7 +159,7 @@ Read only evidence needed for the requested boundary and direct relationships:
 - tests, fixtures, screenshots, and acceptance scenarios;
 - schemas, migrations, persistence, permissions, and integration boundaries;
 - configuration and deployment facts that materially affect the task;
-- related Sigil, imports, RootSigil summaries, and collected expands;
+- related Sigil, imports, configured-boundary summaries, module indexes, and collected expands;
 - focused version history when rationale is otherwise unavailable.
 
 Classify material findings as:
@@ -189,7 +180,7 @@ the review summary rather than Sigil source. Do not assign confidence scores.
 ## 5. Reconcile Current And Intended Behavior
 
 Compare implementation, tests, documentation, configuration, existing Sigil,
-RootSigil, and the user's requested outcome.
+configured-boundary summaries, and the user's requested outcome.
 
 For each material behavior identify whether it is:
 
@@ -269,8 +260,8 @@ coverage. Explain intentional omissions that could otherwise appear material.
 ### Proposed Sigil
 
 Show exact component, expand, and import text. Include only the task boundary;
-do not reopen approved RootSigil unless the task reveals a genuine application-
-wide decision.
+do not reopen approved boundary summaries unless the task reveals a genuine
+boundary-wide decision.
 
 ### Proposed Locations And Imports
 
@@ -317,11 +308,12 @@ resolves it.
 
 ### Repository With No Sigil
 
-Run `sigil init` first. Validate the config. Inspect root application evidence,
-hold focused conversation where evidence is insufficient, synthesize and confirm
-the application goal and interface, propose RootSigil, write it only after
-approval, and stop for RootSigil review. After approval, focus on the requested
-task and begin its bounded evidence and proposal workflow.
+Run `sigil init` first. Validate the config. Inspect evidence for the workspace
+root and every declared member, hold focused conversation where evidence is
+insufficient, synthesize and confirm each boundary goal and interface, propose
+ordinary summaries in their `#module.sigil` files, write them only after
+approval, and stop for review. After approval, focus on the requested task and
+begin its bounded evidence and proposal workflow.
 
 ### Vague Application
 
@@ -329,16 +321,16 @@ Repository naming suggests an internal operations tool, but no evidence
 identifies its users or external surfaces. Use the shared design conversation to
 resolve users, outcomes, boundaries, and interaction surfaces sequentially.
 After its blocking decisions are resolved, synthesize a candidate goal and
-interface for separate confirmation. Do not guess RootSigil.
+interface for separate confirmation. Do not guess a boundary summary.
 
 ### Conflicting Task Evidence
 
 Code deletes canceled bookings, a test expects deletion, and documentation says
 history must be retained. Report the conflict and ask which contract is intended
-after RootSigil is approved. Do not encode either behavior silently.
+after configured-boundary summaries are approved. Do not encode either behavior silently.
 
 ### Established Task Coverage
 
 The requested component already has a reviewed contract and matching expands.
-After confirming the workspace RootSigil, return to the shared review workflow
+After confirming configured-boundary summaries, return to the shared review workflow
 unless evidence suggests drift or the user requests reconciliation.

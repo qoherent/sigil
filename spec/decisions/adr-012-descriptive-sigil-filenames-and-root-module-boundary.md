@@ -1,12 +1,15 @@
 # ADR-012: Descriptive Sigil Filenames And The Root Module Boundary
 
-**Status:** Proposed
+**Status:** Superseded by ADR-013
 
 **Owner:** _TBD_
 
 **Reviewers:** _TBD_
 
 **Last updated:** 2026-07-20
+
+> Historical note: Sigil 0.2.0 adopted the directory-index interpretation in
+> ADR-013 and removed the special project-root contract described here.
 
 ## 1. Context
 

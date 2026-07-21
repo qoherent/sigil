@@ -99,7 +99,7 @@ Responsibilities:
 - load relevant `.sigil` files through `filesystem`;
 - identify the root project and workspace-member roots exclusively from
   `.sigil/config.json`;
-- identify valid `RootSigil` locations.
+- expose configured workspace and member boundaries without restricting module-index locations.
 
 Rules:
 

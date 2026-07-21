@@ -12,12 +12,12 @@ component Sigil {
   }
 
   interface {
-    publishes the Sigil Language and .sigil/config.json contract 0.1.0 through SigilLanguage and SigilWorkspaceConfig
-    publishes @qoherent/sigil-core 0.1.0 through SigilCore
-    publishes @qoherent/sigil 0.1.0 through SigilCli
-    publishes @qoherent/sigil-lsp 0.1.0 through SigilLsp
-    publishes the Sigil VS Code extension 0.1.0 through SigilVsCodeExtension
-    publishes the standalone Sigil agent skill 0.1.0 through SigilSkill
+    publishes the Sigil Language and .sigil/config.json contract 0.2.0 through SigilLanguage and SigilWorkspaceConfig
+    publishes @qoherent/sigil-core 0.2.0 through SigilCore
+    publishes @qoherent/sigil 0.2.0 through SigilCli
+    publishes @qoherent/sigil-lsp 0.2.0 through SigilLsp
+    publishes the Sigil VS Code extension 0.2.0 through SigilVsCodeExtension
+    publishes the standalone Sigil agent skill 0.2.0 through SigilSkill
     defines the Sigil language through spec/sigil-language.md
     defines the human-agent workflow through spec/sigil-workflow.md
     defines platform architecture through spec/sigil-platform-architecture.md
@@ -30,11 +30,12 @@ component Sigil {
 expand Sigil {
   constraints {
     A mandatory .sigil/config.json defines a Sigil workspace root.
-    #module.sigil is reserved for the workspace root and member roots explicitly declared by workspace.members.
-    .sigil/config.json defines workspace roots; RootSigil summaries have no workspace-discovery authority.
+    #module.sigil acts as an explicit directory-import index for its containing directory.
+    .sigil/config.json defines workspace roots and members; module indexes have no workspace-discovery authority.
+    Configured workspace boundaries carry ordinary summary components maintained through the Sigil workflow.
     Sigil Language and workspace configuration share one sigilVersion sourced from packages/core/deno.json.
     CLI, core, LSP, editor integration, and skill release versions remain package or integration metadata rather than workspace configuration fields.
-    All published Sigil artifacts remain pre-production at version 0.1.0 until production readiness is explicitly approved.
+    All published Sigil artifacts remain pre-production at version 0.2.0 until production readiness is explicitly approved.
     Anchors, editor integrations other than VS Code, plugin packaging, and durable approval records remain outside the initial 0.x scope.
     @qoherent/sigil-lsp and the Sigil VS Code extension are part of the initial 0.x scope while other concrete editor integrations remain independently scoped.
     Language-level documentation lives under spec/.

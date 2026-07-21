@@ -111,8 +111,8 @@ Use `sigil context` and `sigil graph` when available. Read exact source wording
 before reporting a conflict.
 
 Check the selected component, all matching expands, imported and importing
-contracts, relevant root-project or workspace-member `RootSigil` summaries, and
-nearby internal Sigil files for:
+contracts, relevant ordinary summary components at the workspace root or
+declared members, and nearby internal Sigil files for:
 
 - inconsistent names, types, states, transitions, or error behavior;
 - conflicting policies or constraints;

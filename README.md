@@ -132,10 +132,9 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 ## Repository Layout
 
-The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.1.0 workspace and excludes the independent example projects.
-The root [#module.sigil](./%23module.sigil) is its `RootSigil`: the high-level
-project summary of purpose, interaction surfaces, project-wide behavior, and
-binding architecture decisions.
+The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.2.0 workspace and excludes the independent example projects.
+The root [#module.sigil](./%23module.sigil) is its directory-import index and
+contains the ordinary high-level project summary for this configured boundary.
 
 - `spec/` contains language, workflow, platform architecture, and open-question documents.
 - `examples/` contains independently configured Sigil projects used as design-pressure fixtures.
@@ -173,8 +172,8 @@ The skill teaches Codex to:
 - detect missing, conflicting, or vague information;
 - assess semantic readiness, modularity, applicable standards, and common implementation pitfalls;
 - introduce Sigil incrementally into brownfield codebases through a change-frontier pilot;
-- derive a provisional application picture from project documentation, dependency definitions, executable configuration, and entrypoints, then confirm its goal and interface with the user before proposing a meaningful `RootSigil`;
-- preserve material application-wide runtime modes, flows, binding architecture decisions, and observable outcomes in a minimal root expand while excluding incidental and module-specific details;
+- derive provisional boundary pictures from documentation, dependency definitions, executable configuration, and entrypoints, then confirm goals and interfaces before proposing ordinary summaries at the workspace root and declared members;
+- preserve material boundary-wide runtime modes, flows, binding architecture decisions, and observable outcomes in minimal expands while excluding incidental and task-specific details;
 - propose brownfield and externally informed semantic lines before editing;
 - stop at the review gate after semantic changes;
 - colocate approved Sigil with the implementation it explains;
@@ -186,16 +185,15 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-All published Sigil artifacts are pre-production and versioned at 0.1.0.
-See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.1.md).
+All published Sigil artifacts are pre-production and versioned at 0.2.0.
+See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.2.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 
 `sigil-core` implements explicit language-version parsing, strict config
-validation, config-based discovery, declared project-root detection, glob
-filtering, source ranges and semantic lines, import and component resolution,
-`RootSigil` location enforcement, collective expansion, graphs, projections,
-and stable diagnostics.
+validation, config-based discovery, declared workspace-member metadata, glob
+filtering, source ranges and semantic lines, explicit file and directory-index
+import resolution, collective expansion, graphs, projections, and stable diagnostics.
 `sigil-cli` implements `init`, `version`, `parse`, `check`, `graph`, `context`, and Markdown `render` commands with machine-readable output and stable exit behavior.
 
 `sigil-lsp` is an implemented pre-production deliverable. Its initial contract

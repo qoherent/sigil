@@ -9,7 +9,7 @@ Current integrations:
 
 - `skills/sigil`: Codex skill with agent-facing format guidance, standards-aware
   semantic review, incremental brownfield adoption, proposal and review gates,
-  and implementation colocation. Version 0.1.0 is distributed as a standalone
+  and implementation colocation. Version 0.2.0 is distributed as a standalone
   repository skill bundled with native CLI releases and installable globally
   or per project with `sigil skill install`.
 - `editor/vscode`: implemented pre-production VS Code extension and

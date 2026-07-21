@@ -7,7 +7,7 @@ component SigilVsCodeExtension {
   }
 
   interface {
-    publishes the pre-production Sigil VS Code extension 0.1.0
+    publishes the pre-production Sigil VS Code extension 0.2.0
     distributed initially as an installable VSIX attached to a versioned GitHub Release
     registers the sigil language for .sigil files
     provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component names
@@ -42,9 +42,9 @@ expand SigilVsCodeExtension {
     Users do not need a globally installed Deno runtime or Sigil CLI.
     The extension depends on SigilLsp for language semantics and does not import or duplicate sigil-core behavior.
     Preview commands use standard LSP hover responses and introduce no custom protocol methods.
-    Version 0.1.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
+    Version 0.2.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
     VS Code for the Web and virtual workspaces remain outside the initial version.
-    Version 0.1.0 collects no telemetry and does not modify Sigil documents.
+    Version 0.2.0 collects no telemetry and does not modify Sigil documents.
     A development publisher identifier is used until an approved Marketplace publisher identity exists.
     Initial distribution does not require Visual Studio Marketplace or Open VSX access.
     The packaged VSIX version matches the extension manifest and GitHub release tag.

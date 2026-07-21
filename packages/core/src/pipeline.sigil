@@ -16,7 +16,7 @@ expand SigilCore {
 
   constraints {
     SigilCore is the public composition boundary for SigilDiagnostics, SigilFileSystem, SigilParser, SigilWorkspaceLoader, SigilResolver, SigilGraphBuilder, and SigilProjections.
-    The public resolveSigilWorkspace(workspace) signature and ResolvedSigilWorkspace result remain compatible with version 0.1.0.
+    The public resolveSigilWorkspace(workspace) signature and ResolvedSigilWorkspace result remain compatible with version 0.2.0.
     Internal pipeline stages depend only in the declared direction and do not create cyclic ownership.
   }
 

@@ -1,8 +1,8 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.1.0
+**Sigil version:** 0.2.0
 **Status:** Accepted
-**Released:** 2026-07-13
+**Released:** 2026-07-21
 
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
@@ -35,12 +35,10 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The project summary filename is `#module.sigil`.
-It is reserved for the root project at the workspace root or a workspace member
-at a member root declared by `workspace.members`, and every file with that name
-follows the `RootSigil` contract.
-Do not use `#module.sigil` for ordinary internal directories, features,
-components, or implementation modules.
+The directory-index filename is `#module.sigil`.
+It may appear in any included directory and defines the component names that
+resolve through directory-import shorthand for that directory.
+It does not grant or restrict component visibility.
 
 A strict JSON `.sigil/config.json` is required at the workspace root.
 It selects the Sigil version and defines workspace file discovery. The config
@@ -55,42 +53,30 @@ The default placement is beside the corresponding module, feature, abstraction, 
 When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
-Use the workspace-root `#module.sigil` for the `RootSigil` project summary.
-In a monorepo workspace, declaring a workspace member permits a `RootSigil` at
-its member root but does not require one. A member without `#module.sigil`
-remains valid, but a directory import to that member reports an unresolved
-import path because no project contract is available. Internal contracts use
-descriptive `.sigil` filenames colocated with their implementation and are
-imported by explicit filename.
+Every component declaration is public and may be imported through its explicit
+`.sigil` source path whether or not a module index names it. A module index only
+selects the names available through a directory import. It may declare
+components itself and may name components through direct imports. Sigil has no
+export or re-export form.
 
-### RootSigil
+At configured workspace boundaries, the Brownfield workflow maintains ordinary
+project-summary components in the workspace-root and declared-member
+`#module.sigil` files. Those summaries use normal component and expand semantics;
+they have no special parser or resolver status. Internal directories may use
+`#module.sigil` solely as an index and require no project summary.
 
-`RootSigil` defines the role of `#module.sigil` for one project. The
-workspace-root file describes the root project. A member-root file describes a
-workspace member explicitly declared by `workspace.members` in `.sigil/config.json`.
-Package manifests and directory structure alone do not authorize a RootSigil
-location.
+### Module indexes
 
-The file contains a project-named component representing that project.
+A directory import resolves to `#module.sigil` in the target directory. Its
+directory-import surface consists of:
 
-In that project component:
+- components declared directly in that `#module.sigil`;
+- component names successfully resolved by direct imports in that file.
 
-- `goal` describes why the project exists and its intended outcome;
-- `interface` describes how users and external systems interact with the
-  project, such as through a web app, mobile app, API, CLI, or library.
-
-Its matching `expand` uses the general `state`, `logic`, `constraints`, and
-`cases` meanings at project scope. `RootSigil` narrows the scope to project-wide
-concerns; it does not redefine those sections.
-
-Root summaries exclude secrets, incidental dependencies, low-level
-configuration, and module-specific implementation details. `.sigil/config.json`
-defines the workspace root; `RootSigil` summarizes the project without gaining
-workspace-discovery authority.
-
-An excluded nested directory with its own `.sigil/config.json` is an independent
-workspace. It describes its own root project and is not a workspace member of
-the parent.
+Other files beneath the directory, unnamed dependencies of indexed components,
+and components imported only by those indexed files are not added implicitly.
+They remain public through explicit file imports. Explicit chains of module
+indexes may make the same component resolvable through several directory paths.
 
 ### Workspace and project vocabulary
 
@@ -98,9 +84,8 @@ A **Sigil workspace** is the tooling boundary controlled by one
 `.sigil/config.json`. The **workspace root** is the directory containing that file.
 
 A **project** is a coherent app, service, library, package, or other system
-described by a `RootSigil`. A **project root** is a directory where
-`#module.sigil` is permitted. The workspace root is the **root project**
-location.
+represented by an ordinary summary component at a configured workspace
+boundary. The workspace root is the **root project** location.
 
 A **workspace member** is an additional project explicitly declared by
 `workspace.members`. Its declared directory is its **member root**. A workspace
@@ -170,8 +155,7 @@ Tools discover the workspace by walking upward from the current file or command 
 An explicit root must contain `.sigil/config.json` directly.
 Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
 
-A directory import is reserved for a valid `RootSigil` location and resolves to
-the root project's or declared workspace member's `#module.sigil`.
+A directory import resolves to `#module.sigil` in the target directory.
 
 ```sigil
 @packages/cli import { SigilCli }
@@ -184,10 +168,9 @@ packages/cli/#module.sigil
 packages/cli/deno.json
 ```
 
-Because `packages/cli` is declared in `workspace.members`,
 `@packages/cli import { SigilCli }` resolves through its `#module.sigil`.
-Package manifests and directory structure alone are not enough to make another
-directory importable this way.
+The directory does not need to be declared in `workspace.members`; the target
+module index only needs to be included in the selected workspace.
 
 A file import resolves to the exact `.sigil` file.
 
@@ -197,8 +180,10 @@ A file import resolves to the exact `.sigil` file.
 
 `@sub/folder/auth.sigil import { Auth }` resolves through `sub/folder/auth.sigil`.
 
-Importing `Name` makes the public `component Name` available to the importing file.
-It also makes all matching `expand Name` blocks from the imported file available as collected expanded detail.
+Importing `Name` from an explicit file resolves a component declared in that
+file. Importing it from a directory resolves the name through the target module
+index. In both cases it makes the public component and all matching collected
+expands available to the importer.
 
 Imported names are case-sensitive and should match the spelling of the component declaration.
 
@@ -206,7 +191,8 @@ Imports are explicit dependency edges between Sigil files.
 They do not copy text into the importing file.
 They make the referenced component contract and collected expansion available for interpretation, review, and implementation context.
 
-An imported name must resolve to a `component Name` in the resolved import source.
+An imported name must resolve to a `component Name` in the explicit source or
+the directory index's local declarations and direct imports.
 An import that resolves only to `expand Name` without `component Name` is unresolved.
 
 ## 5. Components
@@ -424,9 +410,8 @@ A valid Sigil source file may contain one or more top-level forms.
 
 An `import` must specify a path and one or more names.
 
-An import path without a `.sigil` filename may target only a valid `RootSigil`
-location: the workspace root or a member root declared by `workspace.members`.
-It resolves to `#module.sigil` inside that path.
+An import path without a `.sigil` filename resolves to `#module.sigil` inside
+the target directory.
 
 An import path with a `.sigil` filename resolves to that exact file.
 

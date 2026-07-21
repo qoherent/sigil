@@ -16,8 +16,6 @@ import type {
 import { parseSigilDocument } from "./parser.ts";
 import {
   ancestorsFrom,
-  dirname,
-  isModuleFile,
   joinPath,
   normalizePath,
   relativePath,
@@ -166,23 +164,6 @@ export async function loadSigilWorkspace(
   }
 
   return { ...discovery, memberRoots, files: loadedFiles, diagnostics };
-}
-
-export function isWorkspaceRootModule(
-  workspace: SigilWorkspace,
-  path: string,
-): boolean {
-  return normalizePath(path) === joinPath(workspace.root, "#module.sigil");
-}
-
-export function isRootSigil(
-  workspace: SigilWorkspace,
-  path: string,
-): boolean {
-  const normalized = normalizePath(path);
-  const root = dirname(normalized);
-  return isModuleFile(normalized) &&
-    (root === workspace.root || workspace.memberRoots.includes(root));
 }
 
 async function readDiscoveredConfig(

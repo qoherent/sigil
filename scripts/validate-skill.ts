@@ -57,8 +57,8 @@ requireText(
 );
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "0.1.0") {
-  throw new Error(`Expected skill VERSION 0.1.0, got ${version}`);
+if (version !== "0.2.0") {
+  throw new Error(`Expected skill VERSION 0.2.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -66,10 +66,10 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "0.1.0",
-    cliVersion: "^0.1.0",
-    coreVersion: "^0.1.0",
-    sigilVersion: "0.1.0",
+    skillVersion: "0.2.0",
+    cliVersion: "^0.2.0",
+    coreVersion: "^0.2.0",
+    sigilVersion: "0.2.0",
   })
 ) {
   if (compatibility[key] !== expected) {
@@ -90,18 +90,18 @@ const requiredBrownfieldBehaviors = [
   "classify-repository-evidence",
   "scan-application-evidence",
   "converse-when-application-vague",
-  "continue-root-follow-up-questions",
+  "continue-boundary-follow-up-questions",
   "elicit-application-goal-and-interface",
-  "confirm-synthesized-root-contract-separately",
-  "reject-empty-or-import-only-root-module",
-  "propose-confirmed-root-application-summary",
-  "classify-root-expand-evidence",
-  "propose-minimal-root-expand",
-  "preserve-only-binding-root-constraints",
-  "exclude-incidental-and-module-specific-root-details",
+  "confirm-synthesized-boundary-contract-separately",
+  "inspect-root-and-declared-member-boundaries",
+  "propose-confirmed-boundary-summaries",
+  "classify-boundary-expand-evidence",
+  "propose-minimal-boundary-expands",
+  "preserve-only-binding-boundary-constraints",
+  "exclude-incidental-and-task-specific-boundary-details",
   "propose-before-edit",
-  "review-root-before-task-focus",
-  "focus-requested-task-after-root-approval",
+  "review-boundaries-before-task-focus",
+  "focus-requested-task-after-boundary-approval",
   "collaborate-on-missing-sigil-before-implementation",
   "validate-written-sigil",
   "stop-at-semantic-review-gate",
@@ -139,8 +139,8 @@ requireText(
 );
 requireText(
   fixture,
-  "Only after RootSigil approval, focus on the requested component",
-  "fixture root-before-task ordering",
+  "Only after configured-boundary summary approval, focus on the requested",
+  "fixture boundary-before-task ordering",
 );
 requireText(
   fixture,
@@ -315,7 +315,7 @@ requireText(
 );
 requireText(
   brownfield,
-  "Build The Application Picture Through Conversation",
+  "Build Each Boundary Picture Through Conversation",
   "brownfield conversational discovery",
 );
 requireText(
@@ -325,13 +325,13 @@ requireText(
 );
 requireText(
   brownfield,
-  "Confirmation is mandatory",
+  "Ask the user to confirm or correct each synthesized boundary",
   "brownfield separate confirmation",
 );
 requireText(
   brownfield,
-  "Do not move to task modeling until the user approves the written\nRootSigil.",
-  "brownfield root-before-task ordering",
+  "Do not move to task modeling until the user approves the\nwritten configured-boundary summaries.",
+  "brownfield boundary-before-task ordering",
 );
 
 const greenfield = await Deno.readTextFile(
@@ -383,7 +383,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 0.1.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.2.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {
