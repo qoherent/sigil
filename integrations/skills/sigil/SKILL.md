@@ -286,19 +286,40 @@ Select the workflow before detailed semantic work:
      expands without overriding their section-specific content.
    - Treat a concept as public when it occurs in `interface`; otherwise keep it
      private to the component and matching expands.
+   - Before proposing any identifier, inspect the remainder of the same section,
+     every other section of the component, and every matching expand for
+     occurrences of the same semantic idea.
+   - Inspect the component's existing local concepts and accessible imported
+     public concepts before creating a new identity.
+   - Use `sigil graph` to inspect direct importers for relevant use cases and
+     established terminology. Traverse transitive importers only when a concept
+     is re-exposed or transitive namespace ambiguity must be assessed.
+   - Treat consumer terminology as naming and coherence evidence. Do not reuse a
+     consumer concept identity unless it is accessible through valid imports.
+   - Classify every affected interface region as reuse of a local identity,
+     reuse of an imported public identity, or creation of a new identity.
    - Reuse imported public concepts as bare identifiers. Preserve the provider's
      identity and keep consumer lines contextual to the consumer. Do not use
      dotted notation, aliases, shadowing, or nested concept blocks.
    - When subagents are available, delegate concept grouping and identifier
-     generation to one dedicated subagent after collecting the relevant
-     component, all matching expands, and accessible imported public concepts.
-     Tell the subagent to return a proposal only and not edit files.
+     generation to one dedicated subagent only after completing reuse discovery.
+     Give it the affected regions, the relevant component and all matching
+     expands, local occurrences, accessible imported public concepts, relevant
+     direct-consumer use cases, and required graph paths. Tell the subagent to
+     return a proposal only and not edit files.
    - Require the subagent proposal to identify each affected region, whether it
      represents one concept or several, whether each identifier is new or
-     reused, and the proposed concise names.
+     reused, supporting occurrences, relevant graph paths, rejected alternatives,
+     and the proposed concise names.
    - Validate proposed names in the primary agent against
      `[A-Za-z][A-Za-z0-9_-]*`, case-insensitive namespace uniqueness, public and
-     private visibility, and transitive import ambiguity before editing.
+     private visibility, collective coherence, and transitive import ambiguity.
+   - After validation, present the complete proposal and exact Sigil changes to
+     the user, enter awaiting approval, and stop. Subagent completion is not user
+     approval and grants no edit authority to the primary agent.
+   - Concept-identifier creation, reuse, regrouping, renaming, and warning repair
+     always require explicit user approval of the presented proposal before any
+     repository mutation.
    - Prefer PascalCase without hyphens or underscores. Treat an unusually long
      name as a reason to reconsider the concept grouping or component boundary,
      not as a deterministic length error.
@@ -368,6 +389,15 @@ Externally informed compatible guidance and brownfield reconstruction have a
 proposal gate before any edit. Present exact additions and wait for approval.
 After approval, edit Sigil and stop again at the semantic review gate so the
 user can review the complete file.
+
+Every delegated semantic proposal is advisory, regardless of which workflow
+produced it. After a subagent returns, the primary agent validates and presents
+the exact proposal, enters awaiting approval, and makes no repository mutation
+until the user explicitly approves that proposal. Subagent completion, primary
+validation, and a favorable recommendation are not approval events.
+
+Concept-identifier creation, reuse, regrouping, renaming, and warning repair
+always use this pre-edit proposal gate.
 
 The review gate is mandatory when Sigil is created or semantically changed.
 After approval, a placement-only move or split that preserves the approved

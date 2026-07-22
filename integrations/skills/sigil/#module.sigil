@@ -32,11 +32,17 @@ component SigilSkill {
 
     authors component dependencies through imports rather than interface lines
 
-    groups interface content under concise reusable concept identifiers and uses identifiers in other sections when reuse is valuable
+    ConceptIdentifierWorkflow {
+      discovers reusable concept identities from the complete component, matching expands, accessible imported concepts, and relevant importing consumers before proposing identifiers
 
-    checks CLI concept diagnostics before proposing or writing Sigil
+      checks CLI concept diagnostics before proposing or writing Sigil
 
-    delegates concept-identifier generation and repair to a dedicated subagent when subagents are available
+      delegates evidence-backed concept grouping and identifier proposals to a dedicated subagent when subagents are available
+    }
+
+    DelegatedProposalApproval {
+      presents every validated delegated semantic proposal for explicit human approval before editing any repository file
+    }
 
     separates distinct prose-level semantic ideas with blank lines in every section
 
@@ -57,6 +63,26 @@ component SigilSkill {
 }
 
 expand SigilSkill {
+  logic {
+    ConceptIdentifierWorkflow {
+      For each affected interface region, inspect the remainder of the same section, every other section of the component, and every matching expand for occurrences of the same semantic idea.
+
+      Inspect accessible imported public concepts before creating a new identity.
+
+      Inspect direct importers of the target component for relevant use cases and established terminology.
+
+      Traverse transitive importers only when a concept is re-exposed or transitive namespace ambiguity must be assessed.
+
+      Classify each affected region as reuse of a local identity, reuse of an imported public identity, or creation of a new identity.
+
+      Give the concept-identifier subagent the affected regions, local occurrences, imported candidates, relevant consumer evidence, and graph paths.
+    }
+
+    DelegatedProposalApproval {
+      After a subagent returns, the primary agent validates and presents the exact proposal to the user, then enters awaiting approval.
+    }
+  }
+
   constraints {
     Before adding or modifying implementation that lacks clear Sigil coverage, collaborate with the user to define and approve the affected Sigil.
 
@@ -64,25 +90,49 @@ expand SigilSkill {
 
     SigilSkill requires SigilLanguage and SigilWorkspaceConfig sigilVersion 0.4.0 sourced from core.
 
-    A human-authored Sigil document may omit interface concept identifiers, but the skill repairs reported gaps before semantic review.
+    ConceptIdentifierWorkflow {
+      A human-authored Sigil document may omit interface concept identifiers, but the skill repairs reported gaps before semantic review.
 
-    The concept-identifier subagent receives the relevant component, all matching expands, and accessible imported interface concepts.
+      A new concept identity is proposed only after local, imported, and relevant consumer reuse evidence has been assessed.
 
-    The concept-identifier subagent proposes whether each interface region contains one concept or several, whether each concept is new or reused, and concise unambiguous names.
+      Consumer terminology is naming and coherence evidence but is not a reusable identity unless that identity is accessible through valid imports.
 
-    The concept-identifier subagent has proposal-only authority and does not edit files.
+      The concept-identifier subagent receives the affected regions, the relevant component and all matching expands, accessible imported public concepts, relevant direct-consumer use cases, and required graph paths.
 
-    The primary skill agent validates identifier grammar, case-insensitive uniqueness, visibility, and transitive import ambiguity before applying subagent proposals.
+      The concept-identifier subagent proposes whether each interface region contains one concept or several, whether each concept is new or reused, supporting occurrences, relevant graph paths, rejected alternatives, and concise unambiguous names.
 
-    Concept-identifier work does not invoke or modify anchor persistence, proposal, or reconciliation behavior.
+      The primary skill agent validates identifier grammar, case-insensitive uniqueness, visibility, collective coherence, and transitive import ambiguity before presenting the proposal.
+
+      Concept-identifier creation, reuse, regrouping, renaming, and warning repair always require a pre-edit proposal gate.
+
+      Concept-identifier work does not invoke or modify anchor persistence, proposal, or reconciliation behavior.
+    }
+
+    DelegatedProposalApproval {
+      Every delegated semantic proposal is advisory and grants no edit authority to the subagent or primary agent.
+
+      Subagent completion is not user approval.
+
+      No repository mutation occurs until the user explicitly approves the exact proposal presented by the primary agent.
+    }
   }
 
   cases {
     A requested implementation change without clear Sigil coverage pauses for collaborative Sigil definition and approval before code changes begin.
 
-    A document with ungrouped interface content receives proposed concept blocks before it reaches the semantic review gate.
+    ConceptIdentifierWorkflow {
+      The same semantic idea appearing in an interface and a matching expand receives one collectively reused identifier.
 
-    Two accessible imported concepts with the same identifier are reported for renaming rather than qualified with dotted syntax.
+      An accessible imported public concept is reused instead of creating a synonymous local identity.
+
+      A direct consumer use case informs the provider concept name without transferring ownership of a consumer-private identity.
+
+      Two accessible imported concepts with the same identifier are reported for renaming rather than qualified with dotted syntax.
+    }
+
+    DelegatedProposalApproval {
+      A completed subagent proposal is shown to the user while every repository file remains unchanged until explicit approval.
+    }
   }
 }
 

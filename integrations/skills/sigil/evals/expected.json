@@ -73,5 +73,22 @@
     "support-combined-or-dependent-review",
     "stop-at-semantic-review-gate",
     "implement-only-after-implementation-approval"
+  ],
+  "conceptIdentifierFixture": "concept-identifier-fixture.md",
+  "conceptIdentifierRequiredBehaviors": [
+    "inspect-complete-local-collective",
+    "inspect-local-and-imported-concepts",
+    "inspect-direct-consumers",
+    "bound-transitive-traversal",
+    "treat-consumers-as-evidence",
+    "classify-reuse-before-creation",
+    "provide-evidence-bundle",
+    "require-evidence-backed-proposal",
+    "validate-in-primary-agent",
+    "present-exact-proposal",
+    "enter-awaiting-approval",
+    "deny-primary-edit-authority",
+    "require-explicit-pre-edit-approval",
+    "exclude-anchor-workflow"
   ]
 }

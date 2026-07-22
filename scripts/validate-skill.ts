@@ -14,6 +14,7 @@ const required = [
   "evals/brownfield-fixture.md",
   "evals/greenfield-fixture.md",
   "evals/implementation-coverage-fixture.md",
+  "evals/concept-identifier-fixture.md",
   "evals/expected.json",
 ];
 
@@ -82,18 +83,48 @@ requireText(
 );
 requireText(
   skill,
-  "delegate concept grouping and identifier\n     generation to one dedicated subagent",
+  "inspect the remainder of the same section",
+  "complete local concept reuse discovery",
+);
+requireText(
+  skill,
+  "Use `sigil graph` to inspect direct importers",
+  "direct consumer concept evidence",
+);
+requireText(
+  skill,
+  "Traverse transitive importers only when a concept\n     is re-exposed",
+  "bounded transitive concept discovery",
+);
+requireText(
+  skill,
+  "delegate concept grouping and identifier\n     generation to one dedicated subagent only after completing reuse discovery",
   "concept identifier subagent delegation",
 );
 requireText(
   skill,
-  "Tell the subagent to return a proposal only and not edit files.",
+  "return a proposal only and not edit files.",
   "proposal-only concept identifier subagent",
 );
 requireText(
   skill,
-  "case-insensitive namespace uniqueness, public and\n     private visibility, and transitive import ambiguity",
+  "case-insensitive namespace uniqueness, public and\n     private visibility, collective coherence, and transitive import ambiguity",
   "primary-agent concept proposal validation",
+);
+requireText(
+  skill,
+  "Subagent completion is not user\n     approval and grants no edit authority to the primary agent.",
+  "delegated proposal authority boundary",
+);
+requireText(
+  skill,
+  "always require explicit user approval of the presented proposal before any\n     repository mutation",
+  "concept identifier pre-edit approval gate",
+);
+requireText(
+  skill,
+  "Every delegated semantic proposal is advisory",
+  "global delegated proposal gate",
 );
 requireText(
   skill,
@@ -348,6 +379,63 @@ requireText(
   implementationFixture,
   "component/expand/omit decision",
   "implementation coverage map",
+);
+
+const conceptIdentifierFixture = await Deno.readTextFile(
+  `${root}/evals/concept-identifier-fixture.md`,
+);
+const requiredConceptIdentifierBehaviors = [
+  "inspect-complete-local-collective",
+  "inspect-local-and-imported-concepts",
+  "inspect-direct-consumers",
+  "bound-transitive-traversal",
+  "treat-consumers-as-evidence",
+  "classify-reuse-before-creation",
+  "provide-evidence-bundle",
+  "require-evidence-backed-proposal",
+  "validate-in-primary-agent",
+  "present-exact-proposal",
+  "enter-awaiting-approval",
+  "deny-primary-edit-authority",
+  "require-explicit-pre-edit-approval",
+  "exclude-anchor-workflow",
+];
+if (!Array.isArray(expected.conceptIdentifierRequiredBehaviors)) {
+  throw new Error(
+    "Concept identifier fixture must declare required behaviors.",
+  );
+}
+for (const behavior of requiredConceptIdentifierBehaviors) {
+  if (!expected.conceptIdentifierRequiredBehaviors.includes(behavior)) {
+    throw new Error(
+      `Concept identifier fixture is missing behavior ${behavior}.`,
+    );
+  }
+}
+requireText(
+  conceptIdentifierFixture,
+  "remainder of the same section, every other component section",
+  "concept fixture complete local discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "Inspect direct importers",
+  "concept fixture direct consumer discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "only because the concept is re-exposed",
+  "concept fixture bounded transitive discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "leave every repository file unchanged",
+  "concept fixture awaiting approval",
+);
+requireText(
+  conceptIdentifierFixture,
+  "advisory output rather than user approval",
+  "concept fixture delegated authority boundary",
 );
 
 const brownfield = await Deno.readTextFile(
