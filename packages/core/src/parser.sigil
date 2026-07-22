@@ -3,13 +3,17 @@
 component SigilParser {
   goal {
     Interpret one versioned Sigil source file into a source-faithful partial document.
+
     Preserve useful declarations, semantic lines, and locations when malformed structure permits recovery.
   }
 
   interface {
     parseSigilDocument(filePath, source, options) returns ParseResult
+
     options.sigilVersion is required and must equal the supported Sigil language version
+
     ParseResult contains a SigilDocument and its diagnostics
+
     SigilDocument exposes imports, components, expands, semantic lines, and source ranges recovered from the input
   }
 }
@@ -17,22 +21,35 @@ component SigilParser {
 expand SigilParser {
   logic {
     Parse top-level import, component, and expand forms.
+
     Preserve each non-empty section body line as one trimmed semantic line with its owner and source range.
+
     Recover unclosed forms and sections into partial declarations when practical.
+
     Validate that every component contains goal and interface sections.
+
+    Validate that #module.sigil contains at least one component declaration.
+
     Reject an unsupported Sigil version before interpreting declarations.
   }
 
   constraints {
     SigilParser depends on SigilDiagnostics for structural findings.
+
     SigilParser performs no filesystem access or workspace resolution.
+
     Section body content remains free-form except for structural brace tracking.
   }
 
   cases {
     Valid Sigil returns its declarations and semantic lines without diagnostics.
+
     An unsupported version returns an empty partial document with SIGIL_UNSUPPORTED_VERSION.
+
     An unclosed component returns the recovered component with a source-ranged structural diagnostic.
+
     A component without goal or interface returns the component plus the corresponding required-section diagnostics.
+
+    An imports-only #module.sigil returns its partial document with SIGIL_MODULE_WITHOUT_COMPONENT.
   }
 }

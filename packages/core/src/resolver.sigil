@@ -4,40 +4,75 @@
 component SigilResolver {
   goal {
     Resolve imports, components, and collective expansions across a loaded Sigil workspace.
+
     Produce deterministic relationship data and diagnostics without performing filesystem access or presentation work.
   }
 
   interface {
     resolveSigilRelationships(workspace) returns SigilResolution
+
     SigilResolution exposes the source workspace, resolved imports, resolved components, collected expansions, and accumulated diagnostics
+
     each resolved component identifies its declaration file and every matching expand block
-    depends on workspaces produced by SigilWorkspaceLoader
   }
 }
 
 expand SigilResolver {
   logic {
     Index every component and expand declaration by name across loaded documents.
+
     Diagnose duplicate component declarations and expands without matching components.
-    Resolve explicit .sigil imports from the workspace root.
-    Resolve directory imports only to the workspace root or a declared member RootSigil.
-    Resolve each imported name against the target document's component declarations.
+
+    Resolve explicit .sigil imports against the named source file from the workspace root.
+
+    Resolve directory imports against #module.sigil in the target directory.
+
+    Build each #module.sigil directory-import surface from its local components and successfully resolved direct import names.
+
+    Resolve module imports recursively when one module index directly imports another module index.
+
+    Resolve each file-imported name against the target document's component declarations.
+
+    Resolve each directory-imported name against the target module index's directory-import surface.
+
+    Preserve the original component declaration file when a name resolves through a module index.
+
+    Do not add unnamed dependencies or other files beneath an indexed directory to its directory-import surface.
+
     Detect cycles between resolved import files.
+
     Collect every matching expand declaration for each resolved component without override or shadowing.
   }
 
   constraints {
     SigilResolver depends on SigilDiagnostics and performs no filesystem access.
+
     Resolution retains workspace and parser diagnostics.
+
     Missing or ambiguous relationships produce partial resolution data when practical.
+
     Graph construction and presentation projections remain outside SigilResolver.
   }
 
   cases {
     Importing a declared component connects the importing file to its declaration.
+
     Importing a missing file or component produces a stable diagnostic and partial import result.
+
+    A module index directly importing a component makes that component resolvable to directory importers.
+
+    A component dependency omitted from the module index remains unavailable through the directory import.
+
+    A component omitted from the module index remains available through an explicit file import.
+
+    A component exposed through nested explicit module indexes resolves to its original declaration file.
+
+    A missing directory module index produces SIGIL_UNRESOLVED_IMPORT_PATH.
+
     Duplicate components produce ambiguity diagnostics for every conflicting declaration.
+
     Multiple matching expands are all retained in the component's collected expansion.
+
     A cycle between imported files produces SIGIL_IMPORT_CYCLE.
   }
 }

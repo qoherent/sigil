@@ -116,8 +116,8 @@ export async function definitionAt(
   );
   if (importEntry) {
     const imported = importEntry.names.find((item) => item.name === token.text);
-    if (imported?.component && importEntry.targetFile) {
-      return location(importEntry.targetFile, imported.component.range);
+    if (imported?.component && imported.componentFile) {
+      return location(imported.componentFile, imported.component.range);
     }
     if (
       importEntry.targetFile &&
@@ -229,10 +229,10 @@ function componentReferences(
   ) {
     const namesRange = importNamesRange(source, imported.declaration.range);
     for (const name of imported.names) {
-      if (!name.component || !imported.targetFile) continue;
+      if (!name.component || !name.componentFile) continue;
       const component = resolved.components.find((item) =>
         item.declaration === name.component &&
-        normalizePath(item.filePath) === normalizePath(imported.targetFile!)
+        normalizePath(item.filePath) === normalizePath(name.componentFile!)
       );
       if (!component) continue;
       addVisibleComponent(visible, component);

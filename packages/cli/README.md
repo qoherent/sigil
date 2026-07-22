@@ -1,6 +1,6 @@
 # sigil-cli
 
-Current package version: **0.1.0**.
+Current package version: **0.3.0**.
 
 Command-line interface for agents, CI, scripts, and platform debugging.
 
@@ -10,7 +10,7 @@ main human UI.
 
 Package docs:
 
-- [spec.md](spec.md): version 0.1 CLI requirements, command behavior, output contracts,
+- [spec.md](spec.md): version 0.2 CLI requirements, command behavior, output contracts,
   and acceptance scenarios.
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
@@ -30,7 +30,7 @@ irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
 Alternatively, install the published JSR package when Deno is available:
 
 ```bash
-deno install --global --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil jsr:@qoherent/sigil@0.1
+deno install --global --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil jsr:@qoherent/sigil@0.2
 ```
 
 Local development install:

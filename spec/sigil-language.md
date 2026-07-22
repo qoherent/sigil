@@ -1,8 +1,8 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.1.0
+**Sigil version:** 0.3.0
 **Status:** Accepted
-**Released:** 2026-07-13
+**Released:** 2026-07-22
 
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
@@ -35,12 +35,12 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The project summary filename is `#module.sigil`.
-It is reserved for the root project at the workspace root or a workspace member
-at a member root declared by `workspace.members`, and every file with that name
-follows the `RootSigil` contract.
-Do not use `#module.sigil` for ordinary internal directories, features,
-components, or implementation modules.
+The directory-index filename is `#module.sigil`.
+It may appear in any included directory and defines the component names that
+resolve through directory-import shorthand for that directory.
+It does not grant or restrict component visibility.
+Every `#module.sigil` must declare at least one local component; an imports-only
+index is invalid.
 
 A strict JSON `.sigil/config.json` is required at the workspace root.
 It selects the Sigil version and defines workspace file discovery. The config
@@ -55,42 +55,34 @@ The default placement is beside the corresponding module, feature, abstraction, 
 When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
 Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
 
-Use the workspace-root `#module.sigil` for the `RootSigil` project summary.
-In a monorepo workspace, declaring a workspace member permits a `RootSigil` at
-its member root but does not require one. A member without `#module.sigil`
-remains valid, but a directory import to that member reports an unresolved
-import path because no project contract is available. Internal contracts use
-descriptive `.sigil` filenames colocated with their implementation and are
-imported by explicit filename.
+Every component declaration is public and may be imported through its explicit
+`.sigil` source path whether or not a module index names it. A module index only
+selects the names available through a directory import. It may declare
+components itself and may name components through direct imports. Sigil has no
+export or re-export form.
 
-### RootSigil
+At configured workspace boundaries, the Brownfield workflow maintains ordinary
+project-summary components in the workspace-root and declared-member
+`#module.sigil` files. Those summaries use normal component and expand semantics;
+they have no special parser or resolver status. Internal directories may use
+`#module.sigil` as an index without a project summary, but the index still
+declares at least one local component.
 
-`RootSigil` defines the role of `#module.sigil` for one project. The
-workspace-root file describes the root project. A member-root file describes a
-workspace member explicitly declared by `workspace.members` in `.sigil/config.json`.
-Package manifests and directory structure alone do not authorize a RootSigil
-location.
+### Module indexes
 
-The file contains a project-named component representing that project.
+A directory import resolves to `#module.sigil` in the target directory. Its
+directory-import surface consists of:
 
-In that project component:
+- components declared directly in that `#module.sigil`;
+- component names successfully resolved by direct imports in that file.
 
-- `goal` describes why the project exists and its intended outcome;
-- `interface` describes how users and external systems interact with the
-  project, such as through a web app, mobile app, API, CLI, or library.
+An imports-only `#module.sigil` produces
+`SIGIL_MODULE_WITHOUT_COMPONENT` while retaining its partial parsed document.
 
-Its matching `expand` uses the general `state`, `logic`, `constraints`, and
-`cases` meanings at project scope. `RootSigil` narrows the scope to project-wide
-concerns; it does not redefine those sections.
-
-Root summaries exclude secrets, incidental dependencies, low-level
-configuration, and module-specific implementation details. `.sigil/config.json`
-defines the workspace root; `RootSigil` summarizes the project without gaining
-workspace-discovery authority.
-
-An excluded nested directory with its own `.sigil/config.json` is an independent
-workspace. It describes its own root project and is not a workspace member of
-the parent.
+Other files beneath the directory, unnamed dependencies of indexed components,
+and components imported only by those indexed files are not added implicitly.
+They remain public through explicit file imports. Explicit chains of module
+indexes may make the same component resolvable through several directory paths.
 
 ### Workspace and project vocabulary
 
@@ -98,9 +90,8 @@ A **Sigil workspace** is the tooling boundary controlled by one
 `.sigil/config.json`. The **workspace root** is the directory containing that file.
 
 A **project** is a coherent app, service, library, package, or other system
-described by a `RootSigil`. A **project root** is a directory where
-`#module.sigil` is permitted. The workspace root is the **root project**
-location.
+represented by an ordinary summary component at a configured workspace
+boundary. The workspace root is the **root project** location.
 
 A **workspace member** is an additional project explicitly declared by
 `workspace.members`. Its declared directory is its **member root**. A workspace
@@ -147,7 +138,7 @@ expand Name {
 ```
 
 `import` makes named components from another Sigil file available to the current file.
-`component` defines the public purpose and boundary of a system part.
+`component` defines the public goal and interface of a system part.
 `expand` adds deeper operational detail for an existing component.
 
 ## 4. Imports
@@ -170,8 +161,7 @@ Tools discover the workspace by walking upward from the current file or command 
 An explicit root must contain `.sigil/config.json` directly.
 Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
 
-A directory import is reserved for a valid `RootSigil` location and resolves to
-the root project's or declared workspace member's `#module.sigil`.
+A directory import resolves to `#module.sigil` in the target directory.
 
 ```sigil
 @packages/cli import { SigilCli }
@@ -184,10 +174,9 @@ packages/cli/#module.sigil
 packages/cli/deno.json
 ```
 
-Because `packages/cli` is declared in `workspace.members`,
 `@packages/cli import { SigilCli }` resolves through its `#module.sigil`.
-Package manifests and directory structure alone are not enough to make another
-directory importable this way.
+The directory does not need to be declared in `workspace.members`; the target
+module index only needs to be included in the selected workspace.
 
 A file import resolves to the exact `.sigil` file.
 
@@ -197,8 +186,10 @@ A file import resolves to the exact `.sigil` file.
 
 `@sub/folder/auth.sigil import { Auth }` resolves through `sub/folder/auth.sigil`.
 
-Importing `Name` makes the public `component Name` available to the importing file.
-It also makes all matching `expand Name` blocks from the imported file available as collected expanded detail.
+Importing `Name` from an explicit file resolves a component declared in that
+file. Importing it from a directory resolves the name through the target module
+index. In both cases it makes the public component and all matching collected
+expands available to the importer.
 
 Imported names are case-sensitive and should match the spelling of the component declaration.
 
@@ -206,7 +197,8 @@ Imports are explicit dependency edges between Sigil files.
 They do not copy text into the importing file.
 They make the referenced component contract and collected expansion available for interpretation, review, and implementation context.
 
-An imported name must resolve to a `component Name` in the resolved import source.
+An imported name must resolve to a `component Name` in the explicit source or
+the directory index's local declarations and direct imports.
 An import that resolves only to `expand Name` without `component Name` is unresolved.
 
 ## 5. Components
@@ -214,10 +206,10 @@ An import that resolves only to `expand Name` without `component Name` is unreso
 A `component` is the reusable public description of a system part.
 It should be understandable without reading implementation details.
 
-Its `goal` describes why the component exists, the responsibility it owns, and
-its intended outcome. Its `interface` describes how users, callers, external
-systems, or other components interact with it through its observable public
-contract.
+Its public `goal` describes why the component exists, the responsibility it
+owns, and its intended outcome. Its public `interface` contains only the
+operations, data, events, results, errors, and observable promises available to
+dependents.
 
 A `component` must contain:
 
@@ -236,6 +228,9 @@ It has no semantic effect.
 
 Keep a `component` focused on the public contract.
 Put state, behavior, constraints, examples, architecture rules, and implementation rationale in `expand`.
+
+Imports declare dependencies between components; do not repeat imported
+dependencies in `interface`.
 
 Other components should depend on the public `component` description first.
 They should depend on `expand` details only when deeper implementation context is necessary.
@@ -279,22 +274,27 @@ If collected expands contradict each other, the contradiction is a specification
 
 ### `goal`
 
-`goal` explains why the component exists.
+`goal` publicly explains why the component exists.
 
 It should describe the responsibility, user or system need, and reason this component is separate from others.
 
 ### `interface`
 
-`interface` explains how the component interacts with the outside world.
+`interface` contains only what dependents can use or observe from the public
+contract.
 
 It may include:
 
-- inputs;
-- outputs;
+- inputs and data;
+- outputs and results;
 - public operations;
 - events;
-- dependencies consumed from other components;
-- guarantees other components rely on.
+- errors;
+- observable promises other components rely on.
+
+Dependencies belong in imports, not `interface`. Implementation-hiding rules
+and forbidden internal access belong in `constraints` unless they define an
+externally observable promise.
 
 For API-like components, `interface` may contain constructors, methods, functions, return values, static helpers, and other public signatures.
 
@@ -315,6 +315,7 @@ component BookingCalendarView {
 
   interface {
     Shows date navigation above a calendar of rooms and bookings.
+
     Lets the user move to the previous or next date range.
 
     +------------------------------------------+
@@ -324,6 +325,7 @@ component BookingCalendarView {
     +------------------------------------------+
 
     Image reference: ![Calendar layout](./booking-calendar-view.svg)
+
     The image suggests visual grouping; the written interface defines required behavior.
 
     A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
@@ -400,6 +402,10 @@ A semantic line is a:
 Blank lines are allowed for readability.
 Blank lines do not create semantic units.
 
+Separate distinct prose-level semantic ideas with blank lines in every section.
+Lines belonging to one compact free-form construct, such as a type shape or an
+ASCII diagram, may remain adjacent when separation would reduce readability.
+
 Prefer one distinct idea per line.
 Avoid burying multiple decisions in a paragraph when those decisions may need separate review, diffing, or source mapping.
 
@@ -424,9 +430,8 @@ A valid Sigil source file may contain one or more top-level forms.
 
 An `import` must specify a path and one or more names.
 
-An import path without a `.sigil` filename may target only a valid `RootSigil`
-location: the workspace root or a member root declared by `workspace.members`.
-It resolves to `#module.sigil` inside that path.
+An import path without a `.sigil` filename resolves to `#module.sigil` inside
+the target directory.
 
 An import path with a `.sigil` filename resolves to that exact file.
 
@@ -436,6 +441,8 @@ The Sigil workspace root is the directory containing the nearest applicable `.si
 Missing or unexcluded nested configs are invalid, and an explicit root must contain its config directly.
 
 An imported name must resolve to a matching `component Name`.
+
+A `#module.sigil` must declare at least one local component.
 
 A `component` must contain `goal` and `interface`.
 
@@ -450,6 +457,9 @@ Section bodies are free-form text.
 The conventional section order is recommended but not semantically required.
 
 Implementation details should not appear in a `component` unless they are part of the public contract.
+
+Implementation-hiding rules and forbidden internal access belong in
+`constraints` unless they define an externally observable promise.
 
 Architecture, stack, ownership, and dependency decisions belong in `constraints`.
 
@@ -469,7 +479,7 @@ Write concise, reviewable lines.
 
 Keep each non-empty line focused on one idea.
 
-Use blank lines to improve readability without changing meaning.
+Use blank lines between distinct prose-level ideas without changing meaning.
 
 Name components after the concept other parts of the system depend on.
 
@@ -477,7 +487,7 @@ Keep public contracts small enough to understand without reading the expand.
 
 Move internal rationale out of `component` and into `expand`.
 
-Prefer concrete states, transitions, inputs, outputs, and guarantees over vague descriptions.
+Prefer concrete states, transitions, inputs, outputs, and observable promises over vague descriptions.
 
 When a decision is binding, place it in `constraints`.
 
@@ -507,15 +517,21 @@ Programming abstraction:
 component Promise {
   goal {
     Represent a value that may resolve now, later, or fail.
+
     Let callers chain reactions without knowing when the value arrives.
   }
 
   interface {
     new Promise<T>(executor)
+
     then(onResolved, onRejected?) returns Promise
+
     catch(onRejected) returns Promise
+
     Promise.resolve(value)
+
     Promise.reject(reason)
+
     Promise.try(handler)
   }
 }
@@ -523,15 +539,21 @@ component Promise {
 expand Promise {
   state {
     Pending
+
     Resolved(value)
+
     Rejected(reason)
   }
 
   logic {
     A new Promise starts Pending and runs executor with resolve and reject.
+
     then returns an after Promise immediately.
+
     If then or catch is called while Pending, hold the reaction until settlement.
+
     Resolving with a PromiseLike value adopts its eventual result.
+
     Rejecting with a PromiseLike value does not unwrap it.
   }
 }
@@ -543,7 +565,9 @@ Stack as a constraint:
 expand Slotted {
   constraints {
     Stack is Next.js, Neon Postgres, and Drizzle ORM.
+
     The system ships as a single Next.js app.
+
     Database access goes through Drizzle.
   }
 }
@@ -554,7 +578,9 @@ Architecture rules as constraints:
 ```sigil
 constraints {
   Architecture style is a modular monolith with layered, domain-oriented modules.
+
   Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
+
   Domain logic should be testable with zero mocks and zero I/O.
 }
 ```

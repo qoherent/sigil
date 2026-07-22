@@ -1,5 +1,5 @@
 {
-  "sigilVersion": "0.1.0",
+  "sigilVersion": "0.3.0",
   "workspace": {
     "name": "slotted",
     "members": []

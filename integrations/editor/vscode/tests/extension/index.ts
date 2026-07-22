@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
   );
   assert(definitions.length > 0, "Expected go-to-definition results");
 
-  const sectionPosition = new vscode.Position(16, 22);
+  const sectionPosition = new vscode.Position(27, 22);
   const sectionHovers = await eventually(async () =>
     await vscode.commands.executeCommand<vscode.Hover[]>(
       "vscode.executeHoverProvider",
@@ -61,7 +61,7 @@ export async function run(): Promise<void> {
     sectionHovers.some((hover) =>
       hover.contents.some((content) =>
         (typeof content === "string" ? content : content.value).includes(
-          "UserProfile",
+          "User",
         )
       )
     ),

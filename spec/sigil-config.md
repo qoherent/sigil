@@ -5,7 +5,7 @@ directory defines the root used for imports and file discovery.
 
 ```json
 {
-  "sigilVersion": "0.1.0",
+  "sigilVersion": "0.3.0",
   "workspace": {
     "name": "example",
     "members": ["packages/example-cli"]
@@ -40,12 +40,10 @@ workspace-relative directory. Package manifests and repository workspace
 declarations may inform an initialization proposal, but they do not create
 Sigil workspace members.
 
-The workspace root is always the root project location. Each declared member
-path is an additional project root where `#module.sigil` is permitted.
-Membership does not require `#module.sigil`; a member without one remains
-valid but cannot provide a project contract through a directory import.
-`files.include` and `files.exclude` control source discovery; they do not
-declare projects or authorize RootSigil locations.
+The workspace root and each declared member are configured project-summary
+boundaries for Brownfield workflow. `#module.sigil` may appear in any included
+directory regardless of membership. `files.include` and `files.exclude`
+control source discovery; they do not declare module-index locations.
 
 Patterns use normalized workspace-relative POSIX paths. `**/*.sigil` includes
 root and nested files. Exclusion wins over inclusion.

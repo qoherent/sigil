@@ -1,9 +1,9 @@
 # sigil-core Requirements
 
-**Status:** Accepted for 0.1.0
-**Last updated:** 2026-07-13
+**Status:** Accepted for 0.3.0
+**Last updated:** 2026-07-21
 
-This document defines the 0.1 product requirements for `sigil-core`.
+This document defines the 0.2 product requirements for `sigil-core`.
 Architecture style, module boundaries, and dependency rules live in [architecture.md](architecture.md).
 
 ## 1. Purpose
@@ -12,9 +12,9 @@ Architecture style, module boundaries, and dependency rules live in [architectur
 
 It must give CLI, LSP, editor integrations, renderers, agent context builders, and tests one consistent way to understand Sigil.
 
-## 2. Version 0.1 Scope
+## 2. Version 0.2 Scope
 
-Version 0.1 is the parser and resolver foundation.
+Version 0.2 is the parser and directory-index resolver foundation.
 
 It must:
 
@@ -27,8 +27,10 @@ It must:
 - resolve `@path import { Name }` declarations from the workspace root;
 - read additional project roots exclusively from `workspace.members` in
   `.sigil/config.json`;
-- reject `#module.sigil` files and directory imports outside valid `RootSigil`
-  locations;
+- allow `#module.sigil` in any included directory and resolve its local and
+  directly imported names through directory imports;
+- preserve explicit-file import access to every public component regardless of
+  module-index membership;
 - identify public components and matching expansions;
 - collect all matching `expand Name` blocks without override or shadowing semantics;
 - build graph primitives for files, imports, components, and expansions;
@@ -37,7 +39,7 @@ It must:
 
 ## 3. Out Of Scope
 
-Version 0.1 must not implement:
+Version 0.2 must not implement:
 
 - CLI argument parsing;
 - LSP transport;
@@ -49,7 +51,7 @@ Version 0.1 must not implement:
 - embeddings or semantic search;
 - anchors or code/spec synchronization;
 - generated diagrams;
-- import aliases, re-exports, or wildcard imports.
+- export forms, import aliases, or wildcard imports.
 
 Anchors remain outside `sigil-core`. The proposed future design in ADR-011 adds
 them through a separate deterministic `sigil-indexer` package that consumes
@@ -134,7 +136,7 @@ Malformed Sigil should produce partial models plus diagnostics.
 
 `sigil-core` should fail only when the host-provided filesystem boundary itself cannot satisfy an operation required by the requested API.
 
-Version 0.1 diagnostics must include stable codes for:
+Version 0.2 diagnostics must include stable codes for:
 
 - parse structure errors;
 - unknown section;
@@ -142,8 +144,6 @@ Version 0.1 diagnostics must include stable codes for:
 - missing `interface`;
 - unresolved import path;
 - unresolved imported component;
-- invalid `RootSigil` location;
-- invalid directory import;
 - expand without matching component;
 - duplicate component ambiguity;
 - missing, malformed, invalid, unsupported, existing, or nested config;
@@ -159,25 +159,31 @@ excluded nested subtrees are independent workspaces and are skipped by parents.
 
 Import paths begin with `@` and resolve from the workspace root.
 
-A directory import resolves to `#module.sigil` only at the workspace root or a
-member root declared by `workspace.members`. Package manifests and repository
-workspace declarations do not authorize RootSigil locations. A nested directory
-with its own `.sigil/config.json` is an excluded independent workspace rather than a
-member project. Ordinary internal contracts use explicit `.sigil` filenames.
+A directory import resolves to `#module.sigil` in the target directory. The
+directory-import surface contains components declared locally in that index and
+components named by its successfully resolved direct imports. Workspace members
+do not grant or restrict module-index locations. A nested directory with its own
+`.sigil/config.json` is an excluded independent workspace rather than a member
+project.
 
 A file import resolves to the exact `.sigil` file.
 
-Imported names must resolve to matching `component Name` declarations.
+Imported names must resolve to matching public `component Name` declarations.
+Components omitted from a module index remain importable through explicit file
+paths.
 
 ## 9. Acceptance Scenarios
 
-Version 0.1 is acceptable when tests demonstrate that `sigil-core` can:
+Version 0.2 is acceptable when tests demonstrate that `sigil-core` can:
 
 - parse `examples/promise/promise.sigil`;
 - preserve semantic lines with owner, section, text, file, and source range;
 - discover the repository `.sigil/config.json` from nested targets that remain in the root workspace;
 - discover Promise and Slotted through their independent example configs;
 - treat `examples/slotted/#module.sigil` as the Slotted workspace summary;
+- diagnose imports-only module indexes with `SIGIL_MODULE_WITHOUT_COMPONENT`;
+- preserve original declaration paths through module indexes for graphs and editors;
+- keep omitted components importable through explicit `.sigil` paths;
 - resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;
 - collect matching expansions for resolved components;
 - return partial models plus diagnostics for malformed files;
