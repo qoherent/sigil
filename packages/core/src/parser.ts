@@ -1,6 +1,7 @@
 import { diagnostic } from "./diagnostics.ts";
 import type {
   ComponentDeclaration,
+  ConceptBlock,
   ExpandDeclaration,
   ImportDeclaration,
   ParseOptions,
@@ -14,6 +15,7 @@ import type {
   SourceRange,
 } from "./model.ts";
 import { SIGIL_VERSION } from "./model.ts";
+import { isModuleFile } from "./path.ts";
 
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
@@ -35,8 +37,20 @@ interface SectionDraft {
   name: SigilSectionName;
   startLine: number;
   lines: SemanticLine[];
+  concepts: ConceptBlock[];
+  ungroupedLines: SemanticLine[];
+  freeformBraceDepth: number;
+}
+
+interface ConceptDraft {
+  identifier: string;
+  startLine: number;
+  lines: SemanticLine[];
   braceDepth: number;
 }
+
+const CONCEPT_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const PREFERRED_CONCEPT_IDENTIFIER = /^[A-Z][A-Za-z0-9]*$/;
 
 export function parseSigilDocument(
   filePath: string,
@@ -69,6 +83,7 @@ export function parseSigilDocument(
 
   let form: FormDraft | undefined;
   let section: SectionDraft | undefined;
+  let concept: ConceptDraft | undefined;
 
   for (let index = 0; index < lines.length; index++) {
     const lineNumber = index + 1;
@@ -76,24 +91,98 @@ export function parseSigilDocument(
     const trimmed = line.trim();
 
     if (section && form) {
-      if (trimmed === "}" && section.braceDepth === 1) {
+      if (concept) {
+        if (trimmed === "}" && concept.braceDepth === 1) {
+          finishConcept(
+            section,
+            concept,
+            lineNumber,
+            line.length,
+            filePath,
+            diagnostics,
+          );
+          concept = undefined;
+          continue;
+        }
+
+        if (concept.braceDepth === 1 && conceptHeader(trimmed)) {
+          diagnostics.push(diagnostic(
+            "SIGIL_NESTED_CONCEPT_BLOCK",
+            "Concept blocks cannot nest.",
+            { filePath, range: lineRange(lineNumber, line) },
+          ));
+        }
+
+        if (trimmed.length > 0 && trimmed !== "}") {
+          const semanticLine = makeSemanticLine(
+            filePath,
+            lineNumber,
+            line,
+            form,
+            section.name,
+            concept.identifier,
+          );
+          section.lines.push(semanticLine);
+          concept.lines.push(semanticLine);
+        }
+
+        concept.braceDepth += braceDelta(line);
+        continue;
+      }
+
+      if (trimmed === "}" && section.freeformBraceDepth === 0) {
+        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
         form.sections.push(finishSection(section, lineNumber, line.length));
         section = undefined;
         continue;
       }
 
-      if (trimmed.length > 0) {
-        section.lines.push({
-          filePath,
-          range: lineRange(lineNumber, line),
-          ownerKind: form.kind,
-          ownerName: form.name,
-          sectionName: section.name,
-          text: trimmed,
-        });
+      const header = section.freeformBraceDepth === 0
+        ? conceptHeader(trimmed)
+        : undefined;
+      if (header) {
+        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+        const identifier = header.identifier;
+        if (!CONCEPT_IDENTIFIER.test(identifier)) {
+          diagnostics.push(diagnostic(
+            "SIGIL_INVALID_CONCEPT_IDENTIFIER",
+            `Invalid concept identifier ${
+              JSON.stringify(identifier)
+            }; expected [A-Za-z][A-Za-z0-9_-]* with no spaces.`,
+            { filePath, range: lineRange(lineNumber, line) },
+          ));
+        } else if (!PREFERRED_CONCEPT_IDENTIFIER.test(identifier)) {
+          diagnostics.push(diagnostic(
+            "SIGIL_CONCEPT_IDENTIFIER_STYLE",
+            `Concept identifier ${identifier} is valid; prefer PascalCase without hyphens or underscores.`,
+            {
+              severity: "info",
+              filePath,
+              range: identifierRange(lineNumber, line, identifier),
+            },
+          ));
+        }
+        concept = {
+          identifier,
+          startLine: lineNumber,
+          lines: [],
+          braceDepth: 1,
+        };
+        continue;
       }
 
-      section.braceDepth += braceDelta(line);
+      if (trimmed.length > 0) {
+        const semanticLine = makeSemanticLine(
+          filePath,
+          lineNumber,
+          line,
+          form,
+          section.name,
+        );
+        section.lines.push(semanticLine);
+        section.ungroupedLines.push(semanticLine);
+        section.freeformBraceDepth += braceDelta(line);
+      }
       continue;
     }
 
@@ -114,7 +203,9 @@ export function parseSigilDocument(
             name: sectionName as SigilSectionName,
             startLine: lineNumber,
             lines: [],
-            braceDepth: 1,
+            concepts: [],
+            ungroupedLines: [],
+            freeformBraceDepth: 0,
           };
         } else {
           diagnostics.push(diagnostic(
@@ -172,6 +263,23 @@ export function parseSigilDocument(
     ));
   }
 
+  if (concept && section && form) {
+    diagnostics.push(diagnostic(
+      "SIGIL_PARSE_STRUCTURE",
+      `Unclosed concept ${concept.identifier}.`,
+      { filePath, range: singlePointRange(concept.startLine) },
+    ));
+    finishConcept(
+      section,
+      concept,
+      lines.length,
+      lines.at(-1)?.length ?? 1,
+      filePath,
+      diagnostics,
+    );
+    concept = undefined;
+  }
+
   if (section && form) {
     diagnostics.push(diagnostic(
       "SIGIL_PARSE_STRUCTURE",
@@ -181,6 +289,7 @@ export function parseSigilDocument(
     form.sections.push(
       finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
     );
+    reportUngroupedInterfaceRegion(section, filePath, diagnostics);
   }
 
   if (form) {
@@ -216,6 +325,14 @@ export function parseSigilDocument(
     }
   }
 
+  if (isModuleFile(filePath) && components.length === 0) {
+    diagnostics.push(diagnostic(
+      "SIGIL_MODULE_WITHOUT_COMPONENT",
+      "#module.sigil must declare at least one component.",
+      { filePath },
+    ));
+  }
+
   const document: SigilDocument = {
     filePath,
     imports,
@@ -243,6 +360,89 @@ function finishSection(
       end: { line: endLine, column: Math.max(1, endColumn + 1) },
     },
     lines: section.lines,
+    concepts: section.concepts,
+  };
+}
+
+function finishConcept(
+  section: SectionDraft,
+  concept: ConceptDraft,
+  endLine: number,
+  endColumn: number,
+  filePath: string,
+  diagnostics: SigilDiagnostic[],
+): void {
+  const range = {
+    start: { line: concept.startLine, column: 1 },
+    end: { line: endLine, column: Math.max(1, endColumn + 1) },
+  };
+  if (concept.lines.length === 0) {
+    diagnostics.push(diagnostic(
+      "SIGIL_EMPTY_CONCEPT_BLOCK",
+      `Concept block ${concept.identifier} must contain at least one semantic line.`,
+      { filePath, range },
+    ));
+  }
+  section.concepts.push({
+    identifier: concept.identifier,
+    range,
+    bodyRange: {
+      start: { line: concept.startLine + 1, column: 1 },
+      end: { line: endLine, column: Math.max(1, endColumn + 1) },
+    },
+    lines: concept.lines,
+  });
+}
+
+function reportUngroupedInterfaceRegion(
+  section: SectionDraft,
+  filePath: string,
+  diagnostics: SigilDiagnostic[],
+): void {
+  if (section.name !== "interface" || section.ungroupedLines.length === 0) {
+    section.ungroupedLines = [];
+    return;
+  }
+  const first = section.ungroupedLines[0];
+  const last = section.ungroupedLines.at(-1)!;
+  diagnostics.push(diagnostic(
+    "SIGIL_MISSING_CONCEPT_IDENTIFIER",
+    "Interface content should be grouped under one or more concept identifiers.",
+    {
+      severity: "warning",
+      filePath,
+      range: { start: first.range.start, end: last.range.end },
+    },
+  ));
+  section.ungroupedLines = [];
+}
+
+function conceptHeader(
+  trimmed: string,
+): { readonly identifier: string } | undefined {
+  const match = trimmed.match(/^(.+?)\s*\{\s*$/);
+  if (!match || trimmed.startsWith("@")) return undefined;
+  const identifier = match[1].trim();
+  if (/[=:()\[\]<>"'`]/.test(identifier)) return undefined;
+  return { identifier };
+}
+
+function makeSemanticLine(
+  filePath: string,
+  lineNumber: number,
+  line: string,
+  form: FormDraft,
+  sectionName: SigilSectionName,
+  conceptIdentifier?: string,
+): SemanticLine {
+  return {
+    filePath,
+    range: lineRange(lineNumber, line),
+    ownerKind: form.kind,
+    ownerName: form.name,
+    sectionName,
+    conceptIdentifier,
+    text: line.trim(),
   };
 }
 
@@ -268,6 +468,18 @@ function lineRange(lineNumber: number, line: string): SourceRange {
   return {
     start: { line: lineNumber, column: firstColumn(line) },
     end: { line: lineNumber, column: line.length + 1 },
+  };
+}
+
+function identifierRange(
+  lineNumber: number,
+  line: string,
+  identifier: string,
+): SourceRange {
+  const start = Math.max(0, line.indexOf(identifier));
+  return {
+    start: { line: lineNumber, column: start + 1 },
+    end: { line: lineNumber, column: start + identifier.length + 1 },
   };
 }
 

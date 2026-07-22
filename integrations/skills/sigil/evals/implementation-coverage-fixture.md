@@ -12,8 +12,8 @@ Expected skill behavior:
    implementation coverage.
 2. Inspect the selected boundary, planned owners, dependents, tests, and related
    Sigil before coding.
-3. Treat interfaces as public to their dependents even when they are internal to
-   the application.
+3. Treat component goals and interfaces as public to their dependents even when
+   they are internal to the application.
 4. Propose the queue programming abstraction as a component because it owns a
    coherent lifecycle and a stable API relied upon by delivery code.
 5. Propose the delivery-status surface as a UI component whose contract covers

@@ -1,27 +1,53 @@
 component SigilDiagnostics {
   goal {
     Give core stages and host integrations one stable machine-readable vocabulary for reporting Sigil source and configuration problems.
+
     Keep recoverable Sigil problems separate from host failures that must propagate to the caller.
   }
 
   interface {
-    diagnostic(code, message, options?) returns a SigilDiagnostic
-    SigilDiagnostic exposes code, severity, message, optional filePath, and optional source range
-    severity defaults to error when omitted
-    diagnostic codes are stable identifiers that machine-readable consumers may interpret without parsing messages
+    DiagnosticConstruction {
+      diagnostic(code, message, options?) returns a SigilDiagnostic
+
+      SigilDiagnostic exposes code, severity, message, optional filePath, and optional source range
+
+      severity defaults to error when omitted
+    }
+
+    DiagnosticCode {
+      diagnostic codes are stable identifiers that machine-readable consumers may interpret without parsing messages
+    }
   }
 }
 
 expand SigilDiagnostics {
   constraints {
     Parsing, configuration, workspace, and resolution problems are returned as diagnostics when partial results remain meaningful.
+
     Host filesystem and runtime failures are not converted into Sigil diagnostics.
+
     Diagnostic construction does not depend on parser, workspace, resolver, graph, CLI, LSP, or editor modules.
   }
 
   cases {
     An unknown section produces a source-ranged SIGIL_UNKNOWN_SECTION diagnostic.
+
     An unsupported configured language version produces SIGIL_UNSUPPORTED_VERSION.
+
+    An imports-only #module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
+
+    A contiguous ungrouped interface region produces warning SIGIL_MISSING_CONCEPT_IDENTIFIER.
+
+    An identifier outside [A-Za-z][A-Za-z0-9_-]* produces error SIGIL_INVALID_CONCEPT_IDENTIFIER.
+
+    An empty concept block produces error SIGIL_EMPTY_CONCEPT_BLOCK.
+
+    A nested concept block produces error SIGIL_NESTED_CONCEPT_BLOCK.
+
+    Two different accessible concepts with identifiers equal without regard to case produce error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER.
+
+    A valid identifier that is not PascalCase or contains a hyphen or underscore produces informational SIGIL_CONCEPT_IDENTIFIER_STYLE.
+
     A filesystem permission failure rejects the host operation instead of producing an unresolved-import diagnostic.
   }
 }

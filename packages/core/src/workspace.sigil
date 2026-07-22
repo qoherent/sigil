@@ -1,4 +1,4 @@
-@spec/language.sigil import { SigilWorkspaceConfig, RootSigil }
+@spec/language.sigil import { SigilWorkspaceConfig }
 @packages/core/src/diagnostics.sigil import { SigilDiagnostics }
 @packages/core/src/filesystem.sigil import { SigilFileSystem }
 @packages/core/src/parser.sigil import { SigilParser }
@@ -6,43 +6,69 @@
 component SigilWorkspaceLoader {
   goal {
     Select and load one configured Sigil workspace through an explicit filesystem boundary.
-    Ensure workspace membership, nested-workspace isolation, file discovery, and RootSigil eligibility follow the versioned workspace contract.
+
+    Ensure workspace membership, nested-workspace isolation, and file discovery follow the versioned workspace contract.
   }
 
   interface {
-    discoverSigilWorkspace(filesystem, options) returns WorkspaceDiscoveryResult
-    loadSigilWorkspace(filesystem, options) returns SigilWorkspace
-    options identifies a start path and may provide an explicit root or current directory
-    WorkspaceDiscoveryResult exposes the selected root, config path, parsed configuration, and diagnostics
-    SigilWorkspace additionally exposes member roots, loaded partial documents, and accumulated diagnostics
-    depends on SigilFileSystem, SigilParser, SigilWorkspaceConfig, and RootSigil
+    WorkspaceDiscovery {
+      discoverSigilWorkspace(filesystem, options) returns WorkspaceDiscoveryResult
+    }
+
+    WorkspaceLoading {
+      loadSigilWorkspace(filesystem, options) returns SigilWorkspace
+    }
+
+    WorkspaceDiscovery {
+      options identifies a start path and may provide an explicit root or current directory
+
+      WorkspaceDiscoveryResult exposes the selected root, config path, parsed configuration, and diagnostics
+    }
+
+    WorkspaceLoading {
+      SigilWorkspace additionally exposes member roots, loaded partial documents, and accumulated diagnostics
+    }
   }
 }
 
 expand SigilWorkspaceLoader {
   logic {
     Without an explicit root, walk from the target toward filesystem root and select the nearest eligible configured workspace.
+
     With an explicit root, require .sigil/config.json directly inside that root.
+
     Validate configuration before discovering or parsing Sigil source files.
+
     Reject a nearer configured workspace when a configured parent does not exclude its subtree.
+
     Derive member roots only from workspace.members.
+
     Skip excluded independent nested workspaces and diagnose included nested configurations.
+
     Apply include globs and then exclude globs to normalized workspace-relative paths.
+
     Parse selected Sigil files in stable path order through SigilParser.
   }
 
   constraints {
     All filesystem access goes through SigilFileSystem.
+
     Configuration and Sigil source problems accumulate as diagnostics with partial workspace results when practical.
+
     Required filesystem failures propagate to the caller.
-    Only the workspace root and declared member roots are eligible RootSigil locations.
+
+    Workspace loading accepts #module.sigil at any included path and assigns it no workspace-discovery authority.
   }
 
   cases {
     A nested workspace excluded by every configured parent resolves independently.
+
     A nested workspace still included by a parent returns SIGIL_NESTED_CONFIG and loads no source.
+
     An explicit root without a direct configuration returns SIGIL_CONFIG_NOT_FOUND.
+
     A selected workspace excludes files matched by an exclude glob even when an include glob also matches.
+
     A filesystem read failure rejects workspace loading.
   }
 }

@@ -203,7 +203,7 @@ export class SigilLanguageServer {
         documentSymbolProvider: true,
         hoverProvider: true,
         semanticTokensProvider: {
-          legend: { tokenTypes: ["type"], tokenModifiers: [] },
+          legend: { tokenTypes: ["type", "concept"], tokenModifiers: [] },
           full: true,
         },
       },

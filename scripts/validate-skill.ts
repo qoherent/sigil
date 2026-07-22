@@ -14,6 +14,7 @@ const required = [
   "evals/brownfield-fixture.md",
   "evals/greenfield-fixture.md",
   "evals/implementation-coverage-fixture.md",
+  "evals/concept-identifier-fixture.md",
   "evals/expected.json",
 ];
 
@@ -37,6 +38,26 @@ requireText(
   "design conversation routing",
 );
 requireText(skill, "sigil init", "brownfield initialization");
+requireText(
+  skill,
+  "It must declare at least one local component.",
+  "nonempty module index rule",
+);
+requireText(
+  skill,
+  "both `goal` and `interface` are\n     public to dependents",
+  "public goal and interface rule",
+);
+requireText(
+  skill,
+  "Do not repeat imported-component\n     dependencies in `interface`",
+  "import-only dependency declaration rule",
+);
+requireText(
+  skill,
+  "Separate distinct prose-level ideas with blank lines",
+  "semantic blank-line style",
+);
 requireText(skill, "one primary decision per turn", "sequential clarification");
 requireText(skill, "choices", "design choices");
 requireText(
@@ -55,10 +76,65 @@ requireText(
   "do not write implementation code",
   "implementation approval boundary",
 );
+requireText(
+  skill,
+  "`SIGIL_MISSING_CONCEPT_IDENTIFIER` as an authoring gap",
+  "missing concept identifier workflow",
+);
+requireText(
+  skill,
+  "inspect the remainder of the same section",
+  "complete local concept reuse discovery",
+);
+requireText(
+  skill,
+  "Use `sigil graph` to inspect direct importers",
+  "direct consumer concept evidence",
+);
+requireText(
+  skill,
+  "Traverse transitive importers only when a concept\n     is re-exposed",
+  "bounded transitive concept discovery",
+);
+requireText(
+  skill,
+  "delegate concept grouping and identifier\n     generation to one dedicated subagent only after completing reuse discovery",
+  "concept identifier subagent delegation",
+);
+requireText(
+  skill,
+  "return a proposal only and not edit files.",
+  "proposal-only concept identifier subagent",
+);
+requireText(
+  skill,
+  "case-insensitive namespace uniqueness, public and\n     private visibility, collective coherence, and transitive import ambiguity",
+  "primary-agent concept proposal validation",
+);
+requireText(
+  skill,
+  "Subagent completion is not user\n     approval and grants no edit authority to the primary agent.",
+  "delegated proposal authority boundary",
+);
+requireText(
+  skill,
+  "always require explicit user approval of the presented proposal before any\n     repository mutation",
+  "concept identifier pre-edit approval gate",
+);
+requireText(
+  skill,
+  "Every delegated semantic proposal is advisory",
+  "global delegated proposal gate",
+);
+requireText(
+  skill,
+  "Keep anchoring outside concept-identifier work.",
+  "concept identifier anchoring exclusion",
+);
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "0.1.0") {
-  throw new Error(`Expected skill VERSION 0.1.0, got ${version}`);
+if (version !== "0.4.0") {
+  throw new Error(`Expected skill VERSION 0.4.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -66,10 +142,10 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "0.1.0",
-    cliVersion: "^0.1.0",
-    coreVersion: "^0.1.0",
-    sigilVersion: "0.1.0",
+    skillVersion: "0.4.0",
+    cliVersion: "^0.4.0",
+    coreVersion: "^0.4.0",
+    sigilVersion: "0.4.0",
   })
 ) {
   if (compatibility[key] !== expected) {
@@ -90,18 +166,18 @@ const requiredBrownfieldBehaviors = [
   "classify-repository-evidence",
   "scan-application-evidence",
   "converse-when-application-vague",
-  "continue-root-follow-up-questions",
+  "continue-boundary-follow-up-questions",
   "elicit-application-goal-and-interface",
-  "confirm-synthesized-root-contract-separately",
-  "reject-empty-or-import-only-root-module",
-  "propose-confirmed-root-application-summary",
-  "classify-root-expand-evidence",
-  "propose-minimal-root-expand",
-  "preserve-only-binding-root-constraints",
-  "exclude-incidental-and-module-specific-root-details",
+  "confirm-synthesized-boundary-contract-separately",
+  "inspect-root-and-declared-member-boundaries",
+  "propose-confirmed-boundary-summaries",
+  "classify-boundary-expand-evidence",
+  "propose-minimal-boundary-expands",
+  "preserve-only-binding-boundary-constraints",
+  "exclude-incidental-and-task-specific-boundary-details",
   "propose-before-edit",
-  "review-root-before-task-focus",
-  "focus-requested-task-after-root-approval",
+  "review-boundaries-before-task-focus",
+  "focus-requested-task-after-boundary-approval",
   "collaborate-on-missing-sigil-before-implementation",
   "validate-written-sigil",
   "stop-at-semantic-review-gate",
@@ -139,8 +215,8 @@ requireText(
 );
 requireText(
   fixture,
-  "Only after RootSigil approval, focus on the requested component",
-  "fixture root-before-task ordering",
+  "Only after configured-boundary summary approval, focus on the requested",
+  "fixture boundary-before-task ordering",
 );
 requireText(
   fixture,
@@ -265,7 +341,7 @@ const implementationFixture = await Deno.readTextFile(
 const requiredImplementationBehaviors = [
   "reject-high-level-only-coverage",
   "inspect-implementation-boundary",
-  "treat-interface-public-to-dependents",
+  "treat-goal-and-interface-public-to-dependents",
   "model-programming-abstraction-as-component",
   "model-ui-surface-as-component",
   "use-expand-for-owned-implementation-detail",
@@ -305,6 +381,63 @@ requireText(
   "implementation coverage map",
 );
 
+const conceptIdentifierFixture = await Deno.readTextFile(
+  `${root}/evals/concept-identifier-fixture.md`,
+);
+const requiredConceptIdentifierBehaviors = [
+  "inspect-complete-local-collective",
+  "inspect-local-and-imported-concepts",
+  "inspect-direct-consumers",
+  "bound-transitive-traversal",
+  "treat-consumers-as-evidence",
+  "classify-reuse-before-creation",
+  "provide-evidence-bundle",
+  "require-evidence-backed-proposal",
+  "validate-in-primary-agent",
+  "present-exact-proposal",
+  "enter-awaiting-approval",
+  "deny-primary-edit-authority",
+  "require-explicit-pre-edit-approval",
+  "exclude-anchor-workflow",
+];
+if (!Array.isArray(expected.conceptIdentifierRequiredBehaviors)) {
+  throw new Error(
+    "Concept identifier fixture must declare required behaviors.",
+  );
+}
+for (const behavior of requiredConceptIdentifierBehaviors) {
+  if (!expected.conceptIdentifierRequiredBehaviors.includes(behavior)) {
+    throw new Error(
+      `Concept identifier fixture is missing behavior ${behavior}.`,
+    );
+  }
+}
+requireText(
+  conceptIdentifierFixture,
+  "remainder of the same section, every other component section",
+  "concept fixture complete local discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "Inspect direct importers",
+  "concept fixture direct consumer discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "only because the concept is re-exposed",
+  "concept fixture bounded transitive discovery",
+);
+requireText(
+  conceptIdentifierFixture,
+  "leave every repository file unchanged",
+  "concept fixture awaiting approval",
+);
+requireText(
+  conceptIdentifierFixture,
+  "advisory output rather than user approval",
+  "concept fixture delegated authority boundary",
+);
+
 const brownfield = await Deno.readTextFile(
   `${root}/references/brownfield-adoption.md`,
 );
@@ -315,7 +448,7 @@ requireText(
 );
 requireText(
   brownfield,
-  "Build The Application Picture Through Conversation",
+  "Build Each Boundary Picture Through Conversation",
   "brownfield conversational discovery",
 );
 requireText(
@@ -325,13 +458,13 @@ requireText(
 );
 requireText(
   brownfield,
-  "Confirmation is mandatory",
+  "Ask the user to confirm or correct each synthesized boundary",
   "brownfield separate confirmation",
 );
 requireText(
   brownfield,
-  "Do not move to task modeling until the user approves the written\nRootSigil.",
-  "brownfield root-before-task ordering",
+  "Do not move to task modeling until the user approves the\nwritten configured-boundary summaries.",
+  "brownfield boundary-before-task ordering",
 );
 
 const greenfield = await Deno.readTextFile(
@@ -363,7 +496,7 @@ const implementationDesign = await Deno.readTextFile(
 );
 requireText(
   implementationDesign,
-  "An interface is public relative to the component's dependents.",
+  "A component's goal and interface are public relative to its dependents.",
   "dependent-relative public contract",
 );
 requireText(
@@ -383,7 +516,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 0.1.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.4.0 structure, compatibility, concept identifier workflow, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

@@ -88,8 +88,8 @@ Deno.test("version reports tool and resolved contract versions", async () => {
   ]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.cliVersion, "0.1.0");
-  assertEquals(json.coreVersion, "0.1.0");
+  assertEquals(json.cliVersion, "0.4.0");
+  assertEquals(json.coreVersion, "0.4.0");
   assertEquals(json.sigilVersion, SIGIL_VERSION);
 });
 
@@ -134,12 +134,75 @@ Deno.test("check returns 1 for Sigil diagnostics and 0 for a valid empty workspa
   }
 });
 
-Deno.test("check rejects RootSigil in an undeclared internal directory", async () => {
-  const root = await makeWorkspace("invalid-root-sigil");
+Deno.test("check reports missing interface concepts as warning-only", async () => {
+  const root = await makeWorkspace("concept-warning");
+  try {
+    await Deno.writeTextFile(`${root}/contract.sigil`, validSigil("Feature"));
+    const result = await runCli(["check", root, "--format", "json"]);
+    assertEquals(result.exitCode, EXIT_OK);
+    const output = parseJson(result.stdout);
+    assertEquals(output.diagnosticCounts.error, 0);
+    assertEquals(output.diagnosticCounts.warning, 1);
+    assertHasCode(
+      output.diagnostics,
+      "SIGIL_MISSING_CONCEPT_IDENTIFIER",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("context exposes concept blocks and resolved namespaces", async () => {
+  const root = await makeWorkspace("concept-context");
+  try {
+    await Deno.writeTextFile(
+      `${root}/contract.sigil`,
+      `component Feature {
+  goal {
+    Test concepts.
+  }
+
+  interface {
+    Execution {
+      run()
+    }
+  }
+}
+`,
+    );
+    const result = await runCli([
+      "context",
+      root,
+      "--component",
+      "Feature",
+      "--format",
+      "json",
+    ]);
+    assertEquals(result.exitCode, EXIT_OK);
+    const output = parseJson(result.stdout);
+    assertEquals(
+      output.componentContracts[0].interfaceConcepts[0].identifier,
+      "Execution",
+    );
+    assertEquals(
+      output.conceptNamespaces[0].publicConcepts[0].identifier,
+      "Execution",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("check rejects an imports-only module index in an internal directory", async () => {
+  const root = await makeWorkspace("internal-module-index");
   try {
     await Deno.mkdir(`${root}/internal`);
     await Deno.writeTextFile(
       `${root}/internal/#module.sigil`,
+      "@internal/contract.sigil import { Internal }\n",
+    );
+    await Deno.writeTextFile(
+      `${root}/internal/contract.sigil`,
       validSigil("Internal"),
     );
     await Deno.writeTextFile(
@@ -148,9 +211,10 @@ Deno.test("check rejects RootSigil in an undeclared internal directory", async (
     );
     const result = await runCli(["check", root, "--format", "json"]);
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    const diagnostics = parseJson(result.stdout).diagnostics;
-    assertHasCode(diagnostics, "SIGIL_INVALID_ROOT_MODULE");
-    assertHasCode(diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
+    assertHasCode(
+      parseJson(result.stdout).diagnostics,
+      "SIGIL_MODULE_WITHOUT_COMPONENT",
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -245,7 +309,7 @@ Deno.test("top-level help and version report CLI information", async () => {
 
   const version = await runCli(["--version"]);
   assertEquals(version.exitCode, EXIT_OK);
-  assertEquals(version.stdout, "0.1.0\n");
+  assertEquals(version.stdout, "0.4.0\n");
   assertEquals(version.stderr, "");
 });
 
@@ -346,12 +410,12 @@ Deno.test("skill discovery resolves valid skills from the source installation", 
 
 Deno.test("skill install resolves skills beside a selected versioned binary", async () => {
   const root = await Deno.makeTempDir({ prefix: "sigil-versioned-install-" });
-  const installation = `${root}/0.1.0`;
+  const installation = `${root}/0.4.0`;
   const skills = `${installation}/integrations/skills`;
   try {
     await Deno.mkdir(`${skills}/sigil`, { recursive: true });
     const resolved = await resolveInstalledSkillsDirectory(
-      "https://jsr.io/@qoherent/sigil/0.1.0/src/main.ts",
+      "https://jsr.io/@qoherent/sigil/0.4.0/src/main.ts",
       `${installation}/bin/sigil`,
     );
     assertEquals(await Deno.realPath(resolved), await Deno.realPath(skills));
@@ -426,7 +490,7 @@ Deno.test("executable subprocess returns version JSON", async () => {
   assertEquals(output.code, EXIT_OK);
   assertEquals(
     JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
-    "0.1.0",
+    "0.4.0",
   );
 });
 

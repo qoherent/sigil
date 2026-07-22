@@ -1,5 +1,6 @@
 import type {
   ResolvedComponent,
+  ResolvedConcept,
   ResolvedSigilWorkspace,
   Section,
   SigilDiagnostic,
@@ -22,11 +23,24 @@ import type {
 const SYMBOL_NAMESPACE = 3;
 const SYMBOL_CLASS = 5;
 const SYMBOL_PROPERTY = 7;
-const SEMANTIC_TOKEN_TYPE = 0;
+const SEMANTIC_TOKEN_COMPONENT = 0;
+const SEMANTIC_TOKEN_CONCEPT = 1;
 
 interface ComponentReference {
   readonly component: ResolvedComponent;
   readonly range: Range;
+  readonly includeExpansions: boolean;
+}
+
+interface ConceptReference {
+  readonly concept: ResolvedConcept;
+  readonly context: ResolvedComponent;
+  readonly range: Range;
+}
+
+interface SemanticReference {
+  readonly range: Range;
+  readonly tokenType: number;
 }
 
 export function sourceRangeToLsp(range?: SourceRange): Range {
@@ -57,7 +71,7 @@ export function diagnosticsByUri(
         ? 1
         : item.severity === "warning"
         ? 2
-        : 3,
+        : 4,
       code: item.code,
       source: "sigil",
       message: item.message,
@@ -82,7 +96,9 @@ export function documentSymbols(
         declaration.range.start.line,
         declaration.name,
       ),
-      children: declaration.sections.map(sectionSymbol),
+      children: declaration.sections.map((section) =>
+        sectionSymbol(section, source)
+      ),
     })),
     ...document.expands.map((declaration) => ({
       name: declaration.name,
@@ -94,7 +110,9 @@ export function documentSymbols(
         declaration.range.start.line,
         declaration.name,
       ),
-      children: declaration.sections.map(sectionSymbol),
+      children: declaration.sections.map((section) =>
+        sectionSymbol(section, source)
+      ),
     })),
   ];
 }
@@ -116,8 +134,8 @@ export async function definitionAt(
   );
   if (importEntry) {
     const imported = importEntry.names.find((item) => item.name === token.text);
-    if (imported?.component && importEntry.targetFile) {
-      return location(importEntry.targetFile, imported.component.range);
+    if (imported?.component && imported.componentFile) {
+      return location(imported.componentFile, imported.component.range);
     }
     if (
       importEntry.targetFile &&
@@ -130,6 +148,15 @@ export async function definitionAt(
         target?.document.expands[0];
       return location(importEntry.targetFile, declaration?.range);
     }
+  }
+
+  const conceptReference = conceptReferences(
+    resolved,
+    normalized,
+    source,
+  ).find((item) => contains(item.range, position));
+  if (conceptReference) {
+    return await conceptDefinition(resolved, fs, conceptReference.concept);
   }
 
   const reference = componentReferences(resolved, normalized, source).find(
@@ -151,6 +178,20 @@ export async function hoverAt(
 ): Promise<Hover | null> {
   const source = await fs.readTextFile(filePath);
   const normalized = normalizePath(filePath);
+  const conceptReference = conceptReferences(
+    resolved,
+    normalized,
+    source,
+  ).find((item) => contains(item.range, position));
+  if (conceptReference) {
+    return {
+      contents: {
+        kind: "markdown",
+        value: conceptMarkdown(conceptReference),
+      },
+      range: conceptReference.range,
+    };
+  }
   const reference = componentReferences(resolved, normalized, source).find(
     (item) => contains(item.range, position),
   );
@@ -158,7 +199,10 @@ export async function hoverAt(
   return {
     contents: {
       kind: "markdown",
-      value: componentMarkdown(reference.component),
+      value: componentMarkdown(
+        reference.component,
+        reference.includeExpansions,
+      ),
     },
     range: reference.range,
   };
@@ -169,13 +213,27 @@ export function semanticTokens(
   filePath: string,
   source: string,
 ): SemanticTokens {
-  const references = componentReferences(resolved, filePath, source)
-    .map((item) => item.range)
-    .sort(compareRanges);
+  const byRange = new Map<string, SemanticReference>();
+  for (const item of componentReferences(resolved, filePath, source)) {
+    byRange.set(rangeKey(item.range), {
+      range: item.range,
+      tokenType: SEMANTIC_TOKEN_COMPONENT,
+    });
+  }
+  for (const item of conceptReferences(resolved, filePath, source)) {
+    byRange.set(rangeKey(item.range), {
+      range: item.range,
+      tokenType: SEMANTIC_TOKEN_CONCEPT,
+    });
+  }
+  const references = [...byRange.values()].sort((left, right) =>
+    compareRanges(left.range, right.range)
+  );
   const data: number[] = [];
   let previousLine = 0;
   let previousCharacter = 0;
-  for (const range of references) {
+  for (const reference of references) {
+    const range = reference.range;
     if (range.start.line !== range.end.line) continue;
     const deltaLine = range.start.line - previousLine;
     const deltaCharacter = deltaLine === 0
@@ -185,7 +243,7 @@ export function semanticTokens(
       deltaLine,
       deltaCharacter,
       range.end.character - range.start.character,
-      SEMANTIC_TOKEN_TYPE,
+      reference.tokenType,
       0,
     );
     previousLine = range.start.line;
@@ -214,6 +272,7 @@ function componentReferences(
     addVisibleComponent(visible, component);
     references.push({
       component,
+      includeExpansions: true,
       range: declarationNameRange(
         source,
         component.declaration.range.start.line,
@@ -229,15 +288,15 @@ function componentReferences(
   ) {
     const namesRange = importNamesRange(source, imported.declaration.range);
     for (const name of imported.names) {
-      if (!name.component || !imported.targetFile) continue;
+      if (!name.component || !name.componentFile) continue;
       const component = resolved.components.find((item) =>
         item.declaration === name.component &&
-        normalizePath(item.filePath) === normalizePath(imported.targetFile!)
+        normalizePath(item.filePath) === normalizePath(name.componentFile!)
       );
       if (!component) continue;
       addVisibleComponent(visible, component);
       for (const range of identifierRanges(source, name.name, namesRange)) {
-        references.push({ component, range });
+        references.push({ component, range, includeExpansions: false });
       }
     }
   }
@@ -249,6 +308,7 @@ function componentReferences(
     if (matches.length !== 1) continue;
     references.push({
       component: matches[0],
+      includeExpansions: true,
       range: declarationNameRange(
         source,
         expand.range.start.line,
@@ -268,12 +328,113 @@ function componentReferences(
     for (const [name, component] of visible) {
       if (!component) continue;
       for (const range of identifierRanges(source, name, lineRange)) {
-        references.push({ component, range });
+        references.push({
+          component,
+          range,
+          includeExpansions: normalizePath(component.filePath) === normalized,
+        });
       }
     }
   }
 
   return deduplicateReferences(references);
+}
+
+function conceptReferences(
+  resolved: ResolvedSigilWorkspace,
+  filePath: string,
+  source: string,
+): readonly ConceptReference[] {
+  const normalized = normalizePath(filePath);
+  const document = resolved.workspace.files.find((item) =>
+    normalizePath(item.path) === normalized
+  )?.document;
+  if (!document) return [];
+
+  const references: ConceptReference[] = [];
+  for (const declaration of [...document.components, ...document.expands]) {
+    const context = componentContext(
+      resolved,
+      normalized,
+      declaration.kind,
+      declaration.name,
+    );
+    if (!context) continue;
+    for (const section of declaration.sections) {
+      for (const block of section.concepts) {
+        const concept = context.conceptNamespace.concepts.find((item) =>
+          item.occurrences.some((occurrence) => occurrence.block === block)
+        );
+        if (concept) {
+          references.push({
+            concept,
+            context,
+            range: declarationNameRange(
+              source,
+              block.range.start.line,
+              block.identifier,
+            ),
+          });
+        }
+      }
+      for (const line of section.lines) {
+        const lineRange = sourceRangeToLsp(line.range);
+        for (
+          const accessible of unambiguousConcepts(
+            context.conceptNamespace.accessibleConcepts,
+          )
+        ) {
+          for (
+            const range of identifierRanges(
+              source,
+              accessible.identifier,
+              lineRange,
+            )
+          ) {
+            references.push({ concept: accessible, context, range });
+          }
+        }
+      }
+    }
+  }
+  return deduplicateConceptReferences(references);
+}
+
+function componentContext(
+  resolved: ResolvedSigilWorkspace,
+  filePath: string,
+  kind: "component" | "expand",
+  name: string,
+): ResolvedComponent | undefined {
+  const matches = resolved.components.filter((component) => {
+    if (component.name !== name) return false;
+    if (kind === "component") {
+      return normalizePath(component.filePath) === filePath;
+    }
+    return component.expansions.expands.some((expansion) =>
+      normalizePath(expansion.filePath) === filePath &&
+      expansion.declaration.name === name
+    );
+  });
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function unambiguousConcepts(
+  concepts: readonly ResolvedConcept[],
+): readonly ResolvedConcept[] {
+  const grouped = new Map<string, ResolvedConcept[]>();
+  for (const concept of concepts) {
+    const key = concept.identity.normalizedIdentifier;
+    const items = grouped.get(key) ?? [];
+    items.push(concept);
+    grouped.set(key, items);
+  }
+  return [...grouped.values()].flatMap((items) => {
+    const identities = new Map(
+      items.map((item) => [conceptIdentityKey(item), item]),
+    );
+    return identities.size === 1 ? [[...identities.values()][0]] : [];
+  });
 }
 
 function addVisibleComponent(
@@ -324,7 +485,7 @@ function identifierRanges(
 }
 
 function isIdentifierCharacter(value: string | undefined): boolean {
-  return value !== undefined && /[A-Za-z0-9_]/.test(value);
+  return value !== undefined && /[A-Za-z0-9_-]/.test(value);
 }
 
 function deduplicateReferences(
@@ -339,11 +500,34 @@ function deduplicateReferences(
   return [...unique.values()];
 }
 
+function deduplicateConceptReferences(
+  references: readonly ConceptReference[],
+): readonly ConceptReference[] {
+  const unique = new Map<string, ConceptReference>();
+  for (const reference of references) {
+    const key = `${rangeKey(reference.range)}:${
+      conceptIdentityKey(reference.concept)
+    }`;
+    if (!unique.has(key)) unique.set(key, reference);
+  }
+  return [...unique.values()];
+}
+
+function rangeKey(range: Range): string {
+  return `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}`;
+}
+
+function conceptIdentityKey(concept: ResolvedConcept): string {
+  return `${
+    normalizePath(concept.identity.filePath)
+  }::${concept.identity.componentName}::${concept.identity.normalizedIdentifier}`;
+}
+
 function compareRanges(left: Range, right: Range): number {
   return compare(left.start, right.start) || compare(left.end, right.end);
 }
 
-function sectionSymbol(section: Section): DocumentSymbol {
+function sectionSymbol(section: Section, source: string): DocumentSymbol {
   return {
     name: section.name,
     kind: SYMBOL_PROPERTY,
@@ -358,6 +542,17 @@ function sectionSymbol(section: Section): DocumentSymbol {
         character: section.range.start.column - 1 + section.name.length,
       },
     },
+    children: section.concepts.map((concept) => ({
+      name: concept.identifier,
+      detail: "concept",
+      kind: SYMBOL_PROPERTY,
+      range: sourceRangeToLsp(concept.range),
+      selectionRange: declarationNameRange(
+        source,
+        concept.range.start.line,
+        concept.identifier,
+      ),
+    })),
   };
 }
 
@@ -402,7 +597,10 @@ function tokenAt(
     : null;
 }
 
-function componentMarkdown(component: ResolvedComponent): string {
+function componentMarkdown(
+  component: ResolvedComponent,
+  includeExpansions: boolean,
+): string {
   const goal = component.declaration.sections.find((item) =>
     item.name === "goal"
   );
@@ -420,7 +618,7 @@ function componentMarkdown(component: ResolvedComponent): string {
     "**Interface**",
     ...markdownList(iface?.lines.map((item) => item.text) ?? []),
   ];
-  if (component.expansions.expands.length) {
+  if (includeExpansions && component.expansions.expands.length) {
     lines.push("", "**Collected expansions**");
     for (const expansion of component.expansions.expands) {
       lines.push("", `\`${expansion.filePath}\``);
@@ -432,6 +630,52 @@ function componentMarkdown(component: ResolvedComponent): string {
         );
       }
     }
+  }
+  return lines.join("\n");
+}
+
+async function conceptDefinition(
+  resolved: ResolvedSigilWorkspace,
+  fs: SigilFileSystem,
+  concept: ResolvedConcept,
+): Promise<Location | null> {
+  const origin = resolved.components.find((component) =>
+    component.name === concept.identity.componentName &&
+    normalizePath(component.filePath) ===
+      normalizePath(concept.identity.filePath)
+  );
+  const resolvedConcept = origin?.conceptNamespace.concepts.find((item) =>
+    conceptIdentityKey(item) === conceptIdentityKey(concept)
+  );
+  const occurrence =
+    resolvedConcept?.occurrences.find((item) =>
+      item.sectionName === "interface"
+    ) ?? resolvedConcept?.occurrences[0];
+  if (!occurrence) return null;
+  const source = await fs.readTextFile(occurrence.filePath);
+  return {
+    uri: pathToFileUri(occurrence.filePath),
+    range: declarationNameRange(
+      source,
+      occurrence.block.range.start.line,
+      occurrence.block.identifier,
+    ),
+  };
+}
+
+function conceptMarkdown(reference: ConceptReference): string {
+  const identity = reference.concept.identity;
+  const lines = [
+    `### concept ${reference.concept.identifier}`,
+    "",
+    `Origin: \`${identity.componentName}\` in \`${identity.filePath}\``,
+  ];
+  for (const occurrence of reference.concept.occurrences) {
+    lines.push(
+      "",
+      `**${occurrence.sectionName}** — \`${occurrence.filePath}\``,
+      ...markdownList(occurrence.block.lines.map((item) => item.text)),
+    );
   }
   return lines.join("\n");
 }

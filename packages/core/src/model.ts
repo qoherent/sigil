@@ -16,10 +16,15 @@ export type SigilDiagnosticCode =
   | "SIGIL_UNKNOWN_SECTION"
   | "SIGIL_MISSING_GOAL"
   | "SIGIL_MISSING_INTERFACE"
+  | "SIGIL_MODULE_WITHOUT_COMPONENT"
+  | "SIGIL_MISSING_CONCEPT_IDENTIFIER"
+  | "SIGIL_INVALID_CONCEPT_IDENTIFIER"
+  | "SIGIL_EMPTY_CONCEPT_BLOCK"
+  | "SIGIL_NESTED_CONCEPT_BLOCK"
+  | "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
+  | "SIGIL_CONCEPT_IDENTIFIER_STYLE"
   | "SIGIL_UNRESOLVED_IMPORT_PATH"
   | "SIGIL_UNRESOLVED_IMPORTED_COMPONENT"
-  | "SIGIL_INVALID_ROOT_MODULE"
-  | "SIGIL_INVALID_DIRECTORY_IMPORT"
   | "SIGIL_EXPAND_WITHOUT_COMPONENT"
   | "SIGIL_DUPLICATE_COMPONENT"
   | "SIGIL_IMPORT_CYCLE"
@@ -79,7 +84,15 @@ export interface SemanticLine {
   readonly ownerKind: SigilFormKind;
   readonly ownerName: string;
   readonly sectionName: SigilSectionName;
+  readonly conceptIdentifier?: string;
   readonly text: string;
+}
+
+export interface ConceptBlock {
+  readonly identifier: string;
+  readonly range: SourceRange;
+  readonly bodyRange: SourceRange;
+  readonly lines: readonly SemanticLine[];
 }
 
 export interface Section {
@@ -87,6 +100,7 @@ export interface Section {
   readonly range: SourceRange;
   readonly bodyRange: SourceRange;
   readonly lines: readonly SemanticLine[];
+  readonly concepts: readonly ConceptBlock[];
 }
 
 export interface ImportDeclaration {
@@ -162,6 +176,7 @@ export interface ResolvedImport {
 export interface ResolvedImportName {
   readonly name: string;
   readonly component?: ComponentDeclaration;
+  readonly componentFile?: string;
 }
 
 export interface CollectedExpansion {
@@ -179,6 +194,37 @@ export interface ResolvedComponent {
   readonly declaration: ComponentDeclaration;
   readonly filePath: string;
   readonly expansions: CollectedExpansion;
+  readonly conceptNamespace: ResolvedConceptNamespace;
+}
+
+export interface ConceptIdentity {
+  readonly identifier: string;
+  readonly normalizedIdentifier: string;
+  readonly componentName: string;
+  readonly filePath: string;
+}
+
+export interface ResolvedConceptOccurrence {
+  readonly componentName: string;
+  readonly filePath: string;
+  readonly ownerKind: SigilFormKind;
+  readonly sectionName: SigilSectionName;
+  readonly block: ConceptBlock;
+}
+
+export interface ResolvedConcept {
+  readonly identity: ConceptIdentity;
+  readonly identifier: string;
+  readonly isPublic: boolean;
+  readonly isImported: boolean;
+  readonly occurrences: readonly ResolvedConceptOccurrence[];
+}
+
+export interface ResolvedConceptNamespace {
+  readonly componentName: string;
+  readonly concepts: readonly ResolvedConcept[];
+  readonly accessibleConcepts: readonly ResolvedConcept[];
+  readonly publicConcepts: readonly ResolvedConcept[];
 }
 
 export interface SigilResolution {

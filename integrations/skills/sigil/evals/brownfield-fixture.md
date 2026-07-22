@@ -5,8 +5,8 @@ or `#module.sigil`. The user asks Codex to add Sigil and then change one
 existing component.
 
 Root documentation, manifests, executable configuration, and entrypoints suggest
-an application goal and some runtime behavior, but they do not identify the
-intended users, repository boundary, or complete external interaction surface.
+a boundary goal and some runtime behavior, but they do not identify the intended
+users, responsibility boundary, or complete external interaction surface.
 The requested component has implementation, tests, and conflicting
 documentation.
 
@@ -21,17 +21,19 @@ Expected skill behavior:
    the missing application purpose, users or systems, boundary, and external
    interaction surfaces.
 5. Resolve one primary decision per turn, acknowledge each answer, and continue
-   while material RootSigil decisions remain unresolved.
+   while material configured-boundary summary decisions remain unresolved.
 6. Synthesize the evidence and conversational answers into a candidate goal and
    interface, then request separate confirmation.
 7. After confirmation, classify application-wide evidence into optional root
    `state`, `logic`, `constraints`, and `cases`. Exclude secrets, incidental
    dependencies, low-level configuration, and task-specific details.
-8. Propose exact meaningful RootSigil text. It must not be empty or import-only.
-9. Wait for approval, write only approved RootSigil, validate it, and stop at
-   the RootSigil review gate.
-10. Only after RootSigil approval, focus on the requested component, classify
-    its coverage, and gather task-specific evidence.
+8. Propose an exact meaningful ordinary summary component in the workspace-root
+   `#module.sigil`; include direct imports only when they define intentional
+   directory-import shorthand.
+9. Wait for approval, write only the approved boundary module index, validate
+   it, and stop at the Sigil review gate.
+10. Only after configured-boundary summary approval, focus on the requested
+    component, classify its coverage, and gather task-specific evidence.
 11. Report conflicting current and intended behavior and propose exact task
     Sigil before editing.
 12. After task-Sigil approval, write and validate it, then stop at the

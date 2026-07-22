@@ -126,6 +126,9 @@ function contextCommand(
   const expansions = selectedComponents.map((component) =>
     core.collectedExpansionFor(resolved, component.name)
   ).filter((item) => item !== undefined);
+  const conceptNamespaces = selectedComponents.map((component) =>
+    core.conceptNamespaceFor(resolved, component.name)
+  ).filter((item) => item !== undefined);
   const relatedFilePaths = [
     ...new Set([
       ...selectedComponents.map((component) => component.filePath),
@@ -139,6 +142,7 @@ function contextCommand(
     ...workspaceMetadata(resolved.workspace),
     selectedComponents,
     componentContracts: contracts,
+    conceptNamespaces,
     collectedExpansions: expansions,
     relatedFilePaths,
     diagnostics: resolved.diagnostics,
@@ -167,8 +171,19 @@ function renderMarkdown(
       ...formatList(contract.goalLines),
       "",
       "### Interface",
-      ...formatList(contract.interfaceLines),
     );
+    if (contract.ungroupedInterfaceLines.length) {
+      lines.push(...formatList(contract.ungroupedInterfaceLines));
+    } else if (!contract.interfaceConcepts.length) {
+      lines.push("- none");
+    }
+    for (const concept of contract.interfaceConcepts) {
+      lines.push(
+        "",
+        `#### ${concept.identifier}`,
+        ...formatList(concept.lines),
+      );
+    }
     const expansion = core.collectedExpansionFor(resolved, contract.name);
     if (expansion?.expands.length) {
       lines.push("", "### Expansions");
@@ -187,9 +202,11 @@ function renderMarkdown(
   }
   lines.push("## Diagnostics", "");
   if (!resolved.diagnostics.length) lines.push("- none");
-  else {for (const item of resolved.diagnostics) {
+  else {
+    for (const item of resolved.diagnostics) {
       lines.push(`- ${item.severity} ${item.code}: ${item.message}`);
-    }}
+    }
+  }
   return `${lines.join("\n")}\n`;
 }
 

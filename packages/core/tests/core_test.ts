@@ -2,6 +2,7 @@ import {
   ancestorsFrom,
   collectedExpansionFor,
   componentContracts,
+  conceptNamespaceFor,
   dirname,
   InMemorySigilFileSystem,
   loadSigilWorkspace,
@@ -36,7 +37,7 @@ Deno.test("parses the canonical Sigil version and preserves semantic lines", asy
   const result = parseSigilDocument("examples/promise/promise.sigil", source, {
     sigilVersion: SIGIL_VERSION,
   });
-  assertEquals(result.diagnostics.length, 0);
+  assertHasCode(result.diagnostics, "SIGIL_MISSING_CONCEPT_IDENTIFIER");
   const goal = result.document.components[0].sections.find((section) =>
     section.name === "goal"
   );
@@ -56,6 +57,24 @@ Deno.test("raw parsing requires a supported explicit Sigil version", () => {
   });
   assertEquals(parsed.document.components.length, 0);
   assertHasCode(parsed.diagnostics, "SIGIL_UNSUPPORTED_VERSION");
+});
+
+Deno.test("requires every module index to declare a local component", () => {
+  const parsed = parseSigilDocument(
+    "internal/#module.sigil",
+    "@internal/contract.sigil import { Internal }\n",
+    { sigilVersion: SIGIL_VERSION },
+  );
+  assertEquals(parsed.document.imports.length, 1);
+  assertEquals(parsed.document.components.length, 0);
+  assertHasCode(parsed.diagnostics, "SIGIL_MODULE_WITHOUT_COMPONENT");
+
+  const valid = parseSigilDocument(
+    "internal/#module.sigil",
+    `@internal/contract.sigil import { Internal }\n\n${rootModule}`,
+    { sigilVersion: SIGIL_VERSION },
+  );
+  assertNoErrors(valid.diagnostics);
 });
 
 Deno.test("strict config accepts workspace defaults and rejects invalid members", () => {
@@ -112,7 +131,7 @@ Deno.test("discovers the nearest excluded workspace config and resolves imports"
   assertEquals(workspace.root, "examples/slotted");
   assertEquals(workspace.configPath, "examples/slotted/.sigil/config.json");
   assertEquals(workspace.config?.workspace.name, "slotted");
-  assertEquals(resolved.diagnostics.length, 0);
+  assertNoErrors(resolved.diagnostics);
   assert(
     resolved.graph.importedComponentEdges.some((edge) =>
       edge.componentName === "UserProfile"
@@ -173,7 +192,7 @@ Deno.test("requires config and rejects an unexcluded nearer config", async () =>
   );
   assertEquals(independent.root, "nested");
   assertEquals(independent.config?.workspace.name, "nested");
-  assertEquals(independent.diagnostics.length, 0);
+  assertNoErrors(independent.diagnostics);
   assertEquals(independent.files.length, 1);
 });
 
@@ -216,7 +235,7 @@ Deno.test("nested config below selected root is diagnosed and its subtree skippe
     }),
     { startPath: ".", explicitRoot: "." },
   );
-  assertEquals(excluded.diagnostics.length, 0);
+  assertNoErrors(excluded.diagnostics);
   assertEquals(excluded.files.length, 1);
   assertEquals(excluded.files[0].path, "root.sigil");
 
@@ -278,46 +297,78 @@ Deno.test("returns partial models and stable diagnostics for malformed Sigil", (
   assertHasCode(resolved.diagnostics, "SIGIL_EXPAND_WITHOUT_COMPONENT");
 });
 
-Deno.test("uses only workspace.members for RootSigil locations and directory imports", async () => {
+Deno.test("resolves directory indexes independently of workspace members", async () => {
   const fs = new InMemorySigilFileSystem({
-    ".sigil/config.json": configSource({
-      workspace: { name: "test", members: ["declared"] },
-    }),
-    "deno.json": JSON.stringify({ workspace: ["workspace-only"] }),
+    ".sigil/config.json": configSource(),
     "#module.sigil": rootModule,
-    "internal/#module.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/#module.sigil":
+      `@internal/contract.sigil import { Internal }\n\n${
+        rootModule.replaceAll("Sigil", "InternalModule")
+      }`,
+    "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
     "consumer.sigil":
       "@internal import { Internal }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
-    "declared/deno.json": "{}",
-    "declared/#module.sigil": rootModule.replaceAll("Sigil", "Declared"),
-    "declared-consumer.sigil":
-      "@declared import { Declared }\n\ncomponent DeclaredConsumer {\n  goal {\n    Consume declared project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
-    "workspace-only/#module.sigil": rootModule.replaceAll(
-      "Sigil",
-      "WorkspaceOnly",
-    ),
-    "workspace-consumer.sigil":
-      "@workspace-only import { WorkspaceOnly }\n\ncomponent WorkspaceConsumer {\n  goal {\n    Consume workspace project.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "explicit-consumer.sigil":
+      "@internal/private.sigil import { Private }\n\ncomponent ExplicitConsumer {\n  goal {\n    Consume a public component by file.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+    "facade/#module.sigil": `@internal import { Internal }\n\n${
+      rootModule.replaceAll("Sigil", "FacadeModule")
+    }`,
+    "facade-consumer.sigil":
+      "@facade import { Internal }\n\ncomponent FacadeConsumer {\n  goal {\n    Consume an explicitly chained index.\n  }\n\n  interface {\n    run()\n  }\n}\n",
   });
   const workspace = await loadSigilWorkspace(fs, { startPath: "." });
   const resolved = resolveSigilWorkspace(workspace);
 
-  assertEquals(workspace.memberRoots.join(","), "declared");
-  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_ROOT_MODULE");
-  assertHasCode(resolved.diagnostics, "SIGIL_INVALID_DIRECTORY_IMPORT");
+  assertNoErrors(resolved.diagnostics);
   assert(
     resolved.graph.importedComponentEdges.some((edge) =>
-      edge.componentName === "Declared"
-    ),
-  );
-  assert(
-    !resolved.graph.importedComponentEdges.some((edge) =>
-      edge.componentName === "WorkspaceOnly"
-    ),
-  );
-  assert(
-    !resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "consumer.sigil" &&
+      edge.targetFile === "internal/contract.sigil" &&
       edge.componentName === "Internal"
+    ),
+  );
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "facade-consumer.sigil" &&
+      edge.targetFile === "internal/contract.sigil" &&
+      edge.componentName === "Internal"
+    ),
+  );
+  assert(
+    resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "explicit-consumer.sigil" &&
+      edge.targetFile === "internal/private.sigil" &&
+      edge.componentName === "Private"
+    ),
+  );
+  assert(
+    resolved.graph.fileEdges.some((edge) =>
+      edge.from === "consumer.sigil" && edge.to === "internal/#module.sigil"
+    ),
+  );
+});
+
+Deno.test("does not add unnamed component dependencies to a module index", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "internal/#module.sigil":
+      `@internal/contract.sigil import { Internal }\n\n${
+        rootModule.replaceAll("Sigil", "InternalModule")
+      }`,
+    "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
+    "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
+    "consumer.sigil":
+      "@internal import { Private }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+
+  assertHasCode(resolved.diagnostics, "SIGIL_UNRESOLVED_IMPORTED_COMPONENT");
+  assert(
+    !resolved.graph.importedComponentEdges.some((edge) =>
+      edge.sourceFile === "consumer.sigil" && edge.componentName === "Private"
     ),
   );
 });
@@ -364,6 +415,230 @@ Deno.test("separates relationship resolution from graph construction", async () 
 
   const composed = resolveSigilWorkspace(workspace);
   assertEquals(JSON.stringify(composed.graph), JSON.stringify(graph));
+});
+
+Deno.test("parses flat concept blocks and diagnoses interface authoring gaps", () => {
+  const source = `component Account {
+  goal {
+    Authenticate users.
+  }
+
+  interface {
+    ungrouped first
+
+    SessionLifecycle {
+      open(credentials) returns Session.
+
+      close(sessionId).
+    }
+
+    ungrouped second
+  }
+}
+
+expand Account {
+  state {
+    Session {
+      Active
+    }
+
+    free state detail
+  }
+
+  logic {
+    retry-policy {
+      retry transient failures
+    }
+  }
+}
+`;
+  const parsed = parseSigilDocument("account.sigil", source, {
+    sigilVersion: SIGIL_VERSION,
+  });
+  assertEquals(
+    parsed.diagnostics.filter((item) =>
+      item.code === "SIGIL_MISSING_CONCEPT_IDENTIFIER"
+    ).length,
+    2,
+  );
+  assertHasCode(parsed.diagnostics, "SIGIL_CONCEPT_IDENTIFIER_STYLE");
+  assertNoErrors(parsed.diagnostics);
+  const iface = parsed.document.components[0].sections.find((item) =>
+    item.name === "interface"
+  );
+  assert(iface);
+  assertEquals(iface.concepts.length, 1);
+  assertEquals(iface.concepts[0].identifier, "SessionLifecycle");
+  assertEquals(iface.concepts[0].lines.length, 2);
+  assertEquals(
+    iface.concepts[0].lines[0].conceptIdentifier,
+    "SessionLifecycle",
+  );
+});
+
+Deno.test("rejects empty, nested, and invalid concept blocks", () => {
+  const source = `component BrokenConcepts {
+  goal {
+    Exercise concept diagnostics.
+  }
+
+  interface {
+    Empty {
+    }
+
+    Outer {
+      Inner {
+        nested content
+      }
+    }
+
+    Invalid Name {
+      content
+    }
+  }
+}
+`;
+  const parsed = parseSigilDocument("broken-concepts.sigil", source, {
+    sigilVersion: SIGIL_VERSION,
+  });
+  assertHasCode(parsed.diagnostics, "SIGIL_EMPTY_CONCEPT_BLOCK");
+  assertHasCode(parsed.diagnostics, "SIGIL_NESTED_CONCEPT_BLOCK");
+  assertHasCode(parsed.diagnostics, "SIGIL_INVALID_CONCEPT_IDENTIFIER");
+});
+
+Deno.test("resolves collective and contextual concept identities", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "account.sigil": `component Account {
+  goal {
+    Authenticate users.
+  }
+
+  interface {
+    Session {
+      Represents authenticated access.
+    }
+  }
+}
+
+expand Account {
+  state {
+    Session {
+      Active
+    }
+
+    SessionCache {
+      Warm
+    }
+  }
+}
+`,
+    "dashboard.sigil": `@account.sigil import { Account }
+
+component Dashboard {
+  goal {
+    Show authenticated information.
+  }
+
+  interface {
+    Session {
+      Displays the active session.
+    }
+  }
+}
+
+expand Dashboard {
+  logic {
+    Session {
+      Refresh the view when Session changes.
+    }
+  }
+}
+`,
+    "app.sigil": `@dashboard.sigil import { Dashboard }
+
+component App {
+  goal {
+    Present the application.
+  }
+
+  interface {
+    Session {
+      Shows Dashboard while Session is available.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertNoErrors(resolved.diagnostics);
+  const account = conceptNamespaceFor(resolved, "Account");
+  const dashboard = conceptNamespaceFor(resolved, "Dashboard");
+  const app = conceptNamespaceFor(resolved, "App");
+  assert(account && dashboard && app);
+  const accountSession = account.publicConcepts.find((item) =>
+    item.identifier === "Session"
+  );
+  const dashboardSession = dashboard.publicConcepts.find((item) =>
+    item.identifier === "Session"
+  );
+  const appSession = app.publicConcepts.find((item) =>
+    item.identifier === "Session"
+  );
+  assert(accountSession && dashboardSession && appSession);
+  assertEquals(
+    JSON.stringify(dashboardSession.identity),
+    JSON.stringify(accountSession.identity),
+  );
+  assertEquals(
+    JSON.stringify(appSession.identity),
+    JSON.stringify(accountSession.identity),
+  );
+  assertEquals(accountSession.occurrences.length, 1);
+  assertEquals(dashboardSession.occurrences.length, 2);
+  assertEquals(appSession.occurrences.length, 3);
+  assert(
+    !dashboard.accessibleConcepts.some((item) =>
+      item.identifier === "SessionCache"
+    ),
+  );
+  assert(
+    !dashboardSession.occurrences.some((item) => item.sectionName === "state"),
+  );
+});
+
+Deno.test("rejects case-insensitive concept ambiguity across imports", async () => {
+  const provider = (component: string, concept: string) =>
+    `component ${component} {\n  goal {\n    Provide ${component}.\n  }\n\n  interface {\n    ${concept} {\n      Public ${concept}.\n    }\n  }\n}\n`;
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "account.sigil": provider("Account", "Session"),
+    "chat.sigil": provider("Chat", "session"),
+    "consumer.sigil": `@account.sigil import { Account }
+@chat.sigil import { Chat }
+
+component Consumer {
+  goal {
+    Consume both.
+  }
+
+  interface {
+    Workspace {
+      Shows both providers.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertHasCode(
+    resolved.diagnostics,
+    "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
+  );
 });
 
 Deno.test("filesystem read failures propagate to the host", async () => {
@@ -435,6 +710,16 @@ function assertHasCode(
   assert(
     diagnostics.some((item) => item.code === code),
     `Expected ${code}, got ${diagnostics.map((item) => item.code).join(", ")}`,
+  );
+}
+
+function assertNoErrors(
+  diagnostics: readonly { readonly severity: string; readonly code: string }[],
+): void {
+  const errors = diagnostics.filter((item) => item.severity === "error");
+  assert(
+    errors.length === 0,
+    `Expected no errors, got ${errors.map((item) => item.code).join(", ")}`,
   );
 }
 

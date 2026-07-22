@@ -1,5 +1,5 @@
 {
-  "sigilVersion": "0.1.0",
+  "sigilVersion": "0.4.0",
   "workspace": {
     "name": "promise",
     "members": []

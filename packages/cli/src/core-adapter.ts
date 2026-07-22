@@ -3,12 +3,14 @@ import {
   collectedExpansionFor,
   componentContracts,
   type ComponentContractView,
+  conceptNamespaceFor,
   DEFAULT_SIGIL_EXCLUDES,
   DEFAULT_SIGIL_INCLUDES,
   diagnostic,
   discoverSigilWorkspace,
   loadSigilWorkspace,
   parseSigilDocument,
+  type ResolvedConceptNamespace,
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
   SIGIL_CONFIG_PATH,
@@ -170,6 +172,12 @@ export class CoreAdapter {
     componentName: string,
   ): CollectedExpansion | undefined {
     return collectedExpansionFor(resolved, componentName);
+  }
+  conceptNamespaceFor(
+    resolved: ResolvedSigilWorkspace,
+    componentName: string,
+  ): ResolvedConceptNamespace | undefined {
+    return conceptNamespaceFor(resolved, componentName);
   }
   normalizePath(path: string): string {
     return normalizePath(path);

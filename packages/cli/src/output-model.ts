@@ -2,6 +2,7 @@ import type {
   CollectedExpansion,
   ComponentContractView,
   ResolvedComponent,
+  ResolvedConceptNamespace,
   SigilConfig,
   SigilDiagnostic,
   SigilDocument,
@@ -85,6 +86,7 @@ export interface ContextCommandResult extends WorkspaceMetadata {
   readonly command: "context";
   readonly selectedComponents: readonly ResolvedComponent[];
   readonly componentContracts: readonly ComponentContractView[];
+  readonly conceptNamespaces: readonly ResolvedConceptNamespace[];
   readonly collectedExpansions: readonly CollectedExpansion[];
   readonly relatedFilePaths: readonly string[];
   readonly diagnostics: readonly SigilDiagnostic[];

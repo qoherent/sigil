@@ -3,62 +3,109 @@
 component SigilVsCodeExtension {
   goal {
     Make VS Code the first complete human authoring and review surface for Sigil.
+
     Connect editor-native language support to SigilLsp without duplicating Sigil semantics in the extension.
   }
 
   interface {
-    publishes the pre-production Sigil VS Code extension 0.1.0
-    distributed initially as an installable VSIX attached to a versioned GitHub Release
-    registers the sigil language for .sigil files
-    provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component names
-    starts a bundled SigilLsp-compatible server through vscode-languageclient
-    surfaces diagnostics, document symbols, definition navigation, and hover through SigilLsp
-    contributes the Sigil: Show Component Preview command
-    shows the selected component contract and collected expansions in a read-only Markdown preview
-    supports desktop and remote VS Code extension hosts with file-backed workspaces
+    ExtensionDistribution {
+      publishes the pre-production Sigil VS Code extension 0.4.0
+
+      distributed initially as an installable VSIX attached to a versioned GitHub Release
+    }
+
+    EditorLanguageSupport {
+      registers the sigil language for .sigil files
+
+      provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component and concept names
+
+      starts a bundled SigilLsp-compatible server through vscode-languageclient
+
+      surfaces diagnostics, document symbols, definition navigation, and hover through SigilLsp
+    }
+
+    ComponentPreview {
+      contributes the Sigil: Show Component Preview command
+
+      shows the selected component contract and collected expansions in a read-only Markdown preview
+    }
+
+    SupportedExtensionHosts {
+      supports desktop and remote VS Code extension hosts with file-backed workspaces
+    }
   }
 }
 
 expand SigilVsCodeExtension {
   state {
     The language client lifecycle is stopped, starting, running, or stopping.
+
     A component preview reflects the active Sigil editor and cursor position when the command runs.
   }
 
   logic {
     Opening or activating a Sigil document starts the bundled language server when it is not already running.
+
     The language client forwards Sigil document lifecycle and language-feature requests through Language Server Protocol.
+
     Sigil: Show Component Preview requests the standard hover result at the active cursor.
+
     A successful preview opens the returned Markdown in a read-only editor beside the Sigil document.
+
     A missing component or unavailable hover result shows a non-destructive informational message.
+
     A language-server startup or runtime failure is written to the Sigil output channel and surfaced to the user.
+
     Extension deactivation stops the language client and its server process.
   }
 
   constraints {
     The extension uses stable public VS Code APIs and vscode-languageclient.
+
     TextMate grammar contributions provide syntax highlighting without starting the extension host.
+
     The extension bundles its client and Node-compatible server artifacts.
+
     Users do not need a globally installed Deno runtime or Sigil CLI.
+
     The extension depends on SigilLsp for language semantics and does not import or duplicate sigil-core behavior.
+
     Preview commands use standard LSP hover responses and introduce no custom protocol methods.
-    Version 0.1.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
+
+    Version 0.4.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
+
     VS Code for the Web and virtual workspaces remain outside the initial version.
-    Version 0.1.0 collects no telemetry and does not modify Sigil documents.
+
+    Version 0.4.0 collects no telemetry and does not modify Sigil documents.
+
     A development publisher identifier is used until an approved Marketplace publisher identity exists.
+
     Initial distribution does not require Visual Studio Marketplace or Open VSX access.
+
     The packaged VSIX version matches the extension manifest and GitHub release tag.
   }
 
   cases {
     Opening a .sigil file applies Sigil syntax highlighting and starts language features.
+
     A malformed Sigil document displays source-ranged diagnostics inline.
+
+    Ungrouped interface content displays one warning for each contiguous region.
+
+    A nonpreferred valid concept identifier displays a formatting hint.
+
     Go-to-definition on an imported component opens its declaration.
+
     Hovering over a component displays its contract and collected expansion sources.
+
     Running Sigil: Show Component Preview on a component opens a read-only Markdown preview.
+
     Running the preview command without an active Sigil component leaves editors unchanged and shows an informational message.
+
     A missing or failed bundled server produces visible output and an error message without crashing VS Code.
+
     Deactivating the extension stops the language client and server process.
+
     A user downloads the VSIX from GitHub Releases and installs it through VS Code Install from VSIX.
   }
 }

@@ -1,50 +1,83 @@
 component AnchorIndexer {
   goal {
     Maintain reviewed trace relationships between Sigil semantic lines and implementation evidence.
+
     Keep source indexing, candidate generation, persistence, and reconciliation deterministic and independent from model hosts.
   }
 
   interface {
-    buildAnchorCandidates(workspace, sourceIndex, componentName) returns CandidateBundle
-    checkAnchorIndex(workspace, sourceIndex, anchorIndex) returns AnchorCheckResult
-    applyApprovedProposals(workspace, sourceIndex, anchorIndex, proposals) returns AnchorApplyResult
-    parseAnchorIndex(source) returns AnchorIndexParseResult
-    serializeAnchorIndex(anchorIndex) returns canonical JSON
-    exposes relationships: implements, verifies, supports
-    exposes resolution states: resolved, changed, ambiguous, missing
+    CandidateGeneration {
+      buildAnchorCandidates(workspace, sourceIndex, componentName) returns CandidateBundle
+    }
+
+    AnchorChecking {
+      checkAnchorIndex(workspace, sourceIndex, anchorIndex) returns AnchorCheckResult
+    }
+
+    ApprovedProposalApplication {
+      applyApprovedProposals(workspace, sourceIndex, anchorIndex, proposals) returns AnchorApplyResult
+    }
+
+    AnchorIndexSerialization {
+      parseAnchorIndex(source) returns AnchorIndexParseResult
+
+      serializeAnchorIndex(anchorIndex) returns canonical JSON
+    }
+
+    AnchorVocabulary {
+      exposes relationships: implements, verifies, supports
+
+      exposes resolution states: resolved, changed, ambiguous, missing
+    }
   }
 }
 
 expand AnchorIndexer {
   state {
     accepted anchors are stored in schema-version-1 .sigil/anchors.json
+
     generated source indexes and candidate bundles are disposable
+
     each accepted relationship has a stable UUID and locator snapshots
   }
 
   logic {
     Candidate generation narrows each semantic line to at most twenty inspectable source targets.
+
     Applying proposals validates every proposal and constructs a complete updated index before persistence.
+
     Exact and uniquely relocated targets reconcile deterministically.
+
     Structurally changed targets remain identifiable but require review attention.
+
     Ambiguous and missing targets are never silently reattached.
   }
 
   constraints {
     AnchorIndexer depends on sigil-core for resolved Sigil semantic lines.
+
     AnchorIndexer does not call models or depend on Codex, editors, LSP, or model SDKs.
+
     AST nodes are resolution evidence, not durable identities.
+
     All persisted paths are normalized workspace-relative paths contained by the workspace root.
+
     Initial and ambiguous anchor mappings require explicit human approval before persistence.
+
     An anchor identifies implementation evidence but does not prove behavioral compliance.
   }
 
   cases {
     Formatting source code preserves an accepted anchor without review.
+
     Moving a uniquely identifiable function preserves the anchor and reports the relocation.
+
     Changing a uniquely identifiable function reports a changed anchor.
+
     Deleting an anchored function reports a missing error.
+
     Duplicating a plausible target reports an ambiguous error instead of selecting one.
+
     A stale proposal leaves the committed anchor index unchanged.
   }
 }
@@ -52,34 +85,47 @@ expand AnchorIndexer {
 component TypeScriptSourceAdapter {
   goal {
     Produce deterministic source symbols and test targets from TypeScript and TSX for anchor matching.
+
     Preserve useful local index data when external module resolution is incomplete.
   }
 
   interface {
-    buildTypeScriptSourceIndex(files) returns SourceIndexResult
-    indexes functions, methods, classes, interfaces, type aliases, function-valued variables, and exports
-    indexes common Deno.test, test, and it declarations as test targets
-    exposes AST kind, qualified name, signature, optional body fingerprint, imports, calls, and source range
+    TypeScriptSourceIndex {
+      buildTypeScriptSourceIndex(files) returns SourceIndexResult
+
+      indexes functions, methods, classes, interfaces, type aliases, function-valued variables, and exports
+
+      indexes common Deno.test, test, and it declarations as test targets
+
+      exposes AST kind, qualified name, signature, optional body fingerprint, imports, calls, and source range
+    }
   }
 }
 
 expand TypeScriptSourceAdapter {
   logic {
     The adapter builds a TypeScript compiler program and uses the type checker where resolution succeeds.
+
     Syntax-level local declarations remain available when external imports do not resolve.
+
     Candidate inputs use source summaries and fingerprints rather than persisted compiler AST objects.
   }
 
   constraints {
     The initial adapter uses pinned npm:typescript@5.9.3.
+
     The adapter excludes .git, .deno, node_modules, build, and coverage directories.
+
     TypeScript compiler objects do not cross the source-adapter boundary.
+
     Compiler upgrades require explicit adapter validation.
   }
 
   cases {
     A local function is indexed when one imported npm module is unresolved.
+
     A Deno.test declaration is available as a verifies candidate.
+
     Two identically named methods retain distinct qualified names and source locations.
   }
 }
