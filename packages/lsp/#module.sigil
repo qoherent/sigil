@@ -8,29 +8,41 @@ component SigilLsp {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-lsp 0.4.0 package
+    LspDistribution {
+      publishes the pre-production @qoherent/sigil-lsp 0.4.0 package
+    }
 
-    implements Language Server Protocol 3.18 over standard input and standard output
+    ProtocolSession {
+      implements Language Server Protocol 3.18 over standard input and standard output
 
-    supports initialize, initialized, shutdown, and exit lifecycle messages
+      supports initialize, initialized, shutdown, and exit lifecycle messages
 
-    supports textDocument/didOpen, textDocument/didChange, and textDocument/didClose with full-document synchronization
+      supports textDocument/didOpen, textDocument/didChange, and textDocument/didClose with full-document synchronization
+    }
 
-    publishes structural and workspace diagnostics through textDocument/publishDiagnostics
+    DiagnosticPublishing {
+      publishes structural and workspace diagnostics through textDocument/publishDiagnostics
+    }
 
-    supports textDocument/documentSymbol for components, expands, and sections
+    NavigationAndInspection {
+      supports textDocument/documentSymbol for components, expands, and sections
 
-    supports textDocument/definition for imports, imported component names, component declarations, and expand declarations
+      supports textDocument/definition for imports, imported component names, component declarations, and expand declarations
 
-    supports textDocument/hover with component contracts and collected expansion summaries
+      supports textDocument/hover with component contracts and collected expansion summaries
 
-    supports textDocument/definition and textDocument/hover for component names in section semantic lines when the name resolves to a component declared in or explicitly imported by that file
+      supports textDocument/definition and textDocument/hover for component names in section semantic lines when the name resolves to a component declared in or explicitly imported by that file
 
-    supports textDocument/semanticTokens/full for resolver-backed component names in imports, declarations, expand declarations, and section semantic lines
+      supports textDocument/semanticTokens/full for resolver-backed component names in imports, declarations, expand declarations, and section semantic lines
+    }
 
-    supports document symbols, definition, hover, and semantic highlighting for resolved concept identifiers
+    ConceptLanguageFeatures {
+      supports document symbols, definition, hover, and semantic highlighting for resolved concept identifiers
+    }
 
-    operates on file-backed Sigil workspaces governed by SigilWorkspaceConfig and SigilLanguage
+    WorkspaceSupport {
+      operates on file-backed Sigil workspaces governed by SigilWorkspaceConfig and SigilLanguage
+    }
   }
 }
 

@@ -9,35 +9,47 @@ component SigilCli {
   }
 
   interface {
-    CLI version = "0.4.0"
+    CliIdentity {
+      CLI version = "0.4.0"
 
-    sigil --help
+      sigil --help
 
-    sigil --version
+      sigil --version
+    }
 
-    sigil skill list
+    SkillInstallation {
+      sigil skill list
 
-    sigil skill install [--project] [--agent codex|claude|opencode|pi|all]
+      sigil skill install [--project] [--agent codex|claude|opencode|pi|all]
+    }
 
-    sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
+    WorkspaceInitialization {
+      sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
+    }
 
-    sigil version [path]
+    WorkspaceCommands {
+      sigil version [path]
 
-    sigil parse file
+      sigil parse file
 
-    sigil check [path]
+      sigil check [path]
 
-    sigil graph [path]
+      sigil graph [path]
 
-    sigil context [path] (--component name | --file file)
+      sigil context [path] (--component name | --file file)
 
-    sigil render [path]
+      sigil render [path]
+    }
 
-    structured output supports --format json and --pretty
+    StructuredOutput {
+      structured output supports --format json and --pretty
 
-    commands that produce no required stdout support --quiet
+      commands that produce no required stdout support --quiet
+    }
 
-    sigil skill commands delegate skill discovery and installation management to SkillInstaller
+    SkillInstallation {
+      sigil skill commands delegate skill discovery and installation management to SkillInstaller
+    }
   }
 }
 

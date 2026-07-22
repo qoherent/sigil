@@ -11,15 +11,23 @@ component SigilWorkspaceLoader {
   }
 
   interface {
-    discoverSigilWorkspace(filesystem, options) returns WorkspaceDiscoveryResult
+    WorkspaceDiscovery {
+      discoverSigilWorkspace(filesystem, options) returns WorkspaceDiscoveryResult
+    }
 
-    loadSigilWorkspace(filesystem, options) returns SigilWorkspace
+    WorkspaceLoading {
+      loadSigilWorkspace(filesystem, options) returns SigilWorkspace
+    }
 
-    options identifies a start path and may provide an explicit root or current directory
+    WorkspaceDiscovery {
+      options identifies a start path and may provide an explicit root or current directory
 
-    WorkspaceDiscoveryResult exposes the selected root, config path, parsed configuration, and diagnostics
+      WorkspaceDiscoveryResult exposes the selected root, config path, parsed configuration, and diagnostics
+    }
 
-    SigilWorkspace additionally exposes member roots, loaded partial documents, and accumulated diagnostics
+    WorkspaceLoading {
+      SigilWorkspace additionally exposes member roots, loaded partial documents, and accumulated diagnostics
+    }
   }
 }
 

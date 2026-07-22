@@ -10,17 +10,21 @@ component SigilReleaseDistribution {
   }
 
   interface {
-    a cli-vX.Y.Z GitHub Release publishes SigilCli archives for supported macOS, Linux, and Windows targets
+    NativeCliRelease {
+      a cli-vX.Y.Z GitHub Release publishes SigilCli archives for supported macOS, Linux, and Windows targets
 
-    each CLI archive contains one native executable and the version-matched skills consumed by SkillInstaller
+      each CLI archive contains one native executable and the version-matched skills consumed by SkillInstaller
 
-    https://github.com/qoherent/sigil/releases/latest/download/install.sh installs the latest macOS or Linux CLI release
+      https://github.com/qoherent/sigil/releases/latest/download/install.sh installs the latest macOS or Linux CLI release
 
-    https://github.com/qoherent/sigil/releases/latest/download/install.ps1 installs the latest Windows CLI release
+      https://github.com/qoherent/sigil/releases/latest/download/install.ps1 installs the latest Windows CLI release
 
-    SIGIL_VERSION selects an explicit CLI release version in both installers
+      SIGIL_VERSION selects an explicit CLI release version in both installers
+    }
 
-    a vscode-vX.Y.Z GitHub Release publishes one installable SigilVsCodeExtension VSIX
+    VsCodeRelease {
+      a vscode-vX.Y.Z GitHub Release publishes one installable SigilVsCodeExtension VSIX
+    }
   }
 }
 

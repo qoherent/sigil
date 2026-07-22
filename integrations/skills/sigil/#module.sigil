@@ -10,27 +10,33 @@ component SigilSkill {
   }
 
   interface {
-    skill version = "0.4.0"
+    SkillDistribution {
+      skill version = "0.4.0"
 
-    distributed as integrations/skills/sigil beside its selected Sigil CLI installation
+      distributed as integrations/skills/sigil beside its selected Sigil CLI installation
 
-    installed by SigilCli as .agents/skills/sigil in the target repository
+      installed by SigilCli as .agents/skills/sigil in the target repository
 
-    loaded from .agents/skills/sigil/SKILL.md by compatible coding agents, including Codex
+      loaded from .agents/skills/sigil/SKILL.md by compatible coding agents, including Codex
+    }
 
-    invoked for Sigil authoring, review, reconciliation, validation, and Sigil-guided implementation
+    WorkflowSelection {
+      invoked for Sigil authoring, review, reconciliation, validation, and Sigil-guided implementation
 
-    selects the Greenfield or Brownfield workflow from repository and Sigil evidence
+      selects the Greenfield or Brownfield workflow from repository and Sigil evidence
 
-    validates workspace and version compatibility before relying on workspace semantics
+      validates workspace and version compatibility before relying on workspace semantics
 
-    reviews component contracts, collected expands, relevant evidence, modularity, and applicable guidance
+      reviews component contracts, collected expands, relevant evidence, modularity, and applicable guidance
+    }
 
-    discovers coherent product, domain, programming, internal API, state-machine, screen, view, and reusable UI components
+    ComponentModeling {
+      discovers coherent product, domain, programming, internal API, state-machine, screen, view, and reusable UI components
 
-    treats a component goal and interface as its public contract to dependents even when the component is internal to the implementation
+      treats a component goal and interface as its public contract to dependents even when the component is internal to the implementation
 
-    authors component dependencies through imports rather than interface lines
+      authors component dependencies through imports rather than interface lines
+    }
 
     ConceptIdentifierWorkflow {
       discovers reusable concept identities from the complete component, matching expands, accessible imported concepts, and relevant importing consumers before proposing identifiers
@@ -44,21 +50,29 @@ component SigilSkill {
       presents every validated delegated semantic proposal for explicit human approval before editing any repository file
     }
 
-    separates distinct prose-level semantic ideas with blank lines in every section
+    SemanticLineDiscipline {
+      separates distinct prose-level semantic ideas with blank lines in every section
+    }
 
-    distinguishes independent component contracts, implementation-specific expands, and trivial mechanics that need no Sigil
+    ImplementationCoverage {
+      distinguishes independent component contracts, implementation-specific expands, and trivial mechanics that need no Sigil
 
-    reports implementation coverage before writing code
+      reports implementation coverage before writing code
+    }
 
-    guides Greenfield and Brownfield clarification through SigilDesignConversation before contract confirmation
+    DecisionConversation {
+      guides Greenfield and Brownfield clarification through SigilDesignConversation before contract confirmation
+    }
 
-    proposes exact semantic changes before editing when evidence reconstruction or external guidance requires approval
+    SigilReviewGate {
+      proposes exact semantic changes before editing when evidence reconstruction or external guidance requires approval
 
-    stops for explicit human review after creating or semantically changing Sigil
+      stops for explicit human review after creating or semantically changing Sigil
 
-    implements only an explicitly approved Sigil contract
+      implements only an explicitly approved Sigil contract
 
-    returns to Sigil review when implementation exposes a material missing decision
+      returns to Sigil review when implementation exposes a material missing decision
+    }
   }
 }
 

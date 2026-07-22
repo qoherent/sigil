@@ -8,23 +8,31 @@ component SigilVsCodeExtension {
   }
 
   interface {
-    publishes the pre-production Sigil VS Code extension 0.4.0
+    ExtensionDistribution {
+      publishes the pre-production Sigil VS Code extension 0.4.0
 
-    distributed initially as an installable VSIX attached to a versioned GitHub Release
+      distributed initially as an installable VSIX attached to a versioned GitHub Release
+    }
 
-    registers the sigil language for .sigil files
+    EditorLanguageSupport {
+      registers the sigil language for .sigil files
 
-    provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component and concept names
+      provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component and concept names
 
-    starts a bundled SigilLsp-compatible server through vscode-languageclient
+      starts a bundled SigilLsp-compatible server through vscode-languageclient
 
-    surfaces diagnostics, document symbols, definition navigation, and hover through SigilLsp
+      surfaces diagnostics, document symbols, definition navigation, and hover through SigilLsp
+    }
 
-    contributes the Sigil: Show Component Preview command
+    ComponentPreview {
+      contributes the Sigil: Show Component Preview command
 
-    shows the selected component contract and collected expansions in a read-only Markdown preview
+      shows the selected component contract and collected expansions in a read-only Markdown preview
+    }
 
-    supports desktop and remote VS Code extension hosts with file-backed workspaces
+    SupportedExtensionHosts {
+      supports desktop and remote VS Code extension hosts with file-backed workspaces
+    }
   }
 }
 

@@ -8,11 +8,17 @@ component SigilGraphBuilder {
   }
 
   interface {
-    buildSigilGraph(resolution) returns SigilGraph
+    GraphConstruction {
+      buildSigilGraph(resolution) returns SigilGraph
+    }
 
-    SigilGraph exposes component nodes, file dependency edges, imported-component edges, and component-expansion edges
+    GraphModel {
+      SigilGraph exposes component nodes, file dependency edges, imported-component edges, and component-expansion edges
+    }
 
-    consumes relationship data produced by SigilResolver
+    GraphConstruction {
+      consumes relationship data produced by SigilResolver
+    }
   }
 }
 

@@ -6,25 +6,29 @@ component SkillInstaller {
   }
 
   interface {
-    installSkills(scope?, agents?, sourceDirectory?, targetRoot?, userHome?) returns the selected scope, agent targets, and one installed, updated, existing, copied, or conflicted result per destination
+    SkillInstallation {
+      installSkills(scope?, agents?, sourceDirectory?, targetRoot?, userHome?) returns the selected scope, agent targets, and one installed, updated, existing, copied, or conflicted result per destination
 
-    scope defaults to global and accepts global or project
+      scope defaults to global and accepts global or project
 
-    agents default to codex, claude, opencode, and pi
+      agents default to codex, claude, opencode, and pi
 
-    sourceDirectory defaults to the integrations/skills directory resolved from the running Sigil installation
+      sourceDirectory defaults to the integrations/skills directory resolved from the running Sigil installation
 
-    Codex, OpenCode, and Pi share .agents/skills for the selected scope
+      Codex, OpenCode, and Pi share .agents/skills for the selected scope
 
-    Claude Code uses .claude/skills for the selected scope
+      Claude Code uses .claude/skills for the selected scope
 
-    global scope resolves targets from userHome
+      global scope resolves targets from userHome
 
-    project scope resolves targets from targetRoot or the current working directory
+      project scope resolves targets from targetRoot or the current working directory
+    }
 
-    resolveInstalledSkillsDirectory(moduleUrl?, executablePath?) returns the first available installation-relative skills directory
+    InstalledSkillDiscovery {
+      resolveInstalledSkillsDirectory(moduleUrl?, executablePath?) returns the first available installation-relative skills directory
 
-    returned source, target, and link paths are resolved absolute host paths
+      returned source, target, and link paths are resolved absolute host paths
+    }
   }
 }
 

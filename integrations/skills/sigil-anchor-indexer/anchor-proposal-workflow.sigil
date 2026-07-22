@@ -8,11 +8,13 @@ component AnchorProposalWorkflow {
   }
 
   interface {
-    proposeAnchors(componentName) returns proposed, ambiguous, or no-match results
+    AnchorProposalLifecycle {
+      proposeAnchors(componentName) returns proposed, ambiguous, or no-match results
 
-    presents proposed anchors and evidence for explicit human review
+      presents proposed anchors and evidence for explicit human review
 
-    applies approved proposals through AnchorIndexer only after approval
+      applies approved proposals through AnchorIndexer only after approval
+    }
   }
 }
 

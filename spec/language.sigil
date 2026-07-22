@@ -6,43 +6,59 @@ component SigilLanguage {
   }
 
   interface {
-    sigilVersion = "0.4.0"
+    LanguageVersion {
+      sigilVersion = "0.4.0"
+    }
 
-    accepts UTF-8 .sigil source containing import, component, expand, and section concept-block forms
+    SourceParsingContract {
+      accepts UTF-8 .sigil source containing import, component, expand, and section concept-block forms
 
-    preserves concept identifiers, their grouped semantic lines, and source ranges
+      preserves concept identifiers, their grouped semantic lines, and source ranges
 
-    reports structural diagnostics while retaining partial documents when practical
+      reports structural diagnostics while retaining partial documents when practical
+    }
 
-    import declares a dependency on named components from another Sigil source or directory module index and makes their public goals and interfaces available
+    ImportSemantics {
+      import declares a dependency on named components from another Sigil source or directory module index and makes their public goals and interfaces available
+    }
 
-    component defines the reusable public contract of a coherent system part through its public goal and interface
+    ComponentContract {
+      component defines the reusable public contract of a coherent system part through its public goal and interface
 
-    expand adds collective operational detail to a component without changing or overriding its public contract
+      expand adds collective operational detail to a component without changing or overriding its public contract
 
-    goal publicly describes why a component exists, the responsibility it owns, and its intended outcome
+      goal publicly describes why a component exists, the responsibility it owns, and its intended outcome
 
-    interface contains only the operations, data, events, results, errors, and observable promises publicly available to dependents
+      interface contains only the operations, data, events, results, errors, and observable promises publicly available to dependents
+    }
 
-    a concept block uses ConceptIdentifier followed by braces to group one or more related semantic lines under a reusable identity
+    ConceptIdentity {
+      a concept block uses ConceptIdentifier followed by braces to group one or more related semantic lines under a reusable identity
 
-    a component interface exposes its concept identifiers to components that import it
+      a component interface exposes its concept identifiers to components that import it
 
-    imported interface concept identifiers are available as bare names without component qualification
+      imported interface concept identifiers are available as bare names without component qualification
 
-    known whole-word concept identifiers inside semantic content resolve as concept references without introducing or exposing a concept
+      known whole-word concept identifiers inside semantic content resolve as concept references without introducing or exposing a concept
+    }
 
-    import is the sole declaration of dependency on another Sigil component
+    ImportSemantics {
+      import is the sole declaration of dependency on another Sigil component
+    }
 
-    state describes meaningful configurations, modes, and domain conditions that exist or change during execution
+    SectionSemantics {
+      state describes meaningful configurations, modes, and domain conditions that exist or change during execution
 
-    logic describes behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
+      logic describes behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
 
-    constraints describe rules, policies, invariants, architecture decisions, and technology choices that valid implementations must obey
+      constraints describe rules, policies, invariants, architecture decisions, and technology choices that valid implementations must obey
 
-    cases describe representative outcomes, examples, edge cases, and externally observable acceptance scenarios
+      cases describe representative outcomes, examples, edge cases, and externally observable acceptance scenarios
+    }
 
-    blank lines may separate distinct semantic ideas for readability and do not create semantic units
+    SemanticLineDiscipline {
+      blank lines may separate distinct semantic ideas for readability and do not create semantic units
+    }
   }
 }
 
@@ -166,29 +182,39 @@ component SigilWorkspaceConfig {
   }
 
   interface {
-    filename: .sigil/config.json
+    ConfigFile {
+      filename: .sigil/config.json
 
-    location: workspace root
+      location: workspace root
+    }
 
-    sigilVersion: the supported Sigil version from packages/core/deno.json
+    ConfiguredSigilVersion {
+      sigilVersion: the supported Sigil version from packages/core/deno.json
+    }
 
-    workspace.name: non-empty stable workspace identifier
+    WorkspaceIdentity {
+      workspace.name: non-empty stable workspace identifier
 
-    workspace.members: optional array of unique workspace-relative project-root paths
+      workspace.members: optional array of unique workspace-relative project-root paths
+    }
 
-    files.include: non-empty array of workspace-relative POSIX glob strings
+    SourceSelection {
+      files.include: non-empty array of workspace-relative POSIX glob strings
 
-    files.exclude?: array of workspace-relative POSIX glob strings
+      files.exclude?: array of workspace-relative POSIX glob strings
+    }
 
-    tools?: object of namespaced JSON objects preserved for host integrations
+    ToolConfiguration {
+      tools?: object of namespaced JSON objects preserved for host integrations
+    }
   }
 }
 
 expand SigilWorkspaceConfig {
   constraints {
-    .sigil/config.json is the sole authority for the Sigil workspace boundary and its members.
+    ConfigFile is the sole authority for the Sigil workspace boundary and its members.
 
-    The directory containing .sigil/config.json is the workspace root and root project location.
+    The directory containing ConfigFile is the workspace root and root project location.
 
     Each workspace.members entry declares one additional project root in the same workspace.
 
@@ -198,11 +224,11 @@ expand SigilWorkspaceConfig {
 
     Package and repository workspace manifests do not independently declare Sigil workspace members.
 
-    A workspace member does not contain its own .sigil/config.json.
+    A workspace member does not contain its own ConfigFile.
 
-    A nested directory with its own .sigil/config.json is an independent workspace and must be excluded from the parent workspace.
+    A nested directory with its own ConfigFile is an independent workspace and must be excluded from the parent workspace.
 
-    files.include and files.exclude control source discovery but do not declare or restrict module-index locations.
+    SourceSelection control source discovery but do not declare or restrict module-index locations.
 
     workspace.members identifies configured member boundaries but does not control where #module.sigil may appear.
   }
@@ -210,25 +236,31 @@ expand SigilWorkspaceConfig {
 
 component SigilModuleIndex {
   goal {
-    Define #module.sigil as the explicit directory-import index for a directory.
+    Define ModuleIndexFile as the explicit directory-import index for a directory.
 
     Let authors select convenient directory-import names without changing the public visibility of Sigil components.
   }
 
   interface {
-    filename: #module.sigil
+    ModuleIndexFile {
+      filename: #module.sigil
 
-    location: any included directory in a Sigil workspace
+      location: any included directory in a Sigil workspace
+    }
 
-    a directory import @path resolves to @path/#module.sigil
+    DirectoryImportSurface {
+      a directory import @path resolves to @path/#module.sigil
 
-    resolves components declared directly in #module.sigil through the directory import
+      resolves components declared directly in #module.sigil through the directory import
 
-    resolves components named by direct imports in #module.sigil through the directory import
+      resolves components named by direct imports in #module.sigil through the directory import
+    }
 
-    contains at least one component declaration
+    ModuleIndexContents {
+      contains at least one component declaration
 
-    may additionally contain imports and expands using ordinary Sigil forms
+      may additionally contain imports and expands using ordinary Sigil forms
+    }
   }
 }
 
@@ -246,9 +278,9 @@ expand SigilModuleIndex {
   constraints {
     Every component declaration is public and may be imported by naming its .sigil source file, regardless of any #module.sigil.
 
-    #module.sigil does not grant or restrict component visibility.
+    ModuleIndexFile does not grant or restrict component visibility.
 
-    #module.sigil defines only which component names resolve through directory-import shorthand.
+    ModuleIndexFile defines only which component names resolve through directory-import shorthand.
 
     A directory import may resolve components declared in its #module.sigil or named by that file's direct imports.
 
@@ -262,9 +294,9 @@ expand SigilModuleIndex {
 
     An explicit chain of module imports may make a component resolvable through multiple directory indexes.
 
-    #module.sigil does not define a workspace root, workspace member, or special component type.
+    ModuleIndexFile does not define a workspace root, workspace member, or special component type.
 
-    Every #module.sigil contains at least one local component declaration.
+    Every ModuleIndexFile contains at least one local component declaration.
   }
 
   cases {
@@ -274,10 +306,10 @@ expand SigilModuleIndex {
 
     @auth import { Store } is unresolved when Store is only a dependency of Session and auth/#module.sigil does not name Store.
 
-    An imports-only #module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
+    An imports-only ModuleIndexFile produces SIGIL_MODULE_WITHOUT_COMPONENT.
 
-    A directory without #module.sigil produces SIGIL_UNRESOLVED_IMPORT_PATH.
+    A directory without ModuleIndexFile produces SIGIL_UNRESOLVED_IMPORT_PATH.
 
-    A cyclic dependency involving #module.sigil produces SIGIL_IMPORT_CYCLE and retains partial resolution when practical.
+    A cyclic dependency involving ModuleIndexFile produces SIGIL_IMPORT_CYCLE and retains partial resolution when practical.
   }
 }

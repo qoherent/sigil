@@ -9,15 +9,23 @@ component SigilProjections {
   }
 
   interface {
-    componentContracts(resolvedWorkspace) returns one ComponentContractView per resolved component
+    ContractProjection {
+      componentContracts(resolvedWorkspace) returns one ComponentContractView per resolved component
 
-    ComponentContractView exposes component name, file path, goal lines, interface concept blocks, and their semantic lines
+      ComponentContractView exposes component name, file path, goal lines, interface concept blocks, and their semantic lines
+    }
 
-    conceptNamespaceFor(resolvedWorkspace, componentName) returns local, public, imported, accessible, and originating concept identities in that component's context
+    ConceptNamespaceProjection {
+      conceptNamespaceFor(resolvedWorkspace, componentName) returns local, public, imported, accessible, and originating concept identities in that component's context
+    }
 
-    collectedExpansionFor(resolvedWorkspace, componentName) returns the component's collective expansion or undefined
+    ExpansionProjection {
+      collectedExpansionFor(resolvedWorkspace, componentName) returns the component's collective expansion or undefined
+    }
 
-    consumes resolved workspaces composed from SigilResolver and SigilGraphBuilder results
+    ProjectionInputs {
+      consumes resolved workspaces composed from SigilResolver and SigilGraphBuilder results
+    }
   }
 }
 

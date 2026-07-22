@@ -8,13 +8,17 @@ component SigilParser {
   }
 
   interface {
-    parseSigilDocument(filePath, source, options) returns ParseResult
+    ParseOperation {
+      parseSigilDocument(filePath, source, options) returns ParseResult
 
-    options.sigilVersion is required and must equal the supported Sigil language version
+      options.sigilVersion is required and must equal the supported Sigil language version
+    }
 
-    ParseResult contains a SigilDocument and its diagnostics
+    ParsedDocument {
+      ParseResult contains a SigilDocument and its diagnostics
 
-    SigilDocument exposes imports, components, expands, concept blocks, semantic lines, and source ranges recovered from the input
+      SigilDocument exposes imports, components, expands, concept blocks, semantic lines, and source ranges recovered from the input
+    }
   }
 }
 

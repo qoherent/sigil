@@ -8,25 +8,39 @@ component SigilCore {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-core 0.4.0 Deno TypeScript library
+    CoreLibrary {
+      publishes the pre-production @qoherent/sigil-core 0.4.0 Deno TypeScript library
+    }
 
-    parseSigilDocument(filePath, source, options) interprets concept blocks and other source forms using an explicit supported SigilLanguage version
+    SourceParsingContract {
+      parseSigilDocument(filePath, source, options) interprets concept blocks and other source forms using an explicit supported SigilLanguage version
+    }
 
-    parseSigilConfig(source, filePath?) validates the SigilWorkspaceConfig contract
+    WorkspaceConfigParsing {
+      parseSigilConfig(source, filePath?) validates the SigilWorkspaceConfig contract
+    }
 
-    discoverSigilWorkspace(filesystem, options) returns the selected root, configuration, and diagnostics
+    WorkspaceOperations {
+      discoverSigilWorkspace(filesystem, options) returns the selected root, configuration, and diagnostics
 
-    loadSigilWorkspace(filesystem, options) returns discovered files, partial document models, workspace members, and diagnostics
+      loadSigilWorkspace(filesystem, options) returns discovered files, partial document models, workspace members, and diagnostics
 
-    resolveSigilWorkspace(workspace) returns resolved imports, components, collected expansions, graph relationships, and diagnostics
+      resolveSigilWorkspace(workspace) returns resolved imports, components, collected expansions, graph relationships, and diagnostics
+    }
 
-    componentContracts, conceptNamespaceFor, and collectedExpansionFor expose structured projection primitives
+    ProjectionQueries {
+      componentContracts, conceptNamespaceFor, and collectedExpansionFor expose structured projection primitives
+    }
 
-    exports typed source, document, workspace, configuration, resolution, graph, diagnostic, and filesystem models
+    CoreModels {
+      exports typed source, document, workspace, configuration, resolution, graph, diagnostic, and filesystem models
+    }
 
-    returns partial models with stable diagnostics when malformed Sigil or configuration permits recovery
+    RecoverableResults {
+      returns partial models with stable diagnostics when malformed Sigil or configuration permits recovery
 
-    propagates required host filesystem failures instead of reporting them as Sigil source diagnostics
+      propagates required host filesystem failures instead of reporting them as Sigil source diagnostics
+    }
   }
 }
 

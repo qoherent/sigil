@@ -9,11 +9,13 @@ component SigilResolver {
   }
 
   interface {
-    resolveSigilRelationships(workspace) returns SigilResolution
+    RelationshipResolution {
+      resolveSigilRelationships(workspace) returns SigilResolution
 
-    SigilResolution exposes the source workspace, resolved imports, resolved components, collected expansions, resolved concept namespaces, and accumulated diagnostics
+      SigilResolution exposes the source workspace, resolved imports, resolved components, collected expansions, resolved concept namespaces, and accumulated diagnostics
 
-    each resolved component identifies its declaration file and every matching expand block
+      each resolved component identifies its declaration file and every matching expand block
+    }
   }
 }
 

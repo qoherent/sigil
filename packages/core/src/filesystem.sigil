@@ -6,13 +6,15 @@ component SigilFileSystem {
   }
 
   interface {
-    readTextFile(path) returns the file contents or rejects with the host failure
+    FileSystemOperations {
+      readTextFile(path) returns the file contents or rejects with the host failure
 
-    exists(path) returns whether the path exists
+      exists(path) returns whether the path exists
 
-    listFiles(root) returns the files visible below root
+      listFiles(root) returns the files visible below root
 
-    all operations are asynchronous
+      all operations are asynchronous
+    }
   }
 }
 

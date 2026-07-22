@@ -4,6 +4,8 @@ component Local {
   }
 
   interface {
-    local()
+    LocalCall {
+      local()
+    }
   }
 }

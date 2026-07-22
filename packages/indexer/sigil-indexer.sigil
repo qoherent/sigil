@@ -6,19 +6,29 @@ component AnchorIndexer {
   }
 
   interface {
-    buildAnchorCandidates(workspace, sourceIndex, componentName) returns CandidateBundle
+    CandidateGeneration {
+      buildAnchorCandidates(workspace, sourceIndex, componentName) returns CandidateBundle
+    }
 
-    checkAnchorIndex(workspace, sourceIndex, anchorIndex) returns AnchorCheckResult
+    AnchorChecking {
+      checkAnchorIndex(workspace, sourceIndex, anchorIndex) returns AnchorCheckResult
+    }
 
-    applyApprovedProposals(workspace, sourceIndex, anchorIndex, proposals) returns AnchorApplyResult
+    ApprovedProposalApplication {
+      applyApprovedProposals(workspace, sourceIndex, anchorIndex, proposals) returns AnchorApplyResult
+    }
 
-    parseAnchorIndex(source) returns AnchorIndexParseResult
+    AnchorIndexSerialization {
+      parseAnchorIndex(source) returns AnchorIndexParseResult
 
-    serializeAnchorIndex(anchorIndex) returns canonical JSON
+      serializeAnchorIndex(anchorIndex) returns canonical JSON
+    }
 
-    exposes relationships: implements, verifies, supports
+    AnchorVocabulary {
+      exposes relationships: implements, verifies, supports
 
-    exposes resolution states: resolved, changed, ambiguous, missing
+      exposes resolution states: resolved, changed, ambiguous, missing
+    }
   }
 }
 
@@ -80,13 +90,15 @@ component TypeScriptSourceAdapter {
   }
 
   interface {
-    buildTypeScriptSourceIndex(files) returns SourceIndexResult
+    TypeScriptSourceIndex {
+      buildTypeScriptSourceIndex(files) returns SourceIndexResult
 
-    indexes functions, methods, classes, interfaces, type aliases, function-valued variables, and exports
+      indexes functions, methods, classes, interfaces, type aliases, function-valued variables, and exports
 
-    indexes common Deno.test, test, and it declarations as test targets
+      indexes common Deno.test, test, and it declarations as test targets
 
-    exposes AST kind, qualified name, signature, optional body fingerprint, imports, calls, and source range
+      exposes AST kind, qualified name, signature, optional body fingerprint, imports, calls, and source range
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig, SigilModuleIndex }
 @packages/core import { SigilCore }
 @packages/cli import { SigilCli }
 @packages/lsp import { SigilLsp }
@@ -13,39 +13,46 @@ component Sigil {
   }
 
   interface {
-    publishes the Sigil Language and .sigil/config.json contract 0.4.0 through SigilLanguage and SigilWorkspaceConfig
+    PublishedArtifacts {
+      publishes the Sigil Language and ConfigFile contract 0.4.0 through SigilLanguage and SigilWorkspaceConfig
 
-    publishes @qoherent/sigil-core 0.4.0 through SigilCore
+      publishes @qoherent/sigil-core 0.4.0 through SigilCore
 
-    publishes @qoherent/sigil 0.4.0 through SigilCli
+      publishes @qoherent/sigil 0.4.0 through SigilCli
 
-    publishes @qoherent/sigil-lsp 0.4.0 through SigilLsp
+      publishes @qoherent/sigil-lsp 0.4.0 through SigilLsp
 
-    publishes the Sigil VS Code extension 0.4.0 through SigilVsCodeExtension
+      publishes the Sigil VS Code extension 0.4.0 through SigilVsCodeExtension
 
-    publishes the standalone Sigil agent skill 0.4.0 through SigilSkill
+      publishes the standalone Sigil agent skill 0.4.0 through SigilSkill
+    }
 
-    defines the Sigil language through spec/sigil-language.md
+    PlatformDocumentation {
+      defines the Sigil language through spec/sigil-language.md
 
-    defines the human-agent workflow through spec/sigil-workflow.md
+      defines the human-agent workflow through spec/sigil-workflow.md
 
-    defines platform architecture through spec/sigil-platform-architecture.md
+      defines platform architecture through spec/sigil-platform-architecture.md
+    }
 
-    provides examples under examples/
 
-    provides buildable platform packages under packages/
+    RepositoryLayout {
+      provides examples under examples/
 
-    provides host integrations under integrations/
+      provides buildable platform packages under packages/
+
+      provides host integrations under integrations/
+    }
   }
 }
 
 expand Sigil {
   constraints {
-    A mandatory .sigil/config.json defines a Sigil workspace root.
+    A mandatory ConfigFile defines a Sigil workspace root.
 
-    #module.sigil acts as an explicit directory-import index for its containing directory.
+    ModuleIndexFile acts as an explicit directory-import index for its containing directory.
 
-    .sigil/config.json defines workspace roots and members; module indexes have no workspace-discovery authority.
+    ConfigFile defines workspace roots and members; module indexes have no workspace-discovery authority.
 
     Configured workspace boundaries carry ordinary summary components maintained through the Sigil workflow.
 

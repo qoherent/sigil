@@ -6,21 +6,27 @@ component SigilDesignConversation {
   }
 
   interface {
-    begins from the user's idea plus relevant repository and Sigil evidence
+    DecisionConversation {
+      begins from the user's idea plus relevant repository and Sigil evidence
 
-    presents one primary design decision per conversational turn unless the user requests a faster grouped review
+      presents one primary design decision per conversational turn unless the user requests a faster grouped review
 
-    explains why the current decision matters before asking for an answer
+      explains why the current decision matters before asking for an answer
 
-    offers a small set of concrete choices with consequences and a reasoned recommendation when alternatives exist
+      offers a small set of concrete choices with consequences and a reasoned recommendation when alternatives exist
 
-    acknowledges each answer and states its effect on the emerging contract
+      acknowledges each answer and states its effect on the emerging contract
+    }
 
-    maintains confirmed, provisionally assumed, intentionally deferred, and unresolved decisions throughout the conversation
+    DecisionLedger {
+      maintains confirmed, provisionally assumed, intentionally deferred, and unresolved decisions throughout the conversation
 
-    periodically summarizes agreed decisions, remaining questions, and identified conflicts
+      periodically summarizes agreed decisions, remaining questions, and identified conflicts
+    }
 
-    synthesizes exact proposed Sigil only after every blocking decision is resolved
+    ProposalSynthesis {
+      synthesizes exact proposed Sigil only after every blocking decision is resolved
+    }
   }
 }
 

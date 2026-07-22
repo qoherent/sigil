@@ -6,13 +6,17 @@ component SigilDiagnostics {
   }
 
   interface {
-    diagnostic(code, message, options?) returns a SigilDiagnostic
+    DiagnosticConstruction {
+      diagnostic(code, message, options?) returns a SigilDiagnostic
 
-    SigilDiagnostic exposes code, severity, message, optional filePath, and optional source range
+      SigilDiagnostic exposes code, severity, message, optional filePath, and optional source range
 
-    severity defaults to error when omitted
+      severity defaults to error when omitted
+    }
 
-    diagnostic codes are stable identifiers that machine-readable consumers may interpret without parsing messages
+    DiagnosticCode {
+      diagnostic codes are stable identifiers that machine-readable consumers may interpret without parsing messages
+    }
   }
 }
 
