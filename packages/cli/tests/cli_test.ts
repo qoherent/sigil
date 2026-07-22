@@ -88,8 +88,8 @@ Deno.test("version reports tool and resolved contract versions", async () => {
   ]);
   assertEquals(result.exitCode, EXIT_OK);
   const json = parseJson(result.stdout);
-  assertEquals(json.cliVersion, "0.2.0");
-  assertEquals(json.coreVersion, "0.2.0");
+  assertEquals(json.cliVersion, "0.3.0");
+  assertEquals(json.coreVersion, "0.3.0");
   assertEquals(json.sigilVersion, SIGIL_VERSION);
 });
 
@@ -134,7 +134,7 @@ Deno.test("check returns 1 for Sigil diagnostics and 0 for a valid empty workspa
   }
 });
 
-Deno.test("check accepts an imports-only module index in an internal directory", async () => {
+Deno.test("check rejects an imports-only module index in an internal directory", async () => {
   const root = await makeWorkspace("internal-module-index");
   try {
     await Deno.mkdir(`${root}/internal`);
@@ -151,8 +151,11 @@ Deno.test("check accepts an imports-only module index in an internal directory",
       `@internal import { Internal }\n\n${validSigil("Consumer")}`,
     );
     const result = await runCli(["check", root, "--format", "json"]);
-    assertEquals(result.exitCode, EXIT_OK);
-    assertEquals(parseJson(result.stdout).diagnostics.length, 0);
+    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
+    assertHasCode(
+      parseJson(result.stdout).diagnostics,
+      "SIGIL_MODULE_WITHOUT_COMPONENT",
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -247,7 +250,7 @@ Deno.test("top-level help and version report CLI information", async () => {
 
   const version = await runCli(["--version"]);
   assertEquals(version.exitCode, EXIT_OK);
-  assertEquals(version.stdout, "0.2.0\n");
+  assertEquals(version.stdout, "0.3.0\n");
   assertEquals(version.stderr, "");
 });
 
@@ -348,12 +351,12 @@ Deno.test("skill discovery resolves valid skills from the source installation", 
 
 Deno.test("skill install resolves skills beside a selected versioned binary", async () => {
   const root = await Deno.makeTempDir({ prefix: "sigil-versioned-install-" });
-  const installation = `${root}/0.2.0`;
+  const installation = `${root}/0.3.0`;
   const skills = `${installation}/integrations/skills`;
   try {
     await Deno.mkdir(`${skills}/sigil`, { recursive: true });
     const resolved = await resolveInstalledSkillsDirectory(
-      "https://jsr.io/@qoherent/sigil/0.2.0/src/main.ts",
+      "https://jsr.io/@qoherent/sigil/0.3.0/src/main.ts",
       `${installation}/bin/sigil`,
     );
     assertEquals(await Deno.realPath(resolved), await Deno.realPath(skills));
@@ -428,7 +431,7 @@ Deno.test("executable subprocess returns version JSON", async () => {
   assertEquals(output.code, EXIT_OK);
   assertEquals(
     JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
-    "0.2.0",
+    "0.3.0",
   );
 });
 

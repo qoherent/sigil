@@ -1,6 +1,6 @@
 # sigil-cli Requirements
 
-**Status:** Accepted for 0.2.0 **Last updated:** 2026-07-21
+**Status:** Accepted for 0.3.0 **Last updated:** 2026-07-22
 
 This document defines the 0.2 product requirements for `sigil-cli`.
 

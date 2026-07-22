@@ -3,12 +3,15 @@
 component SigilGraphBuilder {
   goal {
     Convert resolved Sigil relationships into deterministic graph data for hosts and integrations.
+
     Keep graph construction independent from parsing, filesystem access, diagnostics policy, and presentation.
   }
 
   interface {
     buildSigilGraph(resolution) returns SigilGraph
+
     SigilGraph exposes component nodes, file dependency edges, imported-component edges, and component-expansion edges
+
     consumes relationship data produced by SigilResolver
   }
 }
@@ -16,22 +19,31 @@ component SigilGraphBuilder {
 expand SigilGraphBuilder {
   logic {
     Create one component node for each resolved component declaration.
+
     Create file dependency edges to the immediate imported file or #module.sigil.
+
     Create imported-component edges to each resolved component's original declaration file.
+
     Create component-expansion edges for every collected expand declaration.
+
     Preserve deterministic workspace and declaration ordering.
   }
 
   constraints {
     SigilGraphBuilder performs no filesystem access or source parsing.
+
     Graph construction does not add diagnostics or reinterpret unresolved relationships.
+
     Graph edges represent resolved structural relationships and do not claim behavioral compliance.
   }
 
   cases {
     A resolved imported component produces both a file dependency edge and an imported-component edge.
+
     A directory import through #module.sigil points its file edge to the index and its imported-component edge to the component declaration.
+
     An unresolved imported name produces no imported-component edge.
+
     Two matching expands produce two component-expansion edges.
   }
 }

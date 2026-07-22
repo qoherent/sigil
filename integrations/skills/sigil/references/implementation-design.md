@@ -27,8 +27,10 @@ dependents, tests, and relevant Sigil. Identify material concerns such as:
 - algorithms or transformations whose rationale is not safely reconstructable;
 - dependency direction, ownership, and binding architecture decisions.
 
-An interface is public relative to the component's dependents. It need not be
-exposed to an end user, external client, or another deployable service.
+A component's goal and interface are public relative to its dependents. The
+interface contains the operations, data, events, results, errors, and observable
+promises available to them. It need not be exposed to an end user, external
+client, or another deployable service.
 
 ## 2. Select Component, Expand, Or Omit
 

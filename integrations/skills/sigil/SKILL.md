@@ -89,7 +89,7 @@ sigil version . --format json --pretty
 sigil check . --format json --pretty
 ```
 
-This skill version requires CLI and core `^0.2.0` and Sigil `0.2.0`. In a
+This skill version requires CLI and core `^0.3.0` and Sigil `0.3.0`. In a
 Brownfield repository without `.sigil/config.json`, use the initialization
 sequence in `references/brownfield-adoption.md` before this preflight. Otherwise
 stop with a compatibility report when the CLI is missing, `.sigil/config.json`
@@ -158,8 +158,8 @@ Select the workflow before detailed semantic work:
    - Treat the directory containing `.sigil/config.json` as the workspace root
      and root-project location.
    - Treat `#module.sigil` as the explicit directory-import index allowed in any
-     included directory. Its local components and directly imported names form
-     the directory-import surface.
+     included directory. It must declare at least one local component. Its local
+     components and directly imported names form the directory-import surface.
    - Treat every component as public through its explicit `.sigil` path even
      when a module index does not name it.
    - Use the workspace root and paths explicitly declared by
@@ -175,15 +175,19 @@ Select the workflow before detailed semantic work:
    - Use CLI JSON diagnostics and context output when available to identify
      import dependencies, unresolved imported names, public contracts, collected
      expands, and related files.
-   - Identify public `component` contracts: `goal` and `interface`.
+   - Identify public `component` contracts: both `goal` and `interface` are
+     public to dependents.
    - Identify matching `expand` blocks for operational detail.
    - Treat natural-language UI descriptions, ASCII wireframes, image references,
      and design links inside `interface` as free-form public-contract content.
      Do not invent keywords or authority fields for visual references.
    - Treat `component` as the reusable public contract and all matching
      `expand Name` blocks as the collected operational description.
-   - Treat an interface as public to the component's dependents even when the
-     component is internal to the implementation.
+   - Treat an interface as the operations, data, events, results, errors, and
+     observable promises publicly available to the component's dependents even
+     when the component is internal to the implementation.
+   - Treat imports as dependency declarations. Do not repeat imported-component
+     dependencies in `interface`.
    - Consider coherent programming abstractions, internal APIs, state machines,
      screens, views, and reusable UI surfaces as possible components.
    - Note unresolved imports, missing components, collected-expand
@@ -193,7 +197,7 @@ Select the workflow before detailed semantic work:
    - Follow `references/standards-review.md`.
    - Make each goal specific, bounded, and unambiguous.
    - Check interfaces for required inputs, outputs, errors, permissions,
-     lifecycle guarantees, and applicable standards or best practices.
+     lifecycle promises, and applicable standards or best practices.
    - For UI components, check visible regions, actions, navigation, feedback,
      loading, empty, error, and disabled behavior when those details materially
      affect the contract.
@@ -264,7 +268,10 @@ Select the workflow before detailed semantic work:
 
 7. Preserve semantic lines.
    - Keep each non-empty line as one distinct idea.
-   - Blank lines are allowed for readability and do not create semantic units.
+   - Separate distinct prose-level ideas with blank lines in every section.
+   - Blank lines do not create semantic units.
+   - Keep lines in one compact free-form construct adjacent when separating them
+     would reduce readability.
    - Prefer concise, reviewable lines over paragraphs inside sections.
    - Free-form Markdown, pseudocode, API signatures, bullets, tables, and prose
      are allowed inside sections when they remain coherent.
@@ -343,16 +350,19 @@ the human check the durable rationale before code exists.
 When reviewing or improving Sigil, check:
 
 - Is every goal specific about responsibility, boundary, and intended outcome?
+- Does every `#module.sigil` declare at least one local component?
 - Does every interface make relevant inputs, outputs, errors, permissions,
-  lifecycle guarantees, and dependencies explicit?
+  lifecycle promises, and other observable behavior explicit?
+- Do imports declare component dependencies without repeating them in
+  interfaces?
 - Does each `expand Name` have a matching `component Name`?
 - Does each imported name resolve to a matching component in the imported Sigil
   source?
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in
   `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
-- Are implementation details hidden from public component interfaces unless they
-  are part of the contract?
+- Are implementation-hiding rules and forbidden internal access in constraints
+  unless they define an externally observable promise?
 - Are roles, states, permissions, and lifecycle transitions explicit enough to
   test?
 - For abstractions and APIs, are constructor/functions, return values,

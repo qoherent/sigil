@@ -1,9 +1,9 @@
 # sigil-core
 
-Current package version: **0.2.0**. Import with:
+Current package version: **0.3.0**. Import with:
 
 ```ts
-import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.2";
+import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.3";
 ```
 
 Raw parsing requires an explicit `sigilVersion`. Workspace APIs discover and

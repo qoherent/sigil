@@ -1,6 +1,6 @@
 # sigil-core Requirements
 
-**Status:** Accepted for 0.2.0
+**Status:** Accepted for 0.3.0
 **Last updated:** 2026-07-21
 
 This document defines the 0.2 product requirements for `sigil-core`.
@@ -181,7 +181,7 @@ Version 0.2 is acceptable when tests demonstrate that `sigil-core` can:
 - discover the repository `.sigil/config.json` from nested targets that remain in the root workspace;
 - discover Promise and Slotted through their independent example configs;
 - treat `examples/slotted/#module.sigil` as the Slotted workspace summary;
-- resolve imports-only module indexes in internal directories;
+- diagnose imports-only module indexes with `SIGIL_MODULE_WITHOUT_COMPONENT`;
 - preserve original declaration paths through module indexes for graphs and editors;
 - keep omitted components importable through explicit `.sigil` paths;
 - resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;

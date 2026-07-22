@@ -37,6 +37,26 @@ requireText(
   "design conversation routing",
 );
 requireText(skill, "sigil init", "brownfield initialization");
+requireText(
+  skill,
+  "It must declare at least one local component.",
+  "nonempty module index rule",
+);
+requireText(
+  skill,
+  "both `goal` and `interface` are\n     public to dependents",
+  "public goal and interface rule",
+);
+requireText(
+  skill,
+  "Do not repeat imported-component\n     dependencies in `interface`",
+  "import-only dependency declaration rule",
+);
+requireText(
+  skill,
+  "Separate distinct prose-level ideas with blank lines",
+  "semantic blank-line style",
+);
 requireText(skill, "one primary decision per turn", "sequential clarification");
 requireText(skill, "choices", "design choices");
 requireText(
@@ -57,8 +77,8 @@ requireText(
 );
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "0.2.0") {
-  throw new Error(`Expected skill VERSION 0.2.0, got ${version}`);
+if (version !== "0.3.0") {
+  throw new Error(`Expected skill VERSION 0.3.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -66,10 +86,10 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "0.2.0",
-    cliVersion: "^0.2.0",
-    coreVersion: "^0.2.0",
-    sigilVersion: "0.2.0",
+    skillVersion: "0.3.0",
+    cliVersion: "^0.3.0",
+    coreVersion: "^0.3.0",
+    sigilVersion: "0.3.0",
   })
 ) {
   if (compatibility[key] !== expected) {
@@ -265,7 +285,7 @@ const implementationFixture = await Deno.readTextFile(
 const requiredImplementationBehaviors = [
   "reject-high-level-only-coverage",
   "inspect-implementation-boundary",
-  "treat-interface-public-to-dependents",
+  "treat-goal-and-interface-public-to-dependents",
   "model-programming-abstraction-as-component",
   "model-ui-surface-as-component",
   "use-expand-for-owned-implementation-detail",
@@ -363,7 +383,7 @@ const implementationDesign = await Deno.readTextFile(
 );
 requireText(
   implementationDesign,
-  "An interface is public relative to the component's dependents.",
+  "A component's goal and interface are public relative to its dependents.",
   "dependent-relative public contract",
 );
 requireText(
@@ -383,7 +403,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 0.2.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.3.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

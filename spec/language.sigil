@@ -1,47 +1,89 @@
 component SigilLanguage {
   goal {
     Give authors and tools one versioned contract for interpreting Sigil source.
+
     Keep the language contract aligned with approved syntax, configuration, workspace, source-file, and interpretation behavior.
   }
 
   interface {
-    sigilVersion = "0.2.0"
+    sigilVersion = "0.3.0"
+
     accepts UTF-8 .sigil source containing import, component, and expand forms
+
     preserves free-form non-empty section lines as distinct semantic lines
+
     reports structural diagnostics while retaining partial documents when practical
+
     import declares a dependency on named components from another Sigil source or directory module index and makes their public contracts and collected expands available
-    component defines the reusable public contract of a coherent system part through its goal and interface
+
+    component defines the reusable public contract of a coherent system part through its public goal and interface
+
     expand adds collective operational detail to a component without changing or overriding its public contract
-    goal describes why a component exists, the responsibility it owns, and its intended outcome
-    interface describes how users, callers, external systems, or other components interact with the component through its observable public contract
+
+    goal publicly describes why a component exists, the responsibility it owns, and its intended outcome
+
+    interface contains only the operations, data, events, results, errors, and observable promises publicly available to dependents
+
+    import is the sole declaration of dependency on another Sigil component
+
     state describes meaningful configurations, modes, and domain conditions that exist or change during execution
+
     logic describes behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
+
     constraints describe rules, policies, invariants, architecture decisions, and technology choices that valid implementations must obey
+
     cases describe representative outcomes, examples, edge cases, and externally observable acceptance scenarios
+
+    blank lines may separate distinct semantic ideas for readability and do not create semantic units
   }
 }
 
 expand SigilLanguage {
   constraints {
     spec/language.sigil records the current approved Sigil language and workspace contract.
+
     The SigilLanguage contract evolves when approved syntax, configuration, workspace, source-file, or interpretation behavior changes.
+
     Sigil version is sourced from packages/core/deno.json and governs language and workspace configuration interpretation.
+
     Tools reject configured sigilVersion values they do not support.
+
     During initial 0.y.z development, breaking interpretation changes increment the minor version and reset the patch version.
+
     After 1.0.0, breaking interpretation changes require a new major version.
+
     Compatible additions and clarifications use the appropriate semantic version increment.
+
     Every component requires goal and interface sections.
+
+    Every #module.sigil declares at least one component.
+
+    Component dependencies are declared through imports and are not repeated in interface sections.
+
+    Implementation-hiding rules and forbidden internal access belong in constraints unless they define an externally observable promise.
+
+    Distinct prose-level semantic ideas are separated by blank lines within every section.
+
+    Lines belonging to one compact free-form construct may remain adjacent.
+
     A directory import resolves to #module.sigil in the target directory.
+
     Ordinary file imports resolve against the named .sigil source file.
   }
 
   cases {
-    A tool configured for Sigil 0.2.0 interprets #module.sigil as an explicit directory index.
+    A tool configured for Sigil 0.3.0 interprets #module.sigil as an explicit directory index that contains at least one local component.
+
     A tool that does not support the configured sigilVersion reports an error before parsing workspace Sigil files.
-    A document explicitly configured for Sigil 0.1.0 is not silently reinterpreted using 0.2.0 module semantics.
+
+    A document explicitly configured for Sigil 0.2.0 is not silently reinterpreted using 0.3.0 module semantics.
+
     Importing Name makes component Name and its matching collected expands available to the importing source.
+
     Importing a directory name resolves it through that directory's #module.sigil directory-import surface.
+
     A component can be understood through its goal and interface without reading its expands or implementation.
+
     When multiple expand Name blocks target one component, tools expose all matching blocks as collected detail without override or shadowing.
   }
 }
@@ -49,17 +91,25 @@ expand SigilLanguage {
 component SigilWorkspaceConfig {
   goal {
     Define the versioned configuration contract for one Sigil workspace.
+
     Keep workspace discovery and identity separate from directory module indexes.
   }
 
   interface {
     filename: .sigil/config.json
+
     location: workspace root
+
     sigilVersion: the supported Sigil version from packages/core/deno.json
+
     workspace.name: non-empty stable workspace identifier
+
     workspace.members: optional array of unique workspace-relative project-root paths
+
     files.include: non-empty array of workspace-relative POSIX glob strings
+
     files.exclude?: array of workspace-relative POSIX glob strings
+
     tools?: object of namespaced JSON objects preserved for host integrations
   }
 }
@@ -67,14 +117,23 @@ component SigilWorkspaceConfig {
 expand SigilWorkspaceConfig {
   constraints {
     .sigil/config.json is the sole authority for the Sigil workspace boundary and its members.
+
     The directory containing .sigil/config.json is the workspace root and root project location.
+
     Each workspace.members entry declares one additional project root in the same workspace.
+
     Workspace member paths are unique, non-root, workspace-relative directories.
+
     Workspace member paths cannot escape the workspace or overlap another member path.
+
     Package and repository workspace manifests do not independently declare Sigil workspace members.
+
     A workspace member does not contain its own .sigil/config.json.
+
     A nested directory with its own .sigil/config.json is an independent workspace and must be excluded from the parent workspace.
+
     files.include and files.exclude control source discovery but do not declare or restrict module-index locations.
+
     workspace.members identifies configured member boundaries but does not control where #module.sigil may appear.
   }
 }
@@ -82,46 +141,73 @@ expand SigilWorkspaceConfig {
 component SigilModuleIndex {
   goal {
     Define #module.sigil as the explicit directory-import index for a directory.
+
     Let authors select convenient directory-import names without changing the public visibility of Sigil components.
   }
 
   interface {
     filename: #module.sigil
+
     location: any included directory in a Sigil workspace
+
     a directory import @path resolves to @path/#module.sigil
+
     resolves components declared directly in #module.sigil through the directory import
+
     resolves components named by direct imports in #module.sigil through the directory import
-    may contain imports, components, and expands using ordinary Sigil forms
+
+    contains at least one component declaration
+
+    may additionally contain imports and expands using ordinary Sigil forms
   }
 }
 
 expand SigilModuleIndex {
   logic {
     Resolve each direct import in #module.sigil using ordinary Sigil import rules.
+
     Build the directory-import surface from local component declarations and successfully resolved directly imported names.
+
     Preserve each resolved component's original declaration file and collected expansions.
+
     Resolve a named directory import against the resulting directory-import surface.
   }
 
   constraints {
     Every component declaration is public and may be imported by naming its .sigil source file, regardless of any #module.sigil.
+
     #module.sigil does not grant or restrict component visibility.
+
     #module.sigil defines only which component names resolve through directory-import shorthand.
+
     A directory import may resolve components declared in its #module.sigil or named by that file's direct imports.
+
     A component omitted from #module.sigil remains importable through its explicit .sigil file path.
+
     Sigil defines no export or re-export form.
+
     Components used only as dependencies of indexed files are not added to the directory-import surface implicitly.
+
     Files and components elsewhere in the directory or subtree are not discovered into the directory-import surface implicitly.
+
     An explicit chain of module imports may make a component resolvable through multiple directory indexes.
+
     #module.sigil does not define a workspace root, workspace member, or special component type.
+
+    Every #module.sigil contains at least one local component declaration.
   }
 
   cases {
     @auth import { Session } resolves when auth/#module.sigil directly declares Session or directly imports Session from another Sigil source.
+
     @auth import { Session } is unresolved when auth/#module.sigil does not name Session, while @auth/session.sigil import { Session } remains valid.
+
     @auth import { Store } is unresolved when Store is only a dependency of Session and auth/#module.sigil does not name Store.
-    An imports-only #module.sigil is valid and makes its successfully resolved imported names available through the directory import.
+
+    An imports-only #module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
+
     A directory without #module.sigil produces SIGIL_UNRESOLVED_IMPORT_PATH.
+
     A cyclic dependency involving #module.sigil produces SIGIL_IMPORT_CYCLE and retains partial resolution when practical.
   }
 }

@@ -63,7 +63,7 @@
   "implementationRequiredBehaviors": [
     "reject-high-level-only-coverage",
     "inspect-implementation-boundary",
-    "treat-interface-public-to-dependents",
+    "treat-goal-and-interface-public-to-dependents",
     "model-programming-abstraction-as-component",
     "model-ui-surface-as-component",
     "use-expand-for-owned-implementation-detail",

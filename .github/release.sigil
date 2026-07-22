@@ -5,15 +5,21 @@
 component SigilReleaseDistribution {
   goal {
     Distribute versioned Sigil command-line executables, agent skills, and VS Code extension packages through public GitHub Releases.
+
     Let users install Sigil without first installing Deno, Node.js, or a package-registry client.
   }
 
   interface {
     a cli-vX.Y.Z GitHub Release publishes SigilCli archives for supported macOS, Linux, and Windows targets
+
     each CLI archive contains one native executable and the version-matched skills consumed by SkillInstaller
+
     https://github.com/qoherent/sigil/releases/latest/download/install.sh installs the latest macOS or Linux CLI release
+
     https://github.com/qoherent/sigil/releases/latest/download/install.ps1 installs the latest Windows CLI release
+
     SIGIL_VERSION selects an explicit CLI release version in both installers
+
     a vscode-vX.Y.Z GitHub Release publishes one installable SigilVsCodeExtension VSIX
   }
 }
@@ -21,32 +27,51 @@ component SigilReleaseDistribution {
 expand SigilReleaseDistribution {
   logic {
     A CLI release validates that its tag version matches the CLI manifest version before building assets.
+
     The release compiles x86_64 and ARM64 executables for macOS and Linux and an x86_64 executable for Windows.
+
     Each archive uses a stable platform-specific asset name and contains a versioned bin/sigil plus integrations/skills layout.
+
     The shell and PowerShell installers detect the host operating system and architecture before selecting an asset.
+
     Installers download the selected archive and checksum manifest from the same GitHub Release.
+
     Installers verify SHA-256 before extracting or changing the active executable.
+
     CLI releases install into a versioned user data directory and expose the selected executable through a user PATH directory.
+
     A VS Code release runs verification, builds the bundled extension and language server, packages one VSIX, and uploads it as a GitHub Release asset.
   }
 
   constraints {
     GitHub Release assets are the durable public binary distribution channel; workflow artifacts are build intermediates only.
+
     Release workflows never publish assets whose tag version disagrees with the owning manifest.
+
     Installation scripts refuse unsupported operating-system or architecture combinations.
+
     Installation scripts fail without replacing the active version when download, checksum, or extraction fails.
+
     Installation scripts never require administrator privileges for the default user-scoped installation.
+
     Native 0.1 prerelease executables may remain unsigned and their documentation identifies that limitation.
+
     Native signing hooks may be added later without changing archive names or installer commands.
+
     The initial VS Code release is distributed as a GitHub-hosted VSIX and is not published to an extension marketplace.
   }
 
   cases {
     An Apple Silicon macOS user installs the matching native CLI through install.sh without Deno.
+
     An x86_64 Linux user selects a specific release through SIGIL_VERSION and receives that exact version.
+
     A Windows user installs through install.ps1 without requiring a developer-mode symlink privilege.
+
     A checksum mismatch leaves the previously active Sigil executable unchanged.
+
     An unsupported platform receives a clear failure without downloading an unrelated executable.
+
     A user downloads the VSIX from GitHub Releases and installs it manually in VS Code.
   }
 }

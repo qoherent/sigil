@@ -1,8 +1,8 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.2.0
+**Sigil version:** 0.3.0
 **Status:** Accepted
-**Released:** 2026-07-21
+**Released:** 2026-07-22
 
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
@@ -39,6 +39,8 @@ The directory-index filename is `#module.sigil`.
 It may appear in any included directory and defines the component names that
 resolve through directory-import shorthand for that directory.
 It does not grant or restrict component visibility.
+Every `#module.sigil` must declare at least one local component; an imports-only
+index is invalid.
 
 A strict JSON `.sigil/config.json` is required at the workspace root.
 It selects the Sigil version and defines workspace file discovery. The config
@@ -63,7 +65,8 @@ At configured workspace boundaries, the Brownfield workflow maintains ordinary
 project-summary components in the workspace-root and declared-member
 `#module.sigil` files. Those summaries use normal component and expand semantics;
 they have no special parser or resolver status. Internal directories may use
-`#module.sigil` solely as an index and require no project summary.
+`#module.sigil` as an index without a project summary, but the index still
+declares at least one local component.
 
 ### Module indexes
 
@@ -72,6 +75,9 @@ directory-import surface consists of:
 
 - components declared directly in that `#module.sigil`;
 - component names successfully resolved by direct imports in that file.
+
+An imports-only `#module.sigil` produces
+`SIGIL_MODULE_WITHOUT_COMPONENT` while retaining its partial parsed document.
 
 Other files beneath the directory, unnamed dependencies of indexed components,
 and components imported only by those indexed files are not added implicitly.
@@ -132,7 +138,7 @@ expand Name {
 ```
 
 `import` makes named components from another Sigil file available to the current file.
-`component` defines the public purpose and boundary of a system part.
+`component` defines the public goal and interface of a system part.
 `expand` adds deeper operational detail for an existing component.
 
 ## 4. Imports
@@ -200,10 +206,10 @@ An import that resolves only to `expand Name` without `component Name` is unreso
 A `component` is the reusable public description of a system part.
 It should be understandable without reading implementation details.
 
-Its `goal` describes why the component exists, the responsibility it owns, and
-its intended outcome. Its `interface` describes how users, callers, external
-systems, or other components interact with it through its observable public
-contract.
+Its public `goal` describes why the component exists, the responsibility it
+owns, and its intended outcome. Its public `interface` contains only the
+operations, data, events, results, errors, and observable promises available to
+dependents.
 
 A `component` must contain:
 
@@ -222,6 +228,9 @@ It has no semantic effect.
 
 Keep a `component` focused on the public contract.
 Put state, behavior, constraints, examples, architecture rules, and implementation rationale in `expand`.
+
+Imports declare dependencies between components; do not repeat imported
+dependencies in `interface`.
 
 Other components should depend on the public `component` description first.
 They should depend on `expand` details only when deeper implementation context is necessary.
@@ -265,22 +274,27 @@ If collected expands contradict each other, the contradiction is a specification
 
 ### `goal`
 
-`goal` explains why the component exists.
+`goal` publicly explains why the component exists.
 
 It should describe the responsibility, user or system need, and reason this component is separate from others.
 
 ### `interface`
 
-`interface` explains how the component interacts with the outside world.
+`interface` contains only what dependents can use or observe from the public
+contract.
 
 It may include:
 
-- inputs;
-- outputs;
+- inputs and data;
+- outputs and results;
 - public operations;
 - events;
-- dependencies consumed from other components;
-- guarantees other components rely on.
+- errors;
+- observable promises other components rely on.
+
+Dependencies belong in imports, not `interface`. Implementation-hiding rules
+and forbidden internal access belong in `constraints` unless they define an
+externally observable promise.
 
 For API-like components, `interface` may contain constructors, methods, functions, return values, static helpers, and other public signatures.
 
@@ -301,6 +315,7 @@ component BookingCalendarView {
 
   interface {
     Shows date navigation above a calendar of rooms and bookings.
+
     Lets the user move to the previous or next date range.
 
     +------------------------------------------+
@@ -310,6 +325,7 @@ component BookingCalendarView {
     +------------------------------------------+
 
     Image reference: ![Calendar layout](./booking-calendar-view.svg)
+
     The image suggests visual grouping; the written interface defines required behavior.
 
     A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
@@ -386,6 +402,10 @@ A semantic line is a:
 Blank lines are allowed for readability.
 Blank lines do not create semantic units.
 
+Separate distinct prose-level semantic ideas with blank lines in every section.
+Lines belonging to one compact free-form construct, such as a type shape or an
+ASCII diagram, may remain adjacent when separation would reduce readability.
+
 Prefer one distinct idea per line.
 Avoid burying multiple decisions in a paragraph when those decisions may need separate review, diffing, or source mapping.
 
@@ -422,6 +442,8 @@ Missing or unexcluded nested configs are invalid, and an explicit root must cont
 
 An imported name must resolve to a matching `component Name`.
 
+A `#module.sigil` must declare at least one local component.
+
 A `component` must contain `goal` and `interface`.
 
 An `expand` may contain `state`, `logic`, `constraints`, and `cases`.
@@ -435,6 +457,9 @@ Section bodies are free-form text.
 The conventional section order is recommended but not semantically required.
 
 Implementation details should not appear in a `component` unless they are part of the public contract.
+
+Implementation-hiding rules and forbidden internal access belong in
+`constraints` unless they define an externally observable promise.
 
 Architecture, stack, ownership, and dependency decisions belong in `constraints`.
 
@@ -454,7 +479,7 @@ Write concise, reviewable lines.
 
 Keep each non-empty line focused on one idea.
 
-Use blank lines to improve readability without changing meaning.
+Use blank lines between distinct prose-level ideas without changing meaning.
 
 Name components after the concept other parts of the system depend on.
 
@@ -462,7 +487,7 @@ Keep public contracts small enough to understand without reading the expand.
 
 Move internal rationale out of `component` and into `expand`.
 
-Prefer concrete states, transitions, inputs, outputs, and guarantees over vague descriptions.
+Prefer concrete states, transitions, inputs, outputs, and observable promises over vague descriptions.
 
 When a decision is binding, place it in `constraints`.
 
@@ -492,15 +517,21 @@ Programming abstraction:
 component Promise {
   goal {
     Represent a value that may resolve now, later, or fail.
+
     Let callers chain reactions without knowing when the value arrives.
   }
 
   interface {
     new Promise<T>(executor)
+
     then(onResolved, onRejected?) returns Promise
+
     catch(onRejected) returns Promise
+
     Promise.resolve(value)
+
     Promise.reject(reason)
+
     Promise.try(handler)
   }
 }
@@ -508,15 +539,21 @@ component Promise {
 expand Promise {
   state {
     Pending
+
     Resolved(value)
+
     Rejected(reason)
   }
 
   logic {
     A new Promise starts Pending and runs executor with resolve and reject.
+
     then returns an after Promise immediately.
+
     If then or catch is called while Pending, hold the reaction until settlement.
+
     Resolving with a PromiseLike value adopts its eventual result.
+
     Rejecting with a PromiseLike value does not unwrap it.
   }
 }
@@ -528,7 +565,9 @@ Stack as a constraint:
 expand Slotted {
   constraints {
     Stack is Next.js, Neon Postgres, and Drizzle ORM.
+
     The system ships as a single Next.js app.
+
     Database access goes through Drizzle.
   }
 }
@@ -539,7 +578,9 @@ Architecture rules as constraints:
 ```sigil
 constraints {
   Architecture style is a modular monolith with layered, domain-oriented modules.
+
   Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
+
   Domain logic should be testable with zero mocks and zero I/O.
 }
 ```

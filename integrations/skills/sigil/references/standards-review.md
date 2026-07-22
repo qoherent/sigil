@@ -62,7 +62,7 @@ when they do not establish a reviewable boundary.
 
 ### Interface Quality
 
-Check every relevant public operation, event, or dependency for:
+Check every relevant public operation, event, or observable promise for:
 
 - inputs and validation expectations;
 - outputs, guarantees, and observable side effects;
@@ -75,6 +75,10 @@ Check every relevant public operation, event, or dependency for:
 
 Do not require every category mechanically. Require it only when omitting it
 could materially change implementation or observable behavior.
+
+Imports declare component dependencies. Do not repeat them in `interface`.
+Implementation-hiding rules and forbidden internal access belong in
+`constraints` unless they define an externally observable promise.
 
 For UI components, also check when applicable:
 

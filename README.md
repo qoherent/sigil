@@ -88,6 +88,11 @@ Their `interface` may describe visible regions, user actions, navigation, feedba
 Because section bodies are free-form, the interface may also contain ASCII wireframes, Markdown image references to repository assets, or links to designs such as Figma files.
 Authors can explain a visual reference's intended role in their own words when ambiguity would affect implementation.
 
+Both `goal` and `interface` are public to a component's dependents. Imports
+declare dependencies. Interfaces contain only operations, data, events, results,
+errors, and observable promises; implementation-hiding rules belong in
+`constraints` unless they define an observable promise.
+
 The language currently has three top-level forms:
 
 ```ts
@@ -132,7 +137,7 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 ## Repository Layout
 
-The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.2.0 workspace and excludes the independent example projects.
+The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.3.0 workspace and excludes the independent example projects.
 The root [#module.sigil](./%23module.sigil) is its directory-import index and
 contains the ordinary high-level project summary for this configured boundary.
 
@@ -185,8 +190,8 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-All published Sigil artifacts are pre-production and versioned at 0.2.0.
-See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.2.md).
+All published Sigil artifacts are pre-production and versioned at 0.3.0.
+See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.3.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 

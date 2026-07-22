@@ -28,7 +28,7 @@ deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference
-describes Sigil version `0.2.0`; do not apply it to an
+describes Sigil version `0.3.0`; do not apply it to an
 unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
@@ -39,8 +39,9 @@ starting point, then read source files before editing them.
 Sigil source files use `.sigil`.
 
 The directory-index filename is `#module.sigil`. It may appear in any included
-directory. Its local components and successfully resolved direct import names
-form that directory's import surface.
+directory and must declare at least one local component. Its local components
+and successfully resolved direct import names form that directory's import
+surface. An imports-only index produces `SIGIL_MODULE_WITHOUT_COMPONENT`.
 
 A strict JSON `.sigil/config.json` is mandatory at the workspace root. It selects
 Sigil version, provides `workspace.name`, declares
@@ -123,7 +124,7 @@ Importing `Name` makes `component Name` and all matching `expand Name` blocks
 available to the current file.
 
 `component` defines the reusable public contract of a coherent system part
-through its `goal` and `interface`. `expand` adds collective operational detail
+through its public `goal` and `interface`. `expand` adds collective operational detail
 without changing or overriding that public contract. Put state, behavior,
 constraints, and representative cases in `expand`.
 
@@ -140,9 +141,10 @@ element; use cohesive responsibility and a relied-upon contract as the boundary.
 - `goal`
 - `interface`
 
-`goal` describes why the component exists, the responsibility it owns, and its
-intended outcome. `interface` describes how users, callers, external systems,
-or other components interact with it through its observable public contract.
+`goal` publicly describes why the component exists, the responsibility it owns,
+and its intended outcome. `interface` contains only the operations, data,
+events, results, errors, and observable promises publicly available to
+dependents.
 
 `expand` may contain:
 
@@ -189,12 +191,15 @@ Imported names must resolve to matching `component` declarations. Imported names
 are case-sensitive. All matching expands for the imported component are
 collective.
 
+Imports are the dependency declarations between Sigil components. Do not repeat
+an imported-component dependency in `interface`.
+
 ## Section Placement
 
 Use `goal` for why the component exists.
 
-Use `interface` for public interactions: inputs, outputs, public operations,
-events, guarantees, and dependencies visible to other components.
+Use `interface` for public interactions: inputs, outputs, operations, events,
+results, errors, and observable promises available to dependents.
 
 For API-like components, `interface` may contain signatures such as
 constructors, methods, functions, return values, and static helpers.
@@ -225,13 +230,18 @@ Use `constraints` for rules, policies, invariants, and binding decisions.
 Architecture, ownership, dependency direction, stack choices, persistence
 rules, and technology decisions belong here.
 
+Implementation-hiding rules and forbidden internal access belong in
+`constraints` unless they define an externally observable promise.
+
 Use `cases` for examples and acceptance criteria that can be observed from
 outside the component.
 
 ## Semantic Lines
 
 Each non-empty line inside a section is a semantic unit and possible future
-anchor target. Blank lines are allowed for readability.
+anchor target. Separate distinct prose-level ideas with blank lines in every
+section. Blank lines do not create semantic units. Keep lines in one compact
+free-form construct adjacent when separation would reduce readability.
 
 Prefer one distinct idea per line. Avoid burying multiple decisions in a
 paragraph when they may need separate review, diffing, or source mapping.
@@ -244,6 +254,7 @@ parser uses braces to track section boundaries.
 When reviewing Sigil, check:
 
 - Does every component explain why it exists?
+- Does every `#module.sigil` declare at least one local component?
 - Does every component expose how callers, users, modules, or other parts
   interact with it?
 - Were coherent internal abstractions and UI surfaces considered as components
@@ -254,8 +265,8 @@ When reviewing Sigil, check:
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in
   `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
-- Are implementation details hidden from public component interfaces unless they
-  are part of the contract?
+- Are implementation-hiding rules and forbidden internal access in constraints
+  unless they define an externally observable promise?
 - Are roles, states, permissions, and lifecycle transitions explicit enough to
   test?
 - For abstractions and APIs, are constructor/functions, return values,
@@ -280,15 +291,21 @@ Programming abstraction:
 component Promise {
   goal {
     Represent a value that may resolve now, later, or fail.
+
     Let callers chain reactions without knowing when the value arrives.
   }
 
   interface {
     new Promise<T>(executor)
+
     then(onResolved, onRejected?) returns Promise
+
     catch(onRejected) returns Promise
+
     Promise.resolve(value)
+
     Promise.reject(reason)
+
     Promise.try(handler)
   }
 }
@@ -296,15 +313,21 @@ component Promise {
 expand Promise {
   state {
     Pending
+
     Resolved(value)
+
     Rejected(reason)
   }
 
   logic {
     A new Promise starts Pending and runs executor with resolve and reject.
+
     then returns an after Promise immediately.
+
     If then or catch is called while Pending, hold the reaction until settlement.
+
     Resolving with a PromiseLike value adopts its eventual result.
+
     Rejecting with a PromiseLike value does not unwrap it.
   }
 }
@@ -316,7 +339,9 @@ Stack as a constraint:
 expand Slotted {
   constraints {
     Stack is Next.js, Neon Postgres, and Drizzle ORM.
+
     The system ships as a single Next.js app.
+
     Database access goes through Drizzle.
   }
 }

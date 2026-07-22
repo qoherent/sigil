@@ -17,7 +17,7 @@ Primary authorities are:
   configuration;
 - [Sigil Workflow](sigil-workflow.md) for design, review, and implementation
   gates;
-- [Sigil 0.2 API](api-0.2.md) for implemented public tool surfaces;
+- [Sigil 0.3 API](api-0.3.md) for implemented public tool surfaces;
 - [Sigil Platform Architecture](sigil-platform-architecture.md) for package and
   integration boundaries;
 - accepted ADRs for the decisions they own.
@@ -53,7 +53,7 @@ project, or the platform; qualify it when ambiguity is possible.
 
 The versioned contract governing `.sigil` syntax, structure, sections, imports,
 workspace interpretation, and meaning. The current supported version is
-`0.2.0`.
+`0.3.0`.
 
 ### Sigil source
 
@@ -124,7 +124,7 @@ name identifies a contract across its declaration and every matching expand.
 
 ### Public contract
 
-The observable responsibility and interactions promised by a component's
+The public purpose and observable interactions promised by a component's
 `goal` and `interface`. `Public` is relative to the component's dependents and
 does not necessarily mean externally available outside the application.
 
@@ -139,14 +139,13 @@ A dependent that invokes an operation or API-shaped interface.
 
 ### Goal
 
-The required component section describing why the component exists, the
+The required public component section describing why the component exists, the
 responsibility it owns, and its intended outcome.
 
 ### Interface
 
-The required component section describing how users, callers, external
-systems, or other components interact with the component through observable
-inputs, outputs, operations, events, guarantees, and failures.
+The required public component section containing only the operations, data,
+events, results, errors, and observable promises available to dependents.
 
 ### Expand
 
@@ -303,8 +302,9 @@ member root.
 ### `#module.sigil`
 
 The explicit directory-import index. It may appear in any included directory
-and makes its local components and directly imported component names resolvable
-through directory-import shorthand without changing component visibility.
+and must declare at least one local component. It makes its local components and
+directly imported component names resolvable through directory-import shorthand
+without changing component visibility.
 
 ### Directory-import surface
 
@@ -872,7 +872,7 @@ Explicitly excluded from the selected contract or delivery stage.
 
 The terms in this section describe proposed capabilities from
 [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
-They are not part of the implemented Sigil 0.2 surface unless separately marked
+They are not part of the implemented Sigil 0.3 surface unless separately marked
 implemented.
 
 ### Receipt
@@ -1061,6 +1061,7 @@ An anchor whose target can no longer be located.
 | `SIGIL_UNKNOWN_SECTION` | A form contains a section name not allowed for that form. |
 | `SIGIL_MISSING_GOAL` | A component lacks its required `goal` section. |
 | `SIGIL_MISSING_INTERFACE` | A component lacks its required `interface` section. |
+| `SIGIL_MODULE_WITHOUT_COMPONENT` | A `#module.sigil` declares no local component. |
 | `SIGIL_UNRESOLVED_IMPORT_PATH` | An import path does not resolve to a loaded Sigil source. |
 | `SIGIL_UNRESOLVED_IMPORTED_COMPONENT` | An imported name is not declared as a component in the target source. |
 | `SIGIL_EXPAND_WITHOUT_COMPONENT` | An expand has no matching component declaration in the workspace. |

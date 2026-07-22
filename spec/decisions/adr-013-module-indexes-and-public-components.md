@@ -1,6 +1,6 @@
 # ADR-013: Module Indexes And Public Components
 
-**Status:** Accepted
+**Status:** Superseded by ADR-014 for Sigil 0.3.0
 
 **Owner:** Sigil maintainers
 

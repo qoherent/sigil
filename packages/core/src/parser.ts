@@ -14,6 +14,7 @@ import type {
   SourceRange,
 } from "./model.ts";
 import { SIGIL_VERSION } from "./model.ts";
+import { isModuleFile } from "./path.ts";
 
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
@@ -214,6 +215,14 @@ export function parseSigilDocument(
         { filePath, range: component.range },
       ));
     }
+  }
+
+  if (isModuleFile(filePath) && components.length === 0) {
+    diagnostics.push(diagnostic(
+      "SIGIL_MODULE_WITHOUT_COMPONENT",
+      "#module.sigil must declare at least one component.",
+      { filePath },
+    ));
   }
 
   const document: SigilDocument = {

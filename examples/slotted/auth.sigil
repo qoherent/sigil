@@ -13,9 +13,8 @@ component User {
         }
 
         exposes user identity: User.id, User.email
+
         exposes role signal: User.isHomeOwner
-        depends on UserProfile for display profile information
-        hides password storage details from other components
     }
 }
 
@@ -31,39 +30,53 @@ component Auth {
         }
 
         signIn(credentials: SignInCredentials) returns JWT
+
         exposes session: JWT
+
         exposes permission check: can manage rooms
+
         exposes permission check: can book rooms
-        uses UserProfile for non-authentication profile display
     }
 }
 
 expand Auth {
     state {
         anonymous user has no active session
+
         logged-in user has an active session
+
         room owner can manage rooms and accept bookings
+
         renter can browse rooms and create bookings
     }
 
     logic {
         signIn validates SignInCredentials.email and SignInCredentials.password.
+
         A successful sign-in creates a JWT-backed session.
+
         isHomeOwner grants access to room creation and booking acceptance.
+
         renter access grants room browsing and room booking.
     }
 
     constraints {
         Renters and room owners share the same User entity.
+
         Next.js authentication is the intended auth foundation.
+
         JWT is the session representation exposed to the app.
+
         Other modules should ask Auth for current user and permissions instead of reading Auth private details directly.
+
         Password storage and verification details are private to Auth.
     }
 
     cases {
         A renter signs in and can book a room.
+
         A room owner signs in and can add rooms.
+
         An anonymous user cannot create bookings or manage rooms.
     }
 }

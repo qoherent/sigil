@@ -166,12 +166,16 @@ When reviewing or improving Sigil, check:
 
 - Does every component explain why it exists?
 - Is every goal specific about responsibility, boundary, and intended outcome?
-- Does every interface make relevant inputs, outputs, errors, permissions, lifecycle guarantees, and dependencies explicit?
+- Does every interface make relevant inputs, outputs, errors, permissions,
+  lifecycle promises, and other observable behavior explicit?
+- Do imports declare component dependencies without repeating them in
+  interfaces?
 - Does each imported name resolve to a matching component in the imported Sigil source?
 - Does each `expand Name` have a matching `component Name`?
 - Are details such as `state`, `logic`, `constraints`, and `cases` kept in `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
-- Are implementation details hidden from public component interfaces unless they are part of the contract?
+- Are implementation-hiding rules and forbidden internal access in constraints
+  unless they define an externally observable promise?
 - Are roles, states, permissions, and lifecycle transitions explicit enough to test?
 - For abstractions and APIs, are constructor/functions, return values, settlement/lifecycle behavior, and error behavior explicit?
 - Are examples in `cases` externally observable?

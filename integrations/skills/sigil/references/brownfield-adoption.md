@@ -57,8 +57,9 @@ must have a meaningful, approved ordinary summary component in its
 and receive no special parser or resolver status.
 
 An internal `#module.sigil` outside a configured boundary is only a directory
-index and requires no project summary. Do not infer additional summary
-boundaries from package manifests or arbitrary directory structure.
+index and requires no project summary, but it still declares at least one local
+component. Do not infer additional summary boundaries from package manifests or
+arbitrary directory structure.
 
 ### Gather Boundary Evidence
 

@@ -1,6 +1,6 @@
 # sigil-cli
 
-Current package version: **0.2.0**.
+Current package version: **0.3.0**.
 
 Command-line interface for agents, CI, scripts, and platform debugging.
 

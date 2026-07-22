@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-07-22
+
+- Require every `#module.sigil` to declare at least one local component and add
+  `SIGIL_MODULE_WITHOUT_COMPONENT` for imports-only indexes.
+- Clarify that `goal` and `interface` are both public to dependents.
+- Limit interfaces to operations, data, events, results, errors, and observable
+  promises; express dependencies through imports and private architecture rules
+  through constraints.
+- Adopt blank lines between distinct prose-level Sigil ideas while preserving
+  compact free-form constructs.
+- Add the Sigil 0.3 migration guide and ADR-014; supersede the affected ADR-013
+  module-index decision.
+- Advance the language, core, CLI, LSP, VS Code extension, and skill to 0.3.0.
+
 ## 0.2.0 - 2026-07-21
 
 - Replace the special project-root module contract with `#module.sigil` as an

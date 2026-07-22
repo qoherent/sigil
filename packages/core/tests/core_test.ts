@@ -58,6 +58,24 @@ Deno.test("raw parsing requires a supported explicit Sigil version", () => {
   assertHasCode(parsed.diagnostics, "SIGIL_UNSUPPORTED_VERSION");
 });
 
+Deno.test("requires every module index to declare a local component", () => {
+  const parsed = parseSigilDocument(
+    "internal/#module.sigil",
+    "@internal/contract.sigil import { Internal }\n",
+    { sigilVersion: SIGIL_VERSION },
+  );
+  assertEquals(parsed.document.imports.length, 1);
+  assertEquals(parsed.document.components.length, 0);
+  assertHasCode(parsed.diagnostics, "SIGIL_MODULE_WITHOUT_COMPONENT");
+
+  const valid = parseSigilDocument(
+    "internal/#module.sigil",
+    `@internal/contract.sigil import { Internal }\n\n${rootModule}`,
+    { sigilVersion: SIGIL_VERSION },
+  );
+  assertEquals(valid.diagnostics.length, 0);
+});
+
 Deno.test("strict config accepts workspace defaults and rejects invalid members", () => {
   const valid = parseSigilConfig(configSource());
   assert(valid.config);
@@ -282,14 +300,19 @@ Deno.test("resolves directory indexes independently of workspace members", async
   const fs = new InMemorySigilFileSystem({
     ".sigil/config.json": configSource(),
     "#module.sigil": rootModule,
-    "internal/#module.sigil": "@internal/contract.sigil import { Internal }\n",
+    "internal/#module.sigil":
+      `@internal/contract.sigil import { Internal }\n\n${
+        rootModule.replaceAll("Sigil", "InternalModule")
+      }`,
     "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
     "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
     "consumer.sigil":
       "@internal import { Internal }\n\ncomponent Consumer {\n  goal {\n    Consume.\n  }\n\n  interface {\n    run()\n  }\n}\n",
     "explicit-consumer.sigil":
       "@internal/private.sigil import { Private }\n\ncomponent ExplicitConsumer {\n  goal {\n    Consume a public component by file.\n  }\n\n  interface {\n    run()\n  }\n}\n",
-    "facade/#module.sigil": "@internal import { Internal }\n",
+    "facade/#module.sigil": `@internal import { Internal }\n\n${
+      rootModule.replaceAll("Sigil", "FacadeModule")
+    }`,
     "facade-consumer.sigil":
       "@facade import { Internal }\n\ncomponent FacadeConsumer {\n  goal {\n    Consume an explicitly chained index.\n  }\n\n  interface {\n    run()\n  }\n}\n",
   });
@@ -328,7 +351,10 @@ Deno.test("resolves directory indexes independently of workspace members", async
 Deno.test("does not add unnamed component dependencies to a module index", async () => {
   const fs = new InMemorySigilFileSystem({
     ".sigil/config.json": configSource(),
-    "internal/#module.sigil": "@internal/contract.sigil import { Internal }\n",
+    "internal/#module.sigil":
+      `@internal/contract.sigil import { Internal }\n\n${
+        rootModule.replaceAll("Sigil", "InternalModule")
+      }`,
     "internal/contract.sigil": rootModule.replaceAll("Sigil", "Internal"),
     "internal/private.sigil": rootModule.replaceAll("Sigil", "Private"),
     "consumer.sigil":
