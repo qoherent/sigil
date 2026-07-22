@@ -13,17 +13,17 @@ component Sigil {
   }
 
   interface {
-    publishes the Sigil Language and .sigil/config.json contract 0.3.0 through SigilLanguage and SigilWorkspaceConfig
+    publishes the Sigil Language and .sigil/config.json contract 0.4.0 through SigilLanguage and SigilWorkspaceConfig
 
-    publishes @qoherent/sigil-core 0.3.0 through SigilCore
+    publishes @qoherent/sigil-core 0.4.0 through SigilCore
 
-    publishes @qoherent/sigil 0.3.0 through SigilCli
+    publishes @qoherent/sigil 0.4.0 through SigilCli
 
-    publishes @qoherent/sigil-lsp 0.3.0 through SigilLsp
+    publishes @qoherent/sigil-lsp 0.4.0 through SigilLsp
 
-    publishes the Sigil VS Code extension 0.3.0 through SigilVsCodeExtension
+    publishes the Sigil VS Code extension 0.4.0 through SigilVsCodeExtension
 
-    publishes the standalone Sigil agent skill 0.3.0 through SigilSkill
+    publishes the standalone Sigil agent skill 0.4.0 through SigilSkill
 
     defines the Sigil language through spec/sigil-language.md
 
@@ -53,7 +53,7 @@ expand Sigil {
 
     CLI, core, LSP, editor integration, and skill release versions remain package or integration metadata rather than workspace configuration fields.
 
-    All published Sigil artifacts remain pre-production at version 0.3.0 until production readiness is explicitly approved.
+    All published Sigil artifacts remain pre-production at version 0.4.0 until production readiness is explicitly approved.
 
     Anchors, editor integrations other than VS Code, plugin packaging, and durable approval records remain outside the initial 0.x scope.
 

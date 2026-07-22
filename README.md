@@ -137,7 +137,7 @@ Open design questions are tracked in [spec/open-questions.md](spec/open-question
 
 ## Repository Layout
 
-The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.3.0 workspace and excludes the independent example projects.
+The root [.sigil/config.json](./.sigil/config.json) defines this repository as a Sigil 0.4.0 workspace and excludes the independent example projects.
 The root [#module.sigil](./%23module.sigil) is its directory-import index and
 contains the ordinary high-level project summary for this configured boundary.
 
@@ -190,8 +190,8 @@ The canonical language specification remains [spec/sigil-language.md](spec/sigil
 
 ## Current Status
 
-All published Sigil artifacts are pre-production and versioned at 0.3.0.
-See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.3.md).
+All published Sigil artifacts are pre-production and versioned at 0.4.0.
+See [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the [migration guide](spec/migrating-to-0.4.md).
 
 This repository contains the Sigil language and workflow specifications, platform architecture, examples, a shared Deno TypeScript core, a working CLI, and the Codex skill integration.
 

@@ -2,7 +2,7 @@
   "name": "sigil",
   "displayName": "Sigil",
   "description": "Language support and component previews for Sigil.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "sigil-dev",
   "license": "MIT",
   "repository": {
@@ -51,6 +51,16 @@
         "path": "./syntaxes/sigil.tmLanguage.json"
       }
     ],
+    "semanticTokenScopes": [
+      {
+        "language": "sigil",
+        "scopes": {
+          "concept": [
+            "entity.name.type.concept.sigil"
+          ]
+        }
+      }
+    ],
     "commands": [
       {
         "command": "sigil.showComponentPreview",
@@ -73,7 +83,7 @@
     "test:unit": "tsx --test tests/unit/**/*.test.ts",
     "test:extension": "npm run build && node scripts/run-extension-tests.mjs",
     "test": "npm run check && npm run test:unit",
-    "package": "npm run build && vsce package --no-dependencies --out build/sigil-vscode-0.3.0.vsix",
+    "package": "npm run build && vsce package --no-dependencies --out build/sigil-vscode-0.4.0.vsix",
     "vscode:prepublish": "npm run build"
   },
   "dependencies": {

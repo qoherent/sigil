@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 0.4.0 - 2026-07-22
+
+- Add flat `ConceptIdentifier { ... }` blocks for single reusable concepts or
+  related groups of semantic lines.
+- Warn on contiguous ungrouped interface regions while keeping warnings
+  non-fatal in the CLI and visible through LSP diagnostics.
+- Resolve one case-insensitively unique namespace across a component and all
+  matching expands, with collective repeated blocks and public/private concept
+  visibility.
+- Make imported public concepts available as bare identifiers, preserve their
+  origin through contextual reuse and downstream interface re-exposure, and
+  reject ambiguity without dotted notation, aliases, or shadowing.
+- Add concept symbols, definition, hover, references, semantic highlighting,
+  CLI context projections, and grouped Markdown rendering.
+- Extend the Sigil skill with proposal-only concept-identifier subagent work,
+  primary-agent validation, and an explicit anchoring exclusion.
+- Record the namespace, import-reuse, and collective-block decisions in
+  ADR-015, ADR-016, and ADR-017.
+- Advance the language, core, CLI, LSP, VS Code extension, and skill to 0.4.0.
+
 ## 0.3.0 - 2026-07-22
 
 - Require every `#module.sigil` to declare at least one local component and add

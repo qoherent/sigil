@@ -11,7 +11,9 @@ component SigilProjections {
   interface {
     componentContracts(resolvedWorkspace) returns one ComponentContractView per resolved component
 
-    ComponentContractView exposes component name, file path, goal lines, and interface lines
+    ComponentContractView exposes component name, file path, goal lines, interface concept blocks, and their semantic lines
+
+    conceptNamespaceFor(resolvedWorkspace, componentName) returns local, public, imported, accessible, and originating concept identities in that component's context
 
     collectedExpansionFor(resolvedWorkspace, componentName) returns the component's collective expansion or undefined
 
@@ -24,6 +26,14 @@ expand SigilProjections {
     Preserve resolved component order when producing contract views.
 
     Return goal and interface semantic text without adding interpretation.
+
+    Preserve concept identifiers and their grouped semantic lines in contract views.
+
+    Group collective concept occurrences by section and source without overriding their semantic lines.
+
+    Include contextual imported-concept occurrences only in the importing component's projection.
+
+    Project imported dependencies through their public goals and interfaces without their collected expansions.
 
     Return every collected expand source for the selected component.
   }
@@ -40,5 +50,9 @@ expand SigilProjections {
     A component with expands in multiple files returns every collected expansion.
 
     An unknown component name returns no collected expansion.
+
+    A projected imported concept retains its originating identity and bare accessible identifier.
+
+    Selecting Account omits consumer-contributed Session lines while selecting Dashboard includes Dashboard's contextual Session occurrence.
   }
 }

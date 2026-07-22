@@ -8,13 +8,13 @@ component SigilVsCodeExtension {
   }
 
   interface {
-    publishes the pre-production Sigil VS Code extension 0.3.0
+    publishes the pre-production Sigil VS Code extension 0.4.0
 
     distributed initially as an installable VSIX attached to a versioned GitHub Release
 
     registers the sigil language for .sigil files
 
-    provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component names
+    provides TextMate syntax highlighting for Sigil structure and uses SigilLsp semantic tokens for resolver-backed component and concept names
 
     starts a bundled SigilLsp-compatible server through vscode-languageclient
 
@@ -64,11 +64,11 @@ expand SigilVsCodeExtension {
 
     Preview commands use standard LSP hover responses and introduce no custom protocol methods.
 
-    Version 0.3.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
+    Version 0.4.0 supports desktop and remote Node extension hosts, file URIs, and file-backed workspaces.
 
     VS Code for the Web and virtual workspaces remain outside the initial version.
 
-    Version 0.3.0 collects no telemetry and does not modify Sigil documents.
+    Version 0.4.0 collects no telemetry and does not modify Sigil documents.
 
     A development publisher identifier is used until an approved Marketplace publisher identity exists.
 
@@ -81,6 +81,10 @@ expand SigilVsCodeExtension {
     Opening a .sigil file applies Sigil syntax highlighting and starts language features.
 
     A malformed Sigil document displays source-ranged diagnostics inline.
+
+    Ungrouped interface content displays one warning for each contiguous region.
+
+    A nonpreferred valid concept identifier displays a formatting hint.
 
     Go-to-definition on an imported component opens its declaration.
 

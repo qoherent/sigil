@@ -8,7 +8,7 @@ component SigilLsp {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-lsp 0.3.0 package
+    publishes the pre-production @qoherent/sigil-lsp 0.4.0 package
 
     implements Language Server Protocol 3.18 over standard input and standard output
 
@@ -27,6 +27,8 @@ component SigilLsp {
     supports textDocument/definition and textDocument/hover for component names in section semantic lines when the name resolves to a component declared in or explicitly imported by that file
 
     supports textDocument/semanticTokens/full for resolver-backed component names in imports, declarations, expand declarations, and section semantic lines
+
+    supports document symbols, definition, hover, and semantic highlighting for resolved concept identifiers
 
     operates on file-backed Sigil workspaces governed by SigilWorkspaceConfig and SigilLanguage
   }
@@ -56,6 +58,10 @@ expand SigilLsp {
 
     Definition, hover, and semantic-token classification share one component-reference resolver.
 
+    Concept language features use core concept namespaces and preserve the originating identity of reused imported concepts.
+
+    Concept definition and hover include contextual occurrences for the selected component without adding consumer content to provider context.
+
     A component name inside a section resolves only when it matches a component declared in the same file or explicitly imported by that file.
 
     documentSymbol returns hierarchical symbols for top-level declarations and their sections.
@@ -73,6 +79,10 @@ expand SigilLsp {
     Position conversion uses the encoding negotiated during initialize and defaults to UTF-16.
 
     Semantic highlighting uses the standard LSP type token and full-document responses.
+
+    Concept highlighting distinguishes concept identifiers from free-form semantic text.
+
+    LSP maps informational concept-identifier style diagnostics to hints.
 
     The initial release supports file URIs and standard-input/output transport only.
 
@@ -101,6 +111,16 @@ expand SigilLsp {
     An imported component name used inside a section is highlighted and navigates to its declaration.
 
     A capitalized word without a matching local or imported component remains ordinary prose with no definition or component hover.
+
+    An imported interface concept is highlighted and navigates to its originating declaration when used as a bare identifier.
+
+    A resolved whole-word concept reference in semantic content receives concept highlighting, definition, and hover.
+
+    An unmatched word in semantic content remains ordinary text without an unresolved-concept diagnostic.
+
+    Ungrouped interface content receives one missing-identifier warning for each contiguous region.
+
+    A hyphenated or underscored valid identifier receives a formatting hint rather than a warning or error.
 
     Hovering over a component exposes its public contract and collected expansion sources.
 

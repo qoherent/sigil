@@ -75,10 +75,35 @@ requireText(
   "do not write implementation code",
   "implementation approval boundary",
 );
+requireText(
+  skill,
+  "`SIGIL_MISSING_CONCEPT_IDENTIFIER` as an authoring gap",
+  "missing concept identifier workflow",
+);
+requireText(
+  skill,
+  "delegate concept grouping and identifier\n     generation to one dedicated subagent",
+  "concept identifier subagent delegation",
+);
+requireText(
+  skill,
+  "Tell the subagent to return a proposal only and not edit files.",
+  "proposal-only concept identifier subagent",
+);
+requireText(
+  skill,
+  "case-insensitive namespace uniqueness, public and\n     private visibility, and transitive import ambiguity",
+  "primary-agent concept proposal validation",
+);
+requireText(
+  skill,
+  "Keep anchoring outside concept-identifier work.",
+  "concept identifier anchoring exclusion",
+);
 
 const version = (await Deno.readTextFile(`${root}/VERSION`)).trim();
-if (version !== "0.3.0") {
-  throw new Error(`Expected skill VERSION 0.3.0, got ${version}`);
+if (version !== "0.4.0") {
+  throw new Error(`Expected skill VERSION 0.4.0, got ${version}`);
 }
 
 const compatibility = JSON.parse(
@@ -86,10 +111,10 @@ const compatibility = JSON.parse(
 );
 for (
   const [key, expected] of Object.entries({
-    skillVersion: "0.3.0",
-    cliVersion: "^0.3.0",
-    coreVersion: "^0.3.0",
-    sigilVersion: "0.3.0",
+    skillVersion: "0.4.0",
+    cliVersion: "^0.4.0",
+    coreVersion: "^0.4.0",
+    sigilVersion: "0.4.0",
   })
 ) {
   if (compatibility[key] !== expected) {
@@ -403,7 +428,7 @@ requireText(
 );
 
 console.log(
-  "Sigil skill 0.3.0 structure, compatibility, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
+  "Sigil skill 0.4.0 structure, compatibility, concept identifier workflow, gates, design conversation, Greenfield design, Brownfield adoption, implementation coverage, and fixture rubrics are valid.",
 );
 
 async function requireFile(path: string): Promise<void> {

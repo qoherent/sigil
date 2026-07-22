@@ -17,7 +17,7 @@ Primary authorities are:
   configuration;
 - [Sigil Workflow](sigil-workflow.md) for design, review, and implementation
   gates;
-- [Sigil 0.3 API](api-0.3.md) for implemented public tool surfaces;
+- package READMEs and exported types for implemented 0.4 public tool surfaces;
 - [Sigil Platform Architecture](sigil-platform-architecture.md) for package and
   integration boundaries;
 - accepted ADRs for the decisions they own.
@@ -53,7 +53,7 @@ project, or the platform; qualify it when ambiguity is possible.
 
 The versioned contract governing `.sigil` syntax, structure, sections, imports,
 workspace interpretation, and meaning. The current supported version is
-`0.3.0`.
+`0.4.0`.
 
 ### Sigil source
 
@@ -81,8 +81,9 @@ document.
 ### Import
 
 A declaration that names components required from another Sigil source. An
-import makes the named component contracts and their collected expands
-available to the importing source; it is not a re-export.
+import makes the named public component contracts and public concept
+identifiers available to the importing source; it does not expose private
+expansion detail and is not a re-export.
 
 ### Import path
 
@@ -215,7 +216,42 @@ tables, or brace-safe ASCII layouts.
 ### Semantic line
 
 One non-empty line inside a section body, preserved as a distinct semantic unit
-with its owner, section, file, and source range.
+with its owner, section, file, source range, and optional concept identifier.
+
+### Concept identifier
+
+A concise, reusable name for one semantic concept or a related group of
+semantic lines. It matches `[A-Za-z][A-Za-z0-9_-]*`; PascalCase without hyphens
+or underscores is the preferred style.
+
+### Concept block
+
+A flat, nonempty block headed by a concept identifier inside a section. Its
+header groups its semantic lines but is not itself a semantic line.
+
+### Concept namespace
+
+The flat, case-insensitively unique set of local concepts and accessible
+imported public concepts for one component and all matching expands. Imported
+concepts use bare identifiers; Sigil has no dotted concept notation, aliases,
+or local shadowing.
+
+### Public concept
+
+A concept with at least one occurrence in `interface`. Imports expose public
+concept identity and public occurrences to dependents.
+
+### Private concept
+
+A concept occurring only in `state`, `logic`, `constraints`, or `cases`.
+Dependents do not receive it through imports.
+
+### Contextual concept reuse
+
+Use of an accessible imported concept identifier in a consumer component. The
+originating identity is preserved, consumer lines remain contextual to the
+consumer, and interface reuse re-exposes that identity downstream without
+flowing consumer context back to the provider.
 
 ### Source location
 
@@ -872,7 +908,7 @@ Explicitly excluded from the selected contract or delivery stage.
 
 The terms in this section describe proposed capabilities from
 [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
-They are not part of the implemented Sigil 0.3 surface unless separately marked
+They are not part of the implemented Sigil 0.4 surface unless separately marked
 implemented.
 
 ### Receipt

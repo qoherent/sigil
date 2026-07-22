@@ -6,15 +6,15 @@ component SigilLanguage {
   }
 
   interface {
-    sigilVersion = "0.3.0"
+    sigilVersion = "0.4.0"
 
-    accepts UTF-8 .sigil source containing import, component, and expand forms
+    accepts UTF-8 .sigil source containing import, component, expand, and section concept-block forms
 
-    preserves free-form non-empty section lines as distinct semantic lines
+    preserves concept identifiers, their grouped semantic lines, and source ranges
 
     reports structural diagnostics while retaining partial documents when practical
 
-    import declares a dependency on named components from another Sigil source or directory module index and makes their public contracts and collected expands available
+    import declares a dependency on named components from another Sigil source or directory module index and makes their public goals and interfaces available
 
     component defines the reusable public contract of a coherent system part through its public goal and interface
 
@@ -23,6 +23,14 @@ component SigilLanguage {
     goal publicly describes why a component exists, the responsibility it owns, and its intended outcome
 
     interface contains only the operations, data, events, results, errors, and observable promises publicly available to dependents
+
+    a concept block uses ConceptIdentifier followed by braces to group one or more related semantic lines under a reusable identity
+
+    a component interface exposes its concept identifiers to components that import it
+
+    imported interface concept identifiers are available as bare names without component qualification
+
+    known whole-word concept identifiers inside semantic content resolve as concept references without introducing or exposing a concept
 
     import is the sole declaration of dependency on another Sigil component
 
@@ -56,6 +64,50 @@ expand SigilLanguage {
 
     Every component requires goal and interface sections.
 
+    Ungrouped interface content remains parseable and produces one warning for each contiguous ungrouped region.
+
+    State, logic, constraints, and cases may introduce or reuse concept identifiers when cross-section reuse is valuable.
+
+    A concept block may contain one semantic line or group multiple related semantic lines according to how the concept is reused.
+
+    Every concept block contains at least one semantic line.
+
+    Concept blocks cannot nest.
+
+    Concept identifiers match [A-Za-z][A-Za-z0-9_-]* and contain no spaces.
+
+    Concept references are case-sensitive.
+
+    Accessible concept identifiers are unique without regard to case.
+
+    PascalCase without hyphens or underscores is preferred formatting but is not required for validity.
+
+    A concept identifier is concise and unambiguous within its accessible namespace; an unusually long identifier prompts review of the concept or component boundary.
+
+    A component declaration and every matching expand share one flat concept namespace.
+
+    Repeated concept blocks contribute collectively without overriding or shadowing other occurrences.
+
+    A concept is public when it occurs in interface and otherwise remains private to its component and matching expands.
+
+    Importing a component adds its public interface concepts to the importing component's accessible namespace as bare identifiers.
+
+    Reusing an imported concept preserves its originating identity while keeping the importing component's semantic lines contextual to that importer.
+
+    Reusing an imported concept in interface re-exposes the same identity to downstream importers.
+
+    Provider context never includes semantic lines contributed by its consumers.
+
+    Imported dependency context excludes state, logic, constraints, cases, and other private expand information.
+
+    Every accessible concept identifier is unique across the component's transitive import graph.
+
+    Sigil provides no qualified concept syntax, dotted concept notation, local concept shadowing, or concept import aliases.
+
+    A whole-word match for an accessible concept resolves as a reference; unmatched words remain ordinary semantic content without unresolved-reference diagnostics.
+
+    Concept identifiers define grouping, reuse, navigation, and highlighting but do not define anchor behavior.
+
     Every #module.sigil declares at least one component.
 
     Component dependencies are declared through imports and are not repeated in interface sections.
@@ -72,19 +124,37 @@ expand SigilLanguage {
   }
 
   cases {
-    A tool configured for Sigil 0.3.0 interprets #module.sigil as an explicit directory index that contains at least one local component.
+    A tool configured for Sigil 0.4.0 interprets #module.sigil as an explicit directory index that contains at least one local component.
 
     A tool that does not support the configured sigilVersion reports an error before parsing workspace Sigil files.
 
-    A document explicitly configured for Sigil 0.2.0 is not silently reinterpreted using 0.3.0 module semantics.
+    A document explicitly configured for Sigil 0.3.0 is not silently reinterpreted using 0.4.0 concept-block semantics.
 
-    Importing Name makes component Name and its matching collected expands available to the importing source.
+    Importing Name makes component Name's public goal and interface available without exposing its matching expands.
 
     Importing a directory name resolves it through that directory's #module.sigil directory-import surface.
 
     A component can be understood through its goal and interface without reading its expands or implementation.
 
     When multiple expand Name blocks target one component, tools expose all matching blocks as collected detail without override or shadowing.
+
+    SessionLifecycle with an opening brace groups related open, refresh, and close semantic lines under one concept identifier.
+
+    Reusing SessionLifecycle in state or logic associates those lines with the concept introduced in interface.
+
+    Importing Account makes its public Session concept available to the importing component as the bare identifier Session.
+
+    Importing two components that expose different Session concepts produces an ambiguous-concept diagnostic.
+
+    A SessionCache concept introduced only in state remains private to its component and matching expands.
+
+    Interface lines outside concept blocks remain available with one SIGIL_MISSING_CONCEPT_IDENTIFIER warning per contiguous region.
+
+    An empty or nested concept block is invalid.
+
+    Session and session cannot coexist in one accessible namespace even though references preserve exact case.
+
+    A Dashboard reuse of Account's Session appears in Dashboard context without changing Account context.
   }
 }
 

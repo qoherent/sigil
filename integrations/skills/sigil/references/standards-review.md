@@ -80,6 +80,11 @@ Imports declare component dependencies. Do not repeat them in `interface`.
 Implementation-hiding rules and forbidden internal access belong in
 `constraints` unless they define an externally observable promise.
 
+Review interface concept blocks as part of interface quality. Repair every
+`SIGIL_MISSING_CONCEPT_IDENTIFIER` warning before semantic review, verify that
+repeated identifiers describe one coherent concept, and keep imported provider
+expands outside the consumer's public dependency context.
+
 For UI components, also check when applicable:
 
 - visible regions, content hierarchy, and navigation;

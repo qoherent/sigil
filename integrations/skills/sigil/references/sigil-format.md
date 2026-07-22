@@ -28,7 +28,7 @@ deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference
-describes Sigil version `0.3.0`; do not apply it to an
+describes Sigil version `0.4.0`; do not apply it to an
 unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
@@ -93,13 +93,17 @@ component Name {
   }
 
   interface {
-    how this component interacts with the outside world
+    PublicBehavior {
+      how this component interacts with the outside world
+    }
   }
 }
 
 expand Name {
   state {
-    meaningful configurations that persist or change during execution
+    RuntimeState {
+      meaningful configurations that persist or change during execution
+    }
   }
 
   logic {
@@ -120,8 +124,10 @@ expand Name {
 `#module.sigil`, regardless of whether the directory is a declared member.
 `@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
 
-Importing `Name` makes `component Name` and all matching `expand Name` blocks
-available to the current file.
+Importing `Name` makes the component's public `goal`, `interface`, and public
+interface concepts available to the current file. Matching expands remain
+private and are available only when the provider is explicitly selected for
+review or implementation.
 
 `component` defines the reusable public contract of a coherent system part
 through its public `goal` and `interface`. `expand` adds collective operational detail
@@ -171,6 +177,47 @@ cases
 
 The order is only a readability convention.
 
+## Concept Blocks
+
+Concept block syntax:
+
+```sigil
+interface {
+  SessionLifecycle {
+    open(credentials) returns Session.
+
+    close(sessionId).
+  }
+}
+```
+
+`SessionLifecycle` is a reusable concept identifier. A block may contain one
+heavily reused idea or several related semantic lines. Concept blocks are flat,
+nonempty, and cannot nest.
+
+Identifiers match `[A-Za-z][A-Za-z0-9_-]*`. References are case-sensitive, but
+accessible namespace uniqueness is case-insensitive. PascalCase without
+hyphens or underscores is preferred formatting rather than a validity rule.
+
+Each contiguous ungrouped `interface` region produces
+`SIGIL_MISSING_CONCEPT_IDENTIFIER` as a warning. Ungrouped content remains
+parseable. `state`, `logic`, `constraints`, and `cases` use concept blocks only
+when cross-section reuse is valuable.
+
+A component and all matching expands share one flat namespace. Repeated blocks
+are collective and retain their section and source locations. A concept is
+public when it occurs in `interface`; otherwise it remains private.
+
+Imports expose public concepts as bare identifiers. Reusing an imported concept
+keeps its originating identity while consumer lines remain contextual to the
+consumer. Reusing it in `interface` re-exposes the same identity downstream.
+Provider context never gains consumer lines. Sigil provides no dotted concept
+notation, aliases, local shadowing, or nested concept blocks.
+
+Known whole-word identifiers inside semantic content resolve as references for
+navigation and highlighting. Unknown words remain ordinary free-form content
+without unresolved-reference diagnostics.
+
 ## Imports
 
 Import syntax:
@@ -188,8 +235,9 @@ root selected by the single ancestor `.sigil/config.json`. An explicit root must
 contain `.sigil/config.json` directly.
 
 Imported names must resolve to matching `component` declarations. Imported names
-are case-sensitive. All matching expands for the imported component are
-collective.
+are case-sensitive. Dependents receive only public goal, interface, and public
+concept information. Matching expands remain collective private detail when the
+provider itself is selected.
 
 Imports are the dependency declarations between Sigil components. Do not repeat
 an imported-component dependency in `interface`.
@@ -243,6 +291,10 @@ anchor target. Separate distinct prose-level ideas with blank lines in every
 section. Blank lines do not create semantic units. Keep lines in one compact
 free-form construct adjacent when separation would reduce readability.
 
+A concept-block header identifies and groups semantic lines but is not itself a
+semantic line. Each non-empty line inside the block remains a distinct semantic
+unit and records its concept identifier.
+
 Prefer one distinct idea per line. Avoid burying multiple decisions in a
 paragraph when they may need separate review, diffing, or source mapping.
 
@@ -257,6 +309,10 @@ When reviewing Sigil, check:
 - Does every `#module.sigil` declare at least one local component?
 - Does every component expose how callers, users, modules, or other parts
   interact with it?
+- Is every interface region grouped under one or more concept identifiers?
+- Are repeated concept blocks coherent, flat, nonempty, and unambiguous across
+  the accessible import graph?
+- Do imported dependency views exclude private concepts and expands?
 - Were coherent internal abstractions and UI surfaces considered as components
   rather than hidden beneath only high-level project or service contracts?
 - Does each imported name resolve to a matching component in the imported Sigil
@@ -296,39 +352,49 @@ component Promise {
   }
 
   interface {
-    new Promise<T>(executor)
+    Construction {
+      new Promise<T>(executor)
 
-    then(onResolved, onRejected?) returns Promise
+      Promise.resolve(value)
 
-    catch(onRejected) returns Promise
+      Promise.reject(reason)
 
-    Promise.resolve(value)
+      Promise.try(handler)
+    }
 
-    Promise.reject(reason)
+    Chaining {
+      then(onResolved, onRejected?) returns Promise
 
-    Promise.try(handler)
+      catch(onRejected) returns Promise
+    }
   }
 }
 
 expand Promise {
   state {
-    Pending
+    Settlement {
+      Pending
 
-    Resolved(value)
+      Resolved(value)
 
-    Rejected(reason)
+      Rejected(reason)
+    }
   }
 
   logic {
-    A new Promise starts Pending and runs executor with resolve and reject.
+    Construction {
+      A new Promise starts Pending and runs executor with resolve and reject.
 
-    then returns an after Promise immediately.
+      Resolving with a PromiseLike value adopts its eventual result.
 
-    If then or catch is called while Pending, hold the reaction until settlement.
+      Rejecting with a PromiseLike value does not unwrap it.
+    }
 
-    Resolving with a PromiseLike value adopts its eventual result.
+    Chaining {
+      then returns an after Promise immediately.
 
-    Rejecting with a PromiseLike value does not unwrap it.
+      If then or catch is called while Pending, hold the reaction until settlement.
+    }
   }
 }
 ```

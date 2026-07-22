@@ -10,7 +10,7 @@ component SigilSkill {
   }
 
   interface {
-    skill version = "0.3.0"
+    skill version = "0.4.0"
 
     distributed as integrations/skills/sigil beside its selected Sigil CLI installation
 
@@ -31,6 +31,12 @@ component SigilSkill {
     treats a component goal and interface as its public contract to dependents even when the component is internal to the implementation
 
     authors component dependencies through imports rather than interface lines
+
+    groups interface content under concise reusable concept identifiers and uses identifiers in other sections when reuse is valuable
+
+    checks CLI concept diagnostics before proposing or writing Sigil
+
+    delegates concept-identifier generation and repair to a dedicated subagent when subagents are available
 
     separates distinct prose-level semantic ideas with blank lines in every section
 
@@ -54,13 +60,29 @@ expand SigilSkill {
   constraints {
     Before adding or modifying implementation that lacks clear Sigil coverage, collaborate with the user to define and approve the affected Sigil.
 
-    SigilSkill requires SigilCli and core versions compatible with ^0.3.0.
+    SigilSkill requires SigilCli and core versions compatible with ^0.4.0.
 
-    SigilSkill requires SigilLanguage and SigilWorkspaceConfig sigilVersion 0.3.0 sourced from core.
+    SigilSkill requires SigilLanguage and SigilWorkspaceConfig sigilVersion 0.4.0 sourced from core.
+
+    A human-authored Sigil document may omit interface concept identifiers, but the skill repairs reported gaps before semantic review.
+
+    The concept-identifier subagent receives the relevant component, all matching expands, and accessible imported interface concepts.
+
+    The concept-identifier subagent proposes whether each interface region contains one concept or several, whether each concept is new or reused, and concise unambiguous names.
+
+    The concept-identifier subagent has proposal-only authority and does not edit files.
+
+    The primary skill agent validates identifier grammar, case-insensitive uniqueness, visibility, and transitive import ambiguity before applying subagent proposals.
+
+    Concept-identifier work does not invoke or modify anchor persistence, proposal, or reconciliation behavior.
   }
 
   cases {
     A requested implementation change without clear Sigil coverage pauses for collaborative Sigil definition and approval before code changes begin.
+
+    A document with ungrouped interface content receives proposed concept blocks before it reaches the semantic review gate.
+
+    Two accessible imported concepts with the same identifier are reported for renaming rather than qualified with dotted syntax.
   }
 }
 

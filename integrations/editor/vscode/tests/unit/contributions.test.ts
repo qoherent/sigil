@@ -22,11 +22,26 @@ test("TextMate grammar colors syntax without treating capitalized prose as names
   assert(grammar.repository.imports);
   assert(grammar.repository.declarations);
   assert(grammar.repository.sections);
+  assert(grammar.repository.concepts);
   assert.equal(grammar.repository["type-names"], undefined);
   assert.equal(
     JSON.stringify(grammar).includes("\\\\b[A-Z][A-Za-z0-9_]*\\\\b"),
     false,
   );
-  assert.equal(JSON.stringify(grammar).includes("entity.name.type"), false);
+  assert.equal(
+    JSON.stringify(grammar).includes("entity.name.type.concept.sigil"),
+    true,
+  );
   assert.equal(JSON.stringify(grammar).includes("comment"), false);
+});
+
+test("manifest maps concept semantic tokens to the concept TextMate scope", async () => {
+  const manifest = JSON.parse(await readFile("package.json", "utf8"));
+  assert.deepEqual(
+    manifest.contributes.semanticTokenScopes[0],
+    {
+      language: "sigil",
+      scopes: { concept: ["entity.name.type.concept.sigil"] },
+    },
+  );
 });

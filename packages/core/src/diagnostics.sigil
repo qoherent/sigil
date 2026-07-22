@@ -32,6 +32,18 @@ expand SigilDiagnostics {
 
     An imports-only #module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
 
+    A contiguous ungrouped interface region produces warning SIGIL_MISSING_CONCEPT_IDENTIFIER.
+
+    An identifier outside [A-Za-z][A-Za-z0-9_-]* produces error SIGIL_INVALID_CONCEPT_IDENTIFIER.
+
+    An empty concept block produces error SIGIL_EMPTY_CONCEPT_BLOCK.
+
+    A nested concept block produces error SIGIL_NESTED_CONCEPT_BLOCK.
+
+    Two different accessible concepts with identifiers equal without regard to case produce error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER.
+
+    A valid identifier that is not PascalCase or contains a hyphen or underscore produces informational SIGIL_CONCEPT_IDENTIFIER_STYLE.
+
     A filesystem permission failure rejects the host operation instead of producing an unresolved-import diagnostic.
   }
 }

@@ -1,6 +1,6 @@
 # sigil-cli
 
-Current package version: **0.3.0**.
+Current package version: **0.4.0**.
 
 Command-line interface for agents, CI, scripts, and platform debugging.
 
@@ -10,7 +10,7 @@ main human UI.
 
 Package docs:
 
-- [spec.md](spec.md): version 0.2 CLI requirements, command behavior, output contracts,
+- [spec.md](spec.md): version 0.4 CLI requirements, command behavior, output contracts,
   and acceptance scenarios.
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
@@ -46,6 +46,7 @@ Implemented responsibilities:
 - install version-owned agent skills globally or into a target repository;
 - expose parser output;
 - run workspace checks;
+- report missing interface concept identifiers as actionable warnings;
 - produce agent-oriented context packs;
 - render Markdown for review and documentation workflows;
 - keep CLI behavior thin over `sigil-core`.
@@ -67,6 +68,8 @@ Commands:
 
 The CLI returns exit code `0` for success or warnings, `1` for error diagnostics, `2` for usage errors, and `3` for host/runtime failures.
 Use JSON output for automation; human text and Markdown are convenience projections.
+Context output includes resolved concept namespaces, and Markdown render output
+preserves concept grouping.
 
 Versioned binary distributions place assets at
 `<version>/integrations/skills` beside `<version>/bin/sigil`. This keeps each

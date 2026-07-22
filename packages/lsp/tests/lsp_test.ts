@@ -23,7 +23,7 @@ Deno.test("file URI conversion preserves Sigil paths", () => {
   );
 });
 
-Deno.test("initializes with the approved 0.3 capabilities and lifecycle", async () => {
+Deno.test("initializes with the approved 0.4 capabilities and lifecycle", async () => {
   const server = makeServer();
   const before = await server.handle(request(1, "shutdown"));
   assertEquals(errorCode(before), -32002);
@@ -40,7 +40,7 @@ Deno.test("initializes with the approved 0.3 capabilities and lifecycle", async 
   assertEquals(capabilities.hoverProvider, true);
   assert(
     JSON.stringify(capabilities.semanticTokensProvider) === JSON.stringify({
-      legend: { tokenTypes: ["type"], tokenModifiers: [] },
+      legend: { tokenTypes: ["type", "concept"], tokenModifiers: [] },
       full: true,
     }),
   );
@@ -90,6 +90,14 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
   assertEquals(symbols[0].name, "Thing");
   assertEquals(symbols[0].detail, "component");
   assert((symbols[0].children as unknown[]).length === 2);
+  const interfaceSymbol =
+    (symbols[0].children as Array<Record<string, unknown>>)
+      .find((item) => item.name === "interface");
+  assert(interfaceSymbol);
+  assertEquals(
+    (interfaceSymbol.children as Array<Record<string, unknown>>)[0].name,
+    "Execution",
+  );
   assertEquals(symbols[1].detail, "expand");
 
   const definition = responseResult(
@@ -117,7 +125,7 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
       "textDocument/definition",
       {
         textDocument: { uri: contractUri },
-        position: { line: 10, character: 9 },
+        position: { line: 12, character: 9 },
       },
     )),
   ) as Record<string, unknown>;
@@ -142,7 +150,7 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
   ) as Record<string, unknown>;
   const contents = hover.contents as Record<string, unknown>;
   assert(String(contents.value).includes("component Thing"));
-  assert(String(contents.value).includes("Collected expansions"));
+  assert(!String(contents.value).includes("Collected expansions"));
 
   const proseDefinition = responseResult(
     await server.handle(request(
@@ -203,25 +211,74 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
       { textDocument: { uri: consumerUri } },
     )),
   ) as Record<string, unknown>;
-  assert(
-    JSON.stringify(tokens.data) === JSON.stringify([
-      0,
-      25,
-      5,
-      0,
-      0,
+  const decoded = decodeSemanticTokens(tokens.data as number[]);
+  assert(decoded.some((item) => item.tokenType === 0));
+  assert(decoded.some((item) => item.tokenType === 1));
+});
+
+Deno.test("navigates and hovers contextual imported concepts", async () => {
+  const server = makeServer();
+  await initialize(server);
+
+  const definition = responseResult(
+    await server.handle(request(
       2,
-      10,
-      8,
-      0,
-      0,
-      2,
-      12,
-      5,
-      0,
-      0,
-    ]),
+      "textDocument/definition",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 9, character: 19 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  assertEquals(definition.uri, contractUri);
+  assertEquals(
+    ((definition.range as Record<string, unknown>).start as Record<
+      string,
+      unknown
+    >).line,
+    6,
   );
+
+  const hover = responseResult(
+    await server.handle(request(
+      3,
+      "textDocument/hover",
+      {
+        textDocument: { uri: consumerUri },
+        position: { line: 9, character: 19 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  const markdown = String(
+    (hover.contents as Record<string, unknown>).value,
+  );
+  assert(markdown.includes("concept Execution"));
+  assert(markdown.includes("Origin: `Thing`"));
+  assert(markdown.includes("run() uses Execution."));
+  assert(!markdown.includes("Running succeeds."));
+});
+
+Deno.test("publishes concept style information as an LSP hint", async () => {
+  const source = contractSource.replaceAll("Execution", "session-lifecycle");
+  const server = new SigilLanguageServer({
+    currentDirectory: root,
+    fs: new InMemorySigilFileSystem({
+      [`${root}/.sigil/config.json`]: JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "lsp-style-test", members: [] },
+        files: { include: ["**/*.sigil"], exclude: [] },
+        tools: {},
+      }),
+      [contractPath]: source,
+    }),
+  });
+  await server.handle(request(1, "initialize", { rootUri }));
+  const notifications = await server.handle(notification("initialized"));
+  const hint = diagnosticsFor(notifications, contractUri).find((item) =>
+    item.code === "SIGIL_CONCEPT_IDENTIFIER_STYLE"
+  );
+  assert(hint);
+  assertEquals(hint.severity, 4);
 });
 
 Deno.test("directory-index definitions navigate to the original declaration", async () => {
@@ -423,13 +480,17 @@ const contractSource = `component Thing {
   }
 
   interface {
-    run()
+    Execution {
+      run()
+    }
   }
 }
 
 expand Thing {
   cases {
-    Running succeeds.
+    Execution {
+      Running succeeds.
+    }
   }
 }
 `;
@@ -442,7 +503,9 @@ component Consumer {
   }
 
   interface {
-    run()
+    Execution {
+      run() uses Execution.
+    }
   }
 }
 `;
@@ -524,6 +587,30 @@ function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
     offset += chunk.length;
   }
   return output;
+}
+
+function decodeSemanticTokens(data: readonly number[]): Array<{
+  line: number;
+  character: number;
+  length: number;
+  tokenType: number;
+}> {
+  const result = [];
+  let line = 0;
+  let character = 0;
+  for (let index = 0; index < data.length; index += 5) {
+    line += data[index];
+    character = data[index] === 0
+      ? character + data[index + 1]
+      : data[index + 1];
+    result.push({
+      line,
+      character,
+      length: data[index + 2],
+      tokenType: data[index + 3],
+    });
+  }
+  return result;
 }
 
 function rawFrame(body: string): Uint8Array {

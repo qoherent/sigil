@@ -66,7 +66,7 @@ CLI discovery order:
 1. If `sigil` is available on `PATH`, use `sigil`.
 2. Else, if the current workspace contains `packages/cli/src/main.ts`, invoke it
    with Deno from the workspace root.
-3. Else, stop and ask the user to install a compatible Sigil CLI. Version 0.2
+3. Else, stop and ask the user to install a compatible Sigil CLI. Version 0.4
    does not silently reinterpret a configured workspace without its required
    parser and resolver.
 
@@ -89,7 +89,7 @@ sigil version . --format json --pretty
 sigil check . --format json --pretty
 ```
 
-This skill version requires CLI and core `^0.3.0` and Sigil `0.3.0`. In a
+This skill version requires CLI and core `^0.4.0` and Sigil `0.4.0`. In a
 Brownfield repository without `.sigil/config.json`, use the initialization
 sequence in `references/brownfield-adoption.md` before this preflight. Otherwise
 stop with a compatibility report when the CLI is missing, `.sigil/config.json`
@@ -175,6 +175,8 @@ Select the workflow before detailed semantic work:
    - Use CLI JSON diagnostics and context output when available to identify
      import dependencies, unresolved imported names, public contracts, collected
      expands, and related files.
+   - Identify concept blocks, collective occurrences, public interface concepts,
+     private concepts, and contextual imported-concept reuse.
    - Identify public `component` contracts: both `goal` and `interface` are
      public to dependents.
    - Identify matching `expand` blocks for operational detail.
@@ -188,6 +190,9 @@ Select the workflow before detailed semantic work:
      when the component is internal to the implementation.
    - Treat imports as dependency declarations. Do not repeat imported-component
      dependencies in `interface`.
+   - Treat imported component dependencies as exposing public `goal` and
+     `interface` content only. Inspect the provider explicitly when its private
+     expands are relevant to review or implementation.
    - Consider coherent programming abstractions, internal APIs, state machines,
      screens, views, and reusable UI surfaces as possible components.
    - Note unresolved imports, missing components, collected-expand
@@ -198,6 +203,8 @@ Select the workflow before detailed semantic work:
    - Make each goal specific, bounded, and unambiguous.
    - Check interfaces for required inputs, outputs, errors, permissions,
      lifecycle promises, and applicable standards or best practices.
+   - Check that interface content is grouped under concise concept identifiers
+     and that identifiers reused across sections describe one coherent concept.
    - For UI components, check visible regions, actions, navigation, feedback,
      loading, empty, error, and disabled behavior when those details materially
      affect the contract.
@@ -266,7 +273,41 @@ Select the workflow before detailed semantic work:
      module boundaries, and binding technology decisions in `constraints`.
    - Put examples, acceptance criteria, and edge cases in `cases`.
 
-7. Preserve semantic lines.
+7. Manage concept identifiers.
+   - Use `ConceptIdentifier { ... }` blocks to group one or more related
+     semantic lines under a reusable identity.
+   - Treat ungrouped `interface` content reported by
+     `SIGIL_MISSING_CONCEPT_IDENTIFIER` as an authoring gap to repair before
+     semantic review. Other sections use concept blocks only when reuse is
+     valuable.
+   - Allow one concept block to contain a single heavily reused concept or
+     several related semantic lines.
+   - Resolve repeated blocks collectively across the component and all matching
+     expands without overriding their section-specific content.
+   - Treat a concept as public when it occurs in `interface`; otherwise keep it
+     private to the component and matching expands.
+   - Reuse imported public concepts as bare identifiers. Preserve the provider's
+     identity and keep consumer lines contextual to the consumer. Do not use
+     dotted notation, aliases, shadowing, or nested concept blocks.
+   - When subagents are available, delegate concept grouping and identifier
+     generation to one dedicated subagent after collecting the relevant
+     component, all matching expands, and accessible imported public concepts.
+     Tell the subagent to return a proposal only and not edit files.
+   - Require the subagent proposal to identify each affected region, whether it
+     represents one concept or several, whether each identifier is new or
+     reused, and the proposed concise names.
+   - Validate proposed names in the primary agent against
+     `[A-Za-z][A-Za-z0-9_-]*`, case-insensitive namespace uniqueness, public and
+     private visibility, and transitive import ambiguity before editing.
+   - Prefer PascalCase without hyphens or underscores. Treat an unusually long
+     name as a reason to reconsider the concept grouping or component boundary,
+     not as a deterministic length error.
+   - When subagents are unavailable, perform the same proposal and validation
+     steps in the primary agent and state that delegation was unavailable.
+   - Keep anchoring outside concept-identifier work. Do not invoke or modify
+     anchor persistence, proposal, or reconciliation behavior.
+
+8. Preserve semantic lines.
    - Keep each non-empty line as one distinct idea.
    - Separate distinct prose-level ideas with blank lines in every section.
    - Blank lines do not create semantic units.
@@ -278,7 +319,7 @@ Select the workflow before detailed semantic work:
    - Preserve the author's natural wording for visual references. Do not
      introduce a vocabulary that Sigil does not define.
 
-8. Stop at the Sigil review gate.
+9. Stop at the Sigil review gate.
    - After creating or semantically changing Sigil files, summarize the changes
      and ask the user to review them.
    - Do not write implementation code in the same pass unless the user has
@@ -287,7 +328,7 @@ Select the workflow before detailed semantic work:
    - A request like "use Sigil", "improve Sigil", "prepare Sigil", or "check the
      spec before coding" is not approval to code.
 
-9. Colocate approved Sigil with its implementation.
+10. Colocate approved Sigil with its implementation.
    - Before writing implementation code, determine the module or source
      directory that will own the implementation.
    - Treat a Sigil file created elsewhere while the implementation location was
@@ -309,7 +350,7 @@ Select the workflow before detailed semantic work:
      `sigil context` to verify imports, collected expands, and related file
      paths when relevant.
 
-10. Implement only after approval.
+11. Implement only after approval.
    - Do not add or modify implementation without clear, user-approved Sigil
      coverage for the affected behavior.
    - Use the approved Sigil as the durable rationale and source of constraints.
@@ -353,6 +394,13 @@ When reviewing or improving Sigil, check:
 - Does every `#module.sigil` declare at least one local component?
 - Does every interface make relevant inputs, outputs, errors, permissions,
   lifecycle promises, and other observable behavior explicit?
+- Is every interface region grouped under one or more concise concept
+  identifiers, with CLI warnings repaired before review?
+- Do repeated identifiers refer to one coherent concept across the component
+  and its expands?
+- Are private concepts absent from imported dependency projections?
+- Are imported public concepts reused contextually without dotted notation,
+  aliasing, shadowing, or case-insensitive ambiguity?
 - Do imports declare component dependencies without repeating them in
   interfaces?
 - Does each `expand Name` have a matching `component Name`?

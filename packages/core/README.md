@@ -1,9 +1,9 @@
 # sigil-core
 
-Current package version: **0.3.0**. Import with:
+Current package version: **0.4.0**. Import with:
 
 ```ts
-import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.3";
+import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.4";
 ```
 
 Raw parsing requires an explicit `sigilVersion`. Workspace APIs discover and
@@ -17,7 +17,7 @@ Every CLI command, editor feature, renderer, agent context pack, and host integr
 Package docs:
 
 - [#module.sigil](./%23module.sigil): public `SigilCore` contract and package-wide operational decisions.
-- [spec.md](spec.md): version 0.2 product requirements and acceptance scenarios.
+- [spec.md](spec.md): version 0.4 product requirements and acceptance scenarios.
 - [architecture.md](architecture.md): architecture style, internal modules, dependency rules, and implementation guidelines.
 
 Platform context lives in [../../spec/sigil-platform-architecture.md](../../spec/sigil-platform-architecture.md).
@@ -26,11 +26,13 @@ Responsibilities:
 
 - parse `.sigil` files;
 - preserve source locations and semantic lines;
+- parse concept blocks and resolve flat public/private concept namespaces;
 - identify the root project and workspace-member roots declared by `workspace.members`;
 - resolve imports;
 - resolve `#module.sigil` as an explicit index in any included directory;
 - keep every component public through explicit-file imports;
 - collect component expansions;
+- diagnose ungrouped interface concepts without making warnings fatal;
 - build the workspace graph;
 - produce diagnostics;
 - expose agent and human projection primitives.

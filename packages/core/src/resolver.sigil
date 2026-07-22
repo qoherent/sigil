@@ -11,7 +11,7 @@ component SigilResolver {
   interface {
     resolveSigilRelationships(workspace) returns SigilResolution
 
-    SigilResolution exposes the source workspace, resolved imports, resolved components, collected expansions, and accumulated diagnostics
+    SigilResolution exposes the source workspace, resolved imports, resolved components, collected expansions, resolved concept namespaces, and accumulated diagnostics
 
     each resolved component identifies its declaration file and every matching expand block
   }
@@ -42,6 +42,22 @@ expand SigilResolver {
     Detect cycles between resolved import files.
 
     Collect every matching expand declaration for each resolved component without override or shadowing.
+
+    Build one concept namespace from each component declaration and all of its matching expands.
+
+    Collect repeated concept blocks as occurrences of the same identity while preserving section, file, and source location.
+
+    Expose concepts introduced in interface as the component's public concept namespace.
+
+    Add imported public concept identifiers to the importing component's accessible namespace as bare names.
+
+    Preserve an imported concept's originating identity while associating importer semantic lines only with the importing component's context.
+
+    Re-expose an imported concept to downstream consumers when the importing component reuses it in interface.
+
+    Resolve exact-case whole-word occurrences of accessible identifiers inside semantic content as concept references.
+
+    Detect different concepts whose identifiers compare equal without regard to case across the transitive import graph.
   }
 
   constraints {
@@ -50,6 +66,16 @@ expand SigilResolver {
     Resolution retains workspace and parser diagnostics.
 
     Missing or ambiguous relationships produce partial resolution data when practical.
+
+    Concepts without an interface occurrence remain private to their declaring component and matching expands.
+
+    Imported component projections expose public goal and interface content without exposing collected expands.
+
+    Provider projections never collect contextual occurrences contributed by importing consumers.
+
+    Concept resolution provides no dotted qualification, import aliasing, or local shadowing.
+
+    Unmatched words in free-form semantic content remain ordinary text without unresolved-concept diagnostics.
 
     Graph construction and presentation projections remain outside SigilResolver.
   }
@@ -74,5 +100,17 @@ expand SigilResolver {
     Multiple matching expands are all retained in the component's collected expansion.
 
     A cycle between imported files produces SIGIL_IMPORT_CYCLE.
+
+    Importing Account makes the interface concept Session available as the bare identifier Session.
+
+    Reusing Session in an importing component's interface preserves the identity of the Account concept.
+
+    Two reachable public concepts named Session produce an ambiguous-concept diagnostic.
+
+    Reachable concepts named Session and session produce an ambiguous-concept diagnostic.
+
+    Dashboard context includes its contextual use of imported Session while Account context excludes Dashboard's lines.
+
+    Importing Account does not expose Account state, logic, constraints, cases, or private concepts.
   }
 }

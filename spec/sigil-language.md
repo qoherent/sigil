@@ -1,6 +1,6 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.3.0
+**Sigil version:** 0.4.0
 **Status:** Accepted
 **Released:** 2026-07-22
 
@@ -114,13 +114,17 @@ component Name {
   }
 
   interface {
-    how this component interacts with the outside world
+    PublicBehavior {
+      how this component interacts with the outside world
+    }
   }
 }
 
 expand Name {
   state {
-    meaningful configurations that persist or change during execution
+    RuntimeState {
+      meaningful configurations that persist or change during execution
+    }
   }
 
   logic {
@@ -144,8 +148,10 @@ expand Name {
 ## 4. Imports
 
 An `import` declares that the current Sigil file depends on named components
-from another Sigil source. It makes their public contracts and matching
-collected expands available to the importer.
+from another Sigil source. It makes their public goals, interfaces, and public
+concept identifiers available to the importer. Matching expands remain private
+to the provider unless that provider is itself selected for review or
+implementation.
 
 Import syntax:
 
@@ -188,14 +194,16 @@ A file import resolves to the exact `.sigil` file.
 
 Importing `Name` from an explicit file resolves a component declared in that
 file. Importing it from a directory resolves the name through the target module
-index. In both cases it makes the public component and all matching collected
-expands available to the importer.
+index. In both cases it makes only the public component contract and its public
+concept identifiers available to the importer.
 
 Imported names are case-sensitive and should match the spelling of the component declaration.
 
 Imports are explicit dependency edges between Sigil files.
 They do not copy text into the importing file.
-They make the referenced component contract and collected expansion available for interpretation, review, and implementation context.
+They make the referenced public component contract available for interpretation,
+review, and implementation context. Private expansion detail is available only
+when the provider is explicitly selected.
 
 An imported name must resolve to a `component Name` in the explicit source or
 the directory index's local declarations and direct imports.
@@ -232,8 +240,9 @@ Put state, behavior, constraints, examples, architecture rules, and implementati
 Imports declare dependencies between components; do not repeat imported
 dependencies in `interface`.
 
-Other components should depend on the public `component` description first.
-They should depend on `expand` details only when deeper implementation context is necessary.
+Other components see only the public `component` description and its public
+concept information. They do not see private expansion details through an
+import.
 
 ## 6. Expands
 
@@ -314,21 +323,23 @@ component BookingCalendarView {
   }
 
   interface {
-    Shows date navigation above a calendar of rooms and bookings.
+    CalendarNavigation {
+      Shows date navigation above a calendar of rooms and bookings.
 
-    Lets the user move to the previous or next date range.
+      Lets the user move to the previous or next date range.
 
-    +------------------------------------------+
-    | Previous | July 2026 | Next              |
-    +------------------------------------------+
-    | Room     | Confirmed bookings            |
-    +------------------------------------------+
+      +------------------------------------------+
+      | Previous | July 2026 | Next              |
+      +------------------------------------------+
+      | Room     | Confirmed bookings            |
+      +------------------------------------------+
 
-    Image reference: ![Calendar layout](./booking-calendar-view.svg)
+      Image reference: ![Calendar layout](./booking-calendar-view.svg)
 
-    The image suggests visual grouping; the written interface defines required behavior.
+      The image suggests visual grouping; the written interface defines required behavior.
 
-    A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
+      A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
+    }
   }
 }
 ```
@@ -387,9 +398,84 @@ It may include:
 
 Prefer cases that can be observed by users, callers, tests, or adjacent components.
 
-## 8. Semantic Lines
+## 8. Concept Identifiers
+
+A concept identifier gives one semantic idea, or a related group of semantic
+lines, a stable and reusable name within a component contract.
+
+Concept block syntax is:
+
+```sigil
+interface {
+  SessionLifecycle {
+    open(credentials) returns Session.
+
+    close(sessionId).
+  }
+}
+```
+
+`SessionLifecycle` identifies the concept described by the semantic lines in
+the block. A block may represent a single concept with many uses throughout the
+contract or group several lines that are reused together.
+
+Concept identifiers:
+
+- match `[A-Za-z][A-Za-z0-9_-]*`;
+- contain no spaces;
+- are case-sensitive when referenced;
+- must be unique case-insensitively throughout the accessible namespace;
+- should use concise, unambiguous PascalCase without hyphens or underscores.
+
+The PascalCase convention is an informational formatting recommendation, not a
+validity requirement. An overly long name is often evidence that the concept
+has not yet been grouped or named clearly.
+
+Concept blocks are flat and nonempty. They cannot nest. A component and every
+matching `expand` share one flat concept namespace. Repeated blocks with the
+same identifier are collective: they add occurrences in their original
+sections and source locations and do not override one another.
+
+Every semantic concept in `interface` should be placed in a concept block. Each
+contiguous ungrouped interface region produces one
+`SIGIL_MISSING_CONCEPT_IDENTIFIER` warning. The document remains valid and CLI
+checks still exit successfully when no error diagnostics exist. Other sections
+may introduce concept identifiers when a concept is useful across sections;
+they do not require all content to be grouped.
+
+A concept is public when it occurs in `interface`. A concept that occurs only in
+`state`, `logic`, `constraints`, or `cases` is private. Imports expose public
+concepts only; they never expose private concept occurrences or collected
+expansion details.
+
+Imported public concepts enter the consumer's namespace as bare identifiers.
+Sigil deliberately provides no dotted notation, aliases, or local shadowing.
+Reusing an imported identifier keeps the concept's originating identity while
+the new semantic lines remain contextual to the consumer. Reusing it in the
+consumer's `interface` re-exposes that same identity to downstream importers.
+Consumer occurrences never flow backward into the provider.
+
+Known identifiers used as whole words inside semantic content resolve as
+concept references for highlighting and navigation. Unknown words remain
+ordinary free-form content and do not produce unresolved-reference diagnostics.
+Concept identifiers do not define anchor syntax or anchor behavior.
+
+Concept diagnostics include:
+
+- `SIGIL_MISSING_CONCEPT_IDENTIFIER` as a warning for ungrouped interface content;
+- `SIGIL_INVALID_CONCEPT_IDENTIFIER` for invalid identifier syntax;
+- `SIGIL_EMPTY_CONCEPT_BLOCK` for an empty block;
+- `SIGIL_NESTED_CONCEPT_BLOCK` for a nested block;
+- `SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER` for case-insensitive namespace collisions;
+- `SIGIL_CONCEPT_IDENTIFIER_STYLE` as an informational formatting suggestion.
+
+## 9. Semantic Lines
 
 Inside each section, each non-empty line is a semantic unit.
+
+A concept-block header identifies and groups semantic lines but is not itself a
+semantic line. Each non-empty line inside the block remains a semantic unit and
+records its concept identifier.
 
 A semantic line is a:
 
@@ -424,7 +510,7 @@ Section bodies may use clear free-form notation, including:
 The notation should remain coherent inside a project.
 ASCII content should avoid unmatched `{` or `}` characters because the current parser uses braces to track section boundaries.
 
-## 9. Validity Rules
+## 10. Validity Rules
 
 A valid Sigil source file may contain one or more top-level forms.
 
@@ -454,6 +540,9 @@ Section names are fixed.
 
 Section bodies are free-form text.
 
+Concept blocks must use a valid identifier, contain at least one semantic line,
+remain unnested, and be unambiguous across the component's accessible namespace.
+
 The conventional section order is recommended but not semantically required.
 
 Implementation details should not appear in a `component` unless they are part of the public contract.
@@ -473,7 +562,7 @@ belong in `constraints`.
 
 Examples, acceptance criteria, and externally observable edge cases belong in `cases`.
 
-## 10. Recommended Style
+## 11. Recommended Style
 
 Write concise, reviewable lines.
 
@@ -482,6 +571,8 @@ Keep each non-empty line focused on one idea.
 Use blank lines between distinct prose-level ideas without changing meaning.
 
 Name components after the concept other parts of the system depend on.
+
+Name reusable concepts with concise, unambiguous PascalCase identifiers.
 
 Keep public contracts small enough to understand without reading the expand.
 
@@ -497,7 +588,7 @@ Place Sigil files near the corresponding code by default.
 
 If the main `component` cannot live near the code, prefer placing an `expand` for that component near the code.
 
-## 11. Examples
+## 12. Examples
 
 Import from a module directory:
 
@@ -522,39 +613,49 @@ component Promise {
   }
 
   interface {
-    new Promise<T>(executor)
+    Construction {
+      new Promise<T>(executor)
 
-    then(onResolved, onRejected?) returns Promise
+      Promise.resolve(value)
 
-    catch(onRejected) returns Promise
+      Promise.reject(reason)
 
-    Promise.resolve(value)
+      Promise.try(handler)
+    }
 
-    Promise.reject(reason)
+    Chaining {
+      then(onResolved, onRejected?) returns Promise
 
-    Promise.try(handler)
+      catch(onRejected) returns Promise
+    }
   }
 }
 
 expand Promise {
   state {
-    Pending
+    Settlement {
+      Pending
 
-    Resolved(value)
+      Resolved(value)
 
-    Rejected(reason)
+      Rejected(reason)
+    }
   }
 
   logic {
-    A new Promise starts Pending and runs executor with resolve and reject.
+    Construction {
+      A new Promise starts Pending and runs executor with resolve and reject.
 
-    then returns an after Promise immediately.
+      Resolving with a PromiseLike value adopts its eventual result.
 
-    If then or catch is called while Pending, hold the reaction until settlement.
+      Rejecting with a PromiseLike value does not unwrap it.
+    }
 
-    Resolving with a PromiseLike value adopts its eventual result.
+    Chaining {
+      then returns an after Promise immediately.
 
-    Rejecting with a PromiseLike value does not unwrap it.
+      If then or catch is called while Pending, hold the reaction until settlement.
+    }
   }
 }
 ```
@@ -592,7 +693,7 @@ Larger examples live in:
 - `examples/slotted/auth.sigil`
 - `examples/slotted/user-profile.sigil`
 
-## 12. Proposed Platform Capability: Anchors
+## 13. Proposed Platform Capability: Anchors
 
 Anchors are a proposed future platform concept for connecting Sigil semantic lines to implementation evidence.
 
@@ -620,7 +721,7 @@ evidence, and review records in
 [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
 The capability remains unavailable until that ADR and the colocated Sigil contracts pass review and implementation is complete.
 
-## 13. Unresolved Language Questions
+## 14. Unresolved Language Questions
 
 Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
 

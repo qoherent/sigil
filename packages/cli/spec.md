@@ -1,8 +1,8 @@
 # sigil-cli Requirements
 
-**Status:** Accepted for 0.3.0 **Last updated:** 2026-07-22
+**Status:** Accepted for 0.4.0 **Last updated:** 2026-07-22
 
-This document defines the 0.2 product requirements for `sigil-cli`.
+This document defines the 0.4 product requirements for `sigil-cli`.
 
 `sigil-cli` is the command-line interface over `sigil-core`. It exists for
 agents, CI, scripts, debugging, and review/documentation workflows. It is not
@@ -16,9 +16,9 @@ extract information from Sigil workspaces.
 It should make the shared `sigil-core` model usable from a terminal without
 reinterpreting Sigil independently.
 
-## 2. Version 0.2 Scope
+## 2. Version 0.4 Scope
 
-Version 0.2 must provide commands to:
+Version 0.4 must provide commands to:
 
 - parse one Sigil file;
 - check a file or workspace for diagnostics;
@@ -27,12 +27,13 @@ Version 0.2 must provide commands to:
 - render a simple Markdown review view.
 - initialize a non-interactive versioned workspace config;
 - report CLI, core, and Sigil versions.
+- surface concept-identifier diagnostics and resolved concept namespaces.
 
-Version 0.2 should favor predictable, machine-readable behavior over rich terminal UI.
+Version 0.4 should favor predictable, machine-readable behavior over rich terminal UI.
 
 ## 3. Out Of Scope
 
-Version 0.2 must not implement:
+Version 0.4 must not implement:
 
 - editor UI;
 - LSP transport;
@@ -45,8 +46,8 @@ Version 0.2 must not implement:
 - anchors or code/spec synchronization;
 - mutation or formatting of `.sigil` files.
 
-Anchors remain outside the implemented 0.2 surface. The proposed future anchor
-surface is defined below and does not change the 0.2 acceptance criteria.
+Anchors remain outside the implemented 0.4 surface. The proposed future anchor
+surface is defined below and does not change the 0.4 acceptance criteria.
 
 ## 4. Runtime And Dependency Requirements
 
@@ -102,6 +103,9 @@ Exit codes should be stable:
   diagnostics.
 
 Warnings alone should not produce exit code `1`.
+In particular, `SIGIL_MISSING_CONCEPT_IDENTIFIER` must be visible in human and
+JSON output while preserving exit code `0` when no errors exist, so users and
+agents can act on it.
 
 ## 7. Commands
 
@@ -179,13 +183,13 @@ Required output data:
 - component-to-expansion edges;
 - diagnostics.
 
-The command should not generate diagrams in version 0.2.
+The command should not generate diagrams in version 0.4.
 
 ### `sigil context`
 
 Produces deterministic agent-oriented context data from resolved Sigil.
 
-Version 0.2 should use graph and exact-match signals only.
+Version 0.4 should use graph and exact-match signals only.
 
 Supported selectors:
 
@@ -198,10 +202,11 @@ Required output data:
 - selected components;
 - component contracts;
 - collected expansions;
+- resolved concept namespaces;
 - related file paths;
 - diagnostics.
 
-Version 0.2 must not implement embeddings, opaque ranking, or full semantic search.
+Version 0.4 must not implement embeddings, opaque ranking, or full semantic search.
 
 ### `sigil render [path]`
 
@@ -259,7 +264,7 @@ boundaries.
 
 ## 10. Acceptance Scenarios
 
-Version 0.2 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
+Version 0.4 is acceptable when tests or scripted checks demonstrate that `sigil-cli` can:
 
 - parse `examples/promise/promise.sigil` and emit JSON;
 - check the repository workspace from the mandatory root `.sigil/config.json`;
@@ -268,8 +273,11 @@ Version 0.2 is acceptable when tests or scripted checks demonstrate that `sigil-
 - report diagnostics with stable codes;
 - return exit code `1` when error diagnostics exist;
 - return exit code `0` when only warnings or no diagnostics exist;
+- surface `SIGIL_MISSING_CONCEPT_IDENTIFIER` to users and agents without a
+  nonzero exit code;
 - emit graph JSON with file and expansion edges;
 - emit context JSON for `--component Auth`;
+- emit resolved concept namespaces in context JSON;
 - render Markdown for the Slotted example;
 - avoid duplicating parser or resolver behavior outside `sigil-core`.
 
@@ -285,7 +293,7 @@ entrypoint as commands grow.
 Keep command shaping separate from `sigil-core` data models so the core API
 remains reusable by LSP and editor integrations.
 
-Do not add interactive prompts in version 0.2.
+Do not add interactive prompts in version 0.4.
 
 ## 12. Proposed Future Anchor Commands
 

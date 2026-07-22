@@ -1,30 +1,30 @@
 # Sigil pre-release status
 
-Sigil 0.3.0 is a work-in-progress pre-production release of the language,
+Sigil 0.4.0 is a work-in-progress pre-production release of the language,
 platform, and agent workflow. It does not claim production readiness or a
 stable 1.0 contract.
 
 Included contracts:
 
-- Sigil Language 0.3.0;
-- `.sigil/config.json` schema 0.3.0;
-- `@qoherent/sigil-core` 0.3.0;
-- `@qoherent/sigil` 0.3.0;
-- standalone Codex Sigil skill 0.3.0 with implementation-component discovery
-  and coverage review;
+- Sigil Language 0.4.0;
+- `.sigil/config.json` schema 0.4.0;
+- `@qoherent/sigil-core` 0.4.0;
+- `@qoherent/sigil` 0.4.0;
+- standalone Codex Sigil skill 0.4.0 with implementation-component discovery,
+  coverage review, and proposal-only concept-identifier delegation;
 - language, configuration, API, migration, workflow, and compatibility
   documentation.
 
-The initial 0.x scope includes `@qoherent/sigil-lsp` 0.3.0 as the shared
+The initial 0.x scope includes `@qoherent/sigil-lsp` 0.4.0 as the shared
 editor-neutral language-server boundary over `@qoherent/sigil-core`.
 
-The initial 0.x scope also includes the Sigil VS Code extension 0.3.0 as the
+The initial 0.x scope also includes the Sigil VS Code extension 0.4.0 as the
 first concrete human authoring and review surface over `@qoherent/sigil-lsp`.
 
 Each contract follows semantic versioning independently. The compatibility
 matrix records supported combinations.
 
-Version 0.3.0 intentionally excludes anchors and `sigil-indexer` implementation,
+Version 0.4.0 intentionally excludes anchors and `sigil-indexer` implementation,
 editor integrations other than VS Code, plugin packaging, semantic search,
 interactive CLI workflows, `.sigil` mutation, generated diagrams, and
 persistent approval records. Human approval is session-scoped.

@@ -1,9 +1,9 @@
 # sigil-core Requirements
 
-**Status:** Accepted for 0.3.0
-**Last updated:** 2026-07-21
+**Status:** Accepted for 0.4.0
+**Last updated:** 2026-07-22
 
-This document defines the 0.2 product requirements for `sigil-core`.
+This document defines the 0.4 product requirements for `sigil-core`.
 Architecture style, module boundaries, and dependency rules live in [architecture.md](architecture.md).
 
 ## 1. Purpose
@@ -12,15 +12,17 @@ Architecture style, module boundaries, and dependency rules live in [architectur
 
 It must give CLI, LSP, editor integrations, renderers, agent context builders, and tests one consistent way to understand Sigil.
 
-## 2. Version 0.2 Scope
+## 2. Version 0.4 Scope
 
-Version 0.2 is the parser and directory-index resolver foundation.
+Version 0.4 extends the parser and resolver foundation with reusable concept
+identifiers and public/private concept visibility.
 
 It must:
 
 - parse `.sigil` files using an explicit supported Sigil version;
 - parse and validate strict `.sigil/config.json` using the canonical Sigil version;
 - preserve source locations and semantic lines;
+- parse flat, nonempty concept blocks and retain each line's concept identifier;
 - discover the nearest eligible ancestor config or use an explicit configured root;
 - apply include and exclude globs and permit independent workspaces only inside excluded subtrees;
 - load workspace files through an abstract filesystem boundary;
@@ -33,13 +35,19 @@ It must:
   module-index membership;
 - identify public components and matching expansions;
 - collect all matching `expand Name` blocks without override or shadowing semantics;
+- share one case-insensitively unique concept namespace across each component
+  and all matching expands;
+- expose imported public interface concepts without exposing private expansion
+  details;
+- preserve an imported concept's originating identity through contextual reuse
+  and downstream interface re-exposure;
 - build graph primitives for files, imports, components, and expansions;
 - return partial models plus diagnostics when source is malformed;
 - expose stable machine-readable diagnostic codes.
 
 ## 3. Out Of Scope
 
-Version 0.2 must not implement:
+Version 0.4 must not implement:
 
 - CLI argument parsing;
 - LSP transport;
@@ -51,7 +59,9 @@ Version 0.2 must not implement:
 - embeddings or semantic search;
 - anchors or code/spec synchronization;
 - generated diagrams;
-- export forms, import aliases, or wildcard imports.
+- export forms, import aliases, or wildcard imports;
+- dotted concept notation, concept aliases, shadowing, or nested concept blocks;
+- concept-based anchoring behavior.
 
 Anchors remain outside `sigil-core`. The proposed future design in ADR-011 adds
 them through a separate deterministic `sigil-indexer` package that consumes
@@ -90,6 +100,8 @@ The model should include typed concepts equivalent to:
 - `ExpandDeclaration`;
 - `Section`;
 - `SemanticLine`;
+- `ConceptBlock`;
+- `ResolvedConceptNamespace`;
 - `SigilWorkspace`;
 - `SigilConfig`;
 - `ResolvedComponent`;
@@ -105,6 +117,7 @@ The model should include typed concepts equivalent to:
 - owner kind;
 - owner name;
 - section name;
+- optional concept identifier;
 - text.
 
 `SigilDiagnostic` must include:
@@ -136,7 +149,7 @@ Malformed Sigil should produce partial models plus diagnostics.
 
 `sigil-core` should fail only when the host-provided filesystem boundary itself cannot satisfy an operation required by the requested API.
 
-Version 0.2 diagnostics must include stable codes for:
+Version 0.4 diagnostics must include stable codes for:
 
 - parse structure errors;
 - unknown section;
@@ -148,6 +161,7 @@ Version 0.2 diagnostics must include stable codes for:
 - duplicate component ambiguity;
 - missing, malformed, invalid, unsupported, existing, or nested config;
 - import cycle protection.
+- missing, invalid, empty, nested, ambiguous, and non-preferred concept identifiers.
 
 ## 8. Workspace And Import Requirements
 
@@ -174,7 +188,7 @@ paths.
 
 ## 9. Acceptance Scenarios
 
-Version 0.2 is acceptable when tests demonstrate that `sigil-core` can:
+Version 0.4 is acceptable when tests demonstrate that `sigil-core` can:
 
 - parse `examples/promise/promise.sigil`;
 - preserve semantic lines with owner, section, text, file, and source range;
@@ -186,6 +200,11 @@ Version 0.2 is acceptable when tests demonstrate that `sigil-core` can:
 - keep omitted components importable through explicit `.sigil` paths;
 - resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;
 - collect matching expansions for resolved components;
+- warn once per contiguous ungrouped interface region while keeping the source
+  parseable;
+- resolve public imported concepts as bare identifiers and keep private concepts
+  inaccessible to dependents;
+- diagnose case-insensitive ambiguity and invalid, empty, or nested blocks;
 - return partial models plus diagnostics for malformed files;
 - emit stable diagnostic codes;
 - run core tests with an in-memory filesystem implementation.

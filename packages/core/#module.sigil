@@ -8,9 +8,9 @@ component SigilCore {
   }
 
   interface {
-    publishes the pre-production @qoherent/sigil-core 0.3.0 Deno TypeScript library
+    publishes the pre-production @qoherent/sigil-core 0.4.0 Deno TypeScript library
 
-    parseSigilDocument(filePath, source, options) interprets one source using an explicit supported SigilLanguage version
+    parseSigilDocument(filePath, source, options) interprets concept blocks and other source forms using an explicit supported SigilLanguage version
 
     parseSigilConfig(source, filePath?) validates the SigilWorkspaceConfig contract
 
@@ -20,7 +20,7 @@ component SigilCore {
 
     resolveSigilWorkspace(workspace) returns resolved imports, components, collected expansions, graph relationships, and diagnostics
 
-    componentContracts and collectedExpansionFor expose structured projection primitives
+    componentContracts, conceptNamespaceFor, and collectedExpansionFor expose structured projection primitives
 
     exports typed source, document, workspace, configuration, resolution, graph, diagnostic, and filesystem models
 
@@ -38,11 +38,15 @@ expand SigilCore {
 
     Resolution connects imports to components, collects every matching expand block, detects ambiguity and cycles, and builds graph relationships.
 
+    Resolution combines flat collective concept identifiers across a component and its expands and exposes imported interface concepts as bare names.
+
+    Dependency projections expose public goals and interfaces without leaking private collected expands.
+
     Projections expose resolved contracts and collected operational detail without reinterpreting Sigil semantics.
   }
 
   constraints {
-    SigilCore implements the SigilLanguage and SigilWorkspaceConfig 0.3.0 contracts.
+    SigilCore implements the SigilLanguage and SigilWorkspaceConfig 0.4.0 contracts.
 
     Core logic accesses files only through the SigilFileSystem abstraction.
 
