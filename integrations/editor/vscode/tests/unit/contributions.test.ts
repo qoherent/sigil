@@ -91,3 +91,31 @@ test("delegates ownership-source watching to server registration", async () => {
   assert.equal(source.includes("createFileSystemWatcher"), false);
   assert.equal(source.includes("synchronize:"), false);
 });
+
+/*
+ * @sigil tests integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::ConfigurationSchema interface,logic,constraints,cases
+ */
+test("bundles the configuration schema and associates it with .sigil/config.json", async () => {
+  const manifest = JSON.parse(await readFile("package.json", "utf8"));
+  const validation: Array<{ fileMatch?: string; url?: string }> =
+    manifest.contributes.jsonValidation;
+  assert(Array.isArray(validation), "jsonValidation contribution is missing");
+  const entry = validation.find(
+    (item) => item.fileMatch === "**/.sigil/config.json",
+  );
+  assert(entry, "jsonValidation must map .sigil/config.json");
+  assert.equal(entry.url, "./schemas/sigil-config.schema.json");
+
+  // The bundled schema must stay a verbatim copy of the published source, so a
+  // stale schema in the VSIX fails here rather than shipping silently.
+  const bundled = await readFile("schemas/sigil-config.schema.json", "utf8");
+  const source = await readFile(
+    "../../../spec/sigil-config.schema.json",
+    "utf8",
+  );
+  assert.equal(
+    bundled,
+    source,
+    "bundled schema is out of sync with spec/sigil-config.schema.json; run the extension build",
+  );
+});

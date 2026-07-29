@@ -32,6 +32,10 @@ component SigilVsCodeExtension {
       opens the selected component contract and collected expansions as read-only Markdown
     }
 
+    ConfigurationSchema {
+      contributes JSON Schema validation and completion for .sigil/config.json using the bundled Sigil configuration schema
+    }
+
     SupportedExtensionHosts {
       runs as a workspace extension in trusted desktop and remote Node extension hosts
 
@@ -79,6 +83,10 @@ expand SigilVsCodeExtension {
 
       A missing component or unavailable hover result shows a non-destructive informational message.
     }
+
+    ConfigurationSchema {
+      The extension maps .sigil/config.json to the bundled schema through VS Code's standard jsonValidation contribution, and VS Code performs completion and validation.
+    }
   }
 
   constraints {
@@ -106,6 +114,12 @@ expand SigilVsCodeExtension {
       Ownership file watching is notification-only and does not modify workspace files.
     }
 
+    ConfigurationSchema {
+      The bundled schema is a synchronized copy of spec/sigil-config.schema.json representing the SigilWorkspaceConfig contract without extending it.
+
+      The schema ships inside the VSIX and loads without network access; VS Code's standard JSON language service performs validation and duplicates neither the Sigil LSP nor sigil check.
+    }
+
     SupportedExtensionHosts {
       extensionKind is workspace.
 
@@ -130,6 +144,18 @@ expand SigilVsCodeExtension {
       Consequences: Preview, navigation, diagnostics, and highlighting remain compatible with the shared LSP contract.
 
       Revisit when: A separately installed shared server becomes operationally preferable.
+    }
+
+    ConfigurationSchema {
+      Decision: Provide .sigil/config.json authoring support by bundling the published spec/sigil-config.schema.json and associating it through VS Code's standard jsonValidation contribution, rather than adding configuration validation to the Sigil LSP.
+
+      Scope: Governs .sigil/config.json editor authoring support; excludes the Sigil language, the configuration format, the CLI, and LSP behavior.
+
+      Design issues addressed: Contributors editing configuration get no schema-backed help, while the contract already exists as a published schema; duplicating it in the LSP would fork the contract.
+
+      Consequences: The schema is a synchronized copy shipped in the VSIX and loaded offline; VS Code performs completion and validation; a stale copy is caught by a synchronization test and refreshed at build time.
+
+      Revisit when: Configuration authoring needs editor behavior beyond standard JSON validation.
     }
 
     OwnershipCacheInvalidation {
@@ -176,6 +202,12 @@ expand SigilVsCodeExtension {
       Running preview on a component opens read-only Markdown.
 
       Running preview without an active component leaves editors unchanged and shows information.
+    }
+
+    ConfigurationSchema {
+      Opening a valid .sigil/config.json provides schema-backed completion without diagnostics.
+
+      An unknown configuration property or invalid value shape is reported by VS Code JSON validation.
     }
 
     SupportedExtensionHosts {

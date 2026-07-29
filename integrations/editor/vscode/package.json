@@ -88,7 +88,13 @@
           "when": "editorLangId == sigil"
         }
       ]
-    }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "**/.sigil/config.json",
+        "url": "./schemas/sigil-config.schema.json"
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.mjs",

@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,15 @@ const repository = path.resolve(directory, "../../..");
 
 await rm(path.join(directory, "dist"), { recursive: true, force: true });
 await mkdir(path.join(directory, "build"), { recursive: true });
+
+// Keep the bundled configuration schema a verbatim copy of the published
+// source so the packaged VSIX cannot ship a stale schema. The synchronization
+// is also asserted by tests/unit/contributions.test.ts.
+await mkdir(path.join(directory, "schemas"), { recursive: true });
+await cp(
+  path.join(repository, "spec/sigil-config.schema.json"),
+  path.join(directory, "schemas/sigil-config.schema.json"),
+);
 
 await Promise.all([
   build({
