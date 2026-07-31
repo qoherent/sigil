@@ -95,6 +95,15 @@ export function renderContextMarkdown(result: ContextCommandResult): string {
         lines.push(...formatAgentDependencyContext(dependencyContext));
       }
 
+      const dependentContext = agentDependentContextForComponent(
+        result,
+        component,
+        index,
+      );
+      if (dependentContext) {
+        lines.push(...formatAgentDependentContext(dependentContext));
+      }
+
       const ownershipProjection = ownedImplementationProjectionForComponent(
         result,
         component,
@@ -388,6 +397,36 @@ function conceptNamespaceForComponent(
   );
 }
 
+function formatAgentDependentContext(
+  context: NonNullable<ContextCommandResult["agentDependentContexts"]>[number],
+): string[] {
+  const lines = ["", "### Direct Dependents"];
+  if (!context.importingFiles.length) {
+    lines.push("- none");
+    return lines;
+  }
+  for (const importingFile of context.importingFiles) {
+    lines.push("", `#### ${importingFile.filePath}`, "");
+    lines.push(
+      `Imports: ${importingFile.importedComponent.name} (${importingFile.importedComponent.filePath})`,
+      "",
+      "##### Import Paths",
+    );
+    lines.push(
+      ...formatList(importingFile.importEdges.map((edge) => edge.importPath)),
+    );
+    lines.push("", "##### Contextual Contracts");
+    if (!importingFile.contextualContracts.length) {
+      lines.push("- none");
+    } else {
+      for (const contract of importingFile.contextualContracts) {
+        lines.push("", ...formatComponentContractAtLevel(contract, 6));
+      }
+    }
+  }
+  return lines;
+}
+
 function agentDependencyContextForComponent(
   result: ContextCommandResult,
   component: ResolvedComponent,
@@ -400,6 +439,26 @@ function agentDependencyContextForComponent(
     return indexed;
   }
   return result.agentDependencyContexts.find((item) =>
+    componentIdentityMatches(item.selectedComponent, component)
+  );
+}
+
+function agentDependentContextForComponent(
+  result: ContextCommandResult,
+  component: ResolvedComponent,
+  index: number,
+):
+  | NonNullable<ContextCommandResult["agentDependentContexts"]>[number]
+  | undefined {
+  const contexts = result.agentDependentContexts;
+  if (!contexts) return undefined;
+  const indexed = contexts[index];
+  if (
+    indexed && componentIdentityMatches(indexed.selectedComponent, component)
+  ) {
+    return indexed;
+  }
+  return contexts.find((item) =>
     componentIdentityMatches(item.selectedComponent, component)
   );
 }

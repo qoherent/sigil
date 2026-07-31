@@ -160,18 +160,13 @@ async function contextCommand(
     component.conceptNamespace
   );
   const agentDependencyContexts = selectedComponents.map((component) =>
-const agentDependentContexts = request.includeDependents
-  ? selectedComponents
-      .map((component) =>
-        agentDependencyContextForComponent(
-          resolved,
-          component,
-          allContracts,
-        )
-      )
-      .filter((item) => item !== undefined)
-  : undefined;
-    
+    agentDependencyContextForComponent(resolved, component, allContracts)
+  );
+  const agentDependentContexts = request.includeDependents
+    ? selectedComponents.map((component) =>
+      core.agentDependentContextFor(resolved, component.name)
+    ).filter((item) => item !== undefined)
+    : undefined;
   const implementationSourceDiscovery = await core.implementationSourcesFor(
     resolved,
   );

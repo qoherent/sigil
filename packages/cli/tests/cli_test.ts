@@ -1294,7 +1294,22 @@ component ConsumerB {
       "markdown",
     ]);
     assertEquals(markdown.exitCode, EXIT_OK);
-    assertEquals(parseJson(markdown.stdout).agentDependentContexts.length, 1);
+    assert(markdown.stdout.includes("### Direct Dependents"));
+    assert(markdown.stdout.includes("consumer.sigil"));
+    assert(markdown.stdout.includes("##### Contextual Contracts"));
+    assert(markdown.stdout.includes("###### ConsumerA"));
+    assert(markdown.stdout.includes("###### ConsumerB"));
+
+    const markdownWithoutDependents = await runCli([
+      "context",
+      root,
+      "--component",
+      "Provider",
+      "--format",
+      "markdown",
+    ]);
+    assertEquals(markdownWithoutDependents.exitCode, EXIT_OK);
+    assert(!markdownWithoutDependents.stdout.includes("### Direct Dependents"));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
