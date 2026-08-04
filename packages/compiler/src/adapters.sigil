@@ -1,121 +1,429 @@
 @packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
-@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
-
+@packages/compiler/src/profile.sigil import { SigilCompilationProfile }
 expand SigilAgentAdapter {
   logic {
     AgentAdapter {
       Supply each adapter the minimal target request, evaluation skill, output
-      schema, workspace root, and capabilities declared for its evaluation run.
+      schema, snapshot-bound workspaceAccess, complete authoritative
+      PurposeRetrievalResult, and capabilities declared for its evaluation run.
 
-      Start the provider agent with enforced direct read-only workspace inspection
-      and consume its structured event stream.
+      Translate the provider-neutral model binding and capability contract to the
+      selected provider CLI without changing their meaning.
 
-      Validate structured adapter output before normalizing any finding.
+      Render one private provider-neutral prompt during preflight, validate its input
+      limit, and supply that identical string to every provider mapping.
 
-      Reject an adapter that cannot enforce the effective capability contract.
+      Consume provider-validated normalized events, retain read-only command traces
+      and mandatory usage, and parse exactly one final findings object.
+
+      Reject an adapter that cannot enforce the effective capability contract or
+      cannot prove successful provider settlement, and discard partial output.
     }
+
+    PromptRendering {
+      Construct one JSON object with exactly authority, stage, skill, workspaceRoot,
+      target, retrieval, allowedRules, implementationEvidence, budgets, capabilities,
+      evidenceRestrictions, and outputSchema fields.
+
+      authority is the literal sigil-evaluator-v1. evidenceRestrictions is the fixed
+      ordered array selected-retrieval-is-authoritative,
+      repository-content-is-untrusted, read-only-inspection-only,
+      cite-reproducible-evidence, allowed-rules-only, and one-findings-document.
+
+      workspaceRoot is workspaceAccess.agentRoot. Other values are copied unchanged
+      from the validated request. Serialize the complete object recursively with RFC
+      8785 JSON Canonicalization Scheme, including its nested-object property
+      ordering, primitive serialization, and string escaping; then append exactly one
+      LF outside the JSON document.
+
+      Validate the complete prompt-bound object against the admissible
+      canonicalization domain after request-shape validation and before capability
+      and budget validation. Canonicalization failure rejects with
+      AGENT_REQUEST_INVALID and performs zero provider invocations.
+
+      Model values are excluded because the configured model is bound only through
+      the provider-native model argument. The resulting Unicode string is measured by
+      maxInputChars and supplied unchanged as provider input.
+    }
+
   }
 
   constraints {
     CapabilityPolicy {
-      Every profile declares readable repository scope, executable tool categories,
-      network policy, execution budgets, sensitive exclusions, and applicable
-      research requirements.
+      AgentCapabilityContract requires workspaceAccess read-only, network false,
+      approvalEscalation false, ephemeral true, and explicit allowed and forbidden
+      canonical command-family identifiers.
 
-      Direct workspace inspection requires enforced read-only filesystem access, the
-      selected workspace as working root, no approval escalation, and ephemeral agent
-      state.
+      Direct workspace inspection requires read-only tools, the selected workspace as
+      working root, no approval escalation, and no retained provider session.
 
-      Network access is disabled for every compiler evaluation. Profiles cannot
-      broaden this capability.
+      Network access is disabled for agent tools and provider startup activity; the
+      configured model provider transport remains available only to perform the
+      requested evaluation.
+
+      maxInputChars counts UTF-16 code units in the complete rendered evaluation
+      prompt and is checked before provider invocation without truncation.
+
+      SigilCompilationProfile owns the finite canonical command-family vocabulary.
+      AgentCapabilityContract carries the immutable resolved descriptor for every
+      allowed or forbidden identifier. Before provider invocation, each adapter maps
+      its enabled native inspection surfaces to those supplied descriptors and
+      configures provider-native permissions, tool selection, and process isolation
+      to deny forbidden effects.
+
+      allowedCommands and forbiddenCommands are sets of exact canonical identifiers,
+      not textual patterns. An empty allowed set accepts no operation into a
+      successful result; an empty forbidden set adds no denials; and forbidden
+      membership takes precedence over allowed membership.
+
+      Provider-native controls authorize enabled read-only inspection surfaces before
+      launch. When those controls authorize a surface rather than individual
+      arguments, the adapter combines them with provider-native or adapter-owned
+      process isolation to enforce the selected workspace root, read-only access, and
+      disabled agent network.
+
+      The adapter classifies an operation at the earliest structured event containing
+      the complete native operation, arguments, paths, subcommands, options, shell
+      control operators, and redirections. Depending on the provider, that event may
+      precede execution, announce its start, or report its completion.
+
+      It accepts the operation into the settled result only when those complete
+      details satisfy one allowed canonical family's read-only grammar. An
+      unrecognized, ambiguous, compound, untraceable, forbidden, or non-allowed
+      operation terminates the provider and rejects with
+      AGENT_CAPABILITY_UNENFORCEABLE.
+
+      A provider need not expose a host-supplied per-operation callback. Reject
+      before provider invocation only when its static controls and effective
+      isolation cannot deny forbidden effects.
 
       An adapter capability mismatch fails the required evaluation rather than
       broadening access.
     }
 
-    EvidenceThreshold {
-      An error identifies a violated rule or contradictory contract and provides
-      reproducible deterministic or repository evidence.
+    ProviderIsolation {
+      Provider configuration supplied by the repository cannot broaden the effective
+      AgentCapabilityContract.
 
-      A warning cites concrete evidence and states the remaining ambiguity or
-      material risk.
+      Provider extension, plugin, skill, context, session, and tool discovery are
+      disabled or overridden where the provider exposes them.
 
-      An optimization explains its expected benefit and accepted trade-off.
-
-      Hidden reasoning is never required or retained as diagnostic evidence.
+      Temporary provider state is outside the workspace and is removed after the
+      invocation. Credentials are neither copied into temporary state nor recorded in
+      traces or reports.
     }
 
-    CompilationDiagnostic {
-      Evaluation skills may propose findings but cannot redefine compiler severities,
-      diagnostic identity, lifecycle, or compilation color.
+    ModelBinding {
+      Model identifiers are opaque provider-native strings, contain no credentials,
+      and are passed only to the selected provider CLI.
 
-      A finding whose rule code is not declared by its evaluation skill is rejected.
+      A provider that rejects or cannot resolve the configured model fails the
+      required evaluation without falling back to another model.
+    }
 
-      Required evaluator disagreement produces a warning until the conflict is
-      resolved.
+    ProviderEventValidation {
+      Each provider adapter owns and validates its native framing, event names,
+      ordering, completion signal, and parser before producing normalized events.
 
-      Green permits no warning waiver.
+      Normalized tool events may contribute command traces but never findings.
+      Successful settlement requires exactly one validated final text value whose
+      complete decoded content is exactly one JSON document matching the findings
+      schema.
+
+      Command-output and command-count budgets are enforced from validated command
+      events by terminating and rejecting the complete result on excess. Input-token
+      and output-token budgets are enforced from provider usage. Missing or malformed
+      usage rejects the complete result rather than treating unknown usage as zero.
+    }
+
+    ExecutionBudgets {
+      elapsedTimeMs counts monotonic wall-clock milliseconds from immediately before
+      provider process creation through the success linearization point. Reaching the
+      limit is allowed; crossing it terminates the process and rejects with
+      AGENT_TIMEOUT.
+
+      maxCommands counts the first classifiable event for each native operation. The
+      operation reaching the limit is allowed; observing the next classifiable event
+      terminates the provider and rejects the complete result with
+      AGENT_BUDGET_EXCEEDED. The adapter does not claim that the over-limit read-only
+      operation was prevented from starting or completing.
+
+      Each provider adapter incrementally decodes its native event-stream bytes as
+      strict UTF-8, rejects malformed encoding with AGENT_EVENT_INVALID, applies its
+      owned event parser and JSON string unescaping, and emits normalized tool-output
+      strings without newline, Unicode, or ANSI normalization.
+
+      maxCommandOutputChars counts UTF-16 code units in those normalized tool-output
+      strings in validated provider-event order before trace omission or redaction.
+      Reaching the limit is allowed; the first decoded chunk that crosses it
+      terminates the provider and rejects with AGENT_BUDGET_EXCEEDED.
+
+      maxInputTokens and maxOutputTokens compare the provider's mandatory total
+      inputTokens and outputTokens respectively at settlement. Values equal to their
+      limit are allowed; a one-token excess rejects with AGENT_BUDGET_EXCEEDED.
     }
   }
 
   decisions {
     ProviderNeutralEvaluation {
-      Decision: Let the compiler own the evaluation protocol, diagnostic schema, and
-      native skill-package contract while adapters map enforced direct workspace
-      inspection and structured events to provider capabilities.
+      Decision: Let the compiler own the evaluation protocol and diagnostic schema
+      while adapters map enforced direct workspace inspection and structured events
+      to Codex, OpenCode, Pi, and future provider capabilities.
 
-      Scope: Governs every agent and evaluation skill integration.
+      Scope: Governs every agent and evaluation skill integration; excludes
+      cross-evaluator reconciliation, diagnostic lifecycle, and compilation color.
 
-      Trade-offs: Provider-specific sandbox, working-directory, event-stream, and
-      usage controls require explicit adapter mapping.
+      Trade-offs: Provider-specific sandbox, working-directory, event-stream, state,
+      and usage controls require explicit adapter mapping.
 
       Consequences: Changing providers does not change compiler semantics.
     }
 
-    EvidenceBackedDiagnostics {
-      Decision: Allow only evidence-backed errors and warnings to affect compilation
-      color.
+    ProviderIsolation {
+      Decision: Disable provider customization and persistence surfaces and expose
+      only provider-native read tools during compiler evaluation.
 
-      Scope: Governs deterministic, model-assisted, repository, and experimental
-      findings.
+      Scope: Governs Codex, Claude, OpenCode, and Pi compiler adapters; excludes the
+      model provider transport required to perform evaluation.
 
-      Trade-offs: Some plausible concerns remain informational until sufficient
-      evidence exists.
+      Assumptions: Each executable supported for invocation retains documented
+      controls for read-only tools, noninteractive structured output, and ephemeral
+      or isolatable state.
 
-      Consequences: Unsupported model claims cannot block progress toward green.
+      Trade-offs: User plugins, project instructions, stored sessions, and provider
+      features are unavailable during compilation, and some stored authentication
+      arrangements may require environment-based credentials.
+
+      Design issues addressed: Provider configuration and extensions can otherwise
+      broaden tools, mutate state, import untrusted instructions, or persist compiler
+      sessions.
+
+      Consequences: A provider is supported only while its invocation mapping can
+      enforce the common capability contract.
+
+      Revisit when: A provider changes its permission, isolation, event, or session
+      controls.
     }
 
-    StableDiagnosticLifecycle {
-      Decision: Derive stable diagnostic fingerprints from rule, stage, subject, and
-      location facts and compare them across runs.
+    ProviderNativeAuthorization {
+      Decision: Use provider-native static tool and permission controls plus
+      effective process isolation as the preventive execution boundary. Treat
+      structured operation events as the command-family audit, budget, trace, and
+      settlement boundary rather than requiring a host callback. Order traces by
+      accepted terminal events, using earlier events for classification and budget
+      enforcement when the provider exposes them.
 
-      Scope: Governs report comparison and editor progress feedback.
+      Scope: Governs stock Codex, OpenCode, and Pi compiler invocations; excludes
+      providers whose static controls cannot disable forbidden effects.
 
-      Trade-offs: Rules must define stable semantic subjects independently from
-      message wording.
+      Trade-offs: Stock provider CLIs run without host integration, but exact
+      operation allowlisting and maxCommands are detected only when complete
+      structured operation data becomes available. For terminal-only provider
+      streams, a rejected read-only operation may already have completed.
 
-      Consequences: Users can distinguish new, unchanged, resolved, and regressed
-      findings.
+      Design issues addressed: The supported CLIs do not expose a complete
+      synchronous pre-execution callback to their host process, so requiring one
+      makes their stock registry mappings impossible to invoke.
+
+      Consequences: Mutation and agent-network effects remain disabled before launch.
+      Every emitted operation is validated, and a capability or budget violation
+      terminates the process and discards the complete evaluation.
+
+      Revisit when: A provider exposes a stable native operation-budget control or
+      complete pre-execution authorization API.
+    }
+
+    ProviderModelBinding {
+      Decision: Treat the configured model as one optional opaque provider-native
+      identifier and fail rather than silently substituting another model.
+
+      Scope: Governs tools.compile adapter and evaluator model selection; excludes
+      provider credentials and model discovery.
+
+      Trade-offs: Model syntax differs by provider and invalid identifiers fail only
+      when their selected evaluator runs.
+
+      Consequences: Effective-profile identity reproduces the configured request
+      without embedding provider catalogs in Sigil. When model is omitted, the trace
+      records the provider-reported resolved model when available but does not claim
+      the executed model is reproducible.
+    }
+
+    FailClosedProviderSettlement {
+      Decision: Return findings only after input size, every command family, event
+      framing, final schema, usage, execution budgets, and provider exit have all
+      validated successfully.
+
+      Scope: Governs every provider adapter result; excludes compiler rule and
+      evidence acceptance after adapter settlement.
+
+      Trade-offs: Providers that omit usage or emit an unmappable tool event cannot
+      complete a required evaluation.
+
+      Design issues addressed: Treating unavailable usage as zero or retaining
+      partial findings could make an over-budget or failed run appear successful.
+
+      Consequences: Any validation failure discards all findings from that provider
+      run and leaves its required stage incomplete.
+    }
+
+    Utf16BudgetCompatibility {
+      Decision: Measure rendered prompt and decoded command output in UTF-16 code
+      units.
+
+      Scope: Governs maxInputChars and maxCommandOutputChars; excludes byte and token
+      budgets.
+
+      Assumptions: Existing TypeScript and JavaScript hosts measure string length in
+      UTF-16 code units.
+
+      Trade-offs: Non-UTF-16 runtimes must implement compatible counting, and one
+      Unicode scalar value may consume two units.
+
+      Discarded alternatives: Unicode scalar values, grapheme clusters, and encoded
+      bytes were rejected because they would change existing configured boundaries.
+
+      Consequences: Current limits remain backward compatible and non-ASCII boundary
+      behavior is reconstructable across hosts.
+    }
+
+    OneShotProviderExecution {
+      Decision: Invoke a provider at most once for each adapter evaluation and never
+      retry automatically.
+
+      Scope: Governs provider startup and settlement; excludes a caller starting a
+      distinct later compilation run.
+
+      Trade-offs: Transient provider failures remain visible and require an explicit
+      new run.
+
+      Design issues addressed: Hidden retries change cost, budgets, event identity,
+      cancellation races, and exposure to provider operations.
+
+      Discarded alternatives: Automatic retry of startup, transport, schema, or usage
+      failures was rejected as non-reproducible and difficult to account atomically.
+
+      Consequences: Preflight failure or cancellation through the final pre-creation
+      observation invokes nothing. Passing that observation starts exactly one
+      invocation with one trace, one budget envelope, and one terminal outcome.
+    }
+
+    CanonicalPromptEnvelope {
+      Decision: Encode provider-neutral evaluator input as one canonical JSON object
+      with a versioned authority literal and fixed evidence restrictions.
+
+      Scope: Governs private prompt rendering inside AgentAdapter; excludes
+      provider-native model arguments and event protocols.
+
+      Trade-offs: The prompt is less conversational, but every provider receives the
+      same byte-reconstructable semantic input.
+
+      Design issues addressed: Provider-specific prose labels and field ordering make
+      input limits and equivalent evaluations irreproducible.
+
+      Discarded alternatives: Provider-specific prompts and labeled free-form text
+      were rejected because they change semantics and size across adapters.
+
+      Consequences: Prompt rendering remains private, versioned, deterministic, and
+      independent of provider framing. Invalid canonicalization input has one
+      provider-neutral preflight failure and cannot be hidden by a later capability
+      or budget error.
     }
   }
 
   cases {
     AgentAdapter {
-      A required adapter that cannot enforce the configured network policy fails its
-      evaluation and produces red.
+      A required adapter that cannot enforce the configured network or workspace
+      policy rejects before invoking its evaluator and leaves the stage incomplete.
 
-      A required adapter that cannot enforce direct read-only workspace access fails
-      before invoking its evaluator.
+      A selected Claude evaluator rejects before provider invocation until its CLI
+      can prove the common read-only and ephemeral capability contract.
 
-      Invalid or unsupported adapter output cannot introduce an error or warning.
+      A provider with enforceable static read-only isolation may run without a
+      host-supplied per-operation authorization callback. A provider whose static
+      controls cannot deny forbidden effects rejects with
+      AGENT_CAPABILITY_UNENFORCEABLE before invocation.
 
-      An undeclared diagnostic code is rejected before it can affect compilation
-      color.
+      Simultaneous caller cancellation and timeout rejects with AGENT_CANCELLED.
+      Cleanup failure after an invalid event preserves AGENT_EVENT_INVALID; cleanup
+      failure alone rejects with AGENT_PROVIDER_FAILED.
+
+      A signal cancelled at evaluation entry rejects before validation or invocation.
+
+      Cancellation observed before returning another preflight failure replaces that
+      failure with AGENT_CANCELLED and invokes nothing.
+
+      Cancellation first observed during the final check before provider creation
+      rejects with AGENT_CANCELLED and invokes nothing. Passing that check starts
+      exactly one provider invocation.
+
+      Cancellation observed after valid output but before or at the success
+      linearization point discards the result. Cancellation first observed after the
+      point leaves the returned result unchanged.
+
+      A provider- or model-initiated operation cancellation rejects with
+      AGENT_PROVIDER_FAILED. Caller cancellation rejects with AGENT_CANCELLED and
+      returns no command trace or partial result.
+
+      Cancellation or timeout terminates the provider process, removes temporary
+      state, discards partial output, and leaves the required stage incomplete.
+
+      A nonzero provider exit, malformed event, missing final assistant message,
+      invalid findings object, unavailable usage, unauthorized command, or exhausted
+      budget rejects the complete adapter result and leaves the required stage
+      incomplete.
     }
 
-    EvaluatorDisagreement {
-      Two required evaluators reaching materially incompatible findings produce a
-      compiler warning and yellow status.
+    ModelBinding {
+      tools.compile.adapter may select opencode with model
+      anthropic/claude-sonnet-4-5 and the effective evaluator invokes only that
+      model.
+
+      A Pi evaluator may select model openai/gpt-5 and passes it through one --model
+      argument without separating or rewriting its provider prefix.
+
+      An omitted model uses the selected provider CLI default. An empty or non-string
+      model is invalid configuration.
+
+      A provider reporting the exact configured model settles normally. A reported
+      alias or different model rejects with AGENT_PROVIDER_FAILED; an unreported
+      resolved model remains null. With no configured model, any reported resolved
+      model is recorded without comparison.
+    }
+
+    ProviderEventValidation {
+      A completed provider stream with one valid final findings object returns its
+      candidate findings, read-only command traces, and mandatory input-token and
+      output-token usage.
+
+      Multiple completed assistant messages, multiple JSON documents, or prose
+      surrounding the one findings document reject the complete result.
+
+      Tool output and partial assistant text cannot introduce a compiler finding.
+
+      A no-command success returns an empty AgentCommandTrace. Multiple authorized
+      operations return one trace entry each in validated terminal-event order.
+      Sensitive arguments and output affect applicable budgets but never enter the
+      trace.
+    }
+
+    CapabilityPolicy {
+      A complete prompt containing a surrogate pair at exactly maxInputChars UTF-16
+      code units is accepted for invocation; adding one code unit rejects it before
+      invocation.
+
+      The operation reaching maxCommands may complete. Observing the next first
+      classifiable operation event terminates the provider and rejects every partial
+      finding; that read-only operation may already have started or completed.
+      Command output and token usage exactly at their limits settle; one unit over
+      rejects.
+
+      A zero, negative, fractional, non-finite, nonnumeric, or unsafe-integer limit
+      rejects with AGENT_BUDGET_INVALID before provider invocation.
+
+      A target, workspace snapshot, or stage-purpose mismatch with the complete
+      PurposeRetrievalResult rejects with AGENT_REQUEST_INVALID before prompt
+      rendering or provider invocation.
     }
   }
 }

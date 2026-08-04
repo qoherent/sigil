@@ -1,0 +1,44 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+@packages/compiler/src/codex-adapter.sigil import { SigilCodexAdapter }
+@packages/compiler/src/claude-adapter.sigil import { SigilClaudeAdapter }
+@packages/compiler/src/opencode-adapter.sigil import { SigilOpenCodeAdapter }
+@packages/compiler/src/pi-adapter.sigil import { SigilPiAdapter }
+
+component SigilAgentAdapterRegistry {
+  goal {
+    Compose provider identities with independent implementations of the
+    SigilAgentAdapter contract without making that neutral contract depend on its
+    providers.
+  }
+
+  interface {
+    AgentAdapterRegistry {
+      resolve(provider, model?) returns one opaque model-bound AgentAdapter
+      satisfying SigilAgentAdapter, or rejects an unsupported provider or invalid
+      model binding before invocation
+    }
+  }
+}
+
+expand SigilAgentAdapterRegistry {
+  logic {
+    PrivateProviderComposition {
+      Map codex, claude, opencode, and pi privately to SigilCodexAdapter,
+      SigilClaudeAdapter, SigilOpenCodeAdapter, and SigilPiAdapter respectively.
+    }
+  }
+
+  constraints {
+    ProviderRegistration {
+      Resolution owns provider composition and model binding only. The immutable
+      AgentCapabilityContract in each evaluate request is authoritative, and the
+      resolved adapter validates it during preflight before provider invocation.
+
+      Adding or replacing a provider changes this composition owner and the provider
+      component, not the provider-neutral contract.
+
+      Concrete Codex, Claude, OpenCode, and Pi implementation identities remain
+      private to registry composition and never enter the returned public type.
+    }
+  }
+}

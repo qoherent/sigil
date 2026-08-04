@@ -14,6 +14,51 @@ component SigilCompilationProfile {
 
       standard and critical-system are built in; project profiles may configure or
       omit stages subject to dependency rules
+
+      tools.compile.adapter and each tools.compile.evaluators identity select
+      provider codex, claude, opencode, or pi and may include one optional model
+      string
+    }
+
+    AgentCapabilityContract {
+      workspaceAccess, network, approvalEscalation, ephemeral execution, and every
+      forbidden effect are preventive constraints that each adapter enforces without
+      broadening
+
+      allowedCommands is an exact settlement allowlist. Each emitted operation is
+      classified at the earliest structured provider event containing its complete
+      native identity and arguments, and only an allowed operation may enter a
+      successful result
+
+      when a provider exposes complete operation data only after execution starts or
+      completes, rejecting the operation terminates the provider and discards the
+      complete evaluation but does not claim that the read-only operation was
+      prevented
+
+      allowedCommands and forbiddenCommands contain only exact identifiers from a
+      compiler-owned finite canonical command-family vocabulary
+
+      commandFamilies contains the immutable resolved CanonicalCommandFamily
+      descriptor for every allowed or forbidden identifier and no others
+    }
+
+    CanonicalCommandFamily {
+      resolveCanonicalCommandFamily(identifier) returns one immutable descriptor
+      containing operation kind, operand schema, exact option allowlist, path policy,
+      and permitted effects, or rejects an unknown identifier
+
+      inspection identifiers are workspace.read, workspace.glob, workspace.grep,
+      workspace.list, sigil.version, sigil.parse, sigil.check, sigil.fmt-check,
+      sigil.glossary, sigil.graph, sigil.context, sigil.render, git.status, git.diff,
+      git.show, git.log, git.grep, and git.ls-files
+
+      denial identifiers are sigil.init, sigil.fmt-write, sigil.compile,
+      sigil.skill-install, network.client, filesystem.mutate, code.generate, and
+      implementation.execute; no other command-family identifier is valid
+
+      every inspection descriptor permits only workspace-root-confined reads and
+      stdout or stderr emission, denies network and mutation, and defines all native
+      operands and options that may map to it; denial descriptors permit no execution
     }
   }
 }
@@ -48,6 +93,13 @@ expand SigilCompilationProfile {
 
       Evaluator identities are unique; evaluatorIds contains no duplicates and
       references configured evaluators.
+
+      Each selected evaluator declares provider codex, claude, opencode, or pi. Its
+      optional model is a non-empty provider-native identifier and contains no
+      credential or secret value.
+
+      An omitted model delegates selection to the provider CLI. The compiler neither
+      discovers provider catalogs nor substitutes another model when selection fails.
 
       Unselected evaluator configuration does not affect workspace loading or another
       profile.
@@ -94,6 +146,47 @@ expand SigilCompilationProfile {
       retention.
     }
 
+    SharedAgentCapabilityContract {
+      Decision: Own the provider-neutral agent capability vocabulary in
+      SigilCompilationProfile and require skills and adapters to consume that one
+      resolved contract.
+
+      Scope: Governs profile capability resolution and provider enforcement; excludes
+      provider-specific CLI flags and event formats.
+
+      Trade-offs: Capability vocabulary changes require profile fingerprint changes
+      and coordinated consumer validation.
+
+      Design issues addressed: Provider adapters must not define the policy they are
+      responsible for enforcing.
+
+      Consequences: Profiles remain the single capability-policy owner while each
+      adapter independently proves it can enforce the resolved values.
+    }
+
+    ProviderModelSelection {
+      Decision: Configure one optional opaque provider-native model on each adapter
+      or evaluator identity and include it in effective-profile identity.
+
+      Scope: Governs tools.compile provider and model selection; excludes
+      credentials, provider model discovery, and fallback policy inside external
+      CLIs.
+
+      Trade-offs: Configuration remains stable across provider catalog changes, but a
+      misspelled or unavailable model is detected only when its evaluator is
+      selected.
+
+      Design issues addressed: Implicit user-level model defaults make otherwise
+      identical compiler runs select different evaluators without a profile change.
+
+      Discarded alternatives: A compiler-owned model catalog and automatic fallback
+      were rejected as volatile and non-reproducible.
+
+      Consequences: The selected provider and configured model value affect the
+      profile fingerprint, and provider rejection fails the selected evaluation. An
+      omitted model reproduces configuration but not the provider's changing default.
+    }
+
     ProfileScopedCompilation {
       Decision: Compute status against an exact named profile and environment
       fingerprint whose stages are configurable.
@@ -137,6 +230,17 @@ expand SigilCompilationProfile {
 
       Requesting semantic-readiness executes deterministic-foundation first and no
       unrelated later stage.
+    }
+
+    ProviderModelSelection {
+      A standard adapter configured as provider opencode with model
+      anthropic/claude-sonnet-4-5 resolves that exact evaluator identity.
+
+      A Pi evaluator configured with model openai/gpt-5 preserves the complete model
+      string in its effective-profile identity.
+
+      An empty or non-string model, or an unsupported selected provider, rejects
+      configuration.
     }
 
     BuiltInProfiles {

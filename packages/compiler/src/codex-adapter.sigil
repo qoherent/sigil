@@ -1,0 +1,42 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+
+component SigilCodexAdapter {
+  goal {
+    Map one SigilAgentAdapter request to an isolated Codex CLI execution.
+  }
+
+  interface {
+    CodexAdapter {
+      evaluate(request) returns one settled SigilAgentAdapter result or rejects
+      without partial findings
+    }
+  }
+}
+
+expand SigilCodexAdapter {
+  logic {
+    CodexInvocation {
+      Run codex exec ephemerally at the workspace root with its read-only sandbox,
+      approval policy never, web search disabled, user configuration and rules
+      ignored, JSON events, the findings schema, and the optional model.
+
+      Translate Codex command-execution item events to canonical command traces,
+      treat earlier completed agent-message items as progress, accept only the last
+      completed agent-message item as final findings text, and
+      extract mandatory token usage plus an optional resolved model from the
+      completed turn event.
+
+      Remove the temporary findings-schema file after success or failure. Use the
+      Codex read-only sandbox and disabled web capability as the preconfigured
+      execution boundary; no host-supplied per-operation callback is required.
+    }
+  }
+
+  constraints {
+    CodexIsolation {
+      Command execution remains inside the read-only sandbox. Every command event
+      is normalized and validated through SigilAgentAdapter before settlement, and a
+      violation terminates the provider and discards the evaluation.
+    }
+  }
+}

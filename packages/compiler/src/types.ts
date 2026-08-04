@@ -45,6 +45,9 @@ export type CompilationTarget =
 
 export type CompilationFocus = "design" | "implementation";
 
+export type AgentProvider = "codex" | "claude" | "opencode" | "pi";
+export type AdapterProvider = AgentProvider | "mock";
+
 export type CompilerFailureCode =
   | "COMPILER_INVALID_INVOCATION"
   | "COMPILER_PROFILE_EVALUATORS_REQUIRED"
@@ -114,6 +117,7 @@ export interface EffectiveProfile {
   readonly agentInputBudgetChars: number;
   readonly limits: CompilationLimits;
   readonly executionBudgets: AgentExecutionBudgets;
+  readonly capabilities: AgentCapabilityContract;
   readonly stages: readonly {
     readonly id: string;
     readonly required: boolean;
@@ -122,7 +126,7 @@ export interface EffectiveProfile {
     readonly dependencies: readonly string[];
   }[];
   readonly adapter?: {
-    readonly provider: "codex" | "claude" | "mock";
+    readonly provider: AdapterProvider;
     readonly model?: string;
   };
   readonly evaluators: readonly EvaluatorConfiguration[];
@@ -267,16 +271,65 @@ export interface AgentEvaluationTarget {
   readonly componentName: string;
   readonly sigilFile: string;
   readonly initialPaths: readonly string[];
-  readonly retrieval?: PurposeRetrievalResult;
 }
 
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentAdapter interface
+export interface AgentWorkspaceAccess {
+  readonly kind: "snapshot-read-only";
+  readonly agentRoot: string;
+  readonly workspaceSnapshotIdentity: string;
+}
+
+// @sigil implements packages/compiler/src/profile.sigil::SigilCompilationProfile::CanonicalCommandFamily interface
+export type CanonicalCommandFamilyIdentifier =
+  | "workspace.read"
+  | "workspace.glob"
+  | "workspace.grep"
+  | "workspace.list"
+  | "sigil.version"
+  | "sigil.parse"
+  | "sigil.check"
+  | "sigil.fmt-check"
+  | "sigil.glossary"
+  | "sigil.graph"
+  | "sigil.context"
+  | "sigil.render"
+  | "git.status"
+  | "git.diff"
+  | "git.show"
+  | "git.log"
+  | "git.grep"
+  | "git.ls-files"
+  | "sigil.init"
+  | "sigil.fmt-write"
+  | "sigil.compile"
+  | "sigil.skill-install"
+  | "network.client"
+  | "filesystem.mutate"
+  | "code.generate"
+  | "implementation.execute";
+
+// @sigil implements packages/compiler/src/profile.sigil::SigilCompilationProfile::CanonicalCommandFamily interface
+export interface CanonicalCommandFamily {
+  readonly identifier: CanonicalCommandFamilyIdentifier;
+  readonly operationKind: "native-tool" | "command" | "denial";
+  readonly nativeTools: readonly string[];
+  readonly executable?: string;
+  readonly subcommand?: readonly string[];
+  readonly options: readonly string[];
+  readonly pathPolicy: "workspace-confined" | "none";
+  readonly permittedEffects: readonly ("read" | "stdout" | "stderr")[];
+}
+
+// @sigil implements packages/compiler/src/profile.sigil::SigilCompilationProfile::AgentCapabilityContract interface
 export interface AgentCapabilityContract {
   readonly workspaceAccess: "read-only";
   readonly network: false;
   readonly approvalEscalation: false;
   readonly ephemeral: true;
-  readonly allowedCommands: readonly string[];
-  readonly forbiddenCommands: readonly string[];
+  readonly allowedCommands: readonly CanonicalCommandFamilyIdentifier[];
+  readonly forbiddenCommands: readonly CanonicalCommandFamilyIdentifier[];
+  readonly commandFamilies: readonly CanonicalCommandFamily[];
 }
 
 export interface AgentExecutionBudgets {
@@ -287,47 +340,72 @@ export interface AgentExecutionBudgets {
   readonly maxOutputTokens: number;
 }
 
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentAdapter interface
 export interface AgentEvaluationRequest {
   readonly stage: string;
   readonly skill: string;
   readonly allowedRules: readonly string[];
   readonly implementationEvidence: "context-only" | "compare";
-  readonly workspaceRoot: string;
+  readonly workspaceAccess: AgentWorkspaceAccess;
   readonly target: AgentEvaluationTarget;
+  readonly retrieval: PurposeRetrievalResult;
+  readonly outputSchema: Readonly<Record<string, unknown>>;
   readonly capabilities: AgentCapabilityContract;
   readonly budgets: AgentExecutionBudgets;
   readonly maxInputChars: number;
   readonly signal?: AbortSignal;
 }
 
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentCommandTrace interface
 export interface AgentCommandTrace {
-  readonly command: string;
-  readonly status?: string;
-  readonly exitCode?: number;
+  readonly sequence: number;
+  readonly canonicalCommandFamily: CanonicalCommandFamilyIdentifier;
+  readonly providerOperationId: string | null;
+  readonly status: "completed" | "failed";
+  readonly exitCode: number | null;
 }
 
 export interface AgentUsage {
-  readonly inputTokens?: number;
+  readonly inputTokens: number;
   readonly cachedInputTokens?: number;
-  readonly outputTokens?: number;
+  readonly outputTokens: number;
 }
 
 export interface AgentEvaluationTrace {
   readonly evaluatorId: string;
   readonly componentName: string;
   readonly commands: readonly AgentCommandTrace[];
-  readonly usage?: AgentUsage;
+  readonly usage: AgentUsage;
+  readonly configuredModel: string | null;
+  readonly resolvedModel: string | null;
 }
 
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentAdapter interface
 export interface AgentEvaluationResult {
   readonly findings: readonly AgentFinding[];
   readonly commands: readonly AgentCommandTrace[];
-  readonly usage?: AgentUsage;
+  readonly usage: AgentUsage;
+  readonly configuredModel: string | null;
+  readonly resolvedModel: string | null;
 }
 
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AdapterFailure interface
+export type AdapterFailureCode =
+  | "AGENT_CANCELLED"
+  | "AGENT_REQUEST_INVALID"
+  | "AGENT_BUDGET_INVALID"
+  | "AGENT_TIMEOUT"
+  | "AGENT_BUDGET_EXCEEDED"
+  | "AGENT_CAPABILITY_UNENFORCEABLE"
+  | "AGENT_PROVIDER_FAILED"
+  | "AGENT_EVENT_INVALID"
+  | "AGENT_SCHEMA_INVALID"
+  | "AGENT_USAGE_UNAVAILABLE";
+
+// @sigil implements packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentAdapter interface
 export interface AgentAdapter {
   readonly id: string;
-  readonly provider: "codex" | "claude" | "mock";
+  readonly provider: AdapterProvider;
   readonly model?: string;
   readonly capabilities: {
     readonly readOnlyWorkspace: boolean;
@@ -343,7 +421,7 @@ export interface CompileConfiguration {
   readonly budgets?: Partial<AgentExecutionBudgets>;
   readonly limits?: Partial<CompilationLimits>;
   readonly adapter?: {
-    readonly provider: "codex" | "claude";
+    readonly provider: AgentProvider;
     readonly model?: string;
   };
   readonly evaluators?: Readonly<
@@ -369,7 +447,7 @@ export interface CompilationLimits {
 
 export interface EvaluatorConfiguration {
   readonly id: string;
-  readonly provider: "codex" | "claude" | "mock";
+  readonly provider: AdapterProvider;
   readonly model?: string;
 }
 

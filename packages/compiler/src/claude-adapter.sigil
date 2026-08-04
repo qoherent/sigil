@@ -1,0 +1,22 @@
+component SigilClaudeAdapter {
+  goal {
+    Keep the configured Claude provider fail-closed until its CLI can satisfy the
+    SigilAgentAdapter capability contract.
+  }
+
+  interface {
+    ClaudeAdapter {
+      evaluate(request) rejects before provider invocation and returns no partial
+      findings
+    }
+  }
+}
+
+expand SigilClaudeAdapter {
+  constraints {
+    ClaudeIsolation {
+      The current mapping does not claim support because it cannot prove read-only
+      workspace access and ephemeral state.
+    }
+  }
+}

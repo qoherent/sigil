@@ -3,10 +3,11 @@ import {
   SIGIL_VERSION,
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
-import type {
-  CompilationReport,
-  CompilationTarget,
-  CompileOptions,
+import {
+  type CompilationReport,
+  type CompilationTarget,
+  type CompileOptions,
+  COMPILER_AGENT_CAPABILITIES,
 } from "@qoherent/sigil-compiler";
 import { CoreAdapter } from "../src/core-adapter.ts";
 import { DenoSigilFileSystem, normalizePath } from "../src/fs-adapter.ts";
@@ -2190,6 +2191,7 @@ Deno.test("compile preserves JSONL events and compiler status exits", async () =
         maxInputTokens: 200_000,
         maxOutputTokens: 20_000,
       },
+      capabilities: COMPILER_AGENT_CAPABILITIES,
       stages: [],
       evaluators: [],
       fingerprint: "profile",
@@ -2286,6 +2288,7 @@ Deno.test("compile delegates design and implementation focus to the compiler", a
         maxInputTokens: 1,
         maxOutputTokens: 1,
       },
+      capabilities: COMPILER_AGENT_CAPABILITIES,
       stages: [],
       evaluators: [],
       fingerprint: "profile",

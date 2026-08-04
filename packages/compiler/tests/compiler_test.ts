@@ -1,9 +1,11 @@
 import {
+  type AgentEvaluationRequest,
   CodexAdapter,
   type CompilationEvent,
   type CompilationHistoryStore,
   type CompilationReport,
   compile,
+  COMPILER_AGENT_CAPABILITIES,
   CompilerFailure,
   FileCompilationHistoryStore,
   loadEvaluationSkills,
@@ -12,6 +14,7 @@ import {
   SigilCompilationSessionFactory,
   SigilProposalWorkspace,
 } from "../src/mod.ts";
+import type { PurposeRetrievalResult } from "@qoherent/sigil-core";
 import { assertEquals, assertMatch, assertRejects } from "@std/assert";
 
 async function workspace(
@@ -37,6 +40,55 @@ async function workspace(
     await Deno.writeTextFile(`${root}/${path}`, contents);
   }
   return root;
+}
+
+function adapterRequest(root: string): AgentEvaluationRequest {
+  const retrieval = {
+    schema: "sigil-purpose-retrieval/v1",
+    policyVersion: 1,
+    workspaceSnapshotIdentity: "snapshot",
+    target: {
+      kind: "component",
+      componentName: "Example",
+      pathStatus: "accepted",
+      path: "main.sigil",
+    },
+    purpose: "semantic",
+    graph: { nodes: [], edges: [] },
+    evidence: [],
+    inclusionReasons: [],
+    exclusions: [],
+    context: { sections: [] },
+    diagnostics: [],
+    fingerprint: "sha256:test",
+  } satisfies PurposeRetrievalResult;
+  return {
+    stage: "semantic-readiness",
+    skill: "Inspect files.",
+    allowedRules: ["SEMANTIC_AMBIGUITY"],
+    implementationEvidence: "context-only",
+    workspaceAccess: {
+      kind: "snapshot-read-only",
+      agentRoot: root,
+      workspaceSnapshotIdentity: "snapshot",
+    },
+    target: {
+      componentName: "Example",
+      sigilFile: "main.sigil",
+      initialPaths: ["main.sigil"],
+    },
+    retrieval,
+    outputSchema: {},
+    capabilities: COMPILER_AGENT_CAPABILITIES,
+    maxInputChars: 1_000_000,
+    budgets: {
+      elapsedTimeMs: 30_000,
+      maxCommands: 10,
+      maxCommandOutputChars: 10_000,
+      maxInputTokens: 1_000,
+      maxOutputTokens: 100,
+    },
+  };
 }
 
 // @sigil tests packages/compiler/src/evaluation-registry.sigil::SigilEvaluationSkillRegistry::EvaluationSkillPackage interface,logic,constraints,cases
@@ -904,6 +956,73 @@ Deno.test("workspace configuration overrides compiler execution budgets", async 
   }
 });
 
+// @sigil tests packages/compiler/src/profile.sigil::SigilCompilationProfile::ProviderModelSelection cases
+Deno.test("provider and model selection are retained in the effective profile", async () => {
+  const source = `component Example {
+  goal { Explain the example. }
+  interface { Run { run() } }
+}
+`;
+  const openCodeRoot = await workspace(source, {}, {
+    adapter: {
+      provider: "opencode",
+      model: "anthropic/claude-sonnet-4-5",
+    },
+  });
+  const piRoot = await workspace(source, {}, {
+    adapter: { provider: "pi", model: "openai/gpt-5" },
+  });
+  try {
+    const openCode = await compile(openCodeRoot, { kind: "workspace" }, {
+      requestedStage: "semantic-readiness",
+      adapter: new MockAdapter(),
+    });
+    const pi = await compile(piRoot, { kind: "workspace" }, {
+      requestedStage: "semantic-readiness",
+      adapter: new MockAdapter(),
+    });
+    assertEquals(openCode.profile.evaluators, [{
+      id: "default",
+      provider: "opencode",
+      model: "anthropic/claude-sonnet-4-5",
+    }]);
+    assertEquals(pi.profile.evaluators, [{
+      id: "default",
+      provider: "pi",
+      model: "openai/gpt-5",
+    }]);
+    assertEquals(
+      openCode.profile.fingerprint === pi.profile.fingerprint,
+      false,
+    );
+  } finally {
+    await Deno.remove(openCodeRoot, { recursive: true });
+    await Deno.remove(piRoot, { recursive: true });
+  }
+});
+
+// @sigil tests packages/compiler/src/profile.sigil::SigilCompilationProfile::ProfileConfiguration constraints,cases
+Deno.test("selected evaluator models must be non-empty identifiers", async () => {
+  const root = await workspace(
+    `component Example { goal { Explain. } interface { Run { run() } } }\n`,
+    {},
+    { adapter: { provider: "opencode", model: "" } },
+  );
+  try {
+    await assertRejects(
+      () =>
+        compile(root, { kind: "workspace" }, {
+          requestedStage: "semantic-readiness",
+          adapter: new MockAdapter(),
+        }),
+      Error,
+      "non-empty provider-native identifier",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 // @sigil tests packages/compiler/src/profile.sigil::SigilCompilationProfile::ProfileConfiguration constraints
 Deno.test("invalid compiler execution budgets fail before evaluation", async () => {
   const root = await workspace(
@@ -989,7 +1108,7 @@ Deno.test("Codex adapter enforces direct-read invocation and records structured 
           item: {
             type: "command_execution",
             command:
-              '/bin/zsh -lc "rg -n \\"SigilCompiler|sigil compile|compile\\\\(\\" packages/compiler packages/cli\nsed -n \\"1,240p\\" packages/compiler/src/compiler.sigil"',
+              '/bin/zsh -lc "rg -n \\"SigilCompiler\\" packages/compiler"',
             status: "completed",
             exit_code: 0,
           },
@@ -1007,65 +1126,22 @@ Deno.test("Codex adapter enforces direct-read invocation and records structured 
         }),
       ].join("\n"));
     });
-    const result = await adapter.evaluate({
-      stage: "semantic-readiness",
-      skill: "Inspect files.",
-      allowedRules: ["SEMANTIC_AMBIGUITY"],
-      implementationEvidence: "context-only",
-      workspaceRoot: root,
-      target: {
-        componentName: "Example",
-        sigilFile: "main.sigil",
-        initialPaths: ["main.sigil"],
-      },
-      capabilities: {
-        workspaceAccess: "read-only",
-        network: false,
-        approvalEscalation: false,
-        ephemeral: true,
-        allowedCommands: ["sigil check"],
-        forbiddenCommands: ["sigil compile"],
-      },
-      maxInputChars: 1_000_000,
-      budgets: {
-        elapsedTimeMs: 30_000,
-        maxCommands: 10,
-        maxCommandOutputChars: 10_000,
-        maxInputTokens: 1_000,
-        maxOutputTokens: 100,
-      },
-    });
+    const result = await adapter.evaluate(adapterRequest(root));
     assertEquals(observedArgs.includes("--ephemeral"), true);
     assertEquals(observedArgs.includes("read-only"), true);
     assertEquals(observedArgs[observedArgs.indexOf("-C") + 1], root);
     assertEquals(observedArgs.includes("--json"), true);
-    assertMatch(observedPrompt, /Inspect the workspace directly/);
-    assertMatch(
-      observedPrompt,
-      /point into the\s+smallest exact source statement/,
-    );
-    assertMatch(
-      observedPrompt,
-      /For a conflict, anchor the primary statement/,
-    );
-    assertMatch(
-      observedPrompt,
-      /compiler owns semantic identity; do not invent\s+semantic subjects/,
-    );
-    assertMatch(observedPrompt, /Implementation evidence policy: context-only/);
-    assertMatch(
-      observedPrompt,
-      /do not report a finding solely because current implementation/,
-    );
-    assertMatch(result.commands[0].command, /rg -n/);
-    assertEquals(result.usage?.inputTokens, 100);
+    assertMatch(observedPrompt, /^\{"allowedRules"/);
+    assertMatch(observedPrompt, /"authority":"sigil-evaluator-v1"/);
+    assertEquals(result.commands[0].canonicalCommandFamily, "workspace.grep");
+    assertEquals(result.usage.inputTokens, 100);
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
 // @sigil tests packages/compiler/src/adapter.sigil::SigilAgentAdapter::AgentAdapter interface,logic,cases
-Deno.test("Codex adapter rejects an actually invoked nested compilation", async () => {
+Deno.test("Codex adapter rejects an unauthorized command trace", async () => {
   const root = await workspace(`component Example {
   goal {
     Explain the example.
@@ -1098,37 +1174,9 @@ Deno.test("Codex adapter rejects an actually invoked nested compilation", async 
         }),
       ].join("\n")));
     await assertRejects(
-      () =>
-        adapter.evaluate({
-          stage: "semantic-readiness",
-          skill: "Inspect files.",
-          allowedRules: ["SEMANTIC_AMBIGUITY"],
-          implementationEvidence: "context-only",
-          workspaceRoot: root,
-          target: {
-            componentName: "Example",
-            sigilFile: "main.sigil",
-            initialPaths: ["main.sigil"],
-          },
-          capabilities: {
-            workspaceAccess: "read-only",
-            network: false,
-            approvalEscalation: false,
-            ephemeral: true,
-            allowedCommands: ["rg", "sigil check"],
-            forbiddenCommands: ["sigil compile"],
-          },
-          maxInputChars: 1_000_000,
-          budgets: {
-            elapsedTimeMs: 30_000,
-            maxCommands: 10,
-            maxCommandOutputChars: 10_000,
-            maxInputTokens: 1_000,
-            maxOutputTokens: 100,
-          },
-        }),
+      () => adapter.evaluate(adapterRequest(root)),
       Error,
-      "violated the read-only inspection contract",
+      "unauthorized command operation",
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -1231,6 +1279,7 @@ Deno.test("durable compilation sessions refresh and close without a daemon", asy
               maxInputTokens: 1,
               maxOutputTokens: 1,
             },
+            capabilities: COMPILER_AGENT_CAPABILITIES,
             stages: [],
             evaluators: [],
             fingerprint: "profile",

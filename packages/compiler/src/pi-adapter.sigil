@@ -1,0 +1,46 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+
+component SigilPiAdapter {
+  goal {
+    Map one SigilAgentAdapter request to an isolated Pi CLI execution.
+  }
+
+  interface {
+    PiAdapter {
+      evaluate(request) returns one settled SigilAgentAdapter result or rejects
+      without partial findings
+    }
+  }
+}
+
+expand SigilPiAdapter {
+  logic {
+    PiInvocation {
+      Run pi in JSON mode with no session, extensions, skills, prompt templates,
+      themes, or context-file discovery; allow only built-in read, grep, find, and ls
+      tools; disable startup network operations; set the workspace root as cwd; and
+      pass the optional model as one provider-native identifier.
+
+      Validate session, agent, turn, message, and tool-execution event ordering.
+      Translate enabled tool-execution events to canonical command traces, accept
+      exactly one final assistant message, and extract mandatory token usage plus an
+      optional resolved model from its settled message metadata.
+
+      Run inside adapter-owned read-only process isolation that denies file access
+      outside the selected root while preserving only the model-provider transport.
+      The fixed safe-tool allowlist and process isolation form the preconfigured
+      execution boundary; no host-supplied per-operation callback or sandbox
+      attestation is required.
+    }
+  }
+
+  constraints {
+    PiIsolation {
+      Pi's provider transport may perform the requested model evaluation, but no
+      enabled agent tool can mutate state, execute a process, or access the network.
+      Each tool event is normalized and validated through SigilAgentAdapter before
+      settlement, and a violation terminates the provider and discards the
+      evaluation.
+    }
+  }
+}

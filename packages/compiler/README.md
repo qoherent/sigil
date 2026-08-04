@@ -39,16 +39,25 @@ File targets include components declared in the file and expansions collected
 from it. Adding a one-based `--position line:column` selects only the component
 or expansion enclosing that exact location.
 
+<!--
+@sigil uses packages/compiler/src/profile.sigil::SigilCompilationProfile::CompilationProfile interface
+@sigil uses packages/compiler/src/adapter.sigil::SigilAgentAdapter::ModelBinding constraints,cases
+-->
+
 The legacy `tools.compile.adapter` remains the standard profile's default
-evaluator. Independent evaluator groups are optional:
+evaluator. It and each independent evaluator select `codex`, `claude`,
+`opencode`, or `pi`, with an optional opaque provider-native `model`:
 
 ```json
 {
   "tools": {
     "compile": {
       "evaluators": {
-        "primary": { "provider": "codex" },
-        "reviewer": { "provider": "codex", "model": "another-model" }
+        "primary": {
+          "provider": "opencode",
+          "model": "anthropic/claude-sonnet-4-5"
+        },
+        "reviewer": { "provider": "pi", "model": "openai/gpt-5" }
       },
       "profiles": {
         "critical-system": {
@@ -59,6 +68,19 @@ evaluator. Independent evaluator groups are optional:
   }
 }
 ```
+
+An omitted model delegates selection to that provider CLI. The compiler does not
+discover model catalogs, rewrite identifiers, or fall back to another model.
+Provider and model selections are included in the effective-profile fingerprint.
+OpenCode runs in pure JSON mode with isolated state. Pi runs without sessions or
+discovered extensions using only its read-only tools inside adapter-owned
+process isolation. Codex uses its native read-only sandbox. These stock mappings
+run directly without a host-supplied authorization callback. Provider-native
+controls deny mutation and agent-network effects before launch; emitted
+operations are validated during settlement. `maxCommands` is enforced when an
+operation-start event is observed, so an over-limit read-only operation may
+already have begun before the provider is terminated and the complete evaluation
+is discarded.
 
 Critical-system configuration is not required to load or compile a workspace
 with another profile. Selecting a critical-system profile requires at least two
@@ -97,5 +119,4 @@ retention are configurable under `tools.compile`:
 
 Every value must be a positive safe integer. `budgets` selects effective
 execution values and `limits` controls request size and proposal-session
-retention. Omitted fields retain the
-backward-compatible defaults.
+retention. Omitted fields retain the backward-compatible defaults.

@@ -3,6 +3,7 @@
 @packages/compiler/src/status.sigil import { SigilCompilationStatus }
 @packages/compiler/src/event-protocol.sigil import { SigilCompilationEventProtocol }
 @packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+@packages/compiler/src/adapter-registry.sigil import { SigilAgentAdapterRegistry }
 @packages/compiler/src/evaluation-registry.sigil import { SigilEvaluationSkillRegistry }
 @packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
 
@@ -13,9 +14,9 @@ component SigilCompilationEvaluation {
     nonterminal progress.
 
     Compose WorkspaceProcessing, CompilationProfile, CompilationStatus,
-    CompilationEventProtocol, AgentAdapter, EvaluationSkillPackage, and report
-    trace schemas through their owning public contracts without owning terminal
-    settlement.
+    CompilationEventProtocol, AgentAdapter, AgentAdapterRegistry,
+    EvaluationSkillPackage, and report trace schemas through their owning public
+    contracts without owning terminal settlement.
   }
 
   interface {
@@ -29,8 +30,8 @@ component SigilCompilationEvaluation {
       supplies stages and capabilities, and CompilationStatus derives color
 
       CompilationEventProtocol governs nonterminal progress framing, AgentAdapter
-      executes agentic stages, and EvaluationSkillPackage supplies their guidance and
-      rule contracts
+      defines provider-neutral execution, AgentAdapterRegistry resolves its provider
+      implementation, and EvaluationSkillPackage supplies guidance and rule contracts
     }
 
     CompilationEvaluationResult {
@@ -84,6 +85,11 @@ expand SigilCompilationEvaluation {
 
       Skip only stages whose declared dependencies failed or became unavailable.
 
+      Accept a candidate finding only when its rule code is declared by the stage
+      skill and its severity and evidence satisfy the compiler diagnostic contract.
+      Invalid provider output makes that evaluator incomplete and contributes no
+      partial findings.
+
       Aggregate every trustworthy diagnostic produced by enabled stages.
 
       Record material disagreement when evaluator results for the same component,
@@ -102,12 +108,16 @@ expand SigilCompilationEvaluation {
       that immutable result for every evaluator of the same component, purpose,
       source fingerprint, and retrieval fingerprint.
 
-      Build the evaluation request from the workspace root, selected target, stage
-      skill, capability contract, output schema, execution budgets, and the complete
-      structured retrieval result plus its aggregated context.
+      Build the evaluation request from the snapshot-bound workspaceAccess, selected
+      target, stage skill, capability contract, output schema, execution budgets, and
+      the complete structured retrieval result plus its aggregated context.
 
       Invoke each enabled agentic stage separately for workspace components in
       dependency-aware order.
+
+      Map AGENT_CANCELLED to COMPILER_CANCELLED. Every other AdapterFailure leaves
+      that evaluator incomplete, contributes no partial findings, and remains an
+      evaluator outcome rather than a host or protocol rejection.
 
       The retrieval result is the authoritative initial evidence boundary. The
       evaluator does not independently traverse graph, context, glossary, or
@@ -162,9 +172,15 @@ expand SigilCompilationEvaluation {
       Owned implementation annotations are navigation evidence and do not restrict
       which workspace files the agent may read.
 
-      Inaccessible material evidence, exhausted execution budgets, invalid structured
-      events, or an unenforceable capability contract leave the required stage
-      incomplete and prevent green.
+      Inaccessible material evidence, cancellation, provider failure, exhausted
+      execution budgets, invalid structured events, an invalid final findings object,
+      or an unenforceable capability contract leave the required stage incomplete,
+      discard that evaluator's partial findings, and prevent green.
+
+      A finding whose rule code is not declared by its evaluation skill is rejected.
+      Errors and warnings require reproducible deterministic or repository evidence;
+      unsupported claims are reduced to information or rejected before status
+      derivation.
     }
   }
 
@@ -235,6 +251,13 @@ expand SigilCompilationEvaluation {
       Cancellation rejects with COMPILER_CANCELLED and a host or protocol failure
       rejects with COMPILER_FAILED; callers own terminal settlement after their
       durability or export work.
+
+      Malformed output from one required evaluator makes its stage incomplete,
+      contributes none of that evaluator's partial findings, and produces red through
+      CompilationStatus.
+
+      An undeclared diagnostic code is rejected before aggregation; remaining valid
+      findings from a successfully settled evaluator remain eligible.
     }
 
     AgentWorkspaceInspection {

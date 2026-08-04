@@ -1,11 +1,12 @@
-@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+@packages/compiler/src/profile.sigil import { SigilCompilationProfile }
 
 component SigilEvaluationSkillRegistry {
   goal {
     Discover and validate versioned compiler-native evaluation skill packages and
     their rule, evidence, dependency, capability, and output contracts.
 
-    Express required provider capabilities using the AgentAdapter contract.
+    Express required provider capabilities using AgentCapabilityContract from
+    SigilCompilationProfile.
   }
 
   interface {
@@ -15,7 +16,7 @@ component SigilEvaluationSkillRegistry {
 
       implementation-evidence policy is context-only or compare
 
-      required capabilities use the AgentAdapter capability vocabulary
+      required capabilities use AgentCapabilityContract
     }
   }
 }

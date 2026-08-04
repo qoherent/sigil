@@ -11,13 +11,20 @@ import {
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
 import metadata from "../deno.json" with { type: "json" };
-import { ClaudeAdapter, CodexAdapter } from "./adapters.ts";
+import {
+  resolveAgentAdapter,
+  validModelIdentifier,
+} from "./adapter-registry.ts";
+import { FINDINGS_SCHEMA } from "./adapter-runtime.ts";
 import { compilationEvaluationTarget } from "./evaluation.ts";
 import { createCompilationEventStream } from "./event-protocol.ts";
 import { compilationHistoryKey } from "./history.ts";
 import { exportCompilationReport } from "./report-export.ts";
 import { constructCompilationReport } from "./report-protocol.ts";
-import { stageForCompilationFocus } from "./profile.ts";
+import {
+  COMPILER_AGENT_CAPABILITIES,
+  stageForCompilationFocus,
+} from "./profile.ts";
 import {
   CompilerFailure,
   compilerFailureCode as stableCompilerFailureCode,
@@ -34,7 +41,6 @@ import {
 } from "./semantic-subjects.ts";
 import type {
   AgentAdapter,
-  AgentCapabilityContract,
   AgentExecutionBudgets,
   AgentFinding,
   CompilationLimits,
@@ -68,36 +74,6 @@ const DEFAULT_LIMITS: CompilationLimits = {
   maxAgentInputChars: 1_000_000,
   sessionTtlMs: 86_400_000,
 };
-const INSPECTION_CAPABILITIES: AgentCapabilityContract = {
-  workspaceAccess: "read-only",
-  network: false,
-  approvalEscalation: false,
-  ephemeral: true,
-  allowedCommands: [
-    "sigil version",
-    "sigil parse",
-    "sigil check",
-    "sigil fmt --check",
-    "sigil glossary",
-    "sigil graph",
-    "sigil context",
-    "sigil render",
-    "rg",
-    "sed",
-    "git status/diff/show/log/grep/ls-files",
-  ],
-  forbiddenCommands: [
-    "sigil init",
-    "sigil fmt without --check",
-    "sigil compile",
-    "sigil skill install",
-    "network clients",
-    "file mutation",
-    "code generation",
-    "implementation execution or experiments",
-  ],
-};
-
 class DenoReadOnlyFileSystem implements SigilFileSystem {
   readTextFile(path: string): Promise<string> {
     return Deno.readTextFile(path);
@@ -288,13 +264,20 @@ export async function compile(
               allowedRules: definition.skill.manifest.rules,
               implementationEvidence:
                 definition.skill.manifest.implementationEvidence,
-              workspaceRoot: workspace.root,
+              workspaceAccess: {
+                kind: "snapshot-read-only" as const,
+                agentRoot: workspace.root,
+                workspaceSnapshotIdentity:
+                  resolved.workspace.workspaceSnapshotIdentity,
+              },
               target: compilationEvaluationTarget(
                 component,
                 workspace.root,
                 retrieval,
               ),
-              capabilities: INSPECTION_CAPABILITIES,
+              retrieval,
+              outputSchema: FINDINGS_SCHEMA,
+              capabilities: profile.capabilities,
               budgets: profile.executionBudgets,
               maxInputChars: profile.agentInputBudgetChars,
               signal: cancellationSignal,
@@ -314,6 +297,8 @@ export async function compile(
                 componentName: component.name,
                 commands: result.commands,
                 usage: result.usage,
+                configuredModel: result.configuredModel,
+                resolvedModel: result.resolvedModel,
               });
               const evaluatorDiagnostics: CompilerDiagnostic[] = [];
               for (const finding of result.findings) {
@@ -627,6 +612,7 @@ async function effectiveProfile(
     agentInputBudgetChars: settings.limits.maxAgentInputChars,
     limits: settings.limits,
     executionBudgets: settings.budgets,
+    capabilities: COMPILER_AGENT_CAPABILITIES,
     stages,
     adapter: configuration.adapter,
     evaluators,
@@ -647,6 +633,7 @@ async function effectiveProfile(
     agentInputBudgetChars: profileBase.agentInputBudgetChars,
     limits: profileBase.limits,
     executionBudgets: profileBase.executionBudgets,
+    capabilities: profileBase.capabilities,
     stages: profileBase.stages,
     adapter: profileBase.adapter,
     evaluators: profileBase.evaluators,
@@ -654,6 +641,10 @@ async function effectiveProfile(
   };
 }
 
+/*
+ * @sigil implements packages/compiler/src/profile.sigil::SigilCompilationProfile::ProfileConfiguration constraints
+ * @sigil implements packages/compiler/src/profile.sigil::SigilCompilationProfile::ProviderModelSelection cases
+ */
 function selectedEvaluators(
   name: string,
   base: "standard" | "critical-system",
@@ -700,22 +691,26 @@ function selectedEvaluators(
     }
     const provider = (raw as Record<string, unknown>).provider;
     const model = (raw as Record<string, unknown>).model;
-    if (!["codex", "claude"].includes(String(provider))) {
+    if (!["codex", "claude", "opencode", "pi"].includes(String(provider))) {
       throw evaluatorConfigurationError(
         base,
-        `Evaluator ${JSON.stringify(id)} must use provider codex or claude.`,
+        `Evaluator ${
+          JSON.stringify(id)
+        } must use provider codex, claude, opencode, or pi.`,
       );
     }
-    if (model !== undefined && typeof model !== "string") {
+    if (model !== undefined && !validModelIdentifier(model)) {
       throw evaluatorConfigurationError(
         base,
-        `Evaluator ${JSON.stringify(id)} model must be a string.`,
+        `Evaluator ${
+          JSON.stringify(id)
+        } model must be a non-empty provider-native identifier.`,
       );
     }
     return {
       id,
-      provider: provider as "codex" | "claude",
-      ...(model ? { model } : {}),
+      provider: provider as "codex" | "claude" | "opencode" | "pi",
+      ...(model !== undefined ? { model } : {}),
     };
   });
 }
@@ -752,6 +747,7 @@ function stageClosure(
   return available.filter((stage) => selected.has(stage.id));
 }
 
+// @sigil uses packages/compiler/src/adapter-registry.sigil::SigilAgentAdapterRegistry::AgentAdapterRegistry interface
 function adaptersFrom(
   profile: EffectiveProfile,
   options: CompileOptions,
@@ -778,15 +774,16 @@ function adaptersFrom(
     }
     return [options.adapter];
   }
-  return profile.evaluators.map((configuration) =>
-    configuration.provider === "codex"
-      ? new CodexAdapter(
-        configuration.model,
-        undefined,
-        configuration.id,
-      )
-      : new ClaudeAdapter(configuration.model, configuration.id)
-  );
+  return profile.evaluators.map((configuration) => {
+    if (configuration.provider === "mock") {
+      throw new Error("The mock provider must be supplied by the host.");
+    }
+    return resolveAgentAdapter(
+      configuration.provider,
+      configuration.model,
+      configuration.id,
+    );
+  });
 }
 
 function assertProfileEvaluators(

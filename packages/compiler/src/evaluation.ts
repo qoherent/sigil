@@ -18,7 +18,6 @@ export function compilationEvaluationTarget(
     componentName: component.name,
     sigilFile: canonicalWorkspacePath(component.filePath, root),
     initialPaths: [...initialPaths],
-    retrieval,
   };
 }
 

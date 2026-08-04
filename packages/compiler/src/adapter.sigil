@@ -1,5 +1,5 @@
+@packages/core import { SigilContextRetrieval }
 @packages/compiler/src/profile.sigil import { SigilCompilationProfile }
-@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
 
 component SigilAgentAdapter {
   goal {
@@ -12,15 +12,148 @@ component SigilAgentAdapter {
 
   interface {
     AgentAdapter {
-      execute(request, evaluatorIdentity, capabilityContract) streams validated
-      provider events or rejects when required capabilities cannot be enforced
+      evaluate(request) returns one completed provider-neutral result containing
+      candidate findings, command traces, and model usage containing nonnegative
+      integer inputTokens and outputTokens, or rejects without a partial result
 
-      capabilityContract is resolved by CompilationProfile and accepted findings are
-      candidates for CompilationDiagnostic normalization
+      request contains one target, evaluation skill, output schema, snapshot-bound
+      immutable read-only workspaceAccess, complete immutable PurposeRetrievalResult,
+      AgentCapabilityContract, maxInputChars character limit, execution budgets, and
+      cancellation signal
 
-      an evaluator identity is one configured provider and optional model binding
+      request also contains non-empty stage, a non-empty ordered allowedRules array
+      of unique non-empty rule identifiers, and implementationEvidence equal to
+      context-only or compare; none of these fields is nullable
 
-      adapter output remains untrusted until protocol and evidence validation succeed
+      stage and allowedRules membership is validated by the caller against the
+      effective profile and selected evaluation skill; the adapter validates their
+      shape but does not redefine either support set
+
+      an absent, null, or empty stage; an absent, null, empty, or duplicate rule; or
+      implementationEvidence other than context-only or compare rejects during
+      preflight with AGENT_REQUEST_INVALID before prompt rendering or provider
+      invocation
+
+      after request-shape validation, every prompt-bound value is validated as
+      canonicalizable before capability and budget validation. Admissible values are
+      null, booleans, finite JSON numbers, well-formed Unicode strings, arrays of
+      admissible values, and string-keyed objects whose defined properties contain
+      admissible values; undefined object properties are absent
+
+      an unsupported value, non-finite number, or unpaired Unicode surrogate rejects
+      with AGENT_REQUEST_INVALID before capability or budget validation, prompt
+      rendering, or provider invocation
+
+      target component, workspaceAccess snapshot fingerprint, and evaluation-stage
+      purpose must exactly equal their PurposeRetrievalResult identities; the adapter
+      validates this invariant during preflight and rejects a mismatch with
+      AGENT_REQUEST_INVALID before provider invocation
+
+      provider cwd is derived only from workspaceAccess.agentRoot; no independently
+      supplied root path may select a different mutable or differently fingerprinted
+      workspace view
+
+      maxInputChars, elapsedTimeMs, maxCommands, maxCommandOutputChars,
+      maxInputTokens, and maxOutputTokens are positive safe integers; zero, negative,
+      fractional, non-finite, nonnumeric, and unsafe-integer values reject during
+      preflight with AGENT_BUDGET_INVALID and perform no provider invocation
+
+      evaluate receives only provider-neutral evaluation inputs; the adapter instance
+      already carries its optional bound model
+
+      AgentCapabilityContract is supplied by SigilCompilationProfile. Its preventive
+      constraints must be enforceable without broadening, while allowedCommands is
+      enforced as the exact operation-settlement policy defined by that contract
+
+      returned events have valid provider framing and a structurally valid final
+      findings object; candidate findings remain untrusted until compiler rule,
+      evidence, semantic-subject, and diagnostic validation succeeds
+
+      provider-specific cached, reasoning, or other usage measures may be absent, but
+      inputTokens and outputTokens are mandatory for every successful result
+
+      result contains configuredModel as the bound model or null and resolvedModel as
+      the provider-reported executed model or null when the provider does not report
+      it; resolvedModel never substitutes for configuredModel
+
+      when configuredModel and resolvedModel are both non-null they must be exactly
+      equal opaque strings; a mismatch rejects with AGENT_PROVIDER_FAILED because the
+      compiler owns no provider alias catalog
+
+      rejection carries exactly one AdapterFailure code and discards every partial
+      finding
+
+      observe caller cancellation at evaluation entry, immediately before returning
+      any preflight failure, and immediately before provider process creation.
+      Cancellation observed at any of those points rejects with AGENT_CANCELLED,
+      performs zero provider invocations, and takes precedence over another preflight
+      failure
+
+      successful settlement linearizes after valid provider completion, zero exit,
+      every validation, and temporary-state cleanup, immediately before return;
+      cancellation observed after process creation and at or before that point
+      rejects with AGENT_CANCELLED, while cancellation first observed afterward does
+      not replace the result
+
+      preflight includes request, capability, budget, prompt rendering,
+      maxInputChars, and the final pre-creation cancellation validation. Any
+      preflight rejection performs zero provider invocations; a request that
+      completes preflight performs exactly one provider invocation and never retries
+    }
+
+    AgentCommandTrace {
+      contains sequence as a nonnegative safe integer equal to the entry's zero-based
+      position, canonicalCommandFamily, providerOperationId, terminal status, and
+      provider exit code when supplied
+
+      providerOperationId is the provider-supplied non-empty string or null when the
+      provider supplies no identity. When start and terminal events are distinct, an
+      identifier is unique among open operations and correlates one terminal event to
+      exactly one start; terminal-only events require no open-operation correlation
+
+      contains one entry for every authorized settled operation in validated
+      terminal-event order. Sequence is assigned when the terminal event is accepted;
+      provider event gaps and rejected operations do not create trace gaps, and a
+      successful no-command run contains an empty trace
+
+      contains no raw arguments, environment values, command output, file content,
+      credential, or secret; unavailable non-sensitive fields use null rather than a
+      fabricated value
+
+      terminal status is completed or failed; completed means the native operation
+      emitted its successful terminal event and failed means it emitted a non-success
+      terminal event
+
+      completed and failed operations may appear in a successful result when the
+      provider settles afterward; cancellation returns no result or command trace
+
+      a missing or unrecognized terminal operation event rejects the adapter result
+      with AGENT_EVENT_INVALID rather than creating a trace status
+    }
+
+    AdapterFailure {
+      code is AGENT_CANCELLED, AGENT_REQUEST_INVALID, AGENT_BUDGET_INVALID,
+      AGENT_TIMEOUT, AGENT_BUDGET_EXCEEDED, AGENT_CAPABILITY_UNENFORCEABLE,
+      AGENT_PROVIDER_FAILED, AGENT_EVENT_INVALID, AGENT_SCHEMA_INVALID, or
+      AGENT_USAGE_UNAVAILABLE
+
+      capability mismatch maps to AGENT_CAPABILITY_UNENFORCEABLE; cancellation maps
+      to AGENT_CANCELLED; timeout maps to AGENT_TIMEOUT; input-size or execution
+      budget exhaustion maps to AGENT_BUDGET_EXCEEDED
+
+      startup or nonzero exit maps to AGENT_PROVIDER_FAILED; malformed or non-settled
+      events map to AGENT_EVENT_INVALID; missing or invalid final findings map to
+      AGENT_SCHEMA_INVALID; missing or malformed mandatory usage maps to
+      AGENT_USAGE_UNAVAILABLE
+
+      when conditions overlap, choose AGENT_CANCELLED before AGENT_REQUEST_INVALID,
+      then AGENT_BUDGET_INVALID, AGENT_TIMEOUT, AGENT_BUDGET_EXCEEDED,
+      AGENT_CAPABILITY_UNENFORCEABLE, AGENT_EVENT_INVALID, AGENT_SCHEMA_INVALID,
+      AGENT_USAGE_UNAVAILABLE, and AGENT_PROVIDER_FAILED in that precedence order
+
+      preserve the selected primary failure when termination or temporary-state
+      cleanup also fails; cleanup failure maps to AGENT_PROVIDER_FAILED only when no
+      preceding failure exists
     }
   }
 }

@@ -74,18 +74,24 @@ Commands:
   in the selected and related Sigil files, excluding terms whose `agentContext`
   value is `false`;
 - `sigil retrieve [path] (--component name | --file file) --purpose
-  semantic|architecture|implementation` returns a deterministic selected graph,
-  exact evidence, inclusion reasons, exclusion frontier, aggregated context, and
-  a content fingerprint; add `--format markdown` for a readable context pack;
+  semantic|architecture|implementation`
+  returns a deterministic selected graph, exact evidence, inclusion reasons,
+  exclusion frontier, aggregated context, and a content fingerprint; add
+  `--format markdown` for a readable context pack;
 - `sigil compile [stage] [path] [--component name | --file file
-  [--position line:column]]` runs
-  profile-scoped deterministic and direct-read agent evaluation. A stage operand
-  such as `semantic-readiness` runs that stage and its dependency closure.
-  Prefix a colliding path with `./`. Use `--format jsonl` for the versioned
-  event stream;
+  [--position line:column]]`
+  runs profile-scoped deterministic and direct-read agent evaluation. A stage
+  operand such as `semantic-readiness` runs that stage and its dependency
+  closure. Prefix a colliding path with `./`. Use `--format jsonl` for the
+  versioned event stream;
 - `sigil render ...` returns Markdown.
 
 Configure agentic compilation under `tools.compile`:
+
+<!--
+@sigil uses packages/compiler/src/profile.sigil::SigilCompilationProfile::CompilationProfile interface
+@sigil uses packages/compiler/src/adapter.sigil::SigilAgentAdapter::ModelBinding constraints,cases
+-->
 
 ```json
 {
@@ -93,7 +99,8 @@ Configure agentic compilation under `tools.compile`:
     "compile": {
       "defaultProfile": "standard",
       "adapter": {
-        "provider": "codex"
+        "provider": "opencode",
+        "model": "anthropic/claude-sonnet-4-5"
       },
       "budgets": {
         "elapsedTimeMs": 1800000,
@@ -112,11 +119,18 @@ Configure agentic compilation under `tools.compile`:
 }
 ```
 
-The compiler's Codex adapter runs ephemerally at the workspace root with
-read-only filesystem access, disabled network and approval escalation, and
-structured output. A configured provider that cannot enforce the same contract
-fails closed. Compilation does not generate code or execute implementation
-experiments.
+The compiler accepts `codex`, `claude`, `opencode`, and `pi` provider
+identities. The optional model is passed unchanged to the selected provider and
+becomes part of the effective-profile fingerprint. OpenCode uses pure JSON mode
+and isolated state; Pi uses JSON mode without sessions or discovered
+customization and exposes only `read`, `grep`, `find`, and `ls` inside
+adapter-owned process isolation; Codex uses its native read-only sandbox. The
+stock mappings run without a host-supplied authorization callback. Unsafe
+effects are disabled before launch, while exact operation allowlisting and
+`maxCommands` are enforced from emitted operation events. A rejected read-only
+operation may already have started before the provider is terminated and its
+complete result is discarded. Compilation does not generate code or execute
+implementation experiments.
 
 Unless `--no-cache` is set, completed compilation reports are atomically stored
 under the operating system's user cache directory and used to derive diagnostic

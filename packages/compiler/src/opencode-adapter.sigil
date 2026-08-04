@@ -1,0 +1,50 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+
+component SigilOpenCodeAdapter {
+  goal {
+    Map one SigilAgentAdapter request to an isolated OpenCode CLI execution.
+  }
+
+  interface {
+    OpenCodeAdapter {
+      evaluate(request) returns one settled SigilAgentAdapter result or rejects
+      without partial findings
+    }
+  }
+}
+
+expand SigilOpenCodeAdapter {
+  logic {
+    OpenCodeInvocation {
+      Run opencode run in pure JSON mode at the workspace root with isolated
+      temporary state and inline configuration.
+
+      Deny sharing, mutation, shell, task, external-directory, web, skill, LSP, and
+      interactive tools while permitting only built-in read, glob, grep, and list
+      inspection. Pass the optional model as one provider-native identifier.
+
+      Disable automatic updates, remote model-list refresh, default plugins, and
+      Claude compatibility discovery. Remove isolated state after every successful or
+      failed run.
+
+      Translate permitted native tool events to canonical command traces, assemble
+      exactly one completed assistant text result from validated text events, and
+      extract mandatory token usage plus an optional resolved model from validated
+      step-settlement events.
+
+      Reject error events, unknown event or part shapes, incomplete steps, absent
+      usage, and any event showing that inline deny-by-default permissions were not
+      effective. The inline permission policy is the preconfigured execution
+      boundary; no host-supplied per-operation callback is required.
+    }
+  }
+
+  constraints {
+    OpenCodeIsolation {
+      Repository configuration cannot override inline permissions or isolated state.
+      Each tool event is normalized and validated through SigilAgentAdapter before
+      settlement, and a violation terminates the provider and discards the
+      evaluation.
+    }
+  }
+}

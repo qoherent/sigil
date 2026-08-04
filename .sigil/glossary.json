@@ -714,6 +714,35 @@
           ]
         }
       ]
+    },
+    {
+      "id": "CompilerAgentExecution",
+      "include": [
+        "packages/compiler/**/*.sigil"
+      ],
+      "exclude": [],
+      "terms": [
+        {
+          "term": "preflight",
+          "definition": "The adapter phase before provider process creation that validates request identity and shape, capabilities, budgets, canonical prompt rendering, and input size; rejection performs no provider invocation.",
+          "aliases": [
+            "adapter preflight",
+            "preflight validation"
+          ],
+          "agentContext": true
+        },
+        {
+          "term": "canonical command family",
+          "definition": "A compiler-owned provider-neutral operation identity and immutable enforcement descriptor used to configure allowed provider-native capabilities before invocation and to classify each emitted native operation for audit and settlement.",
+          "aliases": [
+            "canonical command families",
+            "canonical command-family",
+            "canonical command-family identifier",
+            "canonical command-family identifiers"
+          ],
+          "agentContext": true
+        }
+      ]
     }
   ]
 }
