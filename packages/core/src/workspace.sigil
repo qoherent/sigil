@@ -9,94 +9,179 @@ component SigilWorkspaceLoader {
   goal {
     Discover and load one configured Sigil workspace through the filesystem port.
 
-    Enforce configured boundaries, nested-workspace isolation, member roots, and source selection before relationship resolution.
+    Enforce configured boundaries, nested-workspace isolation, member roots, and
+    source selection before relationship resolution.
   }
 
   interface {
     WorkspaceDiscovery {
       discoverSigilWorkspace(filesystem, options) returns WorkspaceDiscoveryResult
 
-      options identifies a start path and may provide an explicit root or current directory
+      options identifies a start path and may provide an explicit root or current
+      directory
 
-      WorkspaceDiscoveryResult exposes the selected root, ConfigFile path, parsed configuration, and diagnostics
+      WorkspaceDiscoveryResult exposes the selected root, ConfigFile path, parsed
+      configuration, and diagnostics
     }
 
     WorkspaceLoading {
       loadSigilWorkspace(filesystem, options) returns SigilWorkspace
 
-      SigilWorkspace adds declared member roots, loaded partial source documents, and accumulated diagnostics
+      SigilWorkspace adds declared member roots, loaded partial source documents, and
+      accumulated diagnostics
     }
 
-    GlossaryInterpretation {
-      loadSigilWorkspace reads and validates optional GlossaryFile into SigilWorkspace
+    WorkspaceSnapshotIdentity {
+      each loaded SigilWorkspace exposes one 64-character lowercase
+      workspaceSnapshotIdentity
+    }
+
+    GlossaryInterpretationLoading {
+      GlossaryInterpretationLoading adapts GlossaryInterpretation into the workspace
+      loading surface.
+
+      loadSigilWorkspace reads and validates optional GlossaryFile into
+      SigilWorkspace
     }
   }
 }
 
 expand SigilWorkspaceLoader {
   logic {
+    WorkspaceSnapshotIdentity {
+      Construct an RFC 8785 canonical object containing one record for the workspace
+      config source when present, one record for the glossary source when present,
+      and one record for every loaded Sigil source. Each record contains kind,
+      normalized workspace-relative POSIX path, and exact decoded source text.
+
+      Order records by normalized path then kind, serialize the object as UTF-8 JSON
+      Canonicalization Scheme output under RFC 8785, compute SHA-256 under FIPS
+      180-4, and encode the digest as 64 lowercase hexadecimal characters.
+    }
+
     WorkspaceDiscovery {
-      Without an explicit root, walk from the target toward filesystem root and select the nearest eligible ConfigFile.
+      Without an explicit root, walk from the target toward filesystem root and
+      select the nearest eligible ConfigFile.
 
       With an explicit root, require ConfigFile directly inside that root.
 
       Validate configuration before discovering or parsing Sigil sources.
 
-      Reject a nearer configured workspace when a configured parent does not exclude its subtree.
+      Reject a nearer configured workspace when a configured parent does not exclude
+      its subtree.
     }
 
     WorkspaceLoading {
       Derive member roots only from WorkspaceBoundary members.
 
-      Skip excluded independent nested workspaces and diagnose included nested ConfigFile instances.
+      Skip excluded independent nested workspaces and diagnose included nested
+      ConfigFile instances.
 
-      Apply SourceSelection includes and then excludes to normalized workspace-relative paths.
+      Apply SourceSelection includes and then excludes to normalized
+      workspace-relative paths.
 
       Parse selected source files in stable path order through SigilParser.
     }
 
     GlossaryInterpretation {
-      Check for GlossaryFile after selecting the workspace boundary and before resolving loaded documents.
+      Check for GlossaryFile after selecting the workspace boundary and before
+      resolving loaded documents.
 
-      When present, read GlossaryFile through SigilFileSystem and delegate interpretation to SigilGlossaryEngine.
+      When present, read GlossaryFile through SigilFileSystem and delegate
+      interpretation to SigilGlossaryEngine.
 
       Accumulate glossary diagnostics while keeping invalid definitions inactive.
     }
   }
 
   constraints {
+    WorkspaceSnapshotIdentity {
+      Snapshot identity excludes absolute workspace root, filesystem discovery order,
+      parsed objects, and diagnostics. A change to any included path or exact source
+      text is computationally expected to change the identity under SHA-256 collision
+      resistance, not guaranteed to do so absolutely.
+    }
+
     FileSystemPort {
       All filesystem access uses SigilFileSystem.
     }
 
     RecoverableResults {
-      Configuration and source problems accumulate as diagnostics with partial workspace results when practical.
+      SigilSemanticModel owns partial workspace results and SigilDiagnostics owns
+      their accumulated diagnostics.
+
+      Configuration and source problems accumulate as diagnostics with partial
+      workspace results when practical.
 
       Required filesystem failures propagate to the caller.
     }
 
     ModuleIndexFile {
-      Workspace loading accepts ModuleIndexFile at any included path and assigns it no workspace-discovery authority.
+      Workspace loading accepts ModuleIndexFile at any included path and assigns it
+      no workspace-discovery authority.
     }
 
     GlossaryInterpretation {
       GlossaryFile loading is independent from SourceSelection globs.
 
-      Absence is valid while a filesystem failure reading an existing GlossaryFile propagates to the caller.
+      Absence is valid while a filesystem failure reading an existing GlossaryFile
+      propagates to the caller.
+    }
+  }
+
+  decisions {
+    ContentDerivedWorkspaceSnapshotIdentity {
+      Decision: Identify one loaded Sigil workspace snapshot with RFC 8785 and
+      SHA-256 over its exact selected config, glossary, and Sigil source records.
+
+      Scope: Governs association of deterministic workspace projections and
+      host-supplied retrieval evidence; excludes implementation-source contents,
+      absolute workspace roots, and authentication.
+
+      Assumptions: Normalized relative paths plus exact decoded source text contain
+      every loaded input that can change the resolved Sigil workspace.
+
+      Trade-offs: Reading or hashing all selected inputs adds work during workspace
+      loading, while excluding the absolute root makes identical checkouts portable.
+
+      Design issues addressed: Object identity, modification times, and workspace
+      paths cannot reliably prove that auxiliary evidence belongs to the same
+      immutable semantic snapshot.
+
+      Discarded alternatives: Random identifiers, absolute-root identity,
+      modification-time identity, and hashing parsed objects were rejected as
+      nonportable, unstable, or insensitive to exact loaded input.
+
+      Consequences: Resolved workspaces and derived glossary projections share one
+      reproducible association key, while implementation evidence can fail closed on
+      a snapshot mismatch.
+
+      Revisit when: Workspace loading supports non-text semantic inputs or the
+      canonicalization or digest standard changes.
     }
   }
 
   cases {
+    WorkspaceSnapshotIdentity {
+      Loading identical selected source records from two absolute roots produces the
+      same workspaceSnapshotIdentity.
+
+      Changing one loaded Sigil source byte is computationally expected to produce a
+      different workspaceSnapshotIdentity.
+    }
+
     WorkspaceDiscovery {
       An excluded nested workspace resolves independently.
 
-      A nested workspace still included by a configured parent returns SIGIL_NESTED_CONFIG and loads no source.
+      A nested workspace still included by a configured parent returns
+      SIGIL_NESTED_CONFIG and loads no source.
 
       An explicit root without a direct ConfigFile returns SIGIL_CONFIG_NOT_FOUND.
     }
 
     WorkspaceLoading {
-      A path excluded by SourceSelection is not loaded even when an include pattern matches.
+      A path excluded by SourceSelection is not loaded even when an include pattern
+      matches.
 
       A filesystem read failure rejects workspace loading.
     }
@@ -104,7 +189,8 @@ expand SigilWorkspaceLoader {
     GlossaryInterpretation {
       A workspace without GlossaryFile loads normally.
 
-      A malformed GlossaryFile contributes diagnostics while loaded Sigil documents remain available.
+      A malformed GlossaryFile contributes diagnostics while loaded Sigil documents
+      remain available.
     }
   }
 }

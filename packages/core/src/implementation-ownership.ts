@@ -1,12 +1,14 @@
 import { diagnostic } from "./diagnostics.ts";
 import { normalizePath } from "./path.ts";
 import type {
+  ComponentIdentity,
   ImplementationArtifactKind,
   ImplementationRelation,
   ImplementationSection,
   ImplementationSource,
   OwnedImplementationProjection,
   OwnedImplementationTarget,
+  ResolvedComponent,
   ResolvedSigilWorkspace,
   SigilDiagnostic,
   SourceRange,
@@ -83,16 +85,21 @@ interface EntrypointMatch {
   readonly offset: number;
 }
 
-// @sigil implements packages/core/src/implementation-ownership.sigil::SigilImplementationOwnership::OwnedImplementationLookup interface,cases
+// @sigil implements packages/core/src/implementation-ownership.sigil::SigilImplementationOwnership::OwnedImplementationLookup interface,logic,constraints,cases
 export function ownedImplementationTargetsFor(
   resolved: ResolvedSigilWorkspace,
   implementationSources: readonly ImplementationSource[],
-  componentName: string,
+  componentIdentity: ComponentIdentity | string,
   conceptName?: string,
   sectionName?: ImplementationSection,
 ): OwnedImplementationProjection | undefined {
+  const componentName = typeof componentIdentity === "string"
+    ? componentIdentity
+    : componentIdentity.componentName;
   const owningComponent = resolved.components.find((component) =>
-    component.name === componentName
+    component.name === componentName &&
+    (typeof componentIdentity === "string" ||
+      component.filePath === componentIdentity.declarationPath)
   );
   if (!owningComponent) return undefined;
 
@@ -127,11 +134,13 @@ export function ownedImplementationTargetsFor(
         (sectionName !== undefined &&
           !result.target.sections.includes(sectionName))
       ) continue;
-      const componentPath = relativeToWorkspace(
-        resolved,
-        owningComponent.filePath,
-      );
-      if (result.annotation.sigilPath !== componentPath) continue;
+      if (
+        !componentMatchesSigilPath(
+          resolved,
+          owningComponent,
+          result.annotation.sigilPath,
+        )
+      ) continue;
       const key = `${result.target.relation}\0${result.target.filePath}\0${
         result.target.symbolIdentity ?? ""
       }\0${result.target.sections.join(",")}`;
@@ -250,6 +259,12 @@ function implementationAnnotations(
           sections: annotation.sectionNames as readonly ImplementationSection[],
           symbolIdentity: entrypoint?.identity,
           range: entrypoint?.range,
+          targetRange: entrypoint?.range,
+          annotationRange: rangeForOffsets(
+            source.text,
+            comment.start,
+            comment.end,
+          ),
         },
       });
     }
@@ -281,13 +296,17 @@ function parseImplementationAnnotation(
   };
 }
 
+/*
+ * @sigil implements packages/core/src/implementation-ownership.sigil::SigilImplementationOwnership::ImplementationAnnotation interface
+ * @sigil implements packages/core/src/implementation-ownership.sigil::SigilImplementationOwnership::TargetResolution constraints,cases
+ */
 function resolveAnnotationTarget(
   resolved: ResolvedSigilWorkspace,
   annotation: ParsedAnnotation,
 ): string | undefined {
   const component = resolved.components.find((item) =>
     item.name === annotation.componentName &&
-    relativeToWorkspace(resolved, item.filePath) === annotation.sigilPath
+    componentMatchesSigilPath(resolved, item, annotation.sigilPath)
   );
   if (!component) {
     return `Ownership annotation references unknown Sigil component ${annotation.componentName} in ${annotation.sigilPath}.`;
@@ -338,6 +357,17 @@ function resolveAnnotationTarget(
     return `Ownership annotation references section ${unresolvedSection} without a matching occurrence on ${target}.`;
   }
   return undefined;
+}
+
+function componentMatchesSigilPath(
+  resolved: ResolvedSigilWorkspace,
+  component: ResolvedComponent,
+  sigilPath: string,
+): boolean {
+  return [
+    component.filePath,
+    ...component.expansions.expands.map((expansion) => expansion.filePath),
+  ].some((filePath) => relativeToWorkspace(resolved, filePath) === sigilPath);
 }
 
 function commentBlocks(source: ImplementationSource): readonly CommentBlock[] {

@@ -2,38 +2,49 @@
 
 component SigilDesignConversation {
   goal {
-    Guide a user from incomplete intent or an existing contract to a coherent, modular, and improvable software design through focused material decisions.
+    Guide a user from incomplete intent or an existing contract to a coherent,
+    modular, and improvable software design through focused material decisions.
 
-    Surface unknowns, conflicts, improvement opportunities, alternatives, and pitfalls without replacing user decision authority.
+    Surface unknowns, conflicts, improvement opportunities, alternatives, and
+    pitfalls without replacing user decision authority.
   }
 
   interface {
     DesignContext {
-      supplies the selected component, matching expands, imported and importing contracts, relevant boundary summaries, repository evidence, and reviewed findings
+      supplies the selected component, matching expands, imported and importing
+      contracts, relevant boundary summaries, repository evidence, and reviewed
+      findings
 
-      distinguishes observed evidence, user-confirmed intent, unresolved ambiguity, improvement opportunities, suspected findings, and confirmed problems
+      distinguishes observed evidence, user-confirmed intent, unresolved ambiguity,
+      improvement opportunities, suspected findings, and confirmed problems
     }
 
     DesignConversation {
-      begins only when explicit design, review, or improvement work or a material unresolved issue requires user judgment
+      begins only when explicit design, review, or improvement work or a material
+      unresolved issue requires user judgment
 
       operates in exploration, improvement, or correction mode
 
-      presents one primary material decision per turn unless the user requests grouped review
+      presents one primary material decision per turn unless the user requests
+      grouped review
 
-      explains why the decision matters, available alternatives, their consequences, and a reasoned recommendation
+      explains why the decision matters, available alternatives, their consequences,
+      and a reasoned recommendation
 
       acknowledges each answer and states its effect on the emerging contract
     }
 
     DecisionLedger {
-      maintains confirmed, provisionally assumed, intentionally deferred, and unresolved decisions
+      maintains confirmed, provisionally assumed, intentionally deferred, and
+      unresolved decisions
 
-      summarizes agreed decisions, remaining blockers, deferrals, improvements, and conflicts
+      summarizes agreed decisions, remaining blockers, deferrals, improvements, and
+      conflicts
     }
 
     ProposalSynthesis {
-      produces exact proposed Sigil only after every blocking decision and confirmed material problem is resolved
+      produces exact proposed Sigil only after every blocking decision and confirmed
+      material problem is resolved
     }
   }
 }
@@ -41,95 +52,130 @@ component SigilDesignConversation {
 expand SigilDesignConversation {
   state {
     DesignContext {
-      Context is sufficient when the affected contract, related ownership and dependencies, repository evidence, and material review findings are available for the current decision.
+      Context is sufficient when the affected contract, related ownership and
+      dependencies, repository evidence, and material review findings are available
+      for the current decision.
     }
 
     DesignConversation {
-      Conversation phase is framing, exploring, resolving, synthesizing, or awaiting approval.
+      Conversation phase is framing, exploring, resolving, synthesizing, or awaiting
+      approval.
 
       Conversation mode is exploration, improvement, or correction.
 
-      A suspected finding remains under investigation until evidence confirms or dismisses it.
+      A suspected finding remains under investigation until evidence confirms or
+      dismisses it.
 
-      A confirmed material problem keeps the conversation in correction until resolved.
+      A confirmed material problem keeps the conversation in correction until
+      resolved.
     }
 
     DecisionLedger {
-      A material decision is confirmed, provisionally assumed, intentionally deferred, or unresolved.
+      A material decision is confirmed, provisionally assumed, intentionally
+      deferred, or unresolved.
     }
 
     ProposalSynthesis {
-      Synthesis readiness requires no blocking unresolved decision and no unresolved confirmed material problem.
+      Synthesis readiness requires no blocking unresolved decision and no unresolved
+      confirmed material problem.
     }
   }
 
   logic {
     DesignContext {
-      Consume the component picture produced by semantic and modularity review without duplicating graph-discovery mechanics.
+      Consume the component picture produced by semantic and modularity review
+      without duplicating graph-discovery mechanics.
 
-      Refresh affected related-Sigil evidence after a material decision and before proposal synthesis.
+      Refresh affected related-Sigil evidence after a material decision and before
+      proposal synthesis.
     }
 
     DesignConversation {
-      Enter only for explicit design, review, or improvement work or when a material unresolved decision or finding requires user judgment.
+      Enter only for explicit design, review, or improvement work or when a material
+      unresolved decision or finding requires user judgment.
 
-      Use exploration mode for incomplete intent, improvement mode for a coherent contract with credible improvement opportunities, and correction mode only for a confirmed material problem.
+      Use exploration mode for incomplete intent, improvement mode for a coherent
+      contract with credible improvement opportunities, and correction mode only for
+      a confirmed material problem.
 
-      Classify questions by their effect on purpose, boundary, ownership, behavior, lifecycle, architecture, risk, and verification.
+      Classify questions by their effect on purpose, boundary, ownership, behavior,
+      lifecycle, architecture, risk, and verification.
 
       Ask the unresolved question whose answer most strongly shapes later decisions.
 
-      Investigate suspected findings proportionally without automatically entering correction or blocking unrelated work.
+      Investigate suspected findings proportionally without automatically entering
+      correction or blocking unrelated work.
 
-      In correction mode, preserve affected Sigil, explain the exact evidence, consequences, risk, alternatives, and recommendation, and ask which intent should govern.
+      In correction mode, preserve affected Sigil, explain the exact evidence,
+      consequences, risk, alternatives, and recommendation, and ask which intent
+      should govern.
 
-      Reopen a confirmed decision when new evidence materially conflicts with it or indicates a material improvement opportunity.
+      Reopen a confirmed decision when new evidence materially conflicts with it or
+      indicates a material improvement opportunity.
 
-      After each answer, restate the resulting decision and identify dependent questions, improvements, or conflicts.
+      After each answer, restate the resulting decision and identify dependent
+      questions, improvements, or conflicts.
 
-      When the user is uncertain, present a conservative recommendation and permit only non-blocking uncertainty to be deferred.
+      When the user is uncertain, present a conservative recommendation and permit
+      only non-blocking uncertainty to be deferred.
     }
 
     EvidencePacket {
-      Request ApplicabilityAssessment from ExternalGuidanceEvidence after sufficient framing for each design or review scope.
+      Request ApplicabilityAssessment from ExternalGuidanceEvidence after sufficient
+      framing for each design or review scope.
 
-      Use required or recommended evidence to discover pitfalls, alternatives, consequences, uncertainty, and improvement opportunities before presenting affected recommendations.
+      Use required or recommended evidence to discover pitfalls, alternatives,
+      consequences, uncertainty, and improvement opportunities before presenting
+      affected recommendations.
 
-      Treat disagreement between authoritative sources as unresolved design evidence when no project decision exists.
+      Treat disagreement between authoritative sources as unresolved design evidence
+      when no project decision exists.
 
-      Enter correction mode only when applicable evidence confirms a material conflict with approved Sigil or a confirmed user decision.
+      Enter correction mode only when applicable evidence confirms a material
+      conflict with approved Sigil or a confirmed user decision.
 
-      Offer a conservative provisional option only when incomplete evidence affects a low-risk reversible decision.
+      Offer a conservative provisional option only when incomplete evidence affects a
+      low-risk reversible decision.
 
-      Require missing evidence or qualified review before recommending a definitive high-risk or compliance-critical choice.
+      Require missing evidence or qualified review before recommending a definitive
+      high-risk or compliance-critical choice.
     }
 
     DecisionLedger {
       Record each answer with its decision state and effect on unresolved blockers.
 
-      Preserve intentionally deferred decisions in every checkpoint and final synthesis.
+      Preserve intentionally deferred decisions in every checkpoint and final
+      synthesis.
 
-      Reopen a confirmed decision only when new evidence materially conflicts with it or indicates a material improvement opportunity.
+      Reopen a confirmed decision only when new evidence materially conflicts with it
+      or indicates a material improvement opportunity.
     }
 
     ProposalSynthesis {
-      When no blocking decision or confirmed material problem remains, summarize confirmed, provisional, deferred, and unresolved decisions before presenting exact Sigil.
+      When no blocking decision or confirmed material problem remains, summarize
+      confirmed, provisional, deferred, and unresolved decisions before presenting
+      exact Sigil.
     }
   }
 
   constraints {
     DesignConversation {
-      Each question materially improves the resulting contract or resolves a material finding.
+      Each question materially improves the resulting contract or resolves a material
+      finding.
 
-      Existing or approved Sigil is evidence of current intent and is not proof that the design cannot be improved.
+      Existing or approved Sigil is evidence of current intent and is not proof that
+      the design cannot be improved.
 
-      A suspected finding does not automatically become a correction or block unrelated user work.
+      A suspected finding does not automatically become a correction or block
+      unrelated user work.
 
-      A confirmed material problem cannot be deferred, treated as provisional, or bypassed for implementation.
+      A confirmed material problem cannot be deferred, treated as provisional, or
+      bypassed for implementation.
 
       Independent questions are not presented as an exhaustive questionnaire.
 
-      The user remains the authority for product, architecture, permission, risk, and tradeoff decisions.
+      The user remains the authority for product, architecture, permission, risk, and
+      tradeoff decisions.
 
       Immaterial hypothetical edge cases are not pursued merely for completeness.
     }
@@ -137,107 +183,145 @@ expand SigilDesignConversation {
     EvidencePacket {
       Evidence informs the conversation without replacing user decision authority.
 
-      Research uncertainty may keep an affected material decision unresolved but does not create an independent approval gate.
+      Research uncertainty may keep an affected material decision unresolved but does
+      not create an independent approval gate.
 
-      A valid packet may be reused without repeated research while its invalidation conditions remain unchanged.
+      A valid packet may be reused without repeated research while its invalidation
+      conditions remain unchanged.
     }
 
     DecisionLedger {
-      Provisional assumptions remain visible and do not become confirmed decisions implicitly.
+      Provisional assumptions remain visible and do not become confirmed decisions
+      implicitly.
 
       A blocking unresolved decision cannot be intentionally deferred.
     }
 
     ProposalSynthesis {
-      Exact Sigil is not synthesized while a blocking decision or confirmed material problem remains unresolved.
+      Exact Sigil is not synthesized while a blocking decision or confirmed material
+      problem remains unresolved.
     }
   }
 
   decisions {
     ConversationApplicability {
-      Decision: Enter DesignConversation only for explicit design, review, or improvement work or when inspected evidence exposes a material decision requiring user judgment.
+      Decision: Enter DesignConversation only for explicit design, review, or
+      improvement work or when inspected evidence exposes a material decision
+      requiring user judgment.
 
-      Scope: Governs invocation of Sigil design conversation; excludes ordinary status, explanation, diagnosis, and mechanical work with no material design choice.
+      Scope: Governs invocation of Sigil design conversation; excludes ordinary
+      status, explanation, diagnosis, and mechanical work with no material design
+      choice.
 
       Trade-offs: Some requests proceed without a conversational design phase.
 
-      Design issues addressed: Treating design conversation as a mandatory workflow stage interrupts unrelated and already-resolved requests.
+      Design issues addressed: Treating design conversation as a mandatory workflow
+      stage interrupts unrelated and already-resolved requests.
 
-      Consequences: Conversation is available for proactive improvement without activating for every user request.
+      Consequences: Conversation is available for proactive improvement without
+      activating for every user request.
 
-      Revisit when: The host can deterministically identify material design decisions.
+      Revisit when: The host can deterministically identify material design
+      decisions.
     }
 
     ConversationModes {
-      Decision: Use exploration, improvement, and correction as modes of one DesignConversation.
+      Decision: Use exploration, improvement, and correction as modes of one
+      DesignConversation.
 
-      Scope: Governs incomplete designs, review of coherent written contracts, and confirmed material problems.
+      Scope: Governs incomplete designs, review of coherent written contracts, and
+      confirmed material problems.
 
-      Trade-offs: The conversation must state its current mode and finding severity clearly.
+      Trade-offs: The conversation must state its current mode and finding severity
+      clearly.
 
-      Design issues addressed: A separate CorrectionConversation duplicates decision handling, while treating every suspicion as correction causes premature blocking.
+      Design issues addressed: A separate CorrectionConversation duplicates decision
+      handling, while treating every suspicion as correction causes premature
+      blocking.
 
-      Consequences: Suspected findings are investigated, optional improvements remain nonblocking, and only confirmed material problems enter correction mode.
+      Consequences: Suspected findings are investigated, optional improvements remain
+      nonblocking, and only confirmed material problems enter correction mode.
 
-      Revisit when: A materially different authority or communication channel is required for correction.
+      Revisit when: A materially different authority or communication channel is
+      required for correction.
     }
 
     RelatedDesignContext {
-      Decision: Require relevant cross-Sigil and repository context before material architectural decisions and recheck affected relationships before synthesis.
+      Decision: Require relevant cross-Sigil and repository context before material
+      architectural decisions and recheck affected relationships before synthesis.
 
-      Scope: Governs design and review decisions that can affect component boundaries, ownership, interfaces, lifecycle, or dependencies.
+      Scope: Governs design and review decisions that can affect component
+      boundaries, ownership, interfaces, lifecycle, or dependencies.
 
       Trade-offs: Material design work incurs focused context-discovery overhead.
 
-      Design issues addressed: Conversation based on an isolated component can improve one contract while making related contracts incoherent.
+      Design issues addressed: Conversation based on an isolated component can
+      improve one contract while making related contracts incoherent.
 
-      Consequences: Recommendations account for matching expands, dependencies, consumers, boundary summaries, and repository drift.
+      Consequences: Recommendations account for matching expands, dependencies,
+      consumers, boundary summaries, and repository drift.
 
-      Revisit when: Deterministic tooling supplies a complete semantic impact analysis.
+      Revisit when: Deterministic tooling supplies a complete semantic impact
+      analysis.
     }
 
     EvidenceConsumption {
-      Decision: Consume ExternalGuidanceEvidence proactively after framing to discover relevant pitfalls, alternatives, and improvements without redefining research applicability.
+      Decision: Consume ExternalGuidanceEvidence proactively after framing to
+      discover relevant pitfalls, alternatives, and improvements without redefining
+      research applicability.
 
       Scope: Governs evidence use inside DesignConversation.
 
       Trade-offs: Some design and review work pauses for targeted research.
 
-      Design issues addressed: Requiring prior proof that research will change a binding decision suppresses research that would discover valuable improvements.
+      Design issues addressed: Requiring prior proof that research will change a
+      binding decision suppresses research that would discover valuable improvements.
 
-      Consequences: Existing contracts can receive evidence-informed improvement review while irrelevant and repeated research remains avoidable.
+      Consequences: Existing contracts can receive evidence-informed improvement
+      review while irrelevant and repeated research remains avoidable.
 
-      Revisit when: Evidence discovery becomes deterministic or ceases to improve design decisions.
+      Revisit when: Evidence discovery becomes deterministic or ceases to improve
+      design decisions.
     }
   }
 
   cases {
     DesignConversation {
-      A vague product idea enters exploration mode and begins with intended outcome and users rather than implementation technology.
+      A vague product idea enters exploration mode and begins with intended outcome
+      and users rather than implementation technology.
 
-      A coherent written contract enters improvement mode when credible evidence could materially improve its architecture, modularity, safety, or operation.
+      A coherent written contract enters improvement mode when credible evidence
+      could materially improve its architecture, modularity, safety, or operation.
 
-      A suspected finding is investigated without automatically entering correction or blocking unrelated work.
+      A suspected finding is investigated without automatically entering correction
+      or blocking unrelated work.
 
-      A confirmed ownership conflict enters correction mode before proposal synthesis or implementation.
+      A confirmed ownership conflict enters correction mode before proposal synthesis
+      or implementation.
 
-      An uncertain user receives a recommendation with consequences rather than an unexplained default.
+      An uncertain user receives a recommendation with consequences rather than an
+      unexplained default.
     }
 
     EvidencePacket {
-      A version-sensitive framework choice cites matching official documentation while explaining alternatives.
+      A version-sensitive framework choice cites matching official documentation
+      while explaining alternatives.
 
-      Conflicting guidance is presented as uncertainty rather than disguised as a confident recommendation.
+      Conflicting guidance is presented as uncertainty rather than disguised as a
+      confident recommendation.
 
-      Missing compliance-critical evidence keeps the affected decision unresolved pending qualified review.
+      Missing compliance-critical evidence keeps the affected decision unresolved
+      pending qualified review.
     }
 
     DecisionLedger {
-      An intentionally deferred non-blocking decision remains visible in the synthesis.
+      An intentionally deferred non-blocking decision remains visible in the
+      synthesis.
     }
 
     ProposalSynthesis {
-      A permission, destructive-behavior, public-contract ambiguity, or confirmed material problem blocks exact Sigil and implementation.
+      A permission, destructive-behavior, public-contract ambiguity, or confirmed
+      material problem blocks exact Sigil and implementation.
     }
   }
 }

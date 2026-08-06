@@ -4,13 +4,14 @@ import type {
   ComponentDeclaration,
   ConceptIdentity,
   ExpandDeclaration,
+  ImportUse,
   ResolvedComponent,
   ResolvedConcept,
   ResolvedConceptNamespace,
   ResolvedConceptOccurrence,
   ResolvedConceptReference,
   ResolvedImport,
-  SemanticLine,
+  SemanticUnit,
   SigilDiagnostic,
   SigilResolution,
   SigilWorkspace,
@@ -35,6 +36,8 @@ interface MutableResolvedImportName {
   name: string;
   component?: ComponentDeclaration;
   componentFile?: string;
+  used: boolean;
+  uses: ImportUse[];
 }
 
 interface ComponentResolutionDraft {
@@ -93,28 +96,23 @@ export function resolveSigilRelationships(
       }
     }
   }
-
-  for (const [name, expands] of expandsByName) {
-    if (!componentsByName.has(name)) {
-      for (const expand of expands) {
-        diagnostics.push(diagnostic(
-          "SIGIL_EXPAND_WITHOUT_COMPONENT",
-          `expand ${name} has no matching component.`,
-          { filePath: expand.filePath, range: expand.declaration.range },
-        ));
-      }
-    }
-  }
+  const duplicateComponentNames = new Set(
+    [...componentsByName].filter(([, components]) => components.length > 1)
+      .map(([name]) => name),
+  );
 
   const resolvedImports: MutableResolvedImport[] = [];
 
   for (const file of workspace.files) {
     for (const declaration of file.document.imports) {
       const targetFile = resolveImportPath(workspace.root, declaration.path);
-      if (!documentByPath.has(targetFile)) {
+      if (
+        importTraversesOutsideWorkspace(declaration.path) ||
+        !documentByPath.has(targetFile)
+      ) {
         diagnostics.push(diagnostic(
           "SIGIL_UNRESOLVED_IMPORT_PATH",
-          `Import path @${declaration.path} resolved to missing file ${targetFile}.`,
+          `Import path @${declaration.path} did not resolve to an included workspace file (${targetFile}).`,
           { filePath: file.path, range: declaration.range },
         ));
         resolvedImports.push({
@@ -130,11 +128,17 @@ export function resolveSigilRelationships(
       const names: MutableResolvedImportName[] = declaration.names.map(
         (name) => {
           const component = targetDocument.components.find((item) =>
-            item.name === name
+            item.name === name && !duplicateComponentNames.has(name)
           );
           return component
-            ? { name, component, componentFile: targetFile }
-            : { name };
+            ? {
+              name,
+              component,
+              componentFile: targetFile,
+              used: false,
+              uses: [],
+            }
+            : { name, used: false, uses: [] };
         },
       );
 
@@ -148,6 +152,24 @@ export function resolveSigilRelationships(
   }
 
   resolveModuleIndexNames(resolvedImports);
+  resolveImportUses(workspace, resolvedImports, diagnostics);
+
+  for (const [name, expands] of expandsByName) {
+    const components = componentsByName.get(name) ?? [];
+    for (const expand of expands) {
+      if (
+        components.some((component) =>
+          !duplicateComponentNames.has(name) &&
+          expandTargetsComponent(expand, component, resolvedImports)
+        )
+      ) continue;
+      diagnostics.push(diagnostic(
+        "SIGIL_EXPAND_WITHOUT_COMPONENT",
+        `expand ${name} must declare its matching component locally or import it.`,
+        { filePath: expand.filePath, range: expand.declaration.range },
+      ));
+    }
+  }
 
   for (const item of resolvedImports) {
     if (!documentByPath.has(item.targetFile ?? "")) continue;
@@ -166,7 +188,10 @@ export function resolveSigilRelationships(
   const componentDrafts: ComponentResolutionDraft[] = [];
   for (const [name, components] of componentsByName) {
     for (const component of components) {
-      const expands = expandsByName.get(name) ?? [];
+      const expands = (expandsByName.get(name) ?? []).filter((expand) =>
+        !duplicateComponentNames.has(name) &&
+        expandTargetsComponent(expand, component, resolvedImports)
+      );
       const expansion: CollectedExpansion = {
         componentName: name,
         expands: expands.map((item) => ({
@@ -183,10 +208,20 @@ export function resolveSigilRelationships(
     }
   }
 
-  const resolvedComponents = resolveConceptNamespaces(
-    componentDrafts,
-    resolvedImports,
-    diagnostics,
+  const resolvedByDeclaration = new Map(
+    resolveConceptNamespaces(
+      componentDrafts.filter((component) =>
+        !duplicateComponentNames.has(component.name)
+      ),
+      resolvedImports,
+      diagnostics,
+    ).map((component) => [component.declaration, component]),
+  );
+  const resolvedComponents = componentDrafts.map((component) =>
+    resolvedByDeclaration.get(component.declaration) ?? {
+      ...component,
+      conceptNamespace: emptyConceptNamespace(component.name),
+    }
   );
 
   return {
@@ -195,6 +230,37 @@ export function resolveSigilRelationships(
     components: resolvedComponents,
     diagnostics,
   };
+}
+
+function emptyConceptNamespace(
+  componentName: string,
+): ResolvedConceptNamespace {
+  return {
+    componentName,
+    concepts: [],
+    accessibleConcepts: [],
+    publicConcepts: [],
+    references: [],
+  };
+}
+
+function expandTargetsComponent(
+  expand: IndexedExpand,
+  component: IndexedComponent,
+  imports: readonly ResolvedImport[],
+): boolean {
+  if (
+    normalizePath(expand.filePath) === normalizePath(component.filePath) &&
+    expand.declaration.name === component.declaration.name
+  ) return true;
+
+  return imports.some((item) =>
+    normalizePath(item.sourceFile) === normalizePath(expand.filePath) &&
+    item.names.some((name) =>
+      name.name === expand.declaration.name &&
+      name.component === component.declaration
+    )
+  );
 }
 
 function resolveConceptNamespaces(
@@ -340,6 +406,7 @@ function importedPublicConcepts(
     if (!contextFiles.has(normalizePath(item.sourceFile))) continue;
     for (const name of item.names) {
       if (!name.component) continue;
+      if (name.component === state.component.declaration) continue;
       const importedState = stateByDeclaration.get(name.component);
       if (importedState) {
         concepts.push(...importedState.namespace.publicConcepts);
@@ -354,7 +421,7 @@ function buildNamespace(
   imported: readonly ResolvedConcept[],
 ): ResolvedConceptNamespace {
   const importedByNormalized = groupConceptsByNormalized(imported);
-  const local = state.groups.map((group): ResolvedConcept => {
+  const local = state.groups.flatMap((group): readonly ResolvedConcept[] => {
     const exactImported = distinctConceptIdentities(
       (importedByNormalized.get(group.normalizedIdentifier) ?? []).filter(
         (concept) => concept.identifier === group.identifier,
@@ -363,13 +430,38 @@ function buildNamespace(
     const importedMatch = exactImported.length === 1
       ? exactImported[0]
       : undefined;
-    return {
-      identity: importedMatch?.identity ?? group.identity,
-      identifier: group.identifier,
-      isPublic: group.isPublic,
-      isImported: importedMatch !== undefined,
-      occurrences: group.occurrences,
-    };
+    if (!importedMatch) return [localResolvedConcept(group)];
+
+    const componentOccurrences = group.occurrences.filter((occurrence) =>
+      occurrence.ownerKind === "component"
+    );
+    const expandOccurrences = group.occurrences.filter((occurrence) =>
+      occurrence.ownerKind === "expand"
+    );
+    const concepts: ResolvedConcept[] = [];
+    if (componentOccurrences.length > 0) {
+      concepts.push({
+        identity: group.identity,
+        identifier: group.identifier,
+        isPublic: componentOccurrences.some((occurrence) =>
+          occurrence.sectionName === "interface"
+        ),
+        isImported: false,
+        occurrences: componentOccurrences,
+      });
+    }
+    if (expandOccurrences.length > 0) {
+      concepts.push({
+        identity: importedMatch.identity,
+        identifier: group.identifier,
+        isPublic: expandOccurrences.some((occurrence) =>
+          occurrence.sectionName === "interface"
+        ),
+        isImported: true,
+        occurrences: expandOccurrences,
+      });
+    }
+    return concepts;
   });
 
   const accessible = mergeConceptsByIdentity([...imported, ...local]);
@@ -415,7 +507,7 @@ function resolveConceptReferences(
 
   for (const declaration of declarations) {
     for (const section of declaration.sections) {
-      for (const line of section.lines) {
+      for (const line of section.units) {
         const lineReferences = concepts.flatMap((concept) =>
           referenceRanges(line, concept.identifier).map((range) => ({
             conceptIdentity: concept.identity,
@@ -452,32 +544,37 @@ function unambiguousAccessibleConcepts(
 }
 
 function referenceRanges(
-  line: SemanticLine,
+  line: SemanticUnit,
   identifier: string,
 ): readonly ResolvedConceptReference["range"][] {
   const ranges: ResolvedConceptReference["range"][] = [];
-  let start = 0;
-  while (start <= line.text.length - identifier.length) {
-    const found = line.text.indexOf(identifier, start);
-    if (found < 0) break;
-    const before = line.text[found - 1];
-    const after = line.text[found + identifier.length];
-    if (
-      !isConceptIdentifierCharacter(before) &&
-      !isConceptIdentifierCharacter(after)
-    ) {
-      ranges.push({
-        start: {
-          line: line.range.start.line,
-          column: line.range.start.column + found,
-        },
-        end: {
-          line: line.range.start.line,
-          column: line.range.start.column + found + identifier.length,
-        },
-      });
+  for (let lineOffset = 0; lineOffset < line.sourceLines.length; lineOffset++) {
+    const source = line.sourceLines[lineOffset];
+    const content = source.trim();
+    const contentColumn = source.indexOf(content) + 1;
+    let start = 0;
+    while (start <= content.length - identifier.length) {
+      const found = content.indexOf(identifier, start);
+      if (found < 0) break;
+      const before = content[found - 1];
+      const after = content[found + identifier.length];
+      if (
+        !isConceptIdentifierCharacter(before) &&
+        !isConceptIdentifierCharacter(after)
+      ) {
+        ranges.push({
+          start: {
+            line: line.range.start.line + lineOffset,
+            column: contentColumn + found,
+          },
+          end: {
+            line: line.range.start.line + lineOffset,
+            column: contentColumn + found + identifier.length,
+          },
+        });
+      }
+      start = found + identifier.length;
     }
-    start = found + identifier.length;
   }
   return ranges;
 }
@@ -640,22 +737,150 @@ function resolveModuleIndexNames(imports: MutableResolvedImport[]): void {
   }
 }
 
+// @sigil implements packages/core/src/resolver.sigil::SigilResolver::ImportUse interface,logic,constraints,cases
+function resolveImportUses(
+  workspace: SigilWorkspace,
+  imports: MutableResolvedImport[],
+  diagnostics: SigilDiagnostic[],
+): void {
+  const fileByPath = new Map(
+    workspace.files.map((file) => [normalizePath(file.path), file.document]),
+  );
+  const eligibleSections = new Set([
+    "interface",
+    "state",
+    "logic",
+    "constraints",
+    "cases",
+  ]);
+
+  for (const resolvedImport of imports) {
+    const source = fileByPath.get(normalizePath(resolvedImport.sourceFile));
+    if (!source) continue;
+    for (let index = 0; index < resolvedImport.names.length; index++) {
+      const imported = resolvedImport.names[index];
+      if (!imported.component || !imported.componentFile) continue;
+      const uses: ImportUse[] = [];
+      const addUse = (use: ImportUse): void => {
+        if (
+          !uses.some((item) =>
+            item.kind === use.kind &&
+            item.filePath === use.filePath &&
+            item.range.start.line === use.range.start.line &&
+            item.range.start.column === use.range.start.column
+          )
+        ) uses.push(use);
+      };
+
+      if (isModuleFile(resolvedImport.sourceFile)) {
+        addUse({
+          kind: "module-index-surface",
+          filePath: resolvedImport.sourceFile,
+          range: resolvedImport.declaration.nameRanges[index] ??
+            resolvedImport.declaration.range,
+        });
+      }
+
+      for (const expansion of source.expands) {
+        if (expansion.name !== imported.name) continue;
+        addUse({
+          kind: "structural-expand",
+          filePath: resolvedImport.sourceFile,
+          ownerKind: "expand",
+          ownerName: expansion.name,
+          range: expansion.range,
+        });
+      }
+
+      const publicConcepts = new Set(
+        imported.component.sections
+          .filter((section) => section.name === "interface")
+          .flatMap((section) =>
+            section.concepts.map((concept) => concept.identifier)
+          ),
+      );
+      for (const declaration of [...source.components, ...source.expands]) {
+        for (
+          const section of declaration.sections.filter((item) =>
+            eligibleSections.has(item.name)
+          )
+        ) {
+          for (const unit of section.units) {
+            for (const range of referenceRanges(unit, imported.name)) {
+              addUse({
+                kind: "component-reference",
+                filePath: resolvedImport.sourceFile,
+                ownerKind: declaration.kind,
+                ownerName: declaration.name,
+                sectionName: section.name,
+                range,
+              });
+            }
+            for (const concept of publicConcepts) {
+              for (const range of referenceRanges(unit, concept)) {
+                addUse({
+                  kind: "public-concept-reference",
+                  filePath: resolvedImport.sourceFile,
+                  ownerKind: declaration.kind,
+                  ownerName: declaration.name,
+                  sectionName: section.name,
+                  range,
+                });
+              }
+            }
+          }
+          for (const block of section.concepts) {
+            if (!publicConcepts.has(block.identifier)) continue;
+            addUse({
+              kind: "public-concept-reference",
+              filePath: resolvedImport.sourceFile,
+              ownerKind: declaration.kind,
+              ownerName: declaration.name,
+              sectionName: section.name,
+              range: block.range,
+            });
+          }
+        }
+      }
+
+      imported.uses = uses;
+      imported.used = uses.length > 0;
+      if (!imported.used) {
+        diagnostics.push(diagnostic(
+          "SIGIL_UNUSED_IMPORT",
+          `Imported component ${imported.name} has no qualifying use in ${resolvedImport.sourceFile}.`,
+          {
+            filePath: resolvedImport.sourceFile,
+            range: resolvedImport.declaration.nameRanges[index] ??
+              resolvedImport.declaration.range,
+          },
+        ));
+      }
+    }
+  }
+}
+
 function resolveImportPath(root: string, importPath: string): string {
   const target = importPath.endsWith(".sigil")
     ? importPath
-    : joinPath(importPath, "#module.sigil");
+    : joinPath(importPath, "_module.sigil");
   return normalizePath(joinPath(root, target));
+}
+
+function importTraversesOutsideWorkspace(importPath: string): boolean {
+  const normalized = normalizePath(importPath);
+  return normalized === ".." || normalized.startsWith("../");
 }
 
 function detectImportCycles(
   imports: readonly ResolvedImport[],
 ): SigilDiagnostic[] {
   const diagnostics: SigilDiagnostic[] = [];
-  const adjacency = new Map<string, string[]>();
+  const adjacency = new Map<string, ResolvedImport[]>();
   for (const item of imports) {
     if (!item.targetFile) continue;
     const edges = adjacency.get(item.sourceFile) ?? [];
-    edges.push(item.targetFile);
+    edges.push(item);
     adjacency.set(item.sourceFile, edges);
   }
 
@@ -664,20 +889,25 @@ function detectImportCycles(
   const stack: string[] = [];
 
   function visit(file: string): void {
-    if (visiting.has(file)) {
-      const cycleStart = stack.indexOf(file);
-      const cycle = [...stack.slice(cycleStart), file];
-      diagnostics.push(diagnostic(
-        "SIGIL_IMPORT_CYCLE",
-        `Import cycle detected: ${cycle.join(" -> ")}.`,
-        { filePath: file },
-      ));
-      return;
-    }
     if (visited.has(file)) return;
     visiting.add(file);
     stack.push(file);
-    for (const next of adjacency.get(file) ?? []) {
+    for (const edge of adjacency.get(file) ?? []) {
+      const next = edge.targetFile;
+      if (!next) continue;
+      if (visiting.has(next)) {
+        const cycleStart = stack.indexOf(next);
+        const cycle = [...stack.slice(cycleStart), next];
+        diagnostics.push(diagnostic(
+          "SIGIL_IMPORT_CYCLE",
+          `Import cycle detected: ${cycle.join(" -> ")}.`,
+          {
+            filePath: edge.sourceFile,
+            range: edge.declaration.range,
+          },
+        ));
+        continue;
+      }
       visit(next);
     }
     stack.pop();

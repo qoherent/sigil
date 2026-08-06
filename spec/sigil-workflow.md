@@ -12,7 +12,7 @@ They are meant to reduce lost rationale, ownership ambiguity, review bottlenecks
 4. The agent checks semantic readiness: goal clarity, interface completeness, state and lifecycle behavior, constraints, cases, cross-Sigil coherence, modularity, and code/spec drift.
 5. The agent assesses whether current standards, formal guidance, or official platform practices materially affect the selected contract.
 6. The agent uses manageable conversational rounds to discover greenfield intent and to resolve vague brownfield application purpose, boundaries, users, and external surfaces; established contracts need questions only when answers materially change them.
-7. Brownfield reconstruction and externally informed additions are shown as exact proposed semantic lines before the agent edits Sigil.
+7. Brownfield reconstruction and externally informed additions are shown as exact proposed semantic units before the agent edits Sigil.
 8. The user approves, rejects, or revises the proposal.
 9. The agent writes only the approved Sigil, validates it, and stops at the semantic review gate.
 10. Before coding, the agent discovers coherent implementation and UI components, classifies each material concern as a component, implementation-specific expand, or intentional omission, and reports an implementation coverage map.
@@ -46,7 +46,7 @@ anchor exploration is preserved in
 ## Proposal And Review Gates
 
 Brownfield reconstruction and compatible external guidance have a proposal gate before any Sigil edit.
-The agent presents the exact semantic lines, target files, locations, imports, evidence, conflicts, and uncertainty, then waits for explicit approval.
+The agent presents the exact semantic units, target files, locations, imports, evidence, conflicts, and uncertainty, then waits for explicit approval.
 
 Potential or definite conflicts are not silently merged.
 The agent preserves the existing Sigil, warns the user, explains the impact, and offers concrete resolution options.
@@ -63,9 +63,9 @@ At the review gate, the agent should report:
 Requests like "use Sigil", "improve Sigil", "prepare Sigil", or "check the spec before coding" are not approval to write implementation code.
 They mean the agent should work on the documentation/specification layer and wait for review.
 
-After approval, a placement-only move or split that preserves approved semantic lines may proceed without another semantic review gate.
+After approval, a placement-only move or split that preserves approved semantic units may proceed without another semantic review gate.
 Required import-path updates are placement-only.
-Any added, removed, or changed semantic line creates another review gate.
+Any added, removed, or changed semantic unit creates another review gate.
 
 ## Historical Anchor Workflow
 
@@ -78,7 +78,7 @@ The rejected proposal was:
 
 1. Resolve the approved Sigil component and its collected expansions.
 2. Build a deterministic source AST and symbol index.
-3. Produce no more than twenty inspectable source candidates for each selected semantic line.
+3. Produce no more than twenty inspectable source candidates for each selected semantic unit.
 4. Let a host model propose `implements`, `verifies`, or `supports` relationships when natural-language interpretation is required.
 5. Validate every proposed target deterministically.
 6. Present initial or ambiguous mappings for explicit human approval.
@@ -114,7 +114,7 @@ with targeted follow-up questions. It synthesizes a candidate goal and
 interface for each boundary, then asks the user to confirm or correct them.
 
 After confirmation, the agent proposes an ordinary summary component in each
-configured boundary's `#module.sigil`. A boundary module index may combine that
+configured boundary's `_module.sigil`. A boundary module index may combine that
 summary with direct imports defining its directory-import surface. Material
 boundary-wide evidence may be proposed in a matching `expand` using the general
 section meanings. Incidental dependencies, secrets, low-level configuration,
@@ -158,7 +158,7 @@ Approved Sigil should live beside the module, feature, abstraction, or implement
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
 The workspace-root `.sigil/config.json` remains the discovery marker.
-`#module.sigil` is a directory-import index and has no discovery authority;
+`_module.sigil` is a directory-import index and has no discovery authority;
 configured boundary indexes conventionally contain ordinary summary components.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.
 

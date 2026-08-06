@@ -1,0 +1,208 @@
+@integrations/skills/sigil/design-compilation-review.sigil import { SigilDesignCompilationReview }
+@integrations/skills/sigil/review-gate.sigil import { SigilReviewGate }
+
+component SigilGlossaryWorkflow {
+  goal {
+    Keep reviewed project vocabulary coherent through separate deterministic
+    inspection, model-assisted candidate extraction, and explicitly approved
+    glossary mutation.
+  }
+
+  interface {
+GlossaryWorkflow {
+      validates deterministic glossary diagnostics before semantic review
+
+      extracts candidate domain terms and conflicting usage from Sigil prose
+
+      separates deterministic glossary projection inspection from mandatory
+      model-assisted candidate extraction
+
+      reports candidate evidence or an explicit evidence-based no-material-candidate
+      result after accepted post-write DesignCompilationReview evidence and before
+      the next applicable implementation ReviewGate
+
+      classifies every Sigil session as glossary extraction required, extraction
+      deferred, or deterministic inspection only
+
+      reports the selected glossary status and its evidence instead of silently
+      skipping candidate identification
+
+      presents exact reviewed GlossaryFile proposals without automatically changing
+      authority
+
+      requires post-write glossary inspection and candidate extraction after approved
+      Sigil is created or semantically edited
+
+      carries relevant reviewed terminology into implementation context
+
+      includes a glossary eval fixture covering extraction, ambiguity, context
+      placement, and approval
+    }
+  }
+}
+
+expand SigilGlossaryWorkflow {
+  logic {
+GlossaryWorkflow {
+      Collect candidate terms with their source occurrences and resolved bounded
+      contexts.
+
+      Separate accepted glossary authority from model-assisted candidate extraction.
+
+      When GlossaryFile exists, perform deterministic glossary inspection and
+      explicitly classify whether model-assisted extraction applies.
+
+      Begin model-assisted glossary candidate extraction only after the post-write
+      and post-grouping DesignCompilationReview is green or every yellow finding has
+      been explicitly reviewed and accepted as nonblocking for the selected scope.
+
+      When concept grouping is unnecessary, the post-write DesignCompilationReview
+      directly gates glossary candidate extraction.
+
+      After every approved Sigil write or semantic edit, run deterministic glossary
+      and workspace inspection, then independently perform model-assisted extraction
+      from the changed semantic units regardless of diagnostic count or GlossaryFile
+      presence.
+
+      Require model-assisted extraction after an approved semantic Sigil write or
+      edit, when the user requests vocabulary review, or when terminology ambiguity
+      materially affects the selected scope.
+
+      For an explicit vocabulary review or material ambiguity without changed Sigil,
+      extract from the selected loaded Sigil scope only after DesignCompilationReview
+      is green or every yellow finding has been explicitly reviewed and accepted as
+      nonblocking.
+
+      When design compilation is unavailable, incomplete, red, or has an unresolved
+      yellow finding, report extraction as deferred and name the blocking review
+      state.
+
+      When a session changes only implementation or performs read-only work without a
+      vocabulary-review trigger, report deterministic inspection only and explain
+      that no semantic Sigil lines entered candidate extraction.
+
+      Conclude that no material candidate exists only after inspecting the changed
+      semantic units, relevant surrounding occurrences, and accepted glossary
+      entries.
+
+      Before completing a triggered session, report candidates with evidence or an
+      evidence-based no-material-candidate result.
+
+      Report conflicting definitions, aliases, scope placement, and
+      normative-contract drift.
+
+      Present exact JSON additions, replacements, or removals to ReviewGate with
+      glossary-change before mutation.
+
+      After approved Sigil is written or semantically edited, run workspace and
+      glossary validation and inspect changed semantic units for candidate terms.
+
+      Block review and implementation when undefined or conflicting terminology could
+      materially alter behavior, ownership, state, APIs, or implementation.
+
+      After ReviewGate for glossary-change returns ready, write only the accepted
+      proposal, rerun glossary and workspace validation, and return to ReviewGate for
+      implementation.
+
+      Before implementation, obtain context through sigil context and make its scoped
+      glossary projection available to the coding agent.
+    }
+  }
+
+  constraints {
+GlossaryWorkflow {
+      Candidate extraction never becomes authoritative without explicit human
+      approval.
+
+      Normative approved Sigil governs when GlossaryFile conflicts with a component
+      contract.
+
+      Unknown vocabulary remains a semantic-review candidate rather than a
+      deterministic core diagnostic.
+
+      Zero diagnostics from sigil glossary establishes only that the deterministic
+      glossary projection is valid; it never proves the absence of unknown candidate
+      vocabulary, conflicting meanings, or incorrect scope.
+
+      A host does not report that no glossary changes are needed until model-assisted
+      candidate extraction is complete and its evidence is recorded.
+
+      Ordinary unambiguous vocabulary does not block review merely because it is
+      absent from GlossaryFile.
+
+      Material terminology ambiguity blocks implementation until its reviewed
+      definition, aliases, and workspace or bounded-context scope are approved.
+
+      Coding agents use scoped glossary context to interpret requests and Sigil
+      without treating glossary definitions as behavioral contracts.
+
+      Markdown extraction remains deferred from the initial fixture and workflow.
+    }
+  }
+
+  decisions {
+GlossaryWorkflow {
+      Decision: Make glossary routing and completion status explicit in every Sigil
+      session while keeping model-assisted extraction scope-triggered and
+      semantic-readiness-gated.
+
+      Scope: Governs sessions using the Sigil skill when a GlossaryFile exists,
+      approved Sigil is written or edited, vocabulary review is requested, or
+      material terminology ambiguity is identified; excludes unrelated implementation
+      prose and deferred Markdown extraction.
+
+      Trade-offs: Every Sigil session gains a small deterministic inspection and
+      reporting cost, while implementation-only sessions avoid repeated full
+      candidate extraction.
+
+      Design issues addressed: Silent routing and removal of glossary language from
+      the host prompt made correctly deferred or inapplicable extraction appear not
+      to run.
+
+      Discarded alternatives: Extracting candidates from the entire workspace in
+      every session would create repeated noise and could bypass semantic-readiness
+      ordering.
+
+      Consequences: Triggered extraction cannot disappear silently, deferred
+      extraction names its blocker, and inspection-only sessions explain why
+      candidate identification did not apply.
+
+      Revisit when: Deterministic tooling can identify candidate vocabulary or the
+      host exposes workflow-stage status directly.
+    }
+  }
+
+  cases {
+GlossaryWorkflow {
+      Two inconsistent uses of one candidate term produce a review question rather
+      than an inferred definition.
+
+      A zero-diagnostic glossary projection followed by a changed semantic unit
+      containing an unknown project-specific term still produces candidate evidence
+      and, when material, an exact glossary proposal.
+
+      When model-assisted inspection finds no material candidate, the host records
+      the changed lines and surrounding evidence inspected before proceeding to Sigil
+      review.
+
+      An approved Sigil edit with no material terminology candidate proceeds to
+      ReviewGate for implementation after workspace and glossary validation.
+
+      A correction-required session reports glossary extraction as deferred and names
+      the unresolved semantic blocker.
+
+      An implementation-only session with no semantic Sigil edit reports
+      deterministic inspection only rather than implying candidate extraction
+      completed.
+
+      An explicit vocabulary-review request extracts candidates from the selected
+      semantically aligned Sigil scope even when no Sigil line changed.
+
+      An approved candidate is written to its selected workspace or bounded-context
+      scope, validated, and returned to ReviewGate for implementation.
+
+      A coding handoff includes only glossary terms relevant to the selected
+      component or file and related sources.
+    }
+  }
+}

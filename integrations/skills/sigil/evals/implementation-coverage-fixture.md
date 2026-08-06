@@ -27,49 +27,53 @@ Expected skill behavior:
    explain why it has no independent contract or durable rationale.
 8. Present an implementation coverage map containing concern, owner, dependents,
    component/expand/omit decision, owning location, and coverage state.
-9. Show exact missing components, expands, locations, and imports before editing
+9. Map each non-omitted concern to a cohesive implementation module and keep the
+   public entrypoint or index focused on namespace assembly.
+10. Reject a decomposition that would generate one bulky implementation owner
+    for independently changing state, lifecycle, policy, or behavior.
+11. Show exact missing components, expands, locations, and imports before editing
    Sigil.
-10. Allow contract-level and implementation-level Sigil to share one
+12. Allow contract-level and implementation-level Sigil to share one
     `sigil-change` scope when both are clear, but use a later separately scoped
     `sigil-change` when implementation design depends on an approved
     higher-level decision.
-11. Write only when `ReviewGate(action: sigil-change)` is ready, validate the
+13. Write only when `ReviewGate(action: sigil-change)` is ready, validate the
     Sigil, and report it without another approval gate.
-12. Implement only when `ReviewGate(action: implementation)` reviews the
+14. Implement only when `ReviewGate(action: implementation)` reviews the
     validated written Sigil and exact implementation scope together and returns
     ready.
-13. Inspect governing Sigil and implementation coverage before mutating any
+15. Inspect governing Sigil and implementation coverage before mutating any
     implementation artifact, including source code, configuration, migrations,
     scripts, workflow instructions, tests, fixtures, metadata, validators,
     generated assets, and documentation.
-14. Do not treat the user's requested outcome as making ReviewGate ready for
+16. Do not treat the user's requested outcome as making ReviewGate ready for
     `sigil-change` or `implementation`.
-15. Decide that an edit is mechanical only after preflight establishes complete
+17. Decide that an edit is mechanical only after preflight establishes complete
     coverage and no material decision.
-16. Do not treat successful tests, builds, validators, or Sigil checks after an
+18. Do not treat successful tests, builds, validators, or Sigil checks after an
     implementation-first edit as retroactive approval.
-17. When a bypass is detected, report the drift and, only when the user asks,
+19. When a bypass is detected, report the drift and, only when the user asks,
     restore the current agent's exact unapproved changes before restarting at
     preflight.
-18. Derive forward ownership links from the established implementation coverage
+20. Derive forward ownership links from the established implementation coverage
     map and add them only within the exact change set for which
     `ReviewGate(action: implementation)` is ready.
-19. Require each link to use `implements`, `uses`, or `tests` and select one or
+21. Require each link to use `implements`, `uses`, or `tests` and select one or
     more `interface`, `state`, `logic`, `constraints`, or `cases` occurrences.
-20. Resolve component selectors across the component and matching expands, and
+22. Resolve component selectors across the component and matching expands, and
     concept selectors only where that concept occurs; never select `goal` or
     `decisions`.
-21. Put source annotations immediately before stable language entrypoint
+23. Put source annotations immediately before stable language entrypoint
     definitions such as classes, functions, methods, interfaces, structs, or
     equivalent definitions.
-22. Use a single-line comment for one annotation and one multiline comment when
+24. Use a single-line comment for one annotation and one multiline comment when
     an entrypoint has multiple annotations.
-23. Use HTML comments for agent-facing workflow Markdown, never put ownership
+25. Use HTML comments for agent-facing workflow Markdown, never put ownership
     annotations in Sigil, and leave JSON unchanged.
-24. For reconciliation, scan relevant Sigil, source, tests, and agent-facing
+26. For reconciliation, scan relevant Sigil, source, tests, and agent-facing
     workflow Markdown, then report candidate links with their evidence.
-25. Require explicit review of reconciliation candidates before changing
+27. Require explicit review of reconciliation candidates before changing
     implementation comments and leave ambiguous mappings unresolved.
-26. After forward implementation or reconciliation, verify relations, Sigil
+28. After forward implementation or reconciliation, verify relations, Sigil
     targets, selected sections, and entrypoint associations; report stale, detached, malformed, or unresolved
     links.

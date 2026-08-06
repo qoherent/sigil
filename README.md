@@ -61,15 +61,19 @@ VS Code extension releases are currently available as manually installable
 publishing remains deferred.
 
 ## Contributing
+
 For Contributors using the codebase directly, use the following.
 
-1) Clone the repo:
+1. Clone the repo:
+
 ```sh
 git clone git@github.com:qoherent/sigil.git
 cd sigil
 ```
-2) Install [Deno](https://docs.deno.com/runtime/getting_started/installation/)
-3) Install the Sigil CLI with deno, changes to code are hot reloaded this way:
+
+2. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/)
+3. Install the Sigil CLI with deno, changes to code are hot reloaded this way:
+
 ```sh
 deno task --cwd packages/cli install
 sigil --version
@@ -108,7 +112,7 @@ The Sigil platform architecture is drafted in
 Rejected historical architecture exploration for generated Receipts, evidence,
 and anchors is recorded in
 [ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md),
-but those capabilities are outside the active v0.5 workspace.
+but those capabilities are outside the active v0.7 workspace.
 
 ## Language Shape
 
@@ -184,8 +188,8 @@ Open design questions are tracked in
 ## Repository Layout
 
 The root [.sigil/config.json](./.sigil/config.json) defines this repository as a
-Sigil 0.5.0 workspace and excludes the independent example projects. The root
-[#module.sigil](./%23module.sigil) is its directory-import index and contains
+Sigil 0.7.0 workspace and excludes the independent example projects. The root
+[_module.sigil](./_module.sigil) is its directory-import index and contains
 the ordinary high-level project summary for this configured boundary.
 
 - `spec/` contains language, workflow, platform architecture, and open-question
@@ -206,7 +210,7 @@ states, and transition logic.
 Its [.sigil/config.json](examples/promise/.sigil/config.json) makes it an
 independent workspace named `promise`.
 
-`Slotted` in [examples/slotted/#module.sigil](examples/slotted/%23module.sigil)
+`Slotted` in [examples/slotted/_module.sigil](examples/slotted/_module.sigil)
 is an example room booking product used to test Sigil against product and module
 modeling.
 
@@ -255,9 +259,9 @@ The skill teaches coding-agent hosts to:
 - preserve material boundary-wide runtime modes, flows, binding architecture
   decisions, and observable outcomes in minimal expands while excluding
   incidental and task-specific details;
-- record durable rationale for material selected choices in optional
-  `decisions` sections while keeping binding outcomes in `constraints`;
-- propose brownfield and externally informed semantic lines before editing;
+- record durable rationale for material selected choices in optional `decisions`
+  sections while keeping binding outcomes in `constraints`;
+- propose brownfield and externally informed semantic units before editing;
 - stop at the review gate after semantic changes;
 - colocate approved Sigil with the implementation it explains;
 - use approved Sigil as implementation context.
@@ -279,10 +283,9 @@ specification remains [spec/sigil-language.md](spec/sigil-language.md).
 ## Current Status
 
 The core, CLI, LSP, VS Code extension, and Sigil skill are pre-production
-artifacts at 0.7.0, over Sigil Language and configuration
-contract 0.5.0. See
+artifacts at 0.7.1, over Sigil Language and configuration contract 0.7.0. See
 [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the
-[0.5 language migration guide](spec/migrating-to-0.5.md). Reviewed project
+[0.7 language migration guide](spec/migrating-to-0.7.md). Reviewed project
 vocabulary is described in the
 [workspace glossary guide](spec/sigil-glossary.md).
 
@@ -292,12 +295,12 @@ and portable coding-agent skill integration.
 
 `sigil-core` implements explicit language-version parsing, strict config
 validation, config-based discovery, declared workspace-member metadata, glob
-filtering, source ranges and semantic lines, reviewed workspace-glossary
+filtering, source ranges and semantic units, reviewed workspace-glossary
 validation and occurrence matching, explicit file and directory-index import
 resolution, collective expansion, graphs, scoped glossary context projections,
 and stable diagnostics. `sigil-cli` implements `init`, `version`, `parse`,
-`check`, `glossary`, `graph`, `context`, and Markdown `render` commands with
-machine-readable output and stable exit behavior.
+`check`, `glossary`, `graph`, `context`, Markdown `render`, and explicit `fmt`
+commands with machine-readable output and stable exit behavior.
 
 `sigil-lsp` is an implemented pre-production deliverable. Its initial contract
 covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
@@ -319,8 +322,8 @@ expands and trivial mechanics, and requires an implementation coverage map
 before coding. The active boundary keeps deterministic facts in shared packages
 and model-assisted interpretation in the host-neutral skill workflow.
 
-Editor integrations other than VS Code, stricter body semantics, project
-configuration, and code-generation integrations remain deferred.
+Editor integrations other than VS Code, stricter body semantics, and additional
+project configuration remain deferred.
 
 Receipts and anchors are rejected historical design explorations rather than
 active or deferred Sigil components.
@@ -328,4 +331,4 @@ active or deferred Sigil components.
 records the rejected proposal for deterministic shared packages, attributed
 host-assisted interpretation, a `sigil-indexer`, and generated review records
 without adding inline Sigil syntax. Its indexer and anchor contracts are not
-part of the active v0.5 workspace.
+part of the active v0.7 workspace.

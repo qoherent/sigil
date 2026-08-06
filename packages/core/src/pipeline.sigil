@@ -1,7 +1,9 @@
+@packages/core import { SigilCore }
 @packages/core/src/model.sigil import { SigilSemanticModel }
 @packages/core/src/diagnostics.sigil import { SigilDiagnostics }
 @packages/core/src/filesystem.sigil import { SigilFileSystem }
 @packages/core/src/parser.sigil import { SigilParser }
+@packages/core/src/formatter.sigil import { SigilFormatter }
 @packages/core/src/workspace.sigil import { SigilWorkspaceLoader }
 @packages/core/src/resolver.sigil import { SigilResolver }
 @packages/core/src/graph.sigil import { SigilGraphBuilder }
@@ -14,26 +16,37 @@ expand SigilCore {
       parseSigilDocument delegates versioned source interpretation to SigilParser.
     }
 
+    SourceFormatting {
+      formatSigilDocument delegates deterministic in-memory rendering to
+      SigilFormatter.
+    }
+
     GlossaryInterpretation {
-      parseSigilGlossary delegates strict glossary interpretation to SigilGlossaryEngine.
+      parseSigilGlossary delegates strict glossary interpretation to
+      SigilGlossaryEngine.
     }
 
     WorkspaceProcessing {
-      discoverSigilWorkspace and loadSigilWorkspace delegate configured discovery and loading to SigilWorkspaceLoader.
+      discoverSigilWorkspace and loadSigilWorkspace delegate configured discovery and
+      loading to SigilWorkspaceLoader.
     }
 
     WorkspaceResolution {
-      resolveSigilWorkspace obtains relationship data from SigilResolver and graph data from SigilGraphBuilder, then returns ResolvedSigilWorkspace.
+      resolveSigilWorkspace obtains relationship data from SigilResolver and graph
+      data from SigilGraphBuilder, then returns ResolvedSigilWorkspace.
     }
 
     SemanticProjections {
-      componentContracts, conceptNamespaceFor, collectedExpansionFor, and agentDependencyContextFor delegate structured views to SigilProjections.
+      componentContracts, conceptNamespaceFor, collectedExpansionFor, and
+      agentDependencyContextFor delegate structured views to SigilProjections.
     }
 
     GlossaryInspection {
-      glossaryProjectionForWorkspace delegates context resolution and occurrence matching to SigilGlossaryEngine.
+      glossaryProjectionForWorkspace delegates context resolution and occurrence
+      matching to SigilGlossaryEngine.
 
-      glossaryContextForFiles delegates scoped authoritative-term selection to SigilGlossaryEngine.
+      glossaryContextForFiles delegates scoped authoritative-term selection to
+      SigilGlossaryEngine.
     }
   }
 
@@ -41,15 +54,22 @@ expand SigilCore {
     DependencyDirection {
       SigilSemanticModel defines shared immutable data.
 
-      SigilDiagnostics and SigilFileSystem depend only on shared model and trivial path mechanics.
+      SigilDiagnostics and SigilFileSystem depend only on shared model and trivial
+      path mechanics.
 
       SigilParser depends on model and diagnostics.
 
-      SigilGlossaryEngine depends on shared model and diagnostics while remaining independent from workspace loading, relationship resolution, and hosts.
+      SigilFormatter depends on parser output, model, and diagnostics while remaining
+      independent from filesystem mutation and hosts.
 
-      SigilWorkspaceLoader depends on configuration, filesystem, parser, model, and diagnostics.
+      SigilGlossaryEngine depends on shared model and diagnostics while remaining
+      independent from workspace loading, relationship resolution, and hosts.
 
-      SigilWorkspaceLoader may invoke SigilGlossaryEngine while the engine does not depend on the loader.
+      SigilWorkspaceLoader depends on configuration, filesystem, parser, model, and
+      diagnostics.
+
+      SigilWorkspaceLoader may invoke SigilGlossaryEngine while the engine does not
+      depend on the loader.
 
       SigilResolver depends on loaded workspace data, model, and diagnostics.
 
@@ -63,17 +83,26 @@ expand SigilCore {
 
   cases {
     WorkspaceResolution {
-      A loaded workspace resolves through relationship and graph stages into one ResolvedSigilWorkspace.
+      A loaded workspace resolves through relationship and graph stages into one
+      ResolvedSigilWorkspace.
     }
 
     SemanticProjections {
-      Existing CLI and LSP consumers obtain contract, concept, and expansion views without accessing internal stage data directly.
+      Existing CLI and LSP consumers obtain contract, concept, and expansion views
+      without accessing internal stage data directly.
+    }
+
+    SourceFormatting {
+      Existing and future hosts obtain one canonical formatter without reimplementing
+      Sigil structure or prose wrapping.
     }
 
     GlossaryInspection {
-      Existing CLI and LSP consumers obtain glossary projections without implementing independent matchers.
+      Existing CLI and LSP consumers obtain glossary projections without implementing
+      independent matchers.
 
-      Context consumers obtain relevant glossary subsets without loading or filtering GlossaryFile independently.
+      Context consumers obtain relevant glossary subsets without loading or filtering
+      GlossaryFile independently.
     }
   }
 }

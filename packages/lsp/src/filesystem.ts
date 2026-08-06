@@ -24,7 +24,7 @@ export class DenoSigilFileSystem implements SigilFileSystem {
   }
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
 export class OverlaySigilFileSystem implements SigilFileSystem {
   readonly #base: SigilFileSystem;
   readonly #overlays = new Map<string, string>();
@@ -87,7 +87,7 @@ async function collectFiles(path: string, files: string[]): Promise<void> {
   }
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
 export function fileUriToPath(uri: string): string {
   const url = new URL(uri);
   if (url.protocol !== "file:") {
@@ -99,7 +99,7 @@ export function fileUriToPath(uri: string): string {
   return normalizePath(path);
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
 export function pathToFileUri(path: string): string {
   const normalized = normalizePath(path);
   const url = new URL("file:///");

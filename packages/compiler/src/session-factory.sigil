@@ -1,0 +1,82 @@
+@packages/compiler/src/proposal-workspace.sigil import { SigilProposalWorkspace }
+@packages/compiler/src/session.sigil import { SigilCompilationSession }
+@packages/compiler/src/session-store.sigil import { SigilCompilationSessionStore }
+@packages/compiler/src/profile.sigil import { SigilCompilationProfile }
+
+component SigilCompilationSessionFactory {
+  goal {
+    Atomically create one durable compilation session while keeping validation,
+    proposal materialization, persistence, and failed-create cleanup behind one
+    cohesive orchestration boundary.
+  }
+
+  interface {
+    CompilationSessionFactory {
+      create(workspacePath, target, profileName, focus) validates target, profile,
+      and focus and returns one durable SigilCompilationSession or no session
+
+      invalid target, profile, or focus rejects with COMPILER_INVALID_INVOCATION;
+      unavailable required SigilCompilationProfile evaluators reject with
+      COMPILER_PROFILE_EVALUATORS_REQUIRED; proposal-workspace and session-store
+      failures otherwise propagate their exact stable code
+
+      focus accepts design for architecture-design and its dependency closure or
+      implementation for current-code-compatibility and its dependency closure
+    }
+  }
+}
+
+expand SigilCompilationSessionFactory {
+  logic {
+    CompilationSessionFactory {
+      Validate target, profile, and focus in that order before materialization.
+      Reject invalid input with COMPILER_INVALID_INVOCATION and unavailable required
+      evaluators with COMPILER_PROFILE_EVALUATORS_REQUIRED.
+
+      Map design focus to architecture-design and implementation focus to current-
+      code-compatibility, including each stage's complete dependency closure.
+
+      Create SigilProposalWorkspace and retain its returned access before asking
+      SigilCompilationSessionStore to create the durable SessionRecord and lease.
+      Propagate other dependency failures through their exact stable code.
+
+      When session-store creation fails after proposal-workspace creation, release
+      access and close the workspace before rejecting. Successful cleanup preserves
+      the original store failure; ownership-unverified or host cleanup failure takes
+      precedence and preserves recovery evidence.
+    }
+  }
+
+  decisions {
+    DurableCompilationSessionCreation {
+      Decision: Validate caller inputs before materialization, then create the
+      proposal workspace before committing its durable session record.
+
+      Scope: Governs compilation-session creation order, stable failure propagation,
+      and failed-create cleanup; excludes later session operations.
+
+      Trade-offs: Persistence failure requires immediate verified workspace cleanup.
+
+      Design issues addressed: Callers need deterministic precedence across invalid
+      input, evaluator availability, proposal creation, persistence, and cleanup.
+
+      Consequences: A returned session is durable, while a rejected creation leaves
+      no usable partial session and preserves evidence when cleanup cannot finish.
+    }
+  }
+
+  cases {
+    CompilationSessionFactory {
+      Invalid target, profile, or focus performs no proposal materialization or
+      session-store mutation and rejects with COMPILER_INVALID_INVOCATION.
+
+      Design focus binds architecture-design and its dependency closure;
+      implementation focus binds current-code-compatibility and its dependency
+      closure.
+
+      Session-store failure after workspace creation releases access and closes the
+      workspace. Successful cleanup returns the original store failure; cleanup
+      ownership or host failure takes precedence and preserves recovery evidence.
+    }
+  }
+}

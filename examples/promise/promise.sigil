@@ -21,7 +21,6 @@ component Promise {
 
 }
 
-
 expand Promise {
   state {
     Pending
@@ -48,7 +47,8 @@ expand Promise {
 
     In Resolved state, then runs the resolved handler and catch passes through.
 
-    In Rejected state, catch runs the rejected handler and then passes through unless it has a rejection handler.
+    In Rejected state, catch runs the rejected handler and then passes through
+    unless it has a rejection handler.
 
     If then or catch is called while Pending, hold the reaction until settlement.
 

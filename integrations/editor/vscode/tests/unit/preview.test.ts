@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { hoverToMarkdown } from "../../src/preview.ts";
 
-// @sigil tests integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
+// @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
 test("returns Markdown markup content unchanged", () => {
   assert.equal(
     hoverToMarkdown({ contents: { kind: "markdown", value: "### Thing" } }),
@@ -10,7 +10,7 @@ test("returns Markdown markup content unchanged", () => {
   );
 });
 
-// @sigil tests integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
+// @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
 test("combines marked strings and fenced language content", () => {
   assert.equal(
     hoverToMarkdown({
@@ -23,7 +23,7 @@ test("combines marked strings and fenced language content", () => {
   );
 });
 
-// @sigil tests integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
+// @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
 test("returns undefined for absent or empty hover content", () => {
   assert.equal(hoverToMarkdown(null), undefined);
   assert.equal(hoverToMarkdown({ contents: [] }), undefined);

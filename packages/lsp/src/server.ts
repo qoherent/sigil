@@ -62,17 +62,17 @@ export interface SigilLanguageServerOptions {
 }
 
 /**
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::ReadOnlyLanguageService interface,constraints
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipSourceWatching logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::ReadOnlyLanguageService interface,constraints
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipSourceWatching logic,constraints,cases
  */
 export class SigilLanguageServer {
   readonly #fs: OverlaySigilFileSystem;

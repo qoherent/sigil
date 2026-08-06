@@ -1,0 +1,10 @@
+{
+  "id": "current-code-compatibility",
+  "version": "1.1.0",
+  "inputs": ["workspace-root", "component-target"],
+  "dependencies": ["architecture-design"],
+  "capabilities": ["read-workspace"],
+  "implementationEvidence": "compare",
+  "rules": ["IMPLEMENTATION_DRIFT", "OWNERSHIP_GAP", "CONTRACT_COMPATIBILITY"],
+  "output": "compiler-findings-v1"
+}

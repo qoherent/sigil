@@ -55,6 +55,7 @@ for (const target of TARGETS) {
     "compile",
     "--allow-read",
     "--allow-write",
+    "--allow-run",
     "--allow-env=HOME,USERPROFILE",
     "--target",
     target.deno,

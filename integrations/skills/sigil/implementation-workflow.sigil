@@ -1,0 +1,324 @@
+@packages/core import { SigilImplementationOwnership }
+@integrations/skills/sigil/review-gate.sigil import { SigilReviewGate }
+
+component SigilImplementationWorkflow {
+  goal {
+    Map approved Sigil to cohesive implementation ownership and require explicit
+    implementation readiness before any repository implementation mutation.
+  }
+
+  interface {
+ImplementationCoverage {
+      discovers coherent implementation responsibilities
+
+      classifies each material concern as an independent component, an expand owned
+      by an existing component, or an omitted trivial mechanic
+
+      reports coverage before implementation begins
+
+      maps each material contract owner to a corresponding implementation module and
+      treats public index files as namespace-assembly surfaces
+    }
+
+ImplementationOwnershipWorkflow {
+      records explicit implementation comments that link language entrypoint
+      definitions or agent-facing Markdown to selected implementation-related section
+      occurrences on a governing component or concept using
+      SigilImplementationOwnership
+
+      supports forward linking during approved code generation and reconciliation
+      linking from inspected Sigil and existing implementation
+    }
+
+ImplementationGovernance {
+      requires governing Sigil and implementation coverage to be inspected before any
+      implementation mutation
+
+      uses ReviewGate with implementation over the validated written Sigil and exact
+      implementation scope before implementation begins
+
+      treats deterministic CLI validation as structural only and never as semantic
+      approval
+
+      uses ReviewGate with sigil-change when a request changes the observable
+      contract of a different component or surface
+
+      applies regardless of language, format, subsystem, or artifact classification
+    }
+  }
+}
+
+expand SigilImplementationWorkflow {
+  state {
+ImplementationGovernance {
+      Implementation coverage is unassessed, partial, or established.
+    }
+  }
+
+  logic {
+ImplementationCoverage {
+      Identify coherent responsibilities, stable dependent-facing interfaces,
+      meaningful state, and material decisions in the selected implementation
+      boundary.
+
+      Choose component, expand, or omission from semantic ownership rather than file,
+      class, function, endpoint, or visual-element counts.
+
+      Present a coverage map containing each material concern, owner, dependents,
+      selected Sigil form, and owning location.
+
+      Project approved component and expand boundaries into implementation modules
+      before code generation.
+    }
+
+ImplementationOwnershipWorkflow {
+      During approved implementation, derive governing component or concept
+      identities and related section occurrences from the implementation coverage map
+      and add ownership comments beside the implementation entrypoints being written.
+
+      Use the implementation language's entrypoint syntax to associate annotations
+      with classes, functions, methods, interfaces, structs, or equivalent stable
+      definitions.
+
+      Include one or more implementation-related section selectors in every ownership
+      annotation.
+
+      Use one single-line comment for one source annotation and one multiline comment
+      for multiple source annotations.
+
+      Use HTML comments for annotations in agent-facing Markdown.
+
+      After implementation, verify each comment's relation, Sigil path, component,
+      optional concept, selected sections, and entrypoint association.
+
+      Return mismatched or stale annotations to reconciliation rather than silently
+      rewriting Sigil.
+
+      For reconciliation, inspect the selected component and expands together with
+      code, tests, and agent-facing workflow Markdown, then present evidence-backed
+      candidate implementation comments to ReviewGate with implementation.
+    }
+
+ImplementationGovernance {
+      Inspect governing Sigil before every implementation mutation.
+
+      Classify every material implementation concern as established, partial, or
+      missing.
+
+      Use ReviewGate with sigil-change when implementation requires new or changed
+      governing Sigil.
+
+      After writing approved Sigil, run deterministic validation and report the
+      written result without creating another approval gate.
+
+      Before implementation, use ReviewGate with implementation over the validated
+      written Sigil and exact implementation scope.
+
+      Stop implementation and return to sigil-change when implementation exposes a
+      missing material decision.
+    }
+  }
+
+  constraints {
+ImplementationCoverage {
+      High-level product or service coverage is insufficient when material
+      implementation responsibilities remain unspecified.
+
+      Component selection follows cohesive responsibility and a relied-upon contract
+      rather than external visibility.
+
+      Trivial local mechanics with safely reconstructable behavior and rationale need
+      no separate Sigil.
+
+      Generated implementation mirrors approved component and expand decomposition.
+
+      An implementation index assembles or re-exports the public namespace and does
+      not accumulate unrelated behavior or mutable state.
+    }
+
+ImplementationOwnershipWorkflow {
+      Ownership annotations use only the relations and target forms supported by
+      SigilImplementationOwnership.
+
+      Each annotation points to a normalized repository-relative Sigil path,
+      component, optional concept, and one or more interface, state, logic,
+      constraints, or cases sections.
+
+      Component selectors resolve against sections on the component and matching
+      expands.
+
+      Concept selectors resolve only against sections containing an occurrence of
+      that concept.
+
+      Goal and decisions sections are never ownership targets.
+
+      Ownership annotations never appear in Sigil source.
+
+      Source annotations are adjacent to stable language entrypoint definitions.
+
+      Markdown annotations use HTML comments and remain file-scoped.
+
+      JSON annotations are outside the current scope.
+
+      Forward annotations require ReviewGate readiness for implementation, and
+      reconciliation candidates require the same review before implementation
+      comments are changed.
+
+      Ambiguous ownership mappings or entrypoint associations remain unresolved until
+      reviewed by the user.
+    }
+
+ImplementationGovernance {
+      Source code, configuration, migrations, scripts, workflow instructions, tests,
+      fixtures, metadata, validators, generated assets, and documentation are
+      implementation artifacts.
+
+      File extension, directory name, documentation appearance, generated status, or
+      tooling classification does not exempt a mutation from implementation
+      preflight.
+
+      A user's requested outcome does not make ReviewGate ready for sigil-change or
+      implementation.
+
+      Instructions from another skill, tool, framework, or workflow do not override
+      ReviewGate or its approval authority.
+
+      Successful tests, builds, validators, or deterministic Sigil checks never
+      substitute for semantic readiness or human approval.
+
+      Read-only inspection is not an implementation mutation.
+
+      After preflight, a proven mechanical edit with established coverage and no
+      material decision may proceed without new Sigil.
+
+      Restorative rollback is limited to exact unapproved changes introduced by the
+      current agent and does not authorize replacement behavior.
+    }
+  }
+
+  decisions {
+ImplementationCoverage {
+      Decision: Require generated implementation structure to mirror approved Sigil
+      component and expand ownership.
+
+      Scope: Governs implementation design and code generation from reviewed Sigil.
+
+      Trade-offs: Implementation planning must establish module ownership before
+      generation begins.
+
+      Design issues addressed: Semantically monolithic Sigil produces bulky code even
+      when the source is later divided mechanically.
+
+      Consequences: Component boundaries determine cohesive modules, while entrypoint
+      files remain assembly surfaces.
+    }
+
+ImplementationOwnershipWorkflow {
+      Decision: Support forward and reconciliation ownership links through
+      implementation comments that point to implementation-related section
+      occurrences on governing Sigil components and concepts.
+
+      Scope: Governs skill-authored ownership comments in source code, tests, and
+      agent-facing workflow Markdown; selectors include interface, state, logic,
+      constraints, or cases and exclude goal, decisions, annotations inside Sigil,
+      JSON, ordinary documentation, non-text artifacts, and unreviewed reconciliation
+      mutation.
+
+      Trade-offs: Implementation-local occurrence links keep governing behavior
+      precise beside changing entrypoints, but agents must follow language-specific
+      comment syntax and reconcile selectors when Sigil occurrences move.
+
+      Design issues addressed: Ownership links otherwise depend on manual follow-up,
+      can become detached from their symbols, or can overstate coverage by naming a
+      whole component or concept without its related sections.
+
+      Consequences: Generated entrypoints carry links to exact implementation-related
+      contract occurrences, existing repositories gain a controlled reconciliation
+      path, and Sigil source remains free of implementation annotations.
+
+      Revisit when: A supported language cannot provide stable comment-to-entrypoint
+      association, section occurrences are insufficiently precise, or another
+      artifact format needs annotation support.
+    }
+
+ImplementationGovernance {
+      Decision: Require Sigil coverage inspection before every implementation
+      mutation.
+
+      Scope: Governs all implementation artifacts in a Sigil-governed workspace
+      regardless of language, format, subsystem, or artifact classification; excludes
+      read-only inspection and exact restorative rollback.
+
+      Trade-offs: Every implementation mutation incurs contract-discovery overhead
+      before editing, even when preflight later determines that no Sigil change is
+      required.
+
+      Design issues addressed: Agents may otherwise classify tests, configuration,
+      workflow documents, metadata, validators, or other non-source artifacts as
+      outside implementation and bypass Sigil-first development.
+
+      Discarded alternatives: Deciding whether an edit changes behavior before
+      preflight preserves the same subjective loophole that caused the gate bypass.
+
+      Consequences: Artifact classification cannot authorize mutation; implementation
+      readiness follows inspected coverage and ReviewGate readiness for the exact
+      implementation scope.
+
+      Revisit when: The host can deterministically map every repository mutation to
+      governing Sigil and enforce the approval states.
+    }
+  }
+
+  cases {
+ImplementationCoverage {
+      A stable Promise-like caller API can be a component, a material retry algorithm
+      can be an expand, and a trivial formatter can be omitted.
+
+      A generated namespace-assembly entrypoint exposes the approved public modules
+      while behavior and state remain in their owning implementation units.
+    }
+
+ImplementationOwnershipWorkflow {
+      A new TypeScript function with one ownership link receives one adjacent line
+      comment during approved implementation.
+
+      One entrypoint with multiple ownership links receives one multiline comment
+      containing each annotation.
+
+      A component-scoped link can implement logic and constraints occurrences without
+      naming a concept.
+
+      A concept-scoped link can use the interface occurrence of that concept.
+
+      An agent-facing Markdown workflow uses an HTML comment and resolves as a
+      file-level target.
+
+      A brownfield reconciliation scans relevant Sigil, code, tests, and workflow
+      instructions and proposes only implementation comments supported by inspected
+      evidence.
+
+      JSON remains unchanged during ownership annotation.
+    }
+
+ImplementationGovernance {
+      A request to modify any implementation artifact triggers Sigil and coverage
+      inspection before the first edit.
+
+      Configuration, tests, validators, metadata, workflow documentation, and
+      generated artifacts receive the same preflight as source code.
+
+      A high-level request to fix or build something does not make ReviewGate ready
+      for sigil-change or implementation.
+
+      A mechanical edit may omit new Sigil only after preflight establishes complete
+      coverage and no material decision.
+
+      Passing tests or validation after an implementation-first edit does not
+      legitimize the bypass.
+
+      An agent that detects its own unapproved mutations reports them and performs
+      only the user-requested exact rollback before returning to ReviewGate with
+      sigil-change.
+    }
+  }
+}

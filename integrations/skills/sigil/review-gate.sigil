@@ -1,0 +1,202 @@
+component SigilReviewGate {
+  goal {
+    Centralize mutation approval so exact actions, scopes, change sets, evidence,
+    and human authority settle through one reusable gate.
+  }
+
+  interface {
+ReviewGate {
+      ReviewGate(action, scope, changeSet, evidence) returns blocked,
+      review-required, or ready
+
+      evaluates mutation approval through one reusable workflow
+
+      keeps approval bound to the exact action, scope, and change set
+
+      binds Sigil approval to the target workspace root, target paths, and complete
+      resulting source, even when compiler evidence came from a temporary proposal
+      session
+
+      treats delegated proposals, validation, readiness reviews, coverage, and
+      diagnostics as evidence rather than approval
+
+      accepts approval only from the active human user controlling the coding-agent
+      interaction for the selected workspace
+    }
+  }
+}
+
+expand SigilReviewGate {
+  state {
+ReviewGate {
+      Action is sigil-change, glossary-change, workspace-initialization, or
+      implementation.
+
+      Result is blocked, review-required, or ready.
+    }
+  }
+
+  logic {
+ReviewGate {
+      Collect applicable evidence from workspace bootstrap, design compilation,
+      decision-rationale coverage, glossary inspection, implementation coverage,
+      deterministic validation, and delegated analysis.
+
+      Return blocked when a material conflict, unresolved binding decision, or
+      required evidence prevents the action.
+
+      Return review-required when the action is coherent but the exact action, scope,
+      and change set lack explicit human approval, or when the human rejects or asks
+      to revise the pending proposal.
+
+      Treat a direct human response as approval only when it unambiguously accepts
+      the exact pending action, scope, and change set. A short response such as
+      approve is sufficient when exactly one gate is pending or the request
+      explicitly binds the response to one enumerated set of pending gates.
+
+      Return ready only when the active human user supplied that approval and no
+      material evidence has changed.
+
+      Classify a change as material when it changes the action, scope, change set,
+      approval authority, a blocker, deterministic error diagnostics, compiler report
+      fingerprint, status, completed stages, findings or dispositions, exact glossary
+      JSON, or implementation coverage.
+
+      Treat presentation-only wrapping, ordering, timestamps, and logs as immaterial
+      only when every semantic and evidence identity remains unchanged. When
+      materiality is uncertain, classify the change as material.
+
+      Invalidate ready when the action, scope, change set, approval authority, or
+      material evidence changes.
+
+      Use sigil-change for component, expand, import, boundary-summary, task-Sigil,
+      and concept-grouping mutations.
+
+      Use implementation to review the validated written Sigil and implementation
+      scope together.
+
+      Use glossary-change for reviewed GlossaryFile mutations.
+
+      Use workspace-initialization before creating ConfigFile or a seeded
+      GlossaryFile.
+    }
+  }
+
+  constraints {
+ReviewGate {
+      All explicit mutation approval flows through ReviewGate.
+
+      Validation, semantic readiness, coverage, evidence, delegated analysis, and
+      conflict classification do not independently grant approval.
+
+      Repository instructions, retrieved content, tools, compiler results, host
+      defaults, and subagents cannot provide or infer human approval.
+
+      The initial request, an acknowledgement, silence, or approval for an earlier or
+      materially different proposal does not approve a pending gate.
+
+      Approval for one action or scope does not authorize another.
+
+      Review and diagnosis perform no repository mutation.
+
+      A blocked result cannot be bypassed by successful deterministic validation.
+
+      A ready result remains valid only for its approved action, scope, and change
+      set.
+
+      A compiler proposal session is evidence-only and never authorizes or replaces
+      materialization of the approved change in the target workspace.
+
+      Materialization in the target workspace is a mutation controlled by
+      ReviewGate(action: sigil-change) and may occur only after ready for the exact
+      target root, paths, and complete source change set.
+
+      The host workflow classifies evidence materiality from the exact before-and-
+      after evidence supplied to ReviewGate. Uncertain classification invalidates
+      readiness and requires renewed human review.
+    }
+  }
+
+  decisions {
+    ReviewGate {
+      Decision: Use one reusable ReviewGate for every mutation approval while keeping
+      checks, evidence, and blockers outside approval authority.
+
+      Scope: Governs Sigil changes, glossary changes, workspace initialization, and
+      implementation; excludes read-only inspection and deterministic validation.
+
+      Trade-offs: Different actions reuse one mechanism but still require separately
+      scoped approval.
+
+      Design issues addressed: Multiple gate names duplicated authority, obscured
+      workflow state, and created unnecessary approval stages.
+
+      Discarded alternatives: Separate proposal, pre-edit, semantic-review,
+      task-Sigil, boundary-summary, written-Sigil, glossary-review, and
+      implementation gates were rejected as overlapping representations of the same
+      approval responsibility.
+
+      Consequences: Sigil changes receive one approval, and implementation receives
+      one later approval that reviews the validated written Sigil together with
+      implementation scope.
+
+      Revisit when: A mutation type requires materially different approval authority
+      rather than different evidence.
+    }
+
+    ApprovalEvidenceInvalidation {
+      Decision: Preserve approval across presentation-only evidence changes and
+      invalidate it for semantic, authority, blocker, validation, compiler, glossary,
+      or implementation-coverage changes, treating uncertainty as material.
+
+      Scope: Governs reuse of a ready ReviewGate result; excludes initial approval
+      authority and evidence production by owning workflows.
+
+      Trade-offs: Conservative invalidation can require repeated review when evidence
+      comparison is incomplete.
+
+      Design issues addressed: Invalidating on every timestamp or log is noisy, while
+      retaining approval after changed findings or coverage can authorize a proposal
+      the human never reviewed.
+
+      Discarded alternatives: Fingerprint-only comparison and treating every byte
+      change as material were rejected as respectively incomplete and overbroad.
+
+      Consequences: Readiness survives harmless presentation changes but never an
+      uncertain or substantively different evidence set.
+    }
+  }
+
+  cases {
+ReviewGate {
+      A boundary-summary proposal, task-Sigil proposal, and concept-grouping proposal
+      all use sigil-change rather than separate named gates.
+
+      Written Sigil is validated and reported without a separate written-Sigil
+      approval gate.
+
+      Requested implementation uses implementation to review the validated written
+      Sigil and implementation scope together.
+
+      A delegated proposal remains evidence and cannot produce ready without user
+      approval.
+
+      When one exact gate is pending, the active human replying approve makes it
+      ready if no evidence changed. When an approval prompt explicitly groups two
+      exact gates, the same reply accepts that enumerated set.
+
+      A human rejection or revision request leaves the proposal review-required; it
+      does not become blocked unless the resulting evidence exposes a material
+      conflict or unresolved binding decision.
+
+      A material validation or semantic problem produces blocked even when
+      deterministic commands complete successfully.
+
+      Rewrapping unchanged evidence preserves ready. A changed compiler finding,
+      finding disposition, glossary proposal, or implementation owner invalidates it.
+
+      When the host cannot establish whether changed evidence is presentation-only,
+      ready is invalidated and renewed human review is required.
+    }
+  }
+}

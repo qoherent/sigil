@@ -16,6 +16,7 @@ The main flow is:
 
 ```text
 parse -> load workspace -> resolve imports/components/expands -> build graph -> emit diagnostics/projection primitives
+  \-> format one valid parsed source in memory
 ```
 
 The pipeline should move typed data forward through pure or mostly pure stages.
@@ -41,7 +42,7 @@ Responsibilities:
 
 - source locations and ranges;
 - document and declaration models;
-- sections and semantic lines;
+- sections, blank-line-delimited semantic units, and attached literal blocks;
 - workspace and graph models;
 - diagnostic shape;
 - public result wrappers.
@@ -60,7 +61,7 @@ Responsibilities:
 - parse top-level imports, components, and expands;
 - parse known section boundaries;
 - preserve raw section body lines;
-- create semantic lines;
+- create semantic units and preserve attached literal bodies;
 - recover from malformed structure where practical;
 - emit parser diagnostics.
 
@@ -86,6 +87,23 @@ Rules:
 - may depend on `model` for path-related result types if needed;
 - must not call Deno filesystem APIs in core logic;
 - must not know about CLI or editor hosts.
+
+### `formatter`
+
+Canonically renders one valid parsed `.sigil` source in memory.
+
+Responsibilities:
+
+- wrap ordinary prose at 79 content characters without counting indentation;
+- preserve semantic-unit identity and literal-block source content;
+- normalize only presentation outside literal bodies;
+- return formatted source and changed status without filesystem access.
+
+Rules:
+
+- may depend on `model`;
+- must reject documents with error diagnostics rather than repair them;
+- must not select files, write files, or reinterpret imports.
 
 ### `workspace`
 
@@ -206,7 +224,7 @@ Responsibilities:
 - in-memory filesystem implementation;
 - fixture loading helpers;
 - malformed Sigil examples;
-- assertions for diagnostics and semantic lines.
+- assertions for diagnostics and semantic units.
 
 Rules:
 
@@ -300,4 +318,4 @@ Required test fixtures include:
 
 Tests should assert diagnostic codes, not only messages.
 
-Tests should assert semantic line source ranges for representative inputs.
+Tests should assert semantic unit source ranges for representative inputs.

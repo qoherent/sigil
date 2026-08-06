@@ -2,70 +2,270 @@ component SigilLanguage {
   goal {
     Define the versioned source and interpretation contract for Sigil documents.
 
-    Give deterministic tools one structural model for components, expansions, sections, concepts, imports, and recoverable diagnostics.
+    Give deterministic tools one structural model for components, expansions,
+    sections, concepts, imports, and recoverable diagnostics.
   }
 
   interface {
     LanguageVersion {
-      sigilVersion = "0.5.0"
+      sigilVersion = "0.7.0"
 
-      workspace configuration declares the LanguageVersion that governs interpretation
+      workspace configuration declares the LanguageVersion that governs
+      interpretation
     }
 
     SourceDocument {
-      accepts UTF-8 .sigil source containing imports, components, expands, sections, concept blocks, and semantic lines
+      accepts UTF-8 .sigil source containing imports, components, expands, sections,
+      concept blocks, semantic units, and attached literal blocks
 
-      preserves recovered declarations, semantic lines, concept identities, and source ranges
+      interprets structural forms through SourceGrammar and malformed input through
+      SourceRecovery
 
-      reports structural diagnostics while retaining a partial document when practical
+      preserves recovered declarations, semantic units, literal blocks, concept
+      identities, original physical lines, and source ranges
+
+      returns structural diagnostics and the deterministic partial document defined
+      by SourceRecovery
+
+      treats diagnostic message prose as explanatory and non-normative while code,
+      severity, ordering, file path, range, retained result, and resume point carry
+      the compatibility contract
+    }
+
+    SourceGrammar {
+      recognizes structure only when a complete trimmed physical line matches the
+      applicable production at a top-level, form, section, or concept boundary
+
+      accepts this normative structural grammar where horizontal whitespace is space
+      or tab, newline is LF or CRLF, name is [A-Za-z][A-Za-z0-9_]*, concept-id is
+      [A-Za-z][A-Za-z0-9_-]*, path-token is one or more non-whitespace characters
+      other than braces or comma, backticks is three or more backtick characters, and
+      physical-line is any sequence of characters other than newline:
+      ```ebnf
+      document       = { blank | import | component | expand } ;
+      import         = "@" path-token ws "import" ws "{" ws-opt name-list ws-opt "}" line-end ;
+      name-list      = name { ws-opt "," ws-opt name } ;
+      component      = "component" ws name ws-opt "{" line-end { section | blank } "}" line-end ;
+      expand         = "expand" ws name ws-opt "{" line-end { section | blank } "}" line-end ;
+      section        = section-name ws-opt "{" line-end section-body "}" line-end ;
+      section-name   = "goal" | "interface" | "state" | "logic" | "constraints" | "decisions" | "cases" ;
+      section-body   = { blank | concept-block | prose-unit } ;
+      concept-block  = concept-header { blank | prose-unit } "}" line-end ;
+      concept-header = header-text ws-opt "{" line-end ;
+      section-header = name ws-opt "{" line-end ;
+      prose-unit     = prose-line { newline prose-line } [ newline literal-block ] line-end ;
+      literal-block  = opening-fence newline { literal-line newline } closing-fence line-end ;
+      opening-fence  = backticks [ fence-info ] ;
+      closing-fence  = backticks ;
+      fence-info     = physical-line ;
+      literal-line   = physical-line ;
+      prose-line     = physical-line ;
+      blank          = ws-opt newline ;
+      ws             = ( " " | "\t" ) { " " | "\t" } ;
+      ws-opt         = { " " | "\t" } ;
+      line-end       = newline | end-of-file ;
+      newline        = "\n" | "\r\n" ;
+      ```
+
+      after trimming, header-text is nonempty, does not start with @, and contains
+      none of =:()[]<>"' or backtick; its complete value is the supplied concept
+      identifier and is valid only when it matches concept-id
+
+      fence-info is the complete suffix after the opening backticks; its trimmed
+      nonempty value is the supplied literal type and is valid only when it matches
+      [A-Za-z][A-Za-z0-9_+.-]*
+
+      directly inside a form, any section-header whose name is outside section-name
+      is an unknown section header; every other nonblank line that is neither a
+      structural close nor a valid section is unexpected form content
+
+      indentation before structural forms is insignificant, while indentation and
+      characters inside prose and literal bodies follow their own preservation rules
+
+      inside a section or concept, an opening fence consumes the maximal contiguous
+      run of three or more leading backticks before interpreting its suffix as
+      fence-info and takes precedence over blank-line, closing-brace, concept-header,
+      and prose recognition; its closing fence contains only backticks, has at least
+      the opener's length after trimming, and takes precedence over literal-line
+
+      outside a literal, a closing brace takes precedence over concept-header and
+      prose recognition when brace depth permits closing the current concept,
+      section, or form
+
+      a concept header takes precedence over prose only at a paragraph boundary and
+      at the current section or concept's baseline brace depth; every other nonblank
+      line inside a section is prose-line
+
+      after structural recognition, scan every ordinary prose line from left to right
+      and add one for each { and subtract one for each }; quotes and apparent comment
+      or annotation text do not suppress braces, while literal bodies are inert
+
+      a concept begins at brace depth one and free section prose at depth zero; the
+      net line delta controls recognition on later lines, an unmatched } may lower
+      depth, later { may restore it, and any depth at EOF follows SourceRecovery
+      finalization
+
+      Sigil defines no comment or annotation syntax; such text is ordinary prose
+      inside a section and unexpected content at top level or directly inside a form
+    }
+
+    SourceRecovery {
+      recovers malformed source according to this deterministic matrix, emitting
+      diagnostics in source-scan order followed by required-section diagnostics:
+      ```text
+      Condition                         Diagnostic                         Severity Retained result and resume point
+      unsupported LanguageVersion       SIGIL_UNSUPPORTED_VERSION         error    empty document; stop interpretation
+      malformed or unexpected top level SIGIL_PARSE_STRUCTURE             error    skip that physical line; resume at top level
+      unknown section header            SIGIL_UNKNOWN_SECTION             error    skip the header; remain directly inside the form
+      unexpected content inside form    SIGIL_PARSE_STRUCTURE             error    skip that physical line; remain inside the form
+      missing goal                       SIGIL_MISSING_GOAL                error    retain the component after the source scan
+      missing interface                  SIGIL_MISSING_INTERFACE           error    retain the component after the source scan
+      invalid concept identifier         SIGIL_INVALID_CONCEPT_IDENTIFIER error    retain the concept block and its content
+      empty concept block                SIGIL_EMPTY_CONCEPT_BLOCK         error    retain the empty block
+      nested concept header              SIGIL_NESTED_CONCEPT_BLOCK        error    retain it as outer-concept prose with brace tracking
+      unclosed concept at EOF            SIGIL_PARSE_STRUCTURE             error    finalize concept at EOF, then enclosing section and form
+      unclosed section at EOF            SIGIL_PARSE_STRUCTURE             error    finalize section at EOF, then enclosing form
+      unclosed component or expand       SIGIL_PARSE_STRUCTURE             error    finalize the declaration at EOF
+      detached literal block             SIGIL_DETACHED_LITERAL_BLOCK      error    retain the literal in a recovered semantic unit
+      literal without introduction       SIGIL_LITERAL_WITHOUT_INTRODUCTION error   retain the literal in a recovered semantic unit
+      invalid literal type               SIGIL_INVALID_LITERAL_TYPE        error    retain the literal and supplied type
+      unclosed literal at EOF             SIGIL_UNCLOSED_LITERAL_BLOCK      error    retain body through EOF, then finalize enclosing forms
+      ungrouped interface region          SIGIL_MISSING_CONCEPT_IDENTIFIER warning  retain every unit; resume at the region boundary
+      ```
+
+      after source-scan diagnostics, required-section diagnostics follow component
+      declaration order and emit missing goal before missing interface for each
+      component
+
+      every retained declaration, section, concept, semantic unit, literal block, and
+      diagnostic preserves its deterministic source range
+
+      unsupported-version diagnostics use the zero-width start of the source;
+      skipped-line, unknown-section, invalid-identifier, nested-header, and literal
+      diagnostics span the complete nonblank physical line; empty-concept diagnostics
+      span the recovered concept and missing-section diagnostics span the component
+
+      unclosed concept, section, component, or expand diagnostics use a zero-width
+      range at column one of that construct's opening line; an unclosed literal
+      diagnostic spans its opening-fence line
+
+      a contiguous ungrouped interface region begins with the first free semantic
+      unit after a section open, concept close, or prior region boundary and ends
+      before a blank line, concept header, section close, or EOF; its warning spans
+      from the first retained unit start through the last retained unit end and is
+      emitted when that boundary is reached
+
+      a detached or unintroduced literal creates one semantic unit under the current
+      component or expand, section, and concept when present, with empty normalized
+      prose and physical prose lines, the literal as its sole attachment, and the
+      literal's complete range; each contiguous malformed fence creates a separate
+      unit
+
+      source locations use one-based lines and one-based UTF-16 code-unit columns;
+      ranges are start-inclusive and end-exclusive, exclude newline delimiters, treat
+      CRLF as one newline, and place EOF after the final code unit or at column one
+      of the trailing empty line; LSP UTF-16 positions subtract one from both axes
     }
 
     ComponentContract {
-      component defines the reusable public contract of one coherent system part through its goal and interface
+      component defines the reusable public contract of one coherent system part
+      through its goal and interface
 
-      expand contributes collective operational detail without changing or overriding the public contract
+      expand contributes collective operational detail without changing or overriding
+      the public contract
 
-      goal publicly states the component's responsibility, boundary, and intended outcome
+      goal publicly states the component's responsibility, boundary, and intended
+      outcome
 
-      interface exposes the operations, data, events, results, failures, and observable promises available to dependents
+      interface exposes the operations, data, events, results, failures, and
+      observable promises available to dependents
     }
 
     ConceptIdentity {
-      a concept block groups one or more related semantic lines under a reusable identifier
+      a concept block groups one or more related semantic units under a reusable
+      identifier
 
-      a concept is public when it occurs in interface and otherwise remains private to its component and matching expands
+      a concept is public when it occurs in interface and otherwise remains private
+      to its component and matching expands
 
       a component and all matching expands share one flat concept namespace
 
-      repeated blocks with the same resolved identifier contribute collectively without overriding one another
+      repeated blocks with the same resolved identifier contribute collectively
+      without overriding one another
 
-      imported public concepts retain their originating identity when reused contextually
+      imported public concepts retain their originating identity only when reused in
+      matching expands
     }
 
     ImportSemantics {
       import is the sole declaration of dependency on another Sigil component
 
-      a named import exposes the imported component's public goal, interface, and public concept identities
+      an expand declared in another source depends on its matching component through
+      an explicit named import
 
-      imported operational detail and private concepts remain unavailable to dependents
+      a named import exposes the imported component's public goal, interface, and
+      public concept identities
+
+      imported operational detail and private concepts remain unavailable to
+      dependents
+
+      every resolved imported name is used by a qualifying contract, operational,
+      structural, or directory-surface reference
     }
 
     SectionSemantics {
-      state describes meaningful configurations, modes, and domain conditions that exist or change during execution
+      goal publicly describes why the component exists, the responsibility it owns,
+      and its intended outcome
 
-      logic describes behavior, flows, algorithms, transformations, decisions, and lifecycle transitions
+      interface describes operations, data, events, results, failures, and observable
+      promises available to dependents
 
-      constraints describe rules, policies, invariants, architecture decisions, and binding technology choices
+      state describes meaningful runtime or domain data, configurations, modes, and
+      conditions that exist or change during execution
 
-      decisions describes the durable rationale for a chosen course, including scope, assumptions, trade-offs, design issues addressed, discarded alternatives, consequences, and revisit conditions
+      logic describes behavior, flows, algorithms, transformations, decisions, and
+      lifecycle transitions
 
-      cases describe representative outcomes, examples, edge cases, and observable acceptance scenarios
+      constraints describe rules, policies, invariants, architecture decisions, and
+      binding technology choices
+
+      decisions describes the durable rationale for a chosen course, including scope,
+      assumptions, trade-offs, design issues addressed, discarded alternatives,
+      consequences, and revisit conditions
+
+      cases describe representative outcomes, examples, edge cases, and observable
+      acceptance scenarios
     }
 
-    SemanticLineDiscipline {
-      each non-empty semantic line expresses one distinct idea
+    SemanticUnitDiscipline {
+      each blank-line-delimited prose paragraph expresses one distinct idea
 
-      blank lines separate distinct prose-level ideas for readability and do not create semantic units
+      physical wrapping inside one paragraph does not change semantic identity
+
+      blank lines terminate semantic units and do not themselves create semantic
+      units
+    }
+
+    LiteralBlock {
+      three or more backticks open a literal block and may be followed by one
+      optional type token matching [A-Za-z][A-Za-z0-9_+.-]*
+
+      a closing fence contains at least as many backticks as its opener and no other
+      content
+
+      an opening fence immediately follows its introducing prose without an
+      intervening blank line
+
+      literal bodies preserve blank lines, braces, apparent Sigil syntax, and
+      relative indentation as uninterpreted content
+    }
+
+    FormattingStyle {
+      ordinary prose uses at most 79 content characters per physical line without
+      counting leading indentation
+
+      structural lines, fence delimiters, and literal bodies are excluded from the
+      prose-width limit
     }
   }
 }
@@ -73,200 +273,677 @@ component SigilLanguage {
 expand SigilLanguage {
   constraints {
     LanguageVersion {
-      LanguageVersion is the sole owner of the Sigil language and workspace-configuration version literal.
+      LanguageVersion is the sole owner of the Sigil language and
+      workspace-configuration version literal.
 
-      Tools reject configured language versions they do not support.
+      Tools interpret only the exact configured LanguageVersion they support and
+      reject earlier or later version literals without applying semantic-version
+      ranges.
 
-      During pre-production 0.y.z development, breaking interpretation changes increment the minor version and reset the patch version.
+      During pre-production 0.y.z development, breaking interpretation changes
+      increment the minor version and reset the patch version.
 
       After 1.0.0, breaking interpretation changes require a new major version.
 
-      Compatible additions and clarifications use the appropriate semantic version increment.
+      Before and after 1.0.0, compatible syntax or semantic functionality increments
+      the minor version and resets patch; an interpretation-preserving behavioral
+      clarification or defect correction increments patch; a clarification that
+      changes any accepted result follows the applicable breaking-change rule;
+      interpretation-neutral editorial changes do not change LanguageVersion.
     }
 
     SourceDocument {
       Every component contains goal and interface sections.
 
-      Ungrouped interface content remains parseable and produces one warning for each contiguous ungrouped region.
+      Ungrouped interface content remains parseable and produces one warning for each
+      contiguous ungrouped region.
 
-      Invalid structure produces source-ranged diagnostics while recoverable content remains available.
+      SourceGrammar is the normative lexical and structural grammar.
+
+      SourceRecovery defines the diagnostic, retained result, and resume boundary for
+      every malformed structural form.
+
+      Recovery never invents a declaration or silently reinterprets skipped content.
     }
 
     ComponentContract {
-      Component dependencies are declared through imports and are not repeated as interface dependency lines.
+      Component dependencies are declared through imports and are not repeated as
+      interface dependency lines.
 
-      Matching expands add detail collectively and never override the component declaration or another expand.
+      Matching expands add detail collectively and never override the component
+      declaration or another expand.
 
-      A dependent receives the imported component's public contract without its state, logic, constraints, decisions, cases, or private concepts.
+      A dependent receives the imported component's public contract without its
+      state, logic, constraints, decisions, cases, or private concepts.
 
-      Implementation-hiding rules belong in constraints unless they define an observable promise.
+      Implementation-hiding rules belong in constraints unless they define an
+      observable promise.
     }
 
     ConceptIdentity {
       Concept blocks are flat and cannot nest.
 
-      Every concept block contains at least one semantic line.
+      Every concept block contains at least one semantic unit.
 
       Concept identifiers match [A-Za-z][A-Za-z0-9_-]* and contain no spaces.
 
-      PascalCase without hyphens or underscores is preferred but not required for validity.
+      PascalCase without hyphens or underscores is preferred but not required for
+      validity.
 
       Concept references are case-sensitive.
 
-      Accessible identifiers are unique without regard to case across the transitive import graph.
+      Accessible identifiers are unique without regard to case across the transitive
+      import graph.
 
-      Sigil provides no dotted concept notation, qualification, aliases, or local shadowing.
+      Sigil provides no dotted concept notation, qualification, aliases, or local
+      shadowing.
 
-      Reusing an imported concept preserves its originating identity while keeping importer semantic lines contextual to the importer.
+      Reusing an imported concept in a matching expand preserves its originating
+      identity while keeping importer semantic units contextual to the importer.
 
-      Reusing an imported concept in interface re-exposes the same identity to downstream importers.
+      A same-named concept declared on the importing component remains a distinct
+      local identity and is ambiguous with the imported identity.
 
-      Provider context never includes semantic lines contributed by consumers.
+      Each case-insensitive identifier group containing more than one distinct
+      accessible identity emits one error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER per
+      component context in accessible-identifier discovery order, ranged over that
+      component declaration; all identities remain in the namespace and textual
+      occurrences of that identifier remain unbound.
 
-      A whole-word accessible identifier in semantic content resolves as a reference.
+      Reusing an imported concept in a matching expand interface re-exposes the same
+      identity to downstream importers.
 
-      Unmatched words remain ordinary semantic content without unresolved-concept diagnostics.
+      Provider context never includes semantic units contributed by consumers.
 
-      Concept identities provide grouping, reuse, navigation, and highlighting but define no source-anchor behavior.
+      An exact-case accessible identifier in semantic content resolves as a reference
+      only when the immediately preceding and following characters, when present, are
+      outside ASCII A-Z, a-z, 0-9, underscore, and hyphen.
+
+      Unmatched words remain ordinary semantic content without unresolved-concept
+      diagnostics.
+
+      Concept identities provide grouping, reuse, navigation, and highlighting but
+      define no source-anchor behavior.
     }
 
     ImportSemantics {
       Ordinary file imports resolve against the named .sigil source.
 
-      Directory imports resolve through ModuleIndexFile.
+      Directory imports follow the provider-owned DirectoryImportSurface contract;
+      SigilLanguage owns only the general import and use rules.
 
-      Imported names must resolve to components exposed by the selected source or directory-import surface.
+      An expand declared in the same source as its component matches locally without
+      an import.
 
-      Import cycles and unresolved paths or names produce diagnostics with partial resolution when practical.
+      An expand declared in another source matches its component only through a
+      resolved named import in the expand's source.
+
+      A cross-file expand without that import produces SIGIL_EXPAND_WITHOUT_COMPONENT
+      and contributes no collected expansion or concept-namespace content.
+
+      A structural import used by an expand does not project the component back into
+      its own concept namespace as an imported dependency.
+
+      Imported names must resolve to components exposed by the selected source or
+      directory-import surface.
+
+      Component declaration identity, uniqueness, imported-name resolution, matching
+      expand attachment, and textual component references compare names by exact
+      case; names differing only by case are distinct.
+
+      An unresolved path retains an import result with no resolved names; an
+      unresolved name retains every independently resolved name from the same import;
+      an import cycle retains resolved import edges and names, and resolution of
+      declarations outside the cycle continues.
+
+      Every unresolved path emits error SIGIL_UNRESOLVED_IMPORT_PATH over its
+      complete import line in source-discovery and import-declaration order; every
+      unresolved name then emits error SIGIL_UNRESOLVED_IMPORTED_COMPONENT over its
+      complete import line in resolved-import and written-name order.
+
+      Import cycles are then discovered depth first in source-discovery and
+      import-edge order; every edge returning to an active source emits error
+      SIGIL_IMPORT_CYCLE over that closing import declaration, after all
+      unresolved-name diagnostics.
+
+      Import paths resolve from the selected workspace root, not the declaring
+      source; backslash becomes slash, repeated slash and . segments collapse, and
+      each .. removes one preceding root-relative segment before lookup; a leading or
+      excess .. remains an outside-workspace traversal and is unresolved.
+
+      A normalized path ending in .sigil selects that exact file and every other path
+      delegates target selection to DirectoryImportSurface; matching is
+      case-sensitive, equivalent normalized paths select one target, and a target
+      outside the selected workspace is unresolved rather than imported.
+
+      Import use is evaluated separately for each resolved imported name in its
+      declaring source document.
+
+      Exact-case component references and imported public-concept references in
+      interface, state, logic, constraints, or cases count as use.
+
+      Component references use the same immediately adjacent ASCII A-Z, a-z, 0-9,
+      underscore, and hyphen boundary exclusion as concept references.
+
+      An applicable local expand and intentional provider directory-surface exposure
+      count as structural use.
+
+      References in goal, decisions, literal bodies, other source documents,
+      differently cased words, and identifier substrings do not count as use;
+      comment-shaped or annotation-shaped ordinary prose follows its containing
+      section because Sigil defines no separate syntax for it.
+
+      An unresolved or ambiguous imported name does not additionally produce an
+      unused-import diagnostic.
+
+      Repeating a name in one import retains separate ordered name entries, each with
+      independent resolution and use; it does not duplicate a resolved public
+      identity.
+
+      Every qualifying textual or structural use is attributed to all repeated
+      entries that resolve to the same name and provider; with no qualifying use,
+      every repeated entry independently emits SIGIL_UNUSED_IMPORT in written order.
+    }
+
+    DeclarationMultiplicity {
+      Component names are unique across the selected workspace; every declaration of
+      a duplicated name is retained and receives error SIGIL_DUPLICATE_COMPONENT in
+      source-discovery order, while the name binds no import, expand, or concept
+      context.
+
+      Repeated sections in one component or expand are allowed ordered contributions
+      to the same section semantics; any goal or interface occurrence satisfies that
+      component's required-section presence.
     }
 
     SectionSemantics {
+      goal and interface define the public component contract.
+
+      State may describe meaningful data that exists or changes as part of runtime or
+      domain semantics; storage layout remains implementation detail unless the
+      layout itself carries domain meaning.
+
       decisions is an optional expand section.
 
-      decisions content is free-form and does not require concept blocks, labeled fields, or a complete rationale schema.
+      decisions content is free-form and does not require concept blocks, labeled
+      fields, or a complete rationale schema.
 
-      decisions records concise conclusions and supporting rationale rather than prompts, session transcripts, or hidden reasoning.
+      decisions records concise conclusions and supporting rationale rather than
+      prompts, session transcripts, or hidden reasoning.
 
-      When present, decision scope states the boundary where a chosen course applies and its important exclusions without attempting to enumerate every current dependent.
+      When present, decision scope states the boundary where a chosen course applies
+      and its important exclusions without attempting to enumerate every current
+      dependent.
 
-      A binding outcome remains in constraints; decisions explains why that outcome was selected.
+      A binding outcome remains in constraints; decisions explains why that outcome
+      was selected.
     }
 
-    SemanticLineDiscipline {
+    SemanticUnitDiscipline {
       Distinct prose-level ideas are separated by blank lines in every section.
 
-      Lines in one compact free-form construct may remain adjacent when separation would reduce readability.
+      Adjacent wrapped prose lines normalize to one semantic unit with one source
+      range and retained original physical lines.
+
+      A literal block attaches to the immediately preceding prose semantic unit.
+    }
+
+    LiteralBlock {
+      A blank line between introducing prose and its opening fence is invalid.
+
+      A literal block without preceding prose in the same section or concept block is
+      invalid.
+
+      Structural indentation equal to the opening-fence indentation is removed from
+      literal-body lines when present while additional indentation is preserved.
+
+      Literal bodies create no component, concept, import, glossary, ownership, or
+      other semantic references.
+
+      Literal bodies are not prose-wrapped or width-checked.
+    }
+
+    FormattingStyle {
+      Prose width is measured in Unicode code points after leading indentation.
+
+      Canonical wrapping treats exactly U+0009 through U+000D, U+0020, U+00A0,
+      U+1680, U+2000 through U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, and
+      U+FEFF as whitespace, collapses each run to one U+0020 SPACE, and never changes
+      semantic identity; tabs and nonbreaking spaces therefore become ordinary
+      spaces.
+
+      An indivisible prose token longer than 79 content characters produces error
+      SIGIL_UNFORMATTABLE_LINE over its complete physical line; parsing retains the
+      line, formatting returns no writable result, and check fails.
     }
   }
 
   decisions {
     LanguageVersion {
-      Decision: Require an explicit configured LanguageVersion and use semantic version increments to signal interpretation compatibility.
+      Decision: Require an explicit configured LanguageVersion and use semantic
+      version increments to signal interpretation compatibility.
 
-      Scope: Governs Sigil source and workspace-configuration interpretation; excludes CLI, core, LSP, skill, and editor artifact versions.
+      Scope: Governs Sigil source and workspace-configuration interpretation;
+      excludes CLI, core, LSP, skill, and editor artifact versions.
 
-      Trade-offs: Pre-production breaking changes consume minor versions instead of treating every 0.y.z change as equivalent.
+      Trade-offs: Pre-production breaking changes consume minor versions instead of
+      treating every 0.y.z change as equivalent.
 
-      Consequences: Tools reject unsupported configured versions and incompatible changes require an explicit migration.
+      Consequences: Tools reject every non-exact configured version and incompatible
+      changes require an explicit migration.
 
-      Revisit when: LanguageVersion reaches 1.0.0 or the compatibility policy changes.
+      Revisit when: LanguageVersion reaches 1.0.0 or the compatibility policy
+      changes.
     }
 
     SourceDocument {
-      Decision: Preserve every non-empty section line as source-ranged semantic data while enforcing structure and tolerating free-form section bodies.
+      Decision: Define a complete line-oriented structural grammar and deterministic
+      recovery matrix while preserving blank-line-delimited prose and attached
+      literal blocks as source-ranged semantic units.
 
-      Scope: Governs parsing and recovered document representation; excludes host-assisted semantic judgment.
+      Scope: Governs parsing and recovered document representation; excludes
+      host-assisted semantic judgment.
 
-      Trade-offs: Some semantic defects remain review findings rather than parse errors.
+      Trade-offs: Structural recognition is intentionally line-oriented, recovery
+      does not guess skipped declarations, and older sources require review when
+      adjacent lines carried separate intent.
 
-      Discarded alternatives: A loose text parser would lose structural guarantees, while a rigid body grammar would over-formalize authoring.
+      Discarded alternatives: A loose text parser would lose structural guarantees,
+      while a rigid body grammar would over-formalize authoring.
 
-      Consequences: Recoverable malformed input produces partial documents with diagnostics.
+      Consequences: Independent parsers can reproduce valid structure, diagnostic
+      ordering, retained partial content, and recovery boundaries.
 
-      Revisit when: Body tolerance prevents reliable projections or authoring evidence supports additional syntax.
+      Revisit when: Body tolerance prevents reliable projections or authoring
+      evidence supports additional syntax.
+    }
+
+    StrictImportUse {
+      Decision: Reject each resolved imported name that has no qualifying contract,
+      operational, structural, or directory-surface use in its declaring source.
+
+      Scope: Governs named component imports and imported public-concept reuse;
+      excludes unresolved names and documentary mentions in goal, decisions, literal
+      bodies, and other source documents.
+
+      Trade-offs: Authors must state real dependency use outside documentary
+      rationale, while provider directory-surface imports remain intentionally
+      usable.
+
+      Design issues addressed: Resolution previously accepted dependency declarations
+      that had no effect on the importing contract or operational description.
+
+      Discarded alternatives: Counting every textual mention or treating the import
+      declaration itself as sufficient use was rejected.
+
+      Consequences: Check reports one stable error per unused imported name and
+      dependency graphs no longer accept accidental resolved imports silently.
+    }
+
+    ExplicitCrossFileExpansion {
+      Decision: Require every cross-file expand to import its matching component
+      explicitly.
+
+      Scope: Governs expansion matching, collection, concept namespaces, and
+      structural import use; excludes expands colocated with their component.
+
+      Trade-offs: Expansion files require explicit dependency declarations, while
+      resolution no longer depends on workspace-global name matching.
+
+      Discarded alternatives: Globally matching expands by component name was
+      rejected because it hides dependency ownership and permits accidental expansion
+      attachment.
+
+      Consequences: Unimported cross-file expands produce
+      SIGIL_EXPAND_WITHOUT_COMPONENT, imported expands count as structural use, and
+      unrelated imported names remain subject to SIGIL_UNUSED_IMPORT.
+    }
+
+    SemanticParagraphs {
+      Decision: Make each blank-line-delimited prose paragraph one semantic unit
+      whose physical wrapping may change without changing identity.
+
+      Scope: Governs free-form content in every component and expand section;
+      excludes structural forms and attached literal-body content.
+
+      Trade-offs: Adjacent physical lines merge semantically and migration from
+      line-based interpretation requires review.
+
+      Design issues addressed: A deterministic formatter cannot wrap prose safely
+      when every physical line creates a different semantic unit.
+
+      Discarded alternatives: Preserving physical-line identity and adding
+      continuation punctuation were rejected.
+
+      Consequences: Formatting can reflow prose while blank lines remain the explicit
+      separator between ideas.
+    }
+
+    LiteralFencedBlocks {
+      Decision: Attach a Markdown-shaped typed backtick fence directly to preceding
+      prose and preserve its body as uninterpreted literal content.
+
+      Scope: Governs examples, configuration, code, data, diagrams, and other
+      multiline literal content inside sections and concept blocks.
+
+      Trade-offs: Standalone or blank-line-detached fences are invalid and literal
+      content is unavailable to semantic reference and glossary scanning.
+
+      Design issues addressed: Multiline code and data currently collide with brace
+      tracking, semantic-unit separation, and line-width formatting.
+
+      Discarded alternatives: Treating each literal line as prose, interpreting
+      literal braces, and inventing format-specific section syntax were rejected.
+
+      Consequences: Authors can embed large typed blocks without changing semantic
+      separators or creating accidental references.
+    }
+
+    DeterministicFormatting {
+      Decision: Canonically wrap ordinary prose to 79 content characters excluding
+      leading indentation while preserving semantic identity and literal bodies.
+
+      Scope: Governs physical presentation of Sigil prose; excludes structural lines,
+      fence delimiters, and literal bodies.
+
+      Trade-offs: An indivisible token longer than the limit remains unchanged,
+      produces error SIGIL_UNFORMATTABLE_LINE over its complete physical line, and
+      prevents a writable formatting result.
+
+      Design issues addressed: Unbounded prose lines reduce side-by-side review
+      readability and discourage concrete configuration and code examples.
+
+      Consequences: Deterministic formatting is reviewable, idempotent, and
+      independent from nesting depth.
     }
 
     ConceptIdentity {
-      Decision: Use one flat collective concept namespace per component context and keep imported reuse contextual to the importer.
+      Decision: Use one flat collective concept namespace per component context and
+      allow imported identity reuse only through matching expands.
 
-      Scope: Governs concept identity within a component, its matching expands, and accessible imported public concepts; excludes glossary identity and source anchors.
+      Scope: Governs concept identity within a component, its matching expands, and
+      accessible imported public concepts; excludes glossary identity and source
+      anchors.
 
-      Trade-offs: Name collisions require renaming and contradictory occurrences remain semantic-review issues.
+      Trade-offs: Component declarations cannot reuse imported concept blocks;
+      same-named local and imported identities require renaming, while contradictory
+      occurrences remain semantic-review issues.
 
-      Discarded alternatives: Nested qualification, global consumer merging, local shadowing, and later-block override were rejected.
+      Discarded alternatives: Nested qualification, global consumer merging, local
+      shadowing, and later-block override were rejected.
 
-      Consequences: Repeated blocks preserve one identity and every source-aware occurrence, while provider context remains stable as consumers change.
+      Consequences: Matching-expand reuse preserves the provider identity and every
+      contextual occurrence, while component-declared collisions remain explicit and
+      provider context remains stable as consumers change.
 
-      Revisit when: Multi-hop re-exposure becomes unclear or collective occurrences cannot be reviewed reliably.
+      Revisit when: Multi-hop re-exposure becomes unclear or collective occurrences
+      cannot be reviewed reliably.
+    }
+
+    ImportResolution {
+      Decision: Resolve every import from the selected workspace root through one
+      lexical normalization and exact file-or-provider-directory selection rule.
+
+      Scope: Governs import target identity and workspace containment; excludes
+      workspace discovery and operating-system symbolic-link identity.
+
+      Trade-offs: Source-relative imports are unavailable and traversal outside the
+      selected workspace remains unresolved even when a filesystem target exists.
+
+      Discarded alternatives: Declaring-source-relative lookup, implicit extension
+      search, platform-dependent case folding, and multiple candidate targets were
+      rejected.
+
+      Consequences: Equivalent lexical paths produce one deterministic dependency
+      edge and directory imports reuse their provider-owned surface.
+    }
+
+    DeclarationMultiplicity {
+      Decision: Require workspace-unique component names, allow repeated sections as
+      ordered collective contributions, and preserve repeated import-name entries.
+
+      Scope: Governs declaration collisions and repetition; excludes concept
+      identity, which follows its own collective namespace rules.
+
+      Trade-offs: Duplicate components cannot participate in resolution until
+      renamed, while repeated import entries may produce separate use diagnostics.
+
+      Discarded alternatives: First- or last-declaration wins, duplicate-section
+      errors, and silent import-entry deduplication were rejected.
+
+      Consequences: No source-order winner hides a component collision, and
+      intentional section composition retains source ordering.
+    }
+
+    StateData {
+      Decision: Let state describe meaningful runtime or domain data alongside
+      configurations, modes, and conditions.
+
+      Scope: Governs data that exists or changes as part of component semantics;
+      excludes implementation storage layout unless that layout carries domain
+      meaning.
+
+      Trade-offs: Authors must distinguish meaningful data from transient algorithm
+      variables and persistence mechanics.
+
+      Design issues addressed: Treating state as modes and conditions alone omits
+      data-bearing configurations that implementations and dependents must
+      understand.
+
+      Discarded alternatives: Putting all data in interface or treating every stored
+      field as state was rejected because visibility and storage do not determine
+      semantic ownership.
+
+      Consequences: State can capture data values and structures that materially
+      shape behavior without exposing database or memory layout by default.
     }
 
     SectionSemantics {
-      Decision: Keep decisions optional and free-form while using them for concise human-reviewed rationale separate from binding constraints.
+      Decision: Keep decisions optional and free-form while using them for concise
+      human-reviewed rationale separate from binding constraints.
 
-      Scope: Governs decisions sections in expand declarations; excludes generated receipts, approval records, and binding authority.
+      Scope: Governs decisions sections in expand declarations; excludes generated
+      receipts, approval records, and binding authority.
 
-      Trade-offs: Deterministic tools cannot guarantee that every rationale record is complete.
+      Trade-offs: Deterministic tools cannot guarantee that every rationale record is
+      complete.
 
-      Discarded alternatives: Constraints-only rationale, mandatory decision schemas, raw transcripts, and generated receipts as the sole record were rejected.
+      Discarded alternatives: Constraints-only rationale, mandatory decision schemas,
+      raw transcripts, and generated receipts as the sole record were rejected.
 
-      Consequences: Binding outcomes remain in constraints and their rationale stays colocated with the governing component.
+      Consequences: Binding outcomes remain in constraints and their rationale stays
+      colocated with the governing component.
 
-      Revisit when: Free-form records drift or reliable agent use requires a reviewed schema.
+      Revisit when: Free-form records drift or reliable agent use requires a reviewed
+      schema.
     }
   }
 
   cases {
     LanguageVersion {
-      A tool that does not support the configured LanguageVersion reports an error before interpreting workspace Sigil files.
+      A tool that does not support the configured LanguageVersion reports an error
+      before interpreting workspace Sigil files.
 
-      A document configured for an earlier incompatible version is not silently reinterpreted using 0.5.0 semantics.
+      A document configured for an earlier or later non-exact version is not silently
+      reinterpreted using 0.7.0 semantics.
     }
 
     SourceDocument {
-      A malformed but recoverable component retains its declarations and semantic lines with source-ranged diagnostics.
+      A malformed top-level or form-body line is diagnosed, skipped, and followed by
+      deterministic interpretation at the same structural level.
 
-      A contiguous ungrouped interface region produces one SIGIL_MISSING_CONCEPT_IDENTIFIER warning.
+      An EOF-unclosed concept, section, component, or expand is finalized at EOF with
+      source-ranged diagnostics and retained recoverable content.
+
+      An unsupported LanguageVersion returns an empty document before declaration
+      interpretation.
+
+      A malformed but recoverable component retains its declarations and semantic
+      units with source-ranged diagnostics.
+
+      In `A😀B` on line two, B begins at source column four and LSP character three;
+      the end of a CRLF-terminated line excludes both newline code units.
+
+      A contiguous ungrouped interface region produces one
+      SIGIL_MISSING_CONCEPT_IDENTIFIER warning.
+
+      Two free interface paragraphs separated by a blank line remain retained and
+      produce two warnings, each spanning only its paragraph's semantic unit.
 
       An empty or nested concept block is invalid.
+
+      Wrapped prose with no blank separator produces one semantic unit.
+
+      Introducing prose immediately followed by a typed fence produces one semantic
+      unit with one attached literal block.
+
+      Four leading backticks followed by json use a four-backtick opening delimiter
+      and the supplied literal type json.
+
+      A blank-line-detached, unintroduced, invalidly typed, or unclosed fence is
+      invalid.
+
+      Two contiguous unintroduced fences produce two empty-prose semantic units, each
+      ranged over and attached to its own retained literal.
+
+      Multiple prose braces on one line contribute their net left-to-right depth
+      change; braces in a literal contribute none.
+
+      An unmatched prose closing brace lowers depth, prevents a later structural
+      close until balancing prose opens restore the baseline, and at EOF retains
+      content under the applicable unclosed-structure recovery.
+
+      An unexpected line is ranged over that line, while an EOF-unclosed component is
+      ranged at the zero-width start of its component header.
     }
 
     ComponentContract {
-      A component can be understood through its goal and interface without reading its expands or implementation.
+      A component can be understood through its goal and interface without reading
+      its expands or implementation.
 
-      Multiple matching expands remain separately sourced contributions to one collected operational description.
+      Multiple matching expands remain separately sourced contributions to one
+      collected operational description.
     }
 
     ConceptIdentity {
-      Reusing one public concept in interface, state, logic, constraints, decisions, or cases preserves one collective identity.
+      Reusing one public concept in interface, state, logic, constraints, decisions,
+      or cases preserves one collective identity.
 
-      Importing two different public concepts whose identifiers compare equal without regard to case produces an ambiguous-concept diagnostic.
+      Importing two different public concepts whose identifiers compare equal without
+      regard to case produces one SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER error over the
+      consumer component; both identities remain accessible and occurrences remain
+      unbound.
 
       A concept introduced only outside interface remains private.
 
-      An importer's contextual occurrence appears in importer context without changing provider context.
+      Reusing an imported public concept in a matching expand preserves its
+      originating identity without changing provider context.
+
+      Declaring the same identifier on the importing component produces an
+      ambiguous-concept diagnostic.
+
+      PublicConcept resolves in `(PublicConcept)` and next to non-ASCII letters, but
+      not in `APublicConcept`, `PublicConcept2`, `PublicConcept_name`, or
+      `PublicConcept-name`.
     }
 
     ImportSemantics {
-      Importing Name makes Name's public contract available without exposing its collected expansions.
+      Importing Name makes Name's public contract available without exposing its
+      collected expansions.
 
-      A missing source, component, or directory-import name produces a stable diagnostic and partial resolution when practical.
+      Components named Name and name are distinct; importing Name or declaring expand
+      Name never resolves or attaches name.
+
+      A cross-file expand without an import produces SIGIL_EXPAND_WITHOUT_COMPONENT.
+
+      Importing the component attaches the cross-file expand and records
+      structural-expand use.
+
+      A second unused name in the same import still produces SIGIL_UNUSED_IMPORT.
+
+      A structural self-import does not duplicate the component's public concepts.
+
+      A missing source retains an import result with no resolved names; a missing
+      component or directory-import name retains every independently resolved name
+      from the same import.
+
+      Missing paths are diagnosed before missing names, and a cycle diagnostic is
+      anchored to the import edge that returns to an active source.
+
+      An import referenced only in goal or decisions produces SIGIL_UNUSED_IMPORT.
+
+      An exact component reference in constraints uses its import.
+
+      ImportedComponent resolves in `(ImportedComponent)` and next to non-ASCII
+      letters, but not in `AnImportedComponent`, `ImportedComponent2`,
+      `ImportedComponent_name`, or `ImportedComponent-name`.
+
+      An imported public concept reused in logic uses its provider import.
+
+      A provider name occurring only inside a literal block does not use its import.
+
+      A provider name in comment-shaped ordinary constraints prose uses its import.
+
+      `@a/./b/../c` and `@a/c` select the same workspace-root-relative directory
+      target; `@../a` and `@a/../../b` retain outside traversal and are unresolved.
+
+      A repeated imported name remains separately ordered and checked for use without
+      duplicating its provider concept identity.
+
+      One textual or structural use qualifies every repeated entry for the same name
+      and provider; with no use, every entry receives SIGIL_UNUSED_IMPORT.
+
+      A resolved direct import exposed by a provider directory surface counts as
+      structural use.
+    }
+
+    DeclarationMultiplicity {
+      Two components with the same name are both retained and diagnosed, and neither
+      is selected by an import or matching expand.
+
+      Two component names differing only by case are not duplicates.
+
+      Two logic sections contribute their semantic units in source order.
     }
 
     SectionSemantics {
+      Goal and interface together make a component understandable to dependents.
+
+      State may describe a domain value that changes behavior without exposing its
+      database or memory representation.
+
       An expand may omit decisions without losing validity.
 
-      A decisions section may contain free prose or named concept blocks with rationale labels.
+      A decisions section may contain free prose or named concept blocks with
+      rationale labels.
 
-      A binding stack choice appears in constraints while a corresponding decisions entry explains its alternatives and trade-offs.
+      A binding stack choice appears in constraints while a corresponding decisions
+      entry explains its alternatives and trade-offs.
+    }
+
+    FormattingStyle {
+      Rewrapping one prose semantic unit at 79 content characters preserves its
+      semantic identity.
+
+      Six leading spaces do not reduce the 79-character prose-content allowance.
+
+      A literal body remains byte-faithful after structural dedentation and is not
+      wrapped.
+
+      An indivisible prose token longer than 79 content characters produces
+      SIGIL_UNFORMATTABLE_LINE, remains in the partial document, prevents a writable
+      formatting result, and makes check fail.
     }
   }
 }
 
 component SigilWorkspaceConfig {
   goal {
-    Define the configuration contract that selects and identifies one Sigil workspace.
+    Define the configuration contract that selects and identifies one Sigil
+    workspace.
 
-    Keep workspace boundaries and source discovery independent from package manifests and directory-import indexes.
+    Keep workspace boundaries and source discovery independent from package
+    manifests and directory-import indexes.
   }
 
   interface {
@@ -277,13 +954,15 @@ component SigilWorkspaceConfig {
     }
 
     ConfiguredLanguageVersion {
-      sigilVersion: the supported Sigil language version used to interpret the workspace
+      sigilVersion: the supported Sigil language version used to interpret the
+      workspace
     }
 
     WorkspaceBoundary {
       workspace.name: non-empty stable workspace identifier
 
-      workspace.members: optional array of unique workspace-relative project-root paths
+      workspace.members: optional array of unique workspace-relative project-root
+      paths
     }
 
     SourceSelection {
@@ -303,27 +982,34 @@ expand SigilWorkspaceConfig {
     ConfigFile {
       ConfigFile is the sole authority for the Sigil workspace boundary.
 
-      The directory containing ConfigFile is the workspace root and root project location.
+      The directory containing ConfigFile is the workspace root and root project
+      location.
     }
 
     ConfiguredLanguageVersion {
-      The configured sigilVersion must equal a language version supported by the interpreting tool.
+      The configured sigilVersion must equal a language version supported by the
+      interpreting tool.
     }
 
     WorkspaceBoundary {
-      Each workspace.members entry declares one additional project root in the same workspace.
+      Each workspace.members entry declares one additional project root in the same
+      workspace.
 
-      Member paths are unique, non-root, workspace-relative directories that cannot escape the workspace or overlap.
+      Member paths are unique, non-root, workspace-relative directories that cannot
+      escape the workspace or overlap.
 
       A declared member does not contain its own ConfigFile.
 
-      A nested directory with its own ConfigFile is an independent workspace and must be excluded from every configured parent.
+      A nested directory with its own ConfigFile is an independent workspace and must
+      be excluded from every configured parent.
 
-      Package and repository workspace manifests do not declare Sigil workspace members.
+      Package and repository workspace manifests do not declare Sigil workspace
+      members.
     }
 
     SourceSelection {
-      SourceSelection controls source discovery but does not declare workspace members or restrict ModuleIndexFile locations.
+      SourceSelection controls source discovery but does not declare workspace
+      members or restrict ModuleIndexFile locations.
     }
 
     ModuleIndexFile {
@@ -333,17 +1019,24 @@ expand SigilWorkspaceConfig {
 
   decisions {
     WorkspaceBoundary {
-      Decision: Make ConfigFile the sole authority for workspace roots and declared members.
+      Decision: Make ConfigFile the sole authority for workspace roots and declared
+      members.
 
-      Scope: Governs the workspace root, declared members, and independent nested workspaces; excludes ModuleIndexFile and GlossaryFile authority.
+      Scope: Governs the workspace root, declared members, and independent nested
+      workspaces; excludes ModuleIndexFile and GlossaryFile authority.
 
-      Trade-offs: Repositories maintain explicit Sigil configuration in addition to package or build manifests.
+      Trade-offs: Repositories maintain explicit Sigil configuration in addition to
+      package or build manifests.
 
-      Discarded alternatives: Inferring boundaries from package manifests or directory structure was rejected because those sources vary by host and purpose.
+      Discarded alternatives: Inferring boundaries from package manifests or
+      directory structure was rejected because those sources vary by host and
+      purpose.
 
-      Consequences: Nested independent workspaces must be excluded explicitly and package metadata cannot silently change Sigil membership.
+      Consequences: Nested independent workspaces must be excluded explicitly and
+      package metadata cannot silently change Sigil membership.
 
-      Revisit when: Another explicit interoperable authority can replace ConfigFile without introducing boundary ambiguity.
+      Revisit when: Another explicit interoperable authority can replace ConfigFile
+      without introducing boundary ambiguity.
     }
   }
 }
@@ -352,18 +1045,20 @@ component SigilModuleIndex {
   goal {
     Define the explicit directory-import index for an included Sigil directory.
 
-    Provide intentional directory-import shorthand without changing component visibility or workspace discovery.
+    Provide intentional directory-import shorthand without changing component
+    visibility or workspace discovery.
   }
 
   interface {
     ModuleIndexFile {
-      filename: #module.sigil
+      filename: _module.sigil
 
-      location: any included directory in a Sigil workspace
+      location: any workspace directory where _module.sigil itself is selected and
+      loaded by ConfigFile source selection
     }
 
     DirectoryImportSurface {
-      a directory import @path resolves through @path/#module.sigil
+      a directory import @path resolves through @path/_module.sigil
 
       includes components declared directly in ModuleIndexFile
 
@@ -371,7 +1066,8 @@ component SigilModuleIndex {
     }
 
     ComponentVisibility {
-      every component remains importable through its explicit .sigil source path regardless of ModuleIndexFile
+      every component remains importable through its explicit .sigil source path
+      regardless of ModuleIndexFile
     }
 
     ModuleIndexContents {
@@ -387,9 +1083,11 @@ expand SigilModuleIndex {
     DirectoryImportSurface {
       Resolve each direct import in ModuleIndexFile using ordinary import rules.
 
-      Build the directory-import surface from local component declarations and successfully resolved directly imported names.
+      Build the directory-import surface from local component declarations and
+      successfully resolved directly imported names.
 
-      Preserve each resolved component's original declaration file and collected expansions.
+      Preserve each resolved component's original declaration file and collected
+      expansions.
 
       Resolve a named directory import against the resulting surface.
     }
@@ -399,61 +1097,155 @@ expand SigilModuleIndex {
     ModuleIndexFile {
       ModuleIndexFile defines directory-import shorthand only.
 
-      ModuleIndexFile does not define a workspace root, workspace member, or special component type.
+      ModuleIndexFile does not define a workspace root, workspace member, or special
+      component type.
     }
 
     ComponentVisibility {
       ModuleIndexFile does not grant or restrict component visibility.
 
-      A component omitted from ModuleIndexFile remains importable through its explicit source path.
+      A component omitted from ModuleIndexFile remains importable through its
+      explicit source path.
 
       Sigil defines no export or re-export form.
     }
 
     DirectoryImportSurface {
-      Components used only as dependencies of indexed files are not added to the surface implicitly.
+      Components used only as dependencies of indexed files are not added to the
+      surface implicitly.
 
-      Files and components elsewhere in the directory or subtree are not added implicitly.
+      Files and components elsewhere in the directory or subtree are not added
+      implicitly.
 
-      An explicit chain of module-index imports may make a component resolvable through multiple directory indexes.
+      An explicit chain of module-index imports may make a component resolvable
+      through multiple directory indexes.
+
+      Repeated surface contributions for the same component declaration identity
+      deduplicate. Distinct declarations cannot share an exact component name because
+      duplicated names remain unresolved; local and imported contributions have no
+      precedence.
+
+      An unresolved direct-import path contributes no names. A direct import with one
+      or more unresolved names still contributes every independently resolved name
+      from that declaration. Neither failure invalidates local names or names from
+      other independently resolved direct imports.
+
+      Resolve chained and cyclic surfaces to the least fixed point. For each name,
+      monotonically accumulate the set of distinct declaration identities contributed
+      across all reached indexes. Seed those sets with locally declared components
+      and independently resolved direct-file imports, then visit module-index imports
+      in source and declaration order until no identity set grows. After convergence,
+      expose a name only when its set contains exactly one identity; expose no name
+      for an empty or multiple-identity set. A cycle never synthesizes an unseeded
+      name.
     }
 
     ModuleIndexContents {
       Every ModuleIndexFile contains at least one local component declaration.
+
+      SIGIL_MODULE_WITHOUT_COMPONENT does not invalidate independently resolved
+      imported names in the partial directory-import surface.
     }
   }
 
   decisions {
+    ModuleIndexFile {
+      Decision: Reserve _module.sigil as the sole ModuleIndexFile basename and do not
+      interpret the legacy hash-prefixed module filename as a directory index.
+
+      Scope: Governs directory-index filename recognition and directory-import target
+      selection; excludes ordinary explicit .sigil file imports.
+
+      Trade-offs: Existing workspaces must rename every module index and update
+      direct source references before adopting this language version.
+
+      Design issues addressed: _module.sigil uses only the POSIX portable filename
+      character set and remains a literal shell word without quoting or escaping.
+
+      Discarded alternatives: Retaining the hash-prefixed filename with mandatory
+      shell quoting and accepting both basenames indefinitely were rejected.
+
+      Consequences: Directory imports resolve only through _module.sigil; the legacy
+      filename is interpreted as an ordinary Sigil source.
+
+      Revisit when: A future module-discovery mechanism replaces reserved index
+      filenames.
+    }
+
     DirectoryImportSurface {
-      Decision: Use ModuleIndexFile as an explicit directory-import shorthand that requires a local component and never controls component visibility.
+      Decision: Use ModuleIndexFile as an explicit directory-import shorthand that
+      requires a local component, never controls component visibility, and retains
+      the partial surface available after independently recoverable diagnostics.
 
-      Scope: Governs directory-import resolution for included directories; excludes workspace discovery and export visibility.
+      Scope: Governs directory-import resolution for included directories; excludes
+      workspace discovery and export visibility.
 
-      Trade-offs: Index authors maintain an intentional surface and cannot use imports-only indexes.
+      Trade-offs: Index authors maintain an intentional surface and cannot use
+      imports-only indexes. A diagnostically invalid index may still expose names
+      whose declarations resolved independently.
 
-      Discarded alternatives: Root-only indexes, implicit subtree exports, and module-index-controlled visibility were rejected.
+      Discarded alternatives: Root-only indexes, implicit subtree exports,
+      module-index-controlled visibility, and all-or-nothing invalidation after one
+      import or missing-local-component diagnostic were rejected.
 
-      Consequences: Components omitted from an index remain accessible only through explicit source imports.
+      Consequences: Components omitted from an index remain accessible only through
+      explicit source imports. Callers may use unaffected names while diagnostics
+      continue to report every unresolved path, name, or required local component.
 
-      Revisit when: Directory imports require explicit export or visibility semantics.
+      Revisit when: Directory imports require explicit export or visibility
+      semantics.
     }
   }
 
   cases {
     DirectoryImportSurface {
-      @auth import { Session } resolves when auth/#module.sigil declares Session or directly imports Session from another Sigil source.
+      @auth import { Session } resolves when auth/_module.sigil declares Session or
+      directly imports Session from another Sigil source.
 
-      @auth import { Session } is unresolved when auth/#module.sigil does not name Session, while @auth/session.sigil import { Session } remains valid.
+      @auth import { Session } is unresolved when auth/_module.sigil does not name
+      Session, while @auth/session.sigil import { Session } remains valid.
 
-      @auth import { Store } is unresolved when Store is only a dependency of an indexed component.
+      @auth import { Store } is unresolved when Store is only a dependency of an
+      indexed component.
 
       A directory without ModuleIndexFile produces SIGIL_UNRESOLVED_IMPORT_PATH.
 
-      A cyclic dependency involving ModuleIndexFile produces SIGIL_IMPORT_CYCLE and retains partial resolution when practical.
+      Two mutually importing ModuleIndexFiles propagate locally declared and
+      direct-file-imported names around the cycle until the least fixed point. A name
+      with no such seed remains unresolved. The cycle produces SIGIL_IMPORT_CYCLE and
+      does not prevent declarations outside the cycle from resolving.
+
+      Repeated direct imports that expose the same component declaration contribute
+      that declaration once to the directory-import surface.
+
+      Distinct declarations with the same exact component name remain unresolved and
+      produce SIGIL_DUPLICATE_COMPONENT; that name is absent from the surface while
+      unaffected names remain available.
+
+      If an index first contributes one Session identity and a cyclic index later
+      contributes a distinct Session identity, convergence retains both identities,
+      removes Session from the exposed surfaces, and produces
+      SIGIL_DUPLICATE_COMPONENT.
+
+      If one name in a multi-name direct import is unresolved, every independently
+      resolved name from that declaration remains available through the partial
+      surface and the unresolved-name diagnostic remains on ModuleIndexFile.
+
+      An unresolved direct-import path contributes no names, while local components
+      and names from other resolved direct imports remain available.
+
+      A directory importer that requests a name absent from that partial surface
+      receives SIGIL_UNRESOLVED_IMPORTED_COMPONENT.
+
+      When auth/_module.sigil exists but ConfigFile source selection excludes it,
+      @auth import { Session } produces SIGIL_UNRESOLVED_IMPORT_PATH.
     }
 
     ModuleIndexContents {
-      An imports-only ModuleIndexFile produces SIGIL_MODULE_WITHOUT_COMPONENT.
+      An imports-only ModuleIndexFile produces SIGIL_MODULE_WITHOUT_COMPONENT while
+      an independently resolved imported name remains available through the partial
+      surface. A directory importer requesting any other name receives
+      SIGIL_UNRESOLVED_IMPORTED_COMPONENT.
     }
   }
 }

@@ -9,7 +9,7 @@ import type {
   ResolvedConcept,
   ResolvedSigilWorkspace,
   Section,
-  SemanticLine,
+  SemanticUnit,
   SigilDiagnostic,
   SigilDocument,
   SigilFileSystem,
@@ -63,7 +63,7 @@ interface SemanticReference {
   readonly tokenType: number;
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
 export class OwnershipSourceIndex {
   readonly #sources: Promise<readonly ImplementationSource[]>;
 
@@ -79,7 +79,7 @@ export class OwnershipSourceIndex {
   }
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
 export class OwnershipHoverCache {
   readonly #resolved: ResolvedSigilWorkspace;
   readonly #sourceIndex: OwnershipSourceIndex;
@@ -133,7 +133,7 @@ export function sourceRangeToLsp(range?: SourceRange): Range {
   };
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
 export function diagnosticsByUri(
   diagnostics: readonly SigilDiagnostic[],
 ): ReadonlyMap<string, PublishDiagnosticsParams["diagnostics"]> {
@@ -158,7 +158,7 @@ export function diagnosticsByUri(
   return grouped;
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 export function documentSymbols(
   document: SigilDocument,
   source: string,
@@ -195,7 +195,7 @@ export function documentSymbols(
   ];
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 export async function definitionAt(
   resolved: ResolvedSigilWorkspace,
   fs: SigilFileSystem,
@@ -260,9 +260,9 @@ export async function definitionAt(
 }
 
 /*
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
- * @sigil implements packages/lsp/#module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
  */
 export async function hoverAt(
   resolved: ResolvedSigilWorkspace,
@@ -339,7 +339,7 @@ export async function hoverAt(
   };
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
 export function semanticTokens(
   resolved: ResolvedSigilWorkspace,
   filePath: string,
@@ -501,22 +501,32 @@ function componentReferences(
     });
   }
 
-  const semanticLines = [
+  const semanticUnits = [
     ...document.components,
     ...document.expands,
   ].flatMap((declaration) =>
-    declaration.sections.flatMap((section) => section.lines)
+    declaration.sections.flatMap((section) => section.units)
   );
-  for (const line of semanticLines) {
-    const lineRange = sourceRangeToLsp(line.range);
-    for (const [name, component] of visible) {
-      if (!component) continue;
-      for (const range of identifierRanges(source, name, lineRange)) {
-        references.push({
-          component,
-          range,
-          includeExpansions: normalizePath(component.filePath) === normalized,
-        });
+  const sourceLines = source.split(/\r?\n/);
+  for (const unit of semanticUnits) {
+    for (let offset = 0; offset < unit.sourceLines.length; offset++) {
+      const sourceLine = sourceLines[unit.range.start.line - 1 + offset] ?? "";
+      const lineRange = {
+        start: { line: unit.range.start.line - 1 + offset, character: 0 },
+        end: {
+          line: unit.range.start.line - 1 + offset,
+          character: sourceLine.length,
+        },
+      };
+      for (const [name, component] of visible) {
+        if (!component) continue;
+        for (const range of identifierRanges(source, name, lineRange)) {
+          references.push({
+            component,
+            range,
+            includeExpansions: normalizePath(component.filePath) === normalized,
+          });
+        }
       }
     }
   }
@@ -798,22 +808,22 @@ async function componentMarkdown(
   const lines = [
     `### component ${componentLink}`,
     "",
-    `Source: \`${component.filePath}\``,
+    `Source: \`${markdown.displayPath(component.filePath)}\``,
     "",
     "**Goal**",
-    ...markdownList(await markdown.semanticLines(goal?.lines ?? [])),
+    ...markdownList(await markdown.semanticUnits(goal?.units ?? [])),
     "",
     "**Interface**",
-    ...markdownList(await markdown.semanticLines(iface?.lines ?? [])),
+    ...markdownList(await markdown.semanticUnits(iface?.units ?? [])),
   ];
   if (includeExpansions && component.expansions.expands.length) {
     lines.push("", "**Collected expansions**");
     for (const expansion of component.expansions.expands) {
-      lines.push("", `\`${expansion.filePath}\``);
+      lines.push("", `\`${markdown.displayPath(expansion.filePath)}\``);
       for (const section of expansion.declaration.sections) {
-        const semanticLines = await markdown.semanticLines(section.lines);
+        const semanticUnits = await markdown.semanticUnits(section.units);
         lines.push(
-          `- **${section.name}:** ${semanticLines.join(" ")}`,
+          `- **${section.name}:** ${semanticUnits.join(" ")}`,
         );
       }
     }
@@ -873,10 +883,10 @@ async function conceptMarkdown(
   const lines = [
     `### concept ${conceptLink}`,
     "",
-    `Origin: ${originLink} in \`${identity.filePath}\``,
+    `Origin: ${originLink} in \`${markdown.displayPath(identity.filePath)}\``,
   ];
   for (const occurrence of reference.concept.occurrences) {
-    const semanticLines = await markdown.semanticLines(occurrence.block.lines);
+    const semanticUnits = await markdown.semanticUnits(occurrence.block.units);
     const occurrenceComponent = markdown.component(
       occurrence.componentName,
       occurrence.filePath,
@@ -886,8 +896,10 @@ async function conceptMarkdown(
       : `\`${occurrence.componentName}\``;
     lines.push(
       "",
-      `**${occurrence.sectionName}** — ${occurrenceComponentLink} in \`${occurrence.filePath}\``,
-      ...markdownList(semanticLines),
+      `**${occurrence.sectionName}** — ${occurrenceComponentLink} in \`${
+        markdown.displayPath(occurrence.filePath)
+      }\``,
+      ...markdownList(semanticUnits),
     );
   }
   return lines.join("\n");
@@ -916,6 +928,10 @@ class HoverMarkdownRenderer {
     this.#resolved = resolved;
     this.#fs = fs;
     this.#ownership = ownership;
+  }
+
+  displayPath(filePath: string): string {
+    return relativePath(this.#resolved.workspace.root, filePath);
   }
 
   component(
@@ -953,7 +969,7 @@ class HoverMarkdownRenderer {
       : `\`${concept.identifier}\``;
   }
 
-  // @sigil implements packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+  // @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
   async ownedImplementationLines(
     component: ResolvedComponent,
     conceptName?: string,
@@ -974,26 +990,44 @@ class HoverMarkdownRenderer {
     return lines;
   }
 
-  async semanticLines(lines: readonly SemanticLine[]): Promise<string[]> {
-    return await Promise.all(lines.map((line) => this.semanticLine(line)));
+  async semanticUnits(units: readonly SemanticUnit[]): Promise<string[]> {
+    return await Promise.all(units.map((unit) => this.semanticUnit(unit)));
   }
 
-  async semanticLine(line: SemanticLine): Promise<string> {
-    const lineRange = sourceRangeToLsp(line.range);
-    const references = (await this.#referencesFor(line.filePath))
-      .filter((reference) => containsRange(lineRange, reference.range))
-      .sort((left, right) => compareRanges(right.range, left.range));
-    let result = line.text;
-    for (const reference of references) {
-      const start = reference.range.start.character - lineRange.start.character;
-      const end = reference.range.end.character - lineRange.start.character;
-      if (start < 0 || end > result.length || start >= end) continue;
-      const label = result.slice(start, end);
-      result = `${result.slice(0, start)}${
-        markdownLink(label, reference.target)
-      }${result.slice(end)}`;
+  async semanticUnit(unit: SemanticUnit): Promise<string> {
+    const allReferences = await this.#referencesFor(unit.filePath);
+    const rendered: string[] = [];
+    for (let offset = 0; offset < unit.sourceLines.length; offset++) {
+      const sourceLine = unit.sourceLines[offset];
+      const content = sourceLine.trim();
+      const contentColumn = sourceLine.indexOf(content);
+      const lineNumber = unit.range.start.line - 1 + offset;
+      const lineRange = {
+        start: { line: lineNumber, character: contentColumn },
+        end: { line: lineNumber, character: contentColumn + content.length },
+      };
+      const references = allReferences
+        .filter((reference) => containsRange(lineRange, reference.range))
+        .sort((left, right) => compareRanges(right.range, left.range));
+      let result = content;
+      for (const reference of references) {
+        const start = reference.range.start.character -
+          lineRange.start.character;
+        const end = reference.range.end.character - lineRange.start.character;
+        if (start < 0 || end > result.length || start >= end) continue;
+        const label = result.slice(start, end);
+        result = `${result.slice(0, start)}${
+          markdownLink(label, reference.target)
+        }${result.slice(end)}`;
+      }
+      rendered.push(result);
     }
-    return result;
+    for (const literal of unit.literalBlocks) {
+      rendered.push(
+        `\n\`\`\`${literal.type ?? ""}\n${literal.body}\n\`\`\``,
+      );
+    }
+    return rendered.join(" ");
   }
 
   #source(filePath: string): Promise<string> {

@@ -4,10 +4,11 @@ import type {
   ConceptBlock,
   ExpandDeclaration,
   ImportDeclaration,
+  LiteralBlock,
   ParseOptions,
   ParseResult,
   Section,
-  SemanticLine,
+  SemanticUnit,
   SigilDiagnostic,
   SigilDocument,
   SigilFormKind,
@@ -26,6 +27,10 @@ const SECTION_NAMES = new Set<SigilSectionName>([
   "decisions",
   "cases",
 ]);
+const CONCEPT_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const PREFERRED_CONCEPT_IDENTIFIER = /^[A-Z][A-Za-z0-9]*$/;
+const LITERAL_TYPE = /^[A-Za-z][A-Za-z0-9_+.-]*$/;
+const PROSE_WIDTH = 79;
 
 interface FormDraft {
   kind: SigilFormKind;
@@ -37,23 +42,32 @@ interface FormDraft {
 interface SectionDraft {
   name: SigilSectionName;
   startLine: number;
-  lines: SemanticLine[];
+  units: SemanticUnit[];
   concepts: ConceptBlock[];
-  ungroupedLines: SemanticLine[];
+  ungroupedUnits: SemanticUnit[];
   freeformBraceDepth: number;
 }
 
 interface ConceptDraft {
   identifier: string;
   startLine: number;
-  lines: SemanticLine[];
+  units: SemanticUnit[];
   braceDepth: number;
 }
 
-const CONCEPT_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const PREFERRED_CONCEPT_IDENTIFIER = /^[A-Z][A-Za-z0-9]*$/;
+interface ParagraphDraft {
+  startLine: number;
+  endLine: number;
+  lines: string[];
+  literalBlocks: LiteralBlock[];
+}
 
-// @sigil implements packages/core/src/parser.sigil::SigilParser::SourceDocument interface,logic,constraints,cases
+/*
+ * @sigil implements packages/core/src/parser.sigil::SigilParser::SourceDocumentParsing interface
+ * @sigil implements packages/core/src/parser.sigil::SigilParser::SourceDocument logic,constraints,cases
+ * @sigil implements packages/core/src/parser.sigil::SigilParser::LiteralBlock logic,constraints,cases
+ * @sigil implements packages/core/src/parser.sigil::SigilParser::SemanticUnit constraints,cases
+ */
 export function parseSigilDocument(
   filePath: string,
   source: string,
@@ -71,7 +85,7 @@ export function parseSigilDocument(
       `Unsupported sigilVersion ${
         JSON.stringify(options.sigilVersion)
       }; supported version is ${SIGIL_VERSION}.`,
-      { filePath },
+      { filePath, range: singlePointRange(1) },
     );
     const document: SigilDocument = {
       filePath,
@@ -86,6 +100,24 @@ export function parseSigilDocument(
   let form: FormDraft | undefined;
   let section: SectionDraft | undefined;
   let concept: ConceptDraft | undefined;
+  let paragraph: ParagraphDraft | undefined;
+  let blankBeforeCurrent = false;
+
+  const flushParagraph = (): void => {
+    if (!paragraph || !form || !section) return;
+    const owner = concept ?? section;
+    const unit = makeSemanticUnit(
+      filePath,
+      paragraph,
+      form,
+      section.name,
+      concept?.identifier,
+    );
+    section.units.push(unit);
+    if (concept) owner.units.push(unit);
+    else section.ungroupedUnits.push(unit);
+    paragraph = undefined;
+  };
 
   for (let index = 0; index < lines.length; index++) {
     const lineNumber = index + 1;
@@ -93,101 +125,136 @@ export function parseSigilDocument(
     const trimmed = line.trim();
 
     if (section && form) {
-      if (concept) {
-        if (trimmed === "}" && concept.braceDepth === 1) {
-          finishConcept(
-            section,
-            concept,
-            lineNumber,
-            line.length,
-            filePath,
-            diagnostics,
-          );
-          concept = undefined;
-          continue;
+      const fence = openingFence(trimmed);
+      if (fence) {
+        const hadPriorContent = Boolean(
+          paragraph || concept?.units.length || section.units.length,
+        );
+        if (!paragraph) {
+          diagnostics.push(diagnostic(
+            blankBeforeCurrent && hadPriorContent
+              ? "SIGIL_DETACHED_LITERAL_BLOCK"
+              : "SIGIL_LITERAL_WITHOUT_INTRODUCTION",
+            blankBeforeCurrent && hadPriorContent
+              ? "A literal block must immediately follow its introducing prose without a blank line."
+              : "A literal block requires preceding prose in the same section or concept block.",
+            { filePath, range: lineRange(lineNumber, line) },
+          ));
+          paragraph = {
+            startLine: lineNumber,
+            endLine: lineNumber,
+            lines: [],
+            literalBlocks: [],
+          };
         }
+        if (fence.type !== undefined && !LITERAL_TYPE.test(fence.type)) {
+          diagnostics.push(diagnostic(
+            "SIGIL_INVALID_LITERAL_TYPE",
+            `Invalid literal type ${JSON.stringify(fence.type)}.`,
+            { filePath, range: lineRange(lineNumber, line) },
+          ));
+        }
+        const parsed = parseLiteralBlock(
+          lines,
+          index,
+          fence,
+          filePath,
+          diagnostics,
+        );
+        paragraph.literalBlocks.push(parsed.block);
+        paragraph.endLine = parsed.endIndex + 1;
+        index = parsed.endIndex;
+        flushParagraph();
+        blankBeforeCurrent = false;
+        continue;
+      }
 
-        if (concept.braceDepth === 1 && conceptHeader(trimmed)) {
+      if (trimmed.length === 0) {
+        flushParagraph();
+        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+        blankBeforeCurrent = true;
+        continue;
+      }
+
+      if (
+        trimmed === "}" && paragraph &&
+        (concept ? concept.braceDepth === 1 : section.freeformBraceDepth === 0)
+      ) {
+        flushParagraph();
+      }
+
+      if (
+        concept && trimmed === "}" && concept.braceDepth === 1 &&
+        !paragraph
+      ) {
+        finishConcept(
+          section,
+          concept,
+          lineNumber,
+          line.length,
+          filePath,
+          diagnostics,
+        );
+        concept = undefined;
+        blankBeforeCurrent = false;
+        continue;
+      }
+
+      if (
+        !concept && trimmed === "}" && section.freeformBraceDepth === 0 &&
+        !paragraph
+      ) {
+        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+        form.sections.push(finishSection(section, lineNumber, line.length));
+        section = undefined;
+        blankBeforeCurrent = false;
+        continue;
+      }
+
+      const header = !paragraph &&
+          (concept ? concept.braceDepth : section.freeformBraceDepth) ===
+            (concept ? 1 : 0)
+        ? conceptHeader(trimmed)
+        : undefined;
+      if (header) {
+        if (concept) {
           diagnostics.push(diagnostic(
             "SIGIL_NESTED_CONCEPT_BLOCK",
             "Concept blocks cannot nest.",
             { filePath, range: lineRange(lineNumber, line) },
           ));
-        }
-
-        if (trimmed.length > 0 && trimmed !== "}") {
-          const semanticLine = makeSemanticLine(
-            filePath,
+        } else {
+          reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+          validateConceptIdentifier(
+            header.identifier,
             lineNumber,
             line,
-            form,
-            section.name,
-            concept.identifier,
+            filePath,
+            diagnostics,
           );
-          section.lines.push(semanticLine);
-          concept.lines.push(semanticLine);
+          concept = {
+            identifier: header.identifier,
+            startLine: lineNumber,
+            units: [],
+            braceDepth: 1,
+          };
+          blankBeforeCurrent = false;
+          continue;
         }
-
-        concept.braceDepth += braceDelta(line);
-        continue;
       }
 
-      if (trimmed === "}" && section.freeformBraceDepth === 0) {
-        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
-        form.sections.push(finishSection(section, lineNumber, line.length));
-        section = undefined;
-        continue;
-      }
-
-      const header = section.freeformBraceDepth === 0
-        ? conceptHeader(trimmed)
-        : undefined;
-      if (header) {
-        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
-        const identifier = header.identifier;
-        if (!CONCEPT_IDENTIFIER.test(identifier)) {
-          diagnostics.push(diagnostic(
-            "SIGIL_INVALID_CONCEPT_IDENTIFIER",
-            `Invalid concept identifier ${
-              JSON.stringify(identifier)
-            }; expected [A-Za-z][A-Za-z0-9_-]* with no spaces.`,
-            { filePath, range: lineRange(lineNumber, line) },
-          ));
-        } else if (!PREFERRED_CONCEPT_IDENTIFIER.test(identifier)) {
-          diagnostics.push(diagnostic(
-            "SIGIL_CONCEPT_IDENTIFIER_STYLE",
-            `Concept identifier ${identifier} is valid; prefer PascalCase without hyphens or underscores.`,
-            {
-              severity: "info",
-              filePath,
-              range: identifierRange(lineNumber, line, identifier),
-            },
-          ));
-        }
-        concept = {
-          identifier,
-          startLine: lineNumber,
-          lines: [],
-          braceDepth: 1,
-        };
-        continue;
-      }
-
-      if (trimmed.length === 0) {
-        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
-        continue;
-      }
-
-      const semanticLine = makeSemanticLine(
-        filePath,
-        lineNumber,
-        line,
-        form,
-        section.name,
-      );
-      section.lines.push(semanticLine);
-      section.ungroupedLines.push(semanticLine);
-      section.freeformBraceDepth += braceDelta(line);
+      reportProseWidth(line, lineNumber, filePath, diagnostics);
+      paragraph ??= {
+        startLine: lineNumber,
+        endLine: lineNumber,
+        lines: [],
+        literalBlocks: [],
+      };
+      paragraph.lines.push(line);
+      paragraph.endLine = lineNumber;
+      if (concept) concept.braceDepth += braceDelta(line);
+      else section.freeformBraceDepth += braceDelta(line);
+      blankBeforeCurrent = false;
       continue;
     }
 
@@ -199,7 +266,6 @@ export function parseSigilDocument(
         form = undefined;
         continue;
       }
-
       const sectionMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\{\s*$/);
       if (sectionMatch) {
         const sectionName = sectionMatch[1];
@@ -207,9 +273,9 @@ export function parseSigilDocument(
           section = {
             name: sectionName as SigilSectionName,
             startLine: lineNumber,
-            lines: [],
+            units: [],
             concepts: [],
-            ungroupedLines: [],
+            ungroupedUnits: [],
             freeformBraceDepth: 0,
           };
         } else {
@@ -221,7 +287,6 @@ export function parseSigilDocument(
         }
         continue;
       }
-
       if (trimmed.length > 0) {
         diagnostics.push(diagnostic(
           "SIGIL_PARSE_STRUCTURE",
@@ -233,21 +298,21 @@ export function parseSigilDocument(
     }
 
     if (trimmed.length === 0) continue;
-
     const importMatch = trimmed.match(
       /^@(.+?)\s+import\s+\{\s*([^}]+?)\s*\}\s*$/,
     );
     if (importMatch) {
+      const names = importMatch[2].split(",").map((name) => name.trim()).filter(
+        Boolean,
+      );
       imports.push({
         path: importMatch[1].trim(),
-        names: importMatch[2].split(",").map((name) => name.trim()).filter(
-          Boolean,
-        ),
+        names,
+        nameRanges: importNameRanges(lineNumber, line, names),
         range: lineRange(lineNumber, line),
       });
       continue;
     }
-
     const formMatch = trimmed.match(
       /^(component|expand)\s+([A-Za-z][A-Za-z0-9_]*)\s*\{\s*$/,
     );
@@ -260,7 +325,6 @@ export function parseSigilDocument(
       };
       continue;
     }
-
     diagnostics.push(diagnostic(
       "SIGIL_PARSE_STRUCTURE",
       "Unexpected top-level content.",
@@ -268,6 +332,7 @@ export function parseSigilDocument(
     ));
   }
 
+  flushParagraph();
   if (concept && section && form) {
     diagnostics.push(diagnostic(
       "SIGIL_PARSE_STRUCTURE",
@@ -282,9 +347,7 @@ export function parseSigilDocument(
       filePath,
       diagnostics,
     );
-    concept = undefined;
   }
-
   if (section && form) {
     diagnostics.push(diagnostic(
       "SIGIL_PARSE_STRUCTURE",
@@ -296,7 +359,6 @@ export function parseSigilDocument(
     );
     reportUngroupedInterfaceRegion(section, filePath, diagnostics);
   }
-
   if (form) {
     diagnostics.push(diagnostic(
       "SIGIL_PARSE_STRUCTURE",
@@ -329,15 +391,13 @@ export function parseSigilDocument(
       ));
     }
   }
-
   if (isModuleFile(filePath) && components.length === 0) {
     diagnostics.push(diagnostic(
       "SIGIL_MODULE_WITHOUT_COMPONENT",
-      "#module.sigil must declare at least one component.",
+      "_module.sigil must declare at least one component.",
       { filePath },
     ));
   }
-
   const document: SigilDocument = {
     filePath,
     imports,
@@ -345,8 +405,98 @@ export function parseSigilDocument(
     expands,
     diagnostics,
   };
-
   return { document, diagnostics };
+}
+
+function openingFence(
+  trimmed: string,
+): { fenceLength: number; type?: string } | undefined {
+  const match = trimmed.match(/^(`{3,})(.*)$/);
+  if (!match) return undefined;
+  const type = match[2].trim();
+  return { fenceLength: match[1].length, type: type || undefined };
+}
+
+function parseLiteralBlock(
+  lines: readonly string[],
+  startIndex: number,
+  opener: { fenceLength: number; type?: string },
+  filePath: string,
+  diagnostics: SigilDiagnostic[],
+): { block: LiteralBlock; endIndex: number } {
+  const openingLine = lines[startIndex];
+  const indentation = firstColumn(openingLine) - 1;
+  const bodyLines: string[] = [];
+  let endIndex = lines.length - 1;
+  let closed = false;
+  for (let index = startIndex + 1; index < lines.length; index++) {
+    const trimmed = lines[index].trim();
+    const close = trimmed.match(/^(`{3,})$/);
+    if (close && close[1].length >= opener.fenceLength) {
+      endIndex = index;
+      closed = true;
+      break;
+    }
+    bodyLines.push(lines[index]);
+  }
+  if (!closed) {
+    diagnostics.push(diagnostic(
+      "SIGIL_UNCLOSED_LITERAL_BLOCK",
+      "Literal block is missing a closing backtick fence.",
+      { filePath, range: lineRange(startIndex + 1, openingLine) },
+    ));
+  }
+  const dedented = bodyLines.map((line) =>
+    line.startsWith(" ".repeat(indentation)) ? line.slice(indentation) : line
+  );
+  return {
+    block: {
+      type: opener.type,
+      body: dedented.join("\n"),
+      sourceLines: bodyLines,
+      fenceLength: opener.fenceLength,
+      indentation,
+      range: {
+        start: lineRange(startIndex + 1, openingLine).start,
+        end: lineRange(endIndex + 1, lines[endIndex] ?? "").end,
+      },
+      bodyRange: {
+        start: { line: startIndex + 2, column: 1 },
+        end: { line: Math.max(startIndex + 2, endIndex), column: 1 },
+      },
+    },
+    endIndex,
+  };
+}
+
+function makeSemanticUnit(
+  filePath: string,
+  paragraph: ParagraphDraft,
+  form: FormDraft,
+  sectionName: SigilSectionName,
+  conceptIdentifier?: string,
+): SemanticUnit {
+  const prose = paragraph.lines.map((line) => line.trim()).join(" ");
+  const lastLiteral = paragraph.literalBlocks.at(-1);
+  const lastSourceLine = paragraph.lines.at(-1) ?? "";
+  return {
+    filePath,
+    range: {
+      start: paragraph.lines.length > 0
+        ? lineRange(paragraph.startLine, paragraph.lines[0]).start
+        : lastLiteral?.range.start ??
+          singlePointRange(paragraph.startLine).start,
+      end: lastLiteral?.range.end ??
+        lineRange(paragraph.endLine, lastSourceLine).end,
+    },
+    ownerKind: form.kind,
+    ownerName: form.name,
+    sectionName,
+    conceptIdentifier,
+    prose,
+    sourceLines: paragraph.lines,
+    literalBlocks: paragraph.literalBlocks,
+  };
 }
 
 function finishSection(
@@ -364,7 +514,7 @@ function finishSection(
       start: { line: section.startLine + 1, column: 1 },
       end: { line: endLine, column: Math.max(1, endColumn + 1) },
     },
-    lines: section.lines,
+    units: section.units,
     concepts: section.concepts,
   };
 }
@@ -381,10 +531,10 @@ function finishConcept(
     start: { line: concept.startLine, column: 1 },
     end: { line: endLine, column: Math.max(1, endColumn + 1) },
   };
-  if (concept.lines.length === 0) {
+  if (concept.units.length === 0) {
     diagnostics.push(diagnostic(
       "SIGIL_EMPTY_CONCEPT_BLOCK",
-      `Concept block ${concept.identifier} must contain at least one semantic line.`,
+      `Concept block ${concept.identifier} must contain at least one semantic unit.`,
       { filePath, range },
     ));
   }
@@ -395,7 +545,7 @@ function finishConcept(
       start: { line: concept.startLine + 1, column: 1 },
       end: { line: endLine, column: Math.max(1, endColumn + 1) },
     },
-    lines: concept.lines,
+    units: concept.units,
   });
 }
 
@@ -404,12 +554,14 @@ function reportUngroupedInterfaceRegion(
   filePath: string,
   diagnostics: SigilDiagnostic[],
 ): void {
-  if (section.name !== "interface" || section.ungroupedLines.length === 0) {
-    section.ungroupedLines = [];
+  if (
+    section.name !== "interface" || section.ungroupedUnits.length === 0
+  ) {
+    section.ungroupedUnits = [];
     return;
   }
-  const first = section.ungroupedLines[0];
-  const last = section.ungroupedLines.at(-1)!;
+  const first = section.ungroupedUnits[0];
+  const last = section.ungroupedUnits.at(-1)!;
   diagnostics.push(diagnostic(
     "SIGIL_MISSING_CONCEPT_IDENTIFIER",
     "Interface content should be grouped under one or more concept identifiers.",
@@ -419,7 +571,75 @@ function reportUngroupedInterfaceRegion(
       range: { start: first.range.start, end: last.range.end },
     },
   ));
-  section.ungroupedLines = [];
+  section.ungroupedUnits = [];
+}
+
+function validateConceptIdentifier(
+  identifier: string,
+  lineNumber: number,
+  line: string,
+  filePath: string,
+  diagnostics: SigilDiagnostic[],
+): void {
+  if (!CONCEPT_IDENTIFIER.test(identifier)) {
+    diagnostics.push(diagnostic(
+      "SIGIL_INVALID_CONCEPT_IDENTIFIER",
+      `Invalid concept identifier ${
+        JSON.stringify(identifier)
+      }; expected [A-Za-z][A-Za-z0-9_-]* with no spaces.`,
+      { filePath, range: lineRange(lineNumber, line) },
+    ));
+  } else if (!PREFERRED_CONCEPT_IDENTIFIER.test(identifier)) {
+    diagnostics.push(diagnostic(
+      "SIGIL_CONCEPT_IDENTIFIER_STYLE",
+      `Concept identifier ${identifier} is valid; prefer PascalCase without hyphens or underscores.`,
+      {
+        severity: "info",
+        filePath,
+        range: identifierRange(lineNumber, line, identifier),
+      },
+    ));
+  }
+}
+
+function reportProseWidth(
+  line: string,
+  lineNumber: number,
+  filePath: string,
+  diagnostics: SigilDiagnostic[],
+): void {
+  const content = line.trimStart();
+  if ([...content].length <= PROSE_WIDTH) return;
+  const indivisible = content.split(/\s+/).some((token) =>
+    [...token].length > PROSE_WIDTH
+  );
+  diagnostics.push(diagnostic(
+    indivisible ? "SIGIL_UNFORMATTABLE_LINE" : "SIGIL_LINE_TOO_LONG",
+    indivisible
+      ? `An indivisible prose token exceeds ${PROSE_WIDTH} content characters.`
+      : `Prose exceeds the canonical ${PROSE_WIDTH}-character content width.`,
+    {
+      severity: indivisible ? "error" : "info",
+      filePath,
+      range: lineRange(lineNumber, line),
+    },
+  ));
+}
+
+function importNameRanges(
+  lineNumber: number,
+  line: string,
+  names: readonly string[],
+): SourceRange[] {
+  let cursor = line.indexOf("{") + 1;
+  return names.map((name) => {
+    const found = line.indexOf(name, cursor);
+    cursor = found + name.length;
+    return {
+      start: { line: lineNumber, column: found + 1 },
+      end: { line: lineNumber, column: found + name.length + 1 },
+    };
+  });
 }
 
 function conceptHeader(
@@ -430,25 +650,6 @@ function conceptHeader(
   const identifier = match[1].trim();
   if (/[=:()\[\]<>"'`]/.test(identifier)) return undefined;
   return { identifier };
-}
-
-function makeSemanticLine(
-  filePath: string,
-  lineNumber: number,
-  line: string,
-  form: FormDraft,
-  sectionName: SigilSectionName,
-  conceptIdentifier?: string,
-): SemanticLine {
-  return {
-    filePath,
-    range: lineRange(lineNumber, line),
-    ownerKind: form.kind,
-    ownerName: form.name,
-    sectionName,
-    conceptIdentifier,
-    text: line.trim(),
-  };
 }
 
 function finishForm(

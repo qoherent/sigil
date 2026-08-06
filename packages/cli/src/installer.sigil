@@ -1,17 +1,21 @@
 component SkillInstaller {
   goal {
-    Discover and install valid agent skills bundled with the selected Sigil CLI distribution.
+    Discover and install valid agent skills bundled with the selected Sigil CLI
+    distribution.
 
-    Support global and project destinations for compatible agent hosts without replacing unrelated content or consulting workspace configuration.
+    Support global and project destinations for compatible agent hosts without
+    replacing unrelated content or consulting workspace configuration.
   }
 
   interface {
     SkillCatalog {
-      listInstalledSkills(sourceDirectory?) returns the resolved source directory and sorted valid skill names
+      listInstalledSkills(sourceDirectory?) returns the resolved source directory and
+      sorted valid skill names
     }
 
     SkillInstallation {
-      installSkills(options?) returns the selected scope, agents, source directory, and installed, updated, existing, or copied destination results
+      installSkills(options?) returns the selected scope, agents, source directory,
+      and installed, updated, existing, or copied destination results
 
       scope defaults to global and accepts global or project
 
@@ -23,13 +27,16 @@ component SkillInstaller {
 
       global scope resolves destinations from userHome
 
-      project scope resolves destinations from targetRoot or the current working directory
+      project scope resolves destinations from targetRoot or the current working
+      directory
     }
 
     SkillSourceDiscovery {
-      resolveInstalledSkillsDirectory(moduleUrl?, executablePath?) returns the first available installation-relative skills directory
+      resolveInstalledSkillsDirectory(moduleUrl?, executablePath?) returns the first
+      available installation-relative skills directory
 
-      sourceDirectory defaults to the directory resolved from the selected Sigil executable or source module
+      sourceDirectory defaults to the directory resolved from the selected Sigil
+      executable or source module
 
       returned installation paths are absolute host paths
     }
@@ -39,7 +46,8 @@ component SkillInstaller {
 expand SkillInstaller {
   state {
     SkillCatalog {
-      installable skills are sorted immediate non-hidden directories containing SKILL.md in the selected source directory
+      installable skills are sorted immediate non-hidden directories containing
+      SKILL.md in the selected source directory
     }
 
     SkillInstallation {
@@ -49,17 +57,22 @@ expand SkillInstaller {
 
   logic {
     SkillSourceDiscovery {
-      Resolve skills beside the selected executable before considering source-module development fallbacks.
+      Resolve skills beside the selected executable before considering source-module
+      development fallbacks.
 
-      Executable lookup checks executableDirectory/../integrations/skills before executableDirectory/integrations/skills.
+      Executable lookup checks executableDirectory/../integrations/skills before
+      executableDirectory/integrations/skills.
 
-      File-module fallback checks moduleDirectory/../integrations/skills before moduleDirectory/../../../integrations/skills.
+      File-module fallback checks moduleDirectory/../integrations/skills before
+      moduleDirectory/../../../integrations/skills.
 
-      Deduplicate candidate paths, select the first existing directory, and report every checked path when none exists.
+      Deduplicate candidate paths, select the first existing directory, and report
+      every checked path when none exists.
 
       A versioned layout resolves version/bin/sigil to version/integrations/skills.
 
-      Source development may resolve the repository integrations/skills directory relative to installer.ts.
+      Source development may resolve the repository integrations/skills directory
+      relative to installer.ts.
     }
 
     SkillCatalog {
@@ -73,17 +86,22 @@ expand SkillInstaller {
 
       Preflight every destination before changing any managed installation.
 
-      Prefer relative directory links and fall back to managed copies when permitted link creation fails.
+      Prefer relative directory links and fall back to managed copies when permitted
+      link creation fails.
 
-      Record managed-installation metadata sufficient to distinguish Sigil-owned destinations.
+      Record managed-installation metadata sufficient to distinguish Sigil-owned
+      destinations.
 
-      Retarget or replace an older Sigil-managed installation when the selected executable owns different skill assets.
+      Retarget or replace an older Sigil-managed installation when the selected
+      executable owns different skill assets.
 
       Refuse to replace an unmanaged destination.
 
-      Create or update project-local skill .gitignore files with root-anchored entries for managed metadata and skills.
+      Create or update project-local skill .gitignore files with root-anchored
+      entries for managed metadata and skills.
 
-      Preserve unrelated ignore rules, newline style, and existing managed entries without duplication.
+      Preserve unrelated ignore rules, newline style, and existing managed entries
+      without duplication.
 
       Return destination records in stable skill and agent order.
     }
@@ -91,9 +109,11 @@ expand SkillInstaller {
 
   constraints {
     SkillCatalog {
-      Skill names are discovered from integrations/skills and are not hardcoded into command logic.
+      Skill names are discovered from integrations/skills and are not hardcoded into
+      command logic.
 
-      Hidden entries, files, source symlinks, and directories without SKILL.md are not valid skills.
+      Hidden entries, files, source symlinks, and directories without SKILL.md are
+      not valid skills.
     }
 
     SkillInstallation {
@@ -101,15 +121,18 @@ expand SkillInstaller {
 
       Directory symlink type is explicit for Windows when link creation is permitted.
 
-      Path equality is case-insensitive on Windows and case-sensitive on macOS and Linux.
+      Path equality is case-insensitive on Windows and case-sensitive on macOS and
+      Linux.
 
       An unmanaged file, directory, or symlink is never replaced.
 
       Conflict preflight completes before any managed destination changes.
 
-      Project ignore entries cover generated links, copies, and management metadata while the ignore file remains repository content.
+      Project ignore entries cover generated links, copies, and management metadata
+      while the ignore file remains repository content.
 
-      The selected executable owns skill-source selection; installation does not inspect ConfigFile to choose or switch binaries.
+      The selected executable owns skill-source selection; installation does not
+      inspect ConfigFile to choose or switch binaries.
 
       Filesystem and host permission failures propagate as CLI runtime failures.
     }
@@ -117,29 +140,37 @@ expand SkillInstaller {
 
   decisions {
     SkillInstallation {
-      Decision: Protect user-owned destinations by preflighting every target and replacing only installations with Sigil management evidence.
+      Decision: Protect user-owned destinations by preflighting every target and
+      replacing only installations with Sigil management evidence.
 
-      Scope: Governs installation and update ownership for selected skill destinations; excludes source discovery and link-versus-copy mechanics.
+      Scope: Governs installation and update ownership for selected skill
+      destinations; excludes source discovery and link-versus-copy mechanics.
 
-      Trade-offs: One unmanaged conflict aborts the complete installation instead of partially updating other targets.
+      Trade-offs: One unmanaged conflict aborts the complete installation instead of
+      partially updating other targets.
 
-      Consequences: Reinstallation can update managed destinations while unrelated files, directories, and links remain untouched.
+      Consequences: Reinstallation can update managed destinations while unrelated
+      files, directories, and links remain untouched.
 
-      Revisit when: Agent hosts provide a shared transactional package-management authority.
+      Revisit when: Agent hosts provide a shared transactional package-management
+      authority.
     }
   }
 
   cases {
     SkillCatalog {
-      A distribution containing multiple valid skills lists them in stable order without a CLI code change.
+      A distribution containing multiple valid skills lists them in stable order
+      without a CLI code change.
 
       An empty source directory reports a runtime failure.
     }
 
     SkillInstallation {
-      Global installation creates one shared destination for Codex, OpenCode, and Pi and one Claude-compatible destination.
+      Global installation creates one shared destination for Codex, OpenCode, and Pi
+      and one Claude-compatible destination.
 
-      Project installation creates equivalent destinations only inside the selected repository.
+      Project installation creates equivalent destinations only inside the selected
+      repository.
 
       A Windows host without directory-link permission receives a managed copy.
 
@@ -147,13 +178,16 @@ expand SkillInstaller {
 
       An unmanaged destination aborts installation before other destinations change.
 
-      Repeating installation against current managed destinations reports existing and leaves project ignore files unchanged.
+      Repeating installation against current managed destinations reports existing
+      and leaves project ignore files unchanged.
     }
 
     SkillSourceDiscovery {
-      A selected version/bin/sigil resolves version-matched skill assets before source-module fallbacks.
+      A selected version/bin/sigil resolves version-matched skill assets before
+      source-module fallbacks.
 
-      Two repositories invoking different selected binaries use the skill assets owned by their respective binaries.
+      Two repositories invoking different selected binaries use the skill assets
+      owned by their respective binaries.
     }
   }
 }

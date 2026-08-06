@@ -1,4 +1,4 @@
-<!-- @sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::WorkspaceBootstrap interface,state,logic,constraints,cases -->
+<!-- @sigil implements integrations/skills/sigil/workspace-bootstrap.sigil::SigilWorkspaceBootstrap::WorkspaceBootstrap interface,state,logic,constraints,cases -->
 
 # Workspace Bootstrap
 
@@ -59,8 +59,21 @@ Repository-local command shape:
 deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
-This skill requires CLI and core `^0.7.0` and Sigil `0.5.0`. Do not reinterpret
+This skill requires CLI and core `^0.7.0` and Sigil `0.7.0`. Do not reinterpret
 a workspace using an older project-root-only convention.
+
+Before workspace interpretation, read `compatibility.json` as an exact object
+containing only string properties `cliVersion`, `coreVersion`, and
+`sigilVersion`. Missing, unreadable, malformed, non-string, unknown-property,
+or prerelease metadata is incompatible and stops without mutation.
+
+Interpret CLI and core ranges only as stable complete `^M.m.p` versions. For a
+nonzero major, accept versions below the next major; for `^0.m.p` with nonzero
+minor, accept versions below the next minor; for `^0.0.p`, accept versions below
+the next patch. Reject prerelease declarations and actual versions, ignore build
+metadata for precedence, and require the configured stable Sigil version to
+equal `sigilVersion`. Report the metadata path, reason, declared expectations,
+and available actual versions for every incompatibility.
 
 ## 3. Classify Configuration State
 
@@ -192,7 +205,7 @@ CLI exit codes:
 
 ### Existing Sigil, No Config
 
-The repository contains `architecture/api.sigil` and `#module.sigil` but no
+The repository contains `architecture/api.sigil` and `_module.sigil` but no
 governing `.sigil/config.json`. Inventory both paths and report the repository
 as unconfigured without mutation. If the user requests initialization, obtain
 `ReviewGate(action: workspace-initialization)` readiness for the exact root and

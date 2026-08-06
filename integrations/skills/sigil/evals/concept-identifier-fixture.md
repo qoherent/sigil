@@ -22,28 +22,30 @@ Expected skill behavior:
    and every matching expand before proposing an identifier.
 6. Inspect existing local concepts and accessible imported public concepts
    before creating a new identity.
-7. Inspect direct importers for relevant use cases and established terminology.
-8. Traverse the transitive consumer only because the concept is re-exposed.
-9. Treat inaccessible consumer concepts as naming evidence rather than reusable
+7. Reuse every semantically matching accessible imported public identity and
+   create a local concept only for a materially distinct meaning.
+8. Inspect direct importers for relevant use cases and established terminology.
+9. Traverse the transitive consumer only because the concept is re-exposed.
+10. Treat inaccessible consumer concepts as naming evidence rather than reusable
    identities.
-10. Classify each affected region as local reuse, imported reuse, or creation of
-   a new identity.
-11. Give the subagent affected regions, local occurrences, imported candidates,
-   relevant consumer evidence, and required graph paths.
-12. Require supporting occurrences, graph paths, rejected alternatives, reuse
+11. Classify each affected region as local reuse, imported reuse, or creation of
+    a new identity.
+12. Give the subagent affected regions, local occurrences, imported candidates,
+    relevant consumer evidence, and required graph paths.
+13. Require supporting occurrences, graph paths, rejected alternatives, reuse
    status, grouping decisions, and proposed names in the returned proposal.
-13. Validate grammar, case-insensitive uniqueness, visibility, collective
+14. Validate grammar, case-insensitive uniqueness, visibility, collective
    coherence, and transitive ambiguity in the primary agent.
-14. Present the complete validated proposal and exact Sigil changes to the user.
-15. Submit the exact proposal to `ReviewGate(action: sigil-change)` and leave
+15. Present the complete validated proposal and exact Sigil changes to the user.
+16. Submit the exact proposal to `ReviewGate(action: sigil-change)` and leave
     every repository file unchanged while its result is review-required.
-16. Treat subagent completion as advisory output rather than user approval or
+17. Treat subagent completion as advisory output rather than user approval or
     edit authority for the primary agent.
-17. Apply concept creation, reuse, regrouping, renaming, or warning repair only
+18. Apply concept creation, reuse, regrouping, renaming, or warning repair only
     when ReviewGate is ready for the exact sigil-change scope and change set.
-18. After approved grouping, rerun deterministic and semantic review before
+19. After approved grouping, rerun deterministic and semantic review before
     glossary candidate extraction.
-19. Investigate material ambiguity exposed by grouping and return to
+20. Investigate material ambiguity exposed by grouping and return to
     DesignConversation in correction mode only when it confirms a material
     problem.
-20. Keep anchor proposal and persistence behavior outside this workflow.
+21. Keep anchor proposal and persistence behavior outside this workflow.

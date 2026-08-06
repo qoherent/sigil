@@ -1,9 +1,10 @@
 {
-  "sigilVersion": "0.5.0",
+  "sigilVersion": "0.7.0",
   "workspace": {
     "name": "sigil",
     "members": [
       "packages/cli",
+      "packages/compiler",
       "packages/core",
       "packages/lsp",
       "integrations/skills/sigil",
@@ -23,5 +24,24 @@
       "examples/**"
     ]
   },
-  "tools": {}
+  "tools": {
+    "compile": {
+      "defaultProfile": "standard",
+      "budgets": {
+        "elapsedTimeMs": 1800000,
+        "maxCommands": 512,
+        "maxCommandOutputChars": 3000000,
+        "maxInputTokens": 1000000,
+        "maxOutputTokens": 1000000
+      },
+      "limits": {
+        "maxCompilationRequestChars": 1000000,
+        "maxAgentInputChars": 1000000,
+        "sessionTtlMs": 86400000
+      },
+      "adapter": {
+        "provider": "codex"
+      }
+    }
+  }
 }

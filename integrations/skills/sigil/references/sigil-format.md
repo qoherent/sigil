@@ -28,7 +28,7 @@ deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
 Run `sigil version . --format json --pretty` before `check`. This reference
-describes Sigil version `0.5.0`; do not apply it to an
+describes Sigil version `0.7.0`; do not apply it to an
 unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
@@ -38,10 +38,14 @@ starting point, then read source files before editing them.
 
 Sigil source files use `.sigil`.
 
-The directory-index filename is `#module.sigil`. It may appear in any included
+The directory-index filename is `_module.sigil`. It may appear in any included
 directory and must declare at least one local component. Its local components
-and successfully resolved direct import names form that directory's import
-surface. An imports-only index produces `SIGIL_MODULE_WITHOUT_COMPONENT`.
+and independently resolved imported names form that directory's converged import
+surface. Repeated declaration identities deduplicate; conflicting identities
+leave the name unresolved without removing unaffected names. An imports-only
+index produces `SIGIL_MODULE_WITHOUT_COMPONENT` without discarding independently
+resolved names. The legacy `#module.sigil` basename is an ordinary source and
+requires an explicit file import.
 
 A strict JSON `.sigil/config.json` is mandatory at the workspace root. It selects
 Sigil version, provides `workspace.name`, declares
@@ -51,28 +55,38 @@ invalid.
 
 Sigil files should live as near as practical to the code they describe.
 Configured workspace boundaries use ordinary summary components in the
-workspace-root and declared-member `#module.sigil` files. Internal contracts
+workspace-root and declared-member `_module.sigil` files. Internal contracts
 use descriptive `.sigil` filenames, while internal directories may add a module
 index when they need import shorthand. If the main `component` must live
 elsewhere, a nearby `expand Name` may live beside the code it explains.
 
 When implementation establishes a clear owner directory, relocate a temporary
 Sigil file beside that implementation and update affected imports. Keep the
-configured-boundary `#module.sigil` in place. Internal module indexes may move
+configured-boundary `_module.sigil` in place. Internal module indexes may move
 with their owning directories. If a shared component contract cannot move,
 colocate its implementation-specific `expand Name` instead.
 
 ### Module indexes and boundary summaries
 
 Every component is public and may be imported through its explicit `.sigil`
-source path whether or not a module index names it. `#module.sigil` controls
+source path whether or not a module index names it. `_module.sigil` controls
 only which names resolve through a directory import. Sigil has no export or
 re-export form.
 
 For Brownfield adoption, each configured workspace boundary receives an
-ordinary summary component in its `#module.sigil`. Its `goal` and `interface`
+ordinary summary component in its `_module.sigil`. Its `goal` and `interface`
 describe that boundary, and a matching expand uses the general section meanings.
 This summary has no special parser or resolver status.
+
+As an authoring convention, keep every module index small by responsibility.
+Use it to assemble the intentional directory-import namespace and retain only
+the local summary plus boundary-wide architecture constraints and durable design
+decisions. Put material state, operational logic, detailed lifecycle behavior,
+and independently changing policy in components or expands beside their owners.
+
+Before creating local components or concepts, inspect accessible imported public
+identities and reuse every semantic match. Similar wording does not justify
+reuse when the underlying responsibility or meaning differs.
 
 Exclude secrets, incidental dependencies, low-level configuration, and
 module-specific implementation details from configured-boundary summaries.
@@ -131,7 +145,7 @@ expand Name {
 ```
 
 `@packages/member import { ComponentName }` imports from that directory's
-`#module.sigil`, regardless of whether the directory is a declared member.
+`_module.sigil`, regardless of whether the directory is a declared member.
 `@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
 
 Importing `Name` makes the component's public `goal`, `interface`, and public
@@ -205,7 +219,7 @@ interface {
 ```
 
 `SessionLifecycle` is a reusable concept identifier. A block may contain one
-heavily reused idea or several related semantic lines. Concept blocks are flat,
+heavily reused idea or several related semantic units. Concept blocks are flat,
 nonempty, and cannot nest.
 
 Identifiers match `[A-Za-z][A-Za-z0-9_-]*`. References are case-sensitive, but
@@ -241,7 +255,7 @@ Import syntax:
 @path import { Name, OtherName }
 ```
 
-A path without a `.sigil` filename resolves to `#module.sigil` in the target
+A path without a `.sigil` filename resolves to `_module.sigil` in the target
 directory. A name resolves from that index's local components or successfully
 resolved direct imports. Components omitted from the index remain public through
 their explicit `.sigil` filenames. The `@` prefix resolves from the workspace
@@ -255,6 +269,14 @@ provider itself is selected.
 
 Imports are the dependency declarations between Sigil components. Do not repeat
 an imported-component dependency in `interface`.
+
+Every resolved imported name must have a qualifying exact-case use in its
+declaring source. Component names and imported public concepts count in
+`interface`, `state`, `logic`, `constraints`, or `cases`. A matching local
+`expand` and a direct `_module.sigil` surface import also count. Mentions in
+`goal`, `decisions`, literal blocks, comments, annotations, other files,
+differently cased words, or identifier substrings do not count. An unused
+resolved name is a syntax error reported as `SIGIL_UNUSED_IMPORT`.
 
 ## Section Placement
 
@@ -344,39 +366,70 @@ initial convention.
 Use `cases` for examples and acceptance criteria that can be observed from
 outside the component.
 
-## Semantic Lines
+## Semantic Units
 
-Each non-empty line inside a section is a semantic unit and possible future
-anchor target. Separate distinct prose-level ideas with blank lines in every
-section. Blank lines do not create semantic units. Keep lines in one compact
-free-form construct adjacent when separation would reduce readability.
+Each blank-line-delimited prose paragraph inside a section is one semantic unit.
+Adjacent physical lines belong to that unit, so prose may be rewrapped without
+changing semantic identity. Separate distinct ideas with blank lines. Blank
+lines terminate semantic units and do not create them.
 
-A concept-block header identifies and groups semantic lines but is not itself a
-semantic line. Each non-empty line inside the block remains a distinct semantic
-unit and records its concept identifier.
+A concept-block header identifies and groups semantic units but is not itself a
+semantic unit. Each paragraph inside the block records its concept identifier.
 
-Prefer one distinct idea per line. Avoid burying multiple decisions in a
+Prefer one distinct idea per semantic unit. Avoid burying multiple decisions in a
 paragraph when they may need separate review, diffing, or source mapping.
 
-ASCII content should avoid unmatched `{` or `}` characters because the current
-parser uses braces to track section boundaries.
+Ordinary prose has a 79-character content width. Leading indentation does not
+count. Run `sigil fmt [path]` to wrap selected valid sources, or add `--check`
+to verify canonical formatting without writing.
+
+Use a directly attached typed literal block for multiline code, JSON,
+configuration, diagrams, or other layout-sensitive content:
+
+````sigil
+The service uses this configuration:
+```json
+{
+  "enabled": true
+}
+```
+````
+
+Do not put a blank line between introducing prose and its opening fence. The
+opener uses at least three backticks and an optional type matching
+`[A-Za-z][A-Za-z0-9_+.-]*`; the closing fence has at least the opener's length
+and no other content. Literal bodies preserve blank lines, braces, and relative
+indentation. They are excluded from width checks and semantic-reference,
+import-use, glossary, and ownership scanning.
 
 ## Review Checks
 
 When reviewing Sigil, check:
 
 - Does every component explain why it exists?
-- Does every `#module.sigil` declare at least one local component?
+- Does every `_module.sigil` declare at least one local component?
+- Does each `_module.sigil` remain a concise architectural summary and
+  intentional namespace-assembly surface?
+- Are material state, operational logic, lifecycle behavior, and independently
+  changing policy colocated with narrower owners?
 - Does every component expose how callers, users, modules, or other parts
   interact with it?
 - Is every interface region grouped under one or more concept identifiers?
 - Are repeated concept blocks coherent, flat, nonempty, and unambiguous across
   the accessible import graph?
 - Do imported dependency views exclude private concepts and expands?
+- Were semantically matching imported public identities reused before local
+  synonyms or duplicate contracts were introduced?
 - Were coherent internal abstractions and UI surfaces considered as components
   rather than hidden beneath only high-level project or service contracts?
+- Can the component and expand decomposition guide implementation into cohesive
+  modules whose entrypoints only assemble the approved public namespace?
 - Does each imported name resolve to a matching component in the imported Sigil
   source?
+- Does each resolved imported name have a qualifying use outside `goal`,
+  `decisions`, and literal blocks?
+- Are ordinary prose lines at most 79 content characters excluding indentation?
+- Does every literal block immediately follow its introducing prose?
 - Does each `expand Name` have a matching `component Name`?
 - Are details such as `state`, `logic`, `constraints`, `decisions`, and `cases` kept in
   `expand` rather than inside `component`?

@@ -1,0 +1,78 @@
+@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
+
+component SigilCompilationReportExporter {
+  goal {
+    Let compiler hosts explicitly persist one complete CompilationReport outside
+    the selected workspace without exposing partial output or weakening ordinary
+    read- only compilation.
+  }
+
+  interface {
+    CompilationReportExport {
+      export(CompilationReport, destination, selectedWorkspace) requires a
+      destination outside selectedWorkspace, atomically writes the complete version-
+      2 report, and permits replacement only when the destination is absent or an
+      existing regular file
+
+      an in-workspace destination, symbolic link, or unexpected file kind rejects
+      with COMPILER_INVALID_INVOCATION; filesystem or atomic-replacement failure
+      rejects with COMPILER_FAILED
+    }
+  }
+}
+
+expand SigilCompilationReportExporter {
+  logic {
+    CompilationReportExport {
+      Resolve the destination and selected workspace before writing, create a sibling
+      temporary file with restrictive permissions, write and sync the complete
+      report, atomically replace an absent or existing regular destination, and
+      remove the temporary file after any pre-replacement failure.
+    }
+  }
+
+  constraints {
+    CompilationReportExport {
+      Explicit report export is separate from ordinary compilation and does not imply
+      human approval.
+
+      Never write inside the selected workspace or expose a partial destination.
+    }
+  }
+
+  decisions {
+    ExplicitCompilationReportExport {
+      Decision: Export a requested report outside the selected workspace through a
+      restrictive sibling file and atomic replacement before completed settlement.
+
+      Scope: Governs explicit report-export destination safety, replacement, and
+      failure settlement; excludes implicit compilation history.
+
+      Trade-offs: Export cannot target the selected workspace and export failure
+      prevents an otherwise evaluated run from completing successfully.
+
+      Design issues addressed: Explicit durability must not weaken the selected-
+      workspace read-only boundary or expose partial reports.
+
+      Discarded alternatives: In-workspace export, direct truncating writes, and
+      treating export failure as successful compilation were rejected.
+
+      Consequences: A completed exported run exposes one complete report at the
+      requested destination before consumers observe completion.
+    }
+  }
+
+  cases {
+    CompilationReportExport {
+      Export to an absent destination outside the selected workspace atomically
+      creates the complete report. Export to an existing regular file atomically
+      replaces it.
+
+      Export to an in-workspace path, symbolic link, or unexpected file kind rejects
+      with COMPILER_INVALID_INVOCATION and changes no destination.
+
+      Export write or atomic-replacement failure rejects with COMPILER_FAILED and
+      leaves no partial destination.
+    }
+  }
+}

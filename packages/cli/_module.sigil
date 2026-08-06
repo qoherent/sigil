@@ -1,0 +1,1045 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@packages/core import { SigilCore, SigilContextRetrieval }
+@packages/compiler import { SigilCompiler, SigilCompilationSessionFactory }
+@packages/cli/src/installer.sigil import { SkillInstaller }
+
+component SigilCli {
+  goal {
+    Expose deterministic Sigil language and workspace operations plus
+    profile-scoped agentic compilation to agents, CI, scripts, debugging, and
+    review workflows through a non-interactive command line.
+
+    Keep deterministic workspace commands thin over SigilCore, keep compilation
+    thin over SigilCompiler, and isolate skill installation as a focused
+    host-filesystem responsibility.
+  }
+
+  interface {
+    CliInvocation {
+      sigil --help
+
+      sigil <command-path> --help
+
+      A command path consists of a command followed by zero or more nested
+      subcommands.
+
+      Empty, unknown, incomplete, or invalid invocations report the specific usage
+      problem together with help for the longest recognized command path.
+
+      sigil --version
+    }
+
+    SkillCatalogCommand {
+      SkillCatalogCommand adapts SkillCatalog into a CLI command surface.
+
+      sigil skill list
+    }
+
+    SkillInstallationCommand {
+      SkillInstallationCommand adapts SkillInstallation into a CLI command surface.
+
+      sigil skill install [--project] [--agent codex|claude|opencode|pi|all]
+    }
+
+    WorkspaceInitialization {
+      sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
+    }
+
+    WorkspaceInspection {
+      sigil version [path]
+
+      sigil parse file
+
+      sigil check [path]
+
+      sigil graph [path]
+
+      sigil context [path] (--component name | --file file) [--include-dependents]
+
+      sigil render [path]
+
+      context reports a scoped glossary projection for the selected component or file
+      and its related sources
+
+      when --file selects a source containing one or more expands, context selects
+      each parent component represented by those expands together with components
+      declared directly in that source
+
+      context automatically reports public contracts and durable decisions from
+      direct dependencies
+
+      context with --include-dependents reports direct importing files for the
+      selected component and contextual public contracts declared in those files
+      without proving component-level dependency
+    }
+
+    PurposeContextRetrieval {
+      sigil retrieve [path] (--component name | --file file) --purpose
+      semantic|architecture|implementation
+
+      retrieve supports --format json and --format markdown; JSON is the default
+
+      retrieve returns the complete PurposeRetrievalResult produced by
+      SigilContextRetrieval without changing membership, ordering, explanations,
+      diagnostics, context, or fingerprint
+    }
+
+    MarkdownOutput {
+      sigil render [path] --format markdown
+
+      sigil context [path] (--component name | --file file) --format markdown
+
+      render markdown reports workspace metadata, component contracts, collected
+      expansions, and diagnostics as deterministic Markdown.
+
+      context markdown reports selected component contracts, selected expansions,
+      concept namespace details, direct dependency contracts and dependency
+      decisions, owned implementation projections, related files, glossary context,
+      and diagnostics as deterministic Markdown.
+    }
+
+    SourceFormattingCommand {
+      SourceFormattingCommand adapts SourceFormatting into a CLI command surface.
+
+      sigil fmt [path]
+
+      sigil fmt [path] --check
+
+      a .sigil file selects that file while a directory selects included .sigil
+      sources beneath that path through ConfigFile source-selection rules
+    }
+
+    OwnershipContext {
+      context reports one owned-implementation projection for each selected component
+
+      Each projection contains normalized owned implementation targets and ownership
+      diagnostics from supported workspace implementation sources.
+
+      Each owned implementation target preserves its relation, artifact kind, file
+      path, selected sections, and optional symbol identity.
+
+      When implementation-source enumeration fails after workspace resolution,
+      context returns resolved contracts and one empty ownership projection per
+      selected component with a warning diagnostic.
+    }
+
+    GlossaryInspectionCommand {
+      GlossaryInspectionCommand adapts GlossaryInspectionFacade into a CLI command
+      surface.
+
+      sigil glossary [path]
+
+      reports authoritative entries, resolved contexts, source occurrences, and
+      glossary diagnostics
+    }
+
+    StructuredOutput {
+      structured output supports --format json and --pretty
+
+      markdown output supports --format markdown for render and context without
+      changing JSON result shape
+
+      commands that produce no required stdout support --quiet
+    }
+
+    CheckSourceLocations {
+      sigil check [path] --format text supports an opt-in --show-locations flag
+    }
+
+    WorkspaceMutationBoundary {
+      workspace inspection commands do not modify .sigil source
+
+      init may create the .sigil directory, a missing ConfigFile, and a missing
+      seeded GlossaryFile but no .sigil source
+
+      fmt explicitly rewrites only selected valid .sigil source while fmt --check
+      remains read-only
+    }
+
+    CompilationFacade {
+      sigil compile [path] [--component name | --file file] [--profile name] [--focus
+      design|implementation] [--no-cache] [--output file] [--format jsonl]
+
+      sigil compile stage-id [path] [--component name | --file file] [--profile name]
+      [--no-cache] [--output file] [--format jsonl]
+
+      sigil compile [path] --file file --position line:column [--profile name]
+      [--focus design|implementation] [--no-cache] [--output file] [--format jsonl]
+
+      compile presents human progress by default and exposes the structured compiler
+      event and report protocol for automation
+
+      compile returns the status and authoritative CompilationReport produced by
+      SigilCompiler
+
+      in JSON Lines mode standard output contains only the versioned CompilationEvent
+      stream and human progress or host logs use standard error
+
+      sigil compile session start [path] --focus design [--component name | --file
+      file] [--profile name]
+
+      sigil compile session evaluate session-id [--format jsonl] reads one complete
+      CompilationProposal JSON object from standard input
+
+      sigil compile session refresh session-id rebuilds the frozen base snapshot
+
+      sigil compile session close session-id releases the proposal workspace
+    }
+  }
+}
+
+expand SigilCli {
+  logic {
+    CliInvocation {
+      Top-level --help lists supported commands and global options without workspace
+      discovery.
+
+      --help following any recognized command path reports usage, operands, options,
+      and immediate subcommands scoped to that path before ordinary validation or
+      execution.
+
+      Usage failures select help for the longest recognized command path and report
+      it together with the specific problem.
+
+      --version prints the CLI artifact version from packages/cli/deno.json without
+      workspace discovery.
+    }
+
+    SkillCatalog {
+      skill list delegates bundled-skill discovery to SkillInstaller and reports
+      valid skills with supported installation targets without changing the
+      filesystem.
+    }
+
+    SkillInstallation {
+      skill install delegates installation to SkillInstaller.
+
+      skill install uses global scope and all supported agents by default.
+
+      --project selects the current repository and --agent limits installation to one
+      named agent.
+    }
+
+    WorkspaceInitialization {
+      init writes ConfigFile with the supported language version and refuses to
+      overwrite an existing file.
+
+      init defaults workspace.name to the target-directory basename and
+      workspace.members to an empty array.
+
+      init applies the configured default SourceSelection and ToolConfiguration
+      values.
+
+      init creates a missing GlossaryFile containing only the decision-record field
+      labels.
+
+      The seeded entries are Decision:, Scope:, Assumptions:, Trade-offs:, Design
+      issues addressed:, Discarded alternatives:, Consequences:, and Revisit when:.
+
+      Every seeded entry sets agentContext to false and the glossary has no bounded
+      contexts.
+
+      init preserves an existing GlossaryFile instead of merging, replacing, or
+      normalizing it.
+    }
+
+    WorkspaceInspection {
+      version reports CLI and core artifact versions and the configured
+      LanguageVersion when available.
+
+      parse discovers and validates configuration before interpreting the selected
+      source.
+
+      check, graph, context, and render delegate workspace semantics to SigilCore.
+
+      context obtains effective terminology for selected and related files from
+      SigilCore.
+
+      context resolves a file selection to components declared in that source and
+      parent components represented by expands in that source, deduplicated by exact
+      component identity
+
+      check reports core warnings, hints, and errors without reinterpreting them.
+
+      Workspace source discovery skips symlink entries so installed skills cannot
+      re-enter the workspace as duplicate Sigil sources.
+
+      A configuration error prevents source loading and parse JSON reports document:
+      null with diagnostics.
+    }
+
+    PurposeContextRetrieval {
+      retrieve resolves the workspace and exact target through SigilCore and loads
+      the complete workspace GlossaryProjection. SigilContextRetrieval derives its
+      scoped GlossaryContextProjection after selecting Sigil evidence paths. The CLI
+      enumerates supported implementation sources once only for implementation
+      purpose and otherwise supplies null implementation evidence.
+
+      retrieve passes those complete inputs and the requested purpose to
+      SigilContextRetrieval and performs no independent graph traversal, evidence
+      ranking, membership filtering, or context aggregation.
+
+      Legacy context remains a compatibility projection with its existing result
+      shape. It does not claim the schema, policy version, fingerprint, or
+      authoritative membership of a PurposeRetrievalResult.
+
+      JSON serializes the structured result. Markdown deterministically renders its
+      AggregatedRetrievalContext with stable headings and provenance labels and
+      reports the semantic fingerprint and diagnostics without changing membership,
+      evidence ordering, or fingerprint input.
+    }
+
+    SourceFormatting {
+      fmt resolves selected sources through ConfigFile and delegates in-memory
+      canonical rendering to SigilCore.
+
+      fmt parses and validates every selected source before any write.
+
+      fmt writes only selected .sigil files whose canonical source differs.
+
+      fmt --check compares canonical source without writing.
+
+      fmt reports formatted, unchanged, noncanonical, and failed sources.
+    }
+
+    MarkdownOutput {
+      render markdown delegates component contract projection to SigilCore and
+      renders the resolved expansion projection already carried by each rendered
+      component.
+
+      context command assembly derives selected contracts, expansions, concept
+      namespaces, and dependency contexts from each exact selected component
+      identity.
+
+      context markdown renders only selected contracts, expansions, concept
+      namespaces, dependency contexts, and ownership projections that match the
+      selected component identity.
+
+      dependency decisions are attached to a dependency contract only when the
+      dependency name is unambiguous in the direct dependency context.
+
+      ambiguous dependency decisions remain visible as other dependency decisions
+      rather than being attached to every same-named dependency contract.
+    }
+
+    OwnershipContext {
+      context loads supported implementation sources once and delegates ownership
+      lookup for each selected component to SigilCore.
+
+      context continues scanning when a discovered implementation source disappears
+      or cannot be read.
+
+      context converts a failed optional implementation-source enumeration into
+      SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY, supplies no ownership sources, and
+      continues building structured context.
+    }
+
+    GlossaryInspection {
+      glossary delegates loading, context resolution, occurrence matching, and
+      diagnostics to SigilCore.
+    }
+
+    CheckSourceLocations {
+      --show-locations renders each diagnostic's available file path and, when a
+      range is present, its one-based line and column before the message.
+
+      Only check accepts --show-locations; other commands reject it as an unsupported
+      option.
+    }
+
+    CompilationFacade {
+      compile resolves CLI operands and options, delegates evaluation to
+      SigilCompiler, and projects compiler events and the final report without
+      reinterpreting findings.
+
+      --file with --position selects the component or expand enclosing that one-based
+      source position.
+
+      When the first compile operand exactly matches a known stage identifier,
+      compile requests that stage and its compiler-resolved dependency closure.
+
+      --focus design requests architecture-design and its compiler-resolved
+      dependency closure.
+
+      --focus implementation requests current-code-compatibility and its
+      compiler-resolved dependency closure.
+
+      compile preserves deterministic workspace diagnostics as compiler inputs rather
+      than replacing or duplicating them.
+    }
+
+    CompilationSessionFacade {
+      session start delegates creation and base materialization to
+      SigilCompilationSessionFactory and returns the opaque session identifier, base
+      fingerprint, and expiry.
+
+      Each session command opens the owner-private durable session from the
+      operating-system temporary directory, acquires its nonblocking exclusive file
+      lock, and releases the lock before the command exits.
+
+      session evaluate resolves the existing session, reads exactly one proposal from
+      standard input, and projects its ordinary CompilationEvent stream.
+
+      Each accepted session refresh creates a new observable base epoch. Session
+      close is idempotent only after the session identity and compiler ownership
+      marker have been validated.
+    }
+  }
+
+  constraints {
+    ArtifactVersionOwnership {
+      packages/cli/deno.json owns the CLI artifact version.
+
+      The CLI Sigil contract does not duplicate its manifest-owned version literal.
+    }
+
+    StructuredOutput {
+      Every workspace-dependent JSON result includes workspaceRoot, configPath,
+      sigilVersion, and workspaceName.
+
+      Deterministic CLI commands are non-interactive and reproducible from the same
+      inputs.
+
+      compile is non-interactive but preserves the configured agentic evaluation
+      variability in its profile fingerprint and CompilationReport.
+
+      context JSON output includes glossaryContext with the glossary path, resolved
+      bounded contexts, canonical terms, definitions, aliases, and relevant
+      occurrences.
+
+      context JSON labels dependency decisions as agent rationale outside the
+      dependent-facing contract.
+
+      context JSON omits dependent context fields unless --include-dependents is
+      requested.
+
+      context dependent context is file-level importing context derived from resolved
+      imported-component graph edges.
+
+      glossary JSON output includes workspace metadata, glossary path, schema
+      version, contexts, terms, occurrences, and diagnostics.
+    }
+
+    CheckSourceLocations {
+      --show-locations affects only check text output; default text output and every
+      JSON and Markdown result are unchanged when the flag is absent.
+
+      Rendered locations reuse the diagnostic file path and range already normalized
+      for CLI output, and one-based line and column agree with the diagnostic model;
+      no new coordinates are computed.
+    }
+
+    MarkdownOutput {
+      Markdown rendering does not change command JSON behavior.
+
+      Markdown rendering preserves component identity with component name and file
+      path when an exact identity is present in the command result.
+
+      Markdown rendering does not use name-only fallback to associate contracts,
+      dependency contexts, dependency decisions, expansions, concept namespaces, or
+      ownership projections with a selected component when duplicate component names
+      can exist.
+
+      Markdown diagnostics use the stable human diagnostic text form of severity,
+      code, and message.
+    }
+
+    OwnershipContext {
+      context JSON includes ownedImplementationProjections.
+
+      context JSON preserves every owned implementation target's selected sections.
+
+      Ownership diagnostics are also included in the command diagnostics.
+
+      Implementation-source enumeration recovery applies only after required
+      workspace resolution succeeds.
+
+      SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY has warning severity and does not change
+      the successful exit status.
+    }
+
+    WorkspaceMutationBoundary {
+      parse, version, check, graph, context, render, glossary, and fmt --check do not
+      modify .sigil source.
+
+      init creates only the .sigil directory, a missing ConfigFile, and a missing
+      seeded GlossaryFile.
+
+      fmt explicitly mutates only selected .sigil source and never formats ConfigFile
+      or GlossaryFile.
+
+      fmt performs no write when any selected source has an error diagnostic or when
+      canonical rendering fails.
+
+      Skill commands do not require or modify ConfigFile.
+
+      glossary is a read-only workspace inspection command.
+    }
+
+    SourceFormatting {
+      fmt is deterministic and non-interactive.
+
+      fmt supports --format json, --pretty, and --quiet.
+
+      fmt preserves the core formatter result without repairing semantic or
+      resolution diagnostics.
+
+      fmt --check exits with code 1 when any selected source is noncanonical or has a
+      formatting error.
+
+      successful fmt and canonical fmt --check exit with code 0.
+
+      invalid fmt usage exits with code 2 and host or filesystem failure exits with
+      code 3.
+    }
+
+    SkillInstallation {
+      Skill installation never overwrites unmanaged files, directories, or links.
+    }
+
+    ExitStatus {
+      Explicit help for any recognized command path exits with code 0.
+
+      Empty, unknown, incomplete, or invalid usage exits with code 2, writes the
+      problem and contextually relevant help to stderr, and leaves stdout empty.
+
+      For commands other than compile, exit code 0 means success or warnings only.
+
+      For commands other than compile, exit code 1 means configuration or Sigil error
+      diagnostics.
+
+      Exit code 2 means invalid command usage.
+
+      Exit code 3 means a host or runtime failure.
+    }
+
+    CompilationFacade {
+      compile is a thin agentic façade and is excluded from the deterministic
+      workspace-inspection guarantee.
+
+      compile does not modify selected workspace content.
+
+      --output delegates CompilationReportExport to SigilCompiler, requires a
+      destination outside the selected workspace, and does not emit or return a
+      completed report when validation or atomic export fails.
+
+      CLI exit status and structured output preserve compiler red, yellow, green,
+      failed, and cancelled outcomes without independently computing them.
+
+      A green compilation exits with code 0.
+
+      A red or yellow compilation exits with code 1.
+
+      Invalid compile usage exits with code 2.
+
+      A compiler or host failure that cannot produce a valid compilation result exits
+      with code 3.
+
+      Failure to write the required completed, cancelled, or failed terminal event
+      supersedes the pending compiler outcome with COMPILER_FAILED, returns no
+      report, and exits with code 3.
+
+      COMPILER_PROFILE_EVALUATORS_REQUIRED from a selected critical-system run is
+      emitted through a failed terminal event and exits with code 3.
+
+      A compilation cancelled after invocation begins exits with code 130.
+
+      An exact known stage identifier is a reserved first compile operand; a
+      colliding path uses an explicit relative or absolute path.
+
+      --focus accepts only design or implementation and is mutually exclusive with a
+      positional stage operand.
+
+      Omitting --focus and a positional stage preserves complete selected-profile
+      compilation.
+
+      --profile continues to select evaluators, budgets, capabilities, and profile
+      configuration while --focus selects a stage closure within that profile.
+
+      --position requires --file and uses the line:column form with positive
+      one-based integers.
+    }
+
+    CompilationSessionFacade {
+      Session identifiers are opaque, unpredictable, and valid only for
+      compiler-owned proposal workspaces.
+
+      A session identifier locates a record but does not authorize access. The same
+      operating-system user boundary, durable record, and ownership marker govern
+      access and cleanup.
+
+      Session start binds path, target, profile, focus, and expiry for later
+      evaluations.
+
+      Session start delegates validation, proposal-workspace creation, durable record
+      creation, and failed-create cleanup to SigilCompilationSessionFactory without
+      independently reclassifying dependency failures.
+
+      Session evaluate accepts proposal JSON only from standard input and does not
+      create a proposal file in the selected workspace.
+
+      Session commands preserve compiler status and host-failure exit semantics.
+
+      COMPILER_INVALID_INVOCATION is a caller usage failure and exits with code 2.
+
+      COMPILER_PROFILE_EVALUATORS_REQUIRED and proposal-workspace, persistence,
+      cleanup, event-protocol, or transport failure exit with code 3 and return no
+      session identity or completed report.
+    }
+  }
+
+  decisions {
+    CliInvocation {
+      Decision: Resolve explicit help and usage-error help against the longest
+      recognized path in the command tree.
+
+      Scope: Governs the top level and supported command paths at any nesting depth,
+      including future subcommands.
+
+      Trade-offs: Help routing must recognize partial command paths even when the
+      remaining invocation is incomplete or invalid.
+
+      Discarded alternatives: Describing individual subcommands and showing only the
+      usage problem were rejected because both require repeated maintenance as the
+      command tree grows.
+
+      Consequences: New commands and nested subcommands inherit the same
+      contextual-help behavior without requiring new semantic rules.
+
+      Revisit when: Command metadata becomes the shared source for parsing,
+      validation, and generated help.
+    }
+
+    StructuredOutput {
+      Decision: Treat deterministic CLI commands as automation interfaces with JSON
+      as their stable output contract, and expose agentic compilation through the
+      compiler-owned JSON Lines protocol.
+
+      Scope: Governs CLI result shaping and transport adaptation; excludes semantic
+      interpretation, compilation-status computation, LSP, and editor presentation.
+
+      Trade-offs: Rich interactive terminal workflows remain outside the CLI, while
+      compile may stream human progress separately from machine-readable output.
+
+      Consequences: Deterministic commands expose consistent JSON results and compile
+      preserves the shared versioned CompilationEvent stream.
+
+      Revisit when: A reviewed interactive terminal workflow becomes a primary user
+      requirement.
+    }
+
+    CheckSourceLocations {
+      Decision: Expose diagnostic source locations in check text output only behind
+      an opt-in --show-locations flag, reusing the existing normalized diagnostic
+      file path and range.
+
+      Scope: Governs check text presentation; excludes JSON and Markdown output,
+      diagnostic generation, ordering, and exit codes.
+
+      Design issues addressed: Text output omits locations already present in the
+      diagnostic model, forcing a rerun in JSON mode, but changing default text
+      output could break existing scripts and expectations.
+
+      Consequences: Default text output stays byte-for-byte unchanged; JSON and other
+      formats are unaffected; locations use the same path normalization as other CLI
+      output; other commands reject the flag.
+
+      Revisit when: Source locations become useful in default text output or in
+      additional commands.
+    }
+
+    WorkspaceMutationBoundary {
+      Decision: Keep workspace inspection commands read-only, restrict workspace
+      initialization to missing configuration and seed-glossary files, and permit
+      source mutation only through an explicit fmt invocation.
+
+      Scope: Governs version, parse, check, glossary, graph, context, render, init,
+      fmt, and fmt --check; excludes explicitly requested skill-installation side
+      effects.
+
+      Trade-offs: Initialization performs bounded metadata creation and formatting
+      performs explicit source rewrites, while inspection provides no automatic
+      repair.
+
+      Discarded alternatives: Implicit source repair, inspection-time mutation,
+      formatter changes to ConfigFile or GlossaryFile, and partial formatting after a
+      selected-source error were rejected.
+
+      Consequences: Formatting is deliberate and bounded, semantic mutation remains
+      an explicitly approved host-workflow responsibility, and user-owned glossary
+      content is preserved.
+
+      Revisit when: Formatting requires cross-file semantic rewrites, merging, or
+      rollback beyond canonical source rendering.
+    }
+
+    ExplicitFormattingCommand {
+      Decision: Expose core-owned deterministic formatting through sigil fmt with a
+      read-only --check mode and all-selected validation before writing.
+
+      Scope: Governs ConfigFile-selected .sigil source formatting; excludes
+      ConfigFile, GlossaryFile, semantic repair, LSP formatting, and automatic
+      invocation by other commands.
+
+      Trade-offs: Large explicit selections may produce broad diffs and require every
+      selected source to validate before any write.
+
+      Design issues addressed: Authors need reproducible prose wrapping and
+      structural formatting without host-specific interpretation or partial mutation.
+
+      Discarded alternatives: Formatting during check, render, compile, or editor
+      inspection and independently implementing formatting inside the CLI were
+      rejected.
+
+      Consequences: Automation can verify canonical source without writes and
+      explicit invocation can update only the selected Sigil sources.
+    }
+
+    WorkspaceInitialization {
+      Decision: Seed the eight colon-qualified decision-record field labels as
+      workspace-neutral initialization vocabulary and exclude their definitions from
+      agent context.
+
+      Scope: Governs a newly created GlossaryFile; excludes project-domain
+      vocabulary, the umbrella phrase decision record convention, Context, and
+      existing glossary content.
+
+      Trade-offs: Including punctuation makes recognition specific to field labels
+      instead of matching ordinary uses of words such as decision, scope, and
+      consequences.
+
+      Design issues addressed: Authors need definitions for the individual
+      decision-record fields rather than an umbrella definition for the convention.
+
+      Discarded alternatives: A single decision record convention entry and
+      unpunctuated field terms were rejected.
+
+      Consequences: Editors and glossary inspection explain each field independently
+      without duplicating those explanations in agent context.
+
+      Revisit when: The decision-record convention adds, removes, or renames a field.
+    }
+
+    OwnershipContext {
+      Decision: Expose one core-owned implementation projection per selected
+      component, aggregate its diagnostics into context command diagnostics, and
+      recover failed optional ownership-source enumeration as a command-level warning
+      when workspace resolution already produced meaningful context.
+
+      Scope: Governs component and file selections for context and post-resolution
+      ownership enrichment; excludes concept-scoped CLI selection, LSP presentation,
+      and required workspace loading.
+
+      Trade-offs: Context performs a workspace implementation-source scan and may
+      return incomplete ownership targets after a warning, but preserves resolved
+      contract context and the shared core ownership result instead of defining a
+      CLI-specific projection shape.
+
+      Discarded alternatives: Propagating an optional ownership-source enumeration
+      failure discards meaningful resolved context, while inserting the host failure
+      into every core-owned projection misattributes the diagnostic.
+
+      Consequences: Automation callers receive owned implementation targets when
+      available, retain resolved contracts when optional enumeration fails, inspect
+      command diagnostics for completeness, and receive separate projections for
+      files containing multiple components.
+    }
+
+    ExpandFileContextSelection {
+      Decision: Resolve context --file selection through both component declarations
+      and expands, mapping each matching expand to its parent component identity.
+
+      Scope: Governs component selection for CLI context by file; excludes
+      --component selection, compile location targeting, and import inference.
+
+      Trade-offs: One file can select multiple components even when it declares no
+      component directly.
+
+      Design issues addressed: Expand-only files otherwise return empty context and
+      hide the parent contract and ownership projection needed to understand them.
+
+      Discarded alternatives: Exact component-declaration file matching was rejected
+      because an expand is operational context for its parent component.
+
+      Consequences: File context reports each selected parent component once and
+      includes its contract, collected expands, dependency context, glossary context,
+      and ownership projection.
+    }
+
+    CompilationFacade {
+      Decision: Expose SigilCompiler through sigil compile while keeping evaluation
+      ownership and status computation in the compiler package.
+
+      Scope: Governs terminal and automation invocation; excludes editor presentation
+      and compiler semantics.
+
+      Trade-offs: The CLI distribution must maintain compiler protocol compatibility.
+
+      Design issues addressed: Editor and automation consumers require incremental
+      structured progress without parsing human terminal output.
+
+      Discarded alternatives: Bundling progress and the final report into one JSON
+      document was rejected because it cannot represent a live event stream.
+
+      Consequences: Terminal, CI, and editor callers can invoke the same compiler
+      runtime and report contract.
+    }
+
+    StageOperandDisambiguation {
+      Decision: Interpret an exact known stage identifier as the first compile
+      operand and require an explicit relative or absolute spelling for a colliding
+      filesystem path.
+
+      Scope: Governs compile operand parsing and help; excludes compiler stage
+      dependency resolution and status computation.
+
+      Trade-offs: A directory named after a stage requires a ./ or absolute prefix.
+
+      Design issues addressed: Direct stage invocation must coexist with the existing
+      optional path operand without silently guessing between two meanings.
+
+      Consequences: sigil compile semantic-readiness is concise and existing path
+      invocation remains available without a breaking flag change.
+    }
+
+    CompilationFocusSelection {
+      Decision: Add --focus design and --focus implementation as user-facing aliases
+      for architecture-design and current-code-compatibility stage closures.
+
+      Scope: Governs CLI compilation focus selection; excludes compiler stage
+      definitions, profile configuration, editor presentation, and workflow state.
+
+      Trade-offs: The CLI owns a small stable vocabulary that maps to compiler stage
+      identifiers.
+
+      Design issues addressed: Raw stage identifiers expose implementation detail and
+      make it unclear whether compilation is judging desired design or current code
+      alignment.
+
+      Discarded alternatives: Git state, implementation attestations, automatic
+      workflow transitions, and separate duplicate compiler skills were rejected.
+
+      Consequences: Users explicitly select the question for each invocation while
+      existing no-focus compilation remains compatible.
+    }
+
+    CompilationExitStatus {
+      Decision: Reserve compile exit code 0 for green, use code 1 for red or yellow,
+      preserve usage and host-failure codes 2 and 3, and use code 130 for
+      cancellation.
+
+      Scope: Governs sigil compile process termination; excludes status computation
+      inside SigilCompiler and every other CLI command.
+
+      Trade-offs: Yellow remains distinguishable in the report but fails shell
+      pipelines without additional parsing.
+
+      Design issues addressed: CI and automation should naturally require zero errors
+      and zero warnings.
+
+      Discarded alternatives: Returning code 0 for yellow was rejected because it
+      would let a non-green design pass an ordinary shell quality gate.
+
+      Consequences: A successful compile process has the same strict meaning as green
+      compilation status.
+    }
+
+    CompilationSessionFacade {
+      Decision: Expose explicit start, evaluate, refresh, and close operations for
+      compiler proposal sessions.
+
+      Scope: Governs cross-process CLI access to SigilCompiler proposal sessions.
+
+      Trade-offs: The CLI gains lifecycle commands and must validate opaque session
+      identifiers, leases, standard-input proposal JSON, and expiry.
+
+      Design issues addressed: Sigil skill conversations span multiple commands and
+      user turns, so an in-process session alone cannot reliably preserve the
+      reusable proposal workspace.
+
+      Discarded alternatives: One-shot compilation and an indefinitely running CLI
+      process were rejected because they respectively repeat workspace copying or
+      depend on host-specific process retention.
+
+      Consequences: Coding-agent hosts can iterate on unwritten proposals efficiently
+      while session ownership and cleanup remain explicit.
+    }
+  }
+
+  cases {
+    CliInvocation {
+      Explicit help for a recognized command path reports that path's usage,
+      operands, options, and immediate subcommands.
+
+      An empty or unknown top-level command reports the problem with top-level help.
+
+      An unknown subcommand reports the problem with help for its recognized parent
+      command path.
+
+      A missing operand, unsupported option, or extra operand reports the problem
+      with help for the longest recognized command path.
+
+      Explicit help succeeds without required operands or workspace discovery.
+    }
+
+    SkillCatalog {
+      skill list includes valid bundled skills and excludes directories without
+      SKILL.md.
+    }
+
+    SkillInstallation {
+      Default installation targets Codex, Claude Code, OpenCode, and Pi.
+
+      --project changes only skill destinations inside the current repository.
+    }
+
+    WorkspaceInitialization {
+      init in an empty directory creates valid ConfigFile using the directory
+      basename as workspace.name.
+
+      init against existing ConfigFile reports an error and leaves it unchanged.
+
+      init in an empty directory creates ConfigFile and GlossaryFile.
+
+      The seeded GlossaryFile contains only Decision:, Scope:, Assumptions:,
+      Trade-offs:, Design issues addressed:, Discarded alternatives:, Consequences:,
+      and Revisit when:, each with agentContext false, plus an empty contexts array.
+
+      init preserves an existing GlossaryFile unchanged.
+    }
+
+    WorkspaceInspection {
+      version in a valid workspace reports CLI, core, and language versions from
+      their owning sources.
+
+      check from a nested directory resolves the nearest eligible ConfigFile.
+
+      Missing interface concept identifiers appear in text and JSON output while
+      check exits successfully when no errors exist.
+
+      Invalid or ambiguous concept identities make check exit with code 1.
+
+      render JSON includes workspace metadata and Markdown review content.
+
+      context for a component with multiple expands reports every related expansion
+      source.
+
+      context for a component with glossary terms reports only terminology effective
+      in or occurring within the component and its related expansion sources.
+
+      context without GlossaryFile reports an absent glossary context without error.
+
+      context for a component reports each direct dependency's public contract and
+      decision sections once.
+
+      context excludes transitive dependency decisions and non-decision private
+      dependency sections.
+
+      context with --include-dependents reports direct importing files and contextual
+      public contracts declared in those files without proving component-level
+      dependency.
+
+      context for an expand-only file reports each parent component represented by
+      the file and includes its collected expands and ownership projection.
+    }
+
+    SourceFormatting {
+      fmt --check on canonical source exits with code 0 and writes nothing.
+
+      fmt --check on noncanonical source exits with code 1 and writes nothing.
+
+      fmt rewrites one valid noncanonical selected .sigil file and leaves ConfigFile
+      and GlossaryFile unchanged.
+
+      One selected source with an error prevents every selected source from being
+      written.
+
+      Formatting the result of fmt again produces no source change.
+    }
+
+    OwnershipContext {
+      context for a component with valid ownership annotations reports its
+      implementation targets.
+
+      context reports malformed or detached ownership annotations through both the
+      component projection and command diagnostics.
+
+      context with an unreadable or concurrently deleted implementation source omits
+      that source and still returns structured context, projections, and diagnostics
+      from readable sources.
+
+      When workspace resolution succeeds but the subsequent ownership-source
+      enumeration fails, context returns selected contracts, an empty projection for
+      each selected component, SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY, and exit code
+      0.
+    }
+
+    GlossaryInspection {
+      A workspace without GlossaryFile reports an absent glossary and no glossary
+      error.
+
+      Context overlap or spelling collision appears in text and JSON output and exits
+      with code 1.
+    }
+
+    CheckSourceLocations {
+      A ranged diagnostic rendered with --show-locations includes its normalized file
+      path, one-based line, and one-based column.
+
+      A diagnostic without a range rendered with --show-locations remains readable
+      and omits unavailable coordinates.
+    }
+
+    ExitStatus {
+      An unreadable required file produces exit code 3 rather than an
+      unresolved-import diagnostic.
+    }
+
+    CompilationFacade {
+      Running sigil compile for a component streams progress and returns the
+      authoritative report for that component and profile.
+
+      Running sigil compile semantic-readiness executes the compiler-selected
+      dependency closure and excludes unrelated stages.
+
+      Running sigil compile ./semantic-readiness treats the operand as a path.
+
+      Running sigil compile with --focus design requests architecture-design and
+      excludes current-code-compatibility.
+
+      Running sigil compile with --focus implementation requests
+      current-code-compatibility and its complete dependency closure.
+
+      Combining --focus with a positional stage or supplying an unknown focus exits
+      with invalid usage.
+
+      Running sigil compile without a focus or stage retains complete
+      selected-profile behavior.
+
+      Cancelling compilation terminates delegated work and reports cancellation
+      without changing workspace files.
+    }
+
+    CompilationSessionFacade {
+      Starting a design session returns one opaque identifier and one frozen base
+      fingerprint.
+
+      Evaluating two successive proposals reuses the session workspace and reports
+      distinct generations and proposal fingerprints.
+
+      Refreshing a session clears its proposal-generation history.
+
+      Closing or expiring a session prevents later evaluation through its identifier.
+    }
+
+    CompilationExitStatus {
+      A green report exits with code 0.
+
+      A yellow report containing warnings exits with code 1.
+
+      A red report containing errors exits with code 1.
+
+      Cancelling an active compilation exits with code 130.
+    }
+  }
+}

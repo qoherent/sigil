@@ -1,0 +1,877 @@
+@packages/core import { SigilCore }
+
+component SigilProposalBaseSnapshot {
+  goal {
+    Construct one immutable, minimal proposal base from SigilCore-resolved
+    workspace semantics plus repository evidence needed by agent evaluators.
+  }
+
+  interface {
+    ProposalBaseSnapshot {
+      construct(loadedWorkspace, destinationRoot) performs one attempt and returns a
+      base fingerprint, selected-path manifest, and source-eligibility projection or
+      rejects with COMPILER_UNSAFE_SNAPSHOT_PATH, COMPILER_SNAPSHOT_CHANGED, or
+      COMPILER_WORKSPACE_HOST_FAILURE
+    }
+  }
+}
+
+expand SigilProposalBaseSnapshot {
+  logic {
+    SnapshotSelection {
+      Consume SigilCore discoverSigilWorkspace and loadSigilWorkspace results for
+      ConfigFile identity, member boundaries, configured source membership, and
+      optional GlossaryFile identity.
+
+      Do not independently interpret ConfigFile discovery, include and exclude rules,
+      nested workspaces, member roots, or glossary selection.
+
+      In a Git workspace, add remaining repository evidence from tracked files and
+      untracked files not excluded by effective Git ignore rules.
+
+      When Git evidence is unavailable, apply proposal-fallback-exclusions-v1 to
+      remaining evidence while retaining every SigilCore-resolved Sigil artifact.
+
+      Revalidate the selected manifest and copied bytes after materialization. Reject
+      this attempt with COMPILER_SNAPSHOT_CHANGED when selected evidence changes.
+    }
+  }
+
+  constraints {
+    SnapshotSelection {
+      SigilCore-resolved Sigil membership takes precedence over Git ignore rules.
+
+      Repository metadata, ignored dependencies, generated output, caches, compiler
+      runtime directories, and paths outside the workspace are not copied.
+
+      A ConfigFile, GlossaryFile, or selected Sigil source whose path or traversed
+      parent is a symbolic link rejects with COMPILER_UNSAFE_SNAPSHOT_PATH.
+
+      Other symbolic links are excluded rather than materialized or followed.
+
+      proposal-fallback-exclusions-v1 excludes non-Sigil evidence beneath any path
+      segment named .git, .hg, .svn, node_modules, vendor, target, dist, build, out,
+      coverage, .next, .nuxt, .turbo, .cache, .parcel-cache, .pytest_cache,
+      __pycache__, .venv, venv, tmp, or temp.
+
+      It also excludes .sigil/cache and compiler runtime or session artifacts. Retain
+      every other regular file without traversing symbolic links.
+
+      Selected-evidence mutation rejects this single attempt with
+      COMPILER_SNAPSHOT_CHANGED without exposing a partial base.
+
+      Return a source-eligibility projection containing immutable-base source paths
+      and the ConfigFile include, exclude, member-boundary, and workspace-containment
+      rules needed to test hypothetical absent paths without rereading the workspace.
+    }
+
+    BaseSnapshotIdentity {
+      The base fingerprint is SHA-256 over the canonical sigil-base-v1 binary
+      encoding of the selected snapshot.
+
+      Begin with the UTF-8 domain bytes sigil-base-v1. Encode every following field
+      as a one-byte field tag, an unsigned 64-bit big-endian byte length, and the
+      field bytes.
+
+      Encode selected entries in normalized UTF-8 path order. Encode each path with
+      slash separators and each content field with its exact copied bytes.
+
+      Encode SigilCore source-selection data as UTF-8 canonical JSON with recursively
+      sorted object keys, preserved array order, and no insignificant whitespace.
+
+      Encode effective Git-ignore inputs in stable identity and normalized-path order
+      using their exact bytes, including applicable repository exclude or global
+      ignore inputs even when they are not copied into the snapshot.
+
+      For a non-Git workspace, encode the exact UTF-8 identifier
+      proposal-fallback-exclusions-v1 as the ignore-policy input.
+
+      Timestamps, temporary paths, ownership metadata, and permissions do not
+      participate.
+
+      Equal base fingerprints mean every canonically encoded base input is
+      byte-identical.
+    }
+  }
+
+  decisions {
+    MinimumProposalSnapshot {
+      Decision: Combine SigilCore-resolved Sigil artifacts with tracked or
+      non-ignored repository evidence rather than copying every filesystem entry.
+
+      Scope: Governs base construction; excludes Sigil workspace membership.
+
+      Trade-offs: Extra evidence selection depends on Git behavior and fixed fallback
+      exclusions.
+
+      Discarded alternatives: Applying Git ignore to configured Sigil was rejected
+      because it would diverge from ordinary SigilCore resolution.
+
+      Consequences: Proposal tools retain complete Sigil semantics with lower copy
+      time and storage.
+    }
+
+    BaseSnapshotIdentity {
+      Decision: Use a domain-separated, versioned, length-framed SHA-256 format for
+      base identity.
+
+      Scope: Governs base equality and staleness comparison, not confidentiality or
+      authentication.
+
+      Trade-offs: Exact-byte identity and encoding changes are
+      compatibility-sensitive.
+
+      Discarded alternatives: Unframed concatenation and normalized-content hashing
+      were rejected as ambiguous or lossy.
+
+      Consequences: Independent implementations reproduce the same base fingerprint
+      from identical encoded inputs.
+
+      Revisit when: SHA-256 support changes or a new encoding version is required.
+    }
+  }
+
+  cases {
+    SnapshotSelection {
+      A configured Sigil source ignored by Git remains selected.
+
+      A configured Sigil source reached through a symbolic-link parent rejects with
+      COMPILER_UNSAFE_SNAPSHOT_PATH.
+
+      An ignored dependency directory containing no configured Sigil is not copied.
+
+      A tracked implementation or documentation file remains available as agent
+      evidence.
+
+      Source mutation during one copy attempt rejects that attempt with
+      COMPILER_SNAPSHOT_CHANGED.
+
+      In a non-Git workspace, node_modules/pkg/index.js and .sigil/cache/report.json
+      are excluded while src/index.ts and docs/design.md are retained.
+    }
+  }
+}
+
+component SigilProposalGeneration {
+  goal {
+    Validate, identify, and atomically activate each complete proposal override set
+    against one immutable base snapshot.
+  }
+
+  interface {
+    ProposalGenerationMaterialization {
+      apply(baseFingerprint, sourceEligibility, proposal, activationCapability)
+      allocates and atomically returns generation and proposal fingerprint or
+      preserves the active generation and rejects with COMPILER_INVALID_PROPOSAL,
+      COMPILER_GENERATION_EXHAUSTED, or COMPILER_WORKSPACE_HOST_FAILURE
+    }
+
+    ProposalGenerationActivationCapability {
+      permits reading an immutable base source, resetting staging from the immutable
+      base, writing or removing an eligible staged .sigil path, atomically activating
+      staging, and discarding staging
+
+      exposes neither a root path nor general filesystem authority
+    }
+  }
+}
+
+expand SigilProposalGeneration {
+  logic {
+    ProposalGenerationMaterialization {
+      Allocate generation one first and exactly the preceding successful generation
+      plus one thereafter.
+
+      Use an unsigned 32-bit generation value with valid range 1 through 4294967295.
+
+      Validate every proposal entry and construct the complete generation in staging
+      before atomically replacing the active generation.
+
+      Restore omitted replacements from the immutable base and remove omitted files
+      that were additions in the preceding proposal.
+
+      Preserve the active generation for every rejection and for later red, yellow,
+      cancelled, or evaluator-failed compilation.
+    }
+  }
+
+  constraints {
+    CompilationProposal {
+      Proposal paths are normalized, workspace-relative, contained by the selected
+      workspace, and end in .sigil.
+
+      A replacement path is present in the immutable base source set. An addition
+      path is absent from that set and is eligible only when the source-eligibility
+      projection says the hypothetical path would be included by the base ConfigFile
+      include, exclude, member-boundary, and workspace-containment rules.
+
+      Proposals cannot change ConfigFile, GlossaryFile, implementation files,
+      directories, symbolic links, or sources outside the configured workspace.
+
+      Addition and replacement are supported. Deletion of a source present in the
+      immutable base is not represented.
+
+      Invalid path, content, or override shape rejects with
+      COMPILER_INVALID_PROPOSAL.
+
+      When the preceding successful generation is 4294967295, reject with
+      COMPILER_GENERATION_EXHAUSTED before validation, staging, or any filesystem
+      side effect.
+
+      Staging or atomic-activation filesystem failure rejects with
+      COMPILER_WORKSPACE_HOST_FAILURE.
+    }
+
+    ProposalSnapshotIdentity {
+      The proposal fingerprint is SHA-256 over the canonical sigil-proposal-v1 binary
+      encoding of the base fingerprint and complete override set.
+
+      Begin with the UTF-8 domain bytes sigil-proposal-v1. Encode fields with the
+      same one-byte tag, unsigned 64-bit big-endian length, and field-byte framing as
+      the base format.
+
+      Encode the base fingerprint as its exact 32 bytes. Encode proposal entries in
+      normalized UTF-8 slash-separated path order with exact proposed UTF-8 bytes.
+
+      Generation, baseEpoch, temporary paths, timestamps, ownership metadata, and
+      permissions do not participate.
+
+      Equal proposal fingerprints mean byte-identical complete overrides were applied
+      to bases with equal base fingerprints.
+
+      Fingerprints provide deterministic identity and integrity comparison, not
+      confidentiality or authentication of an untrusted workspace.
+    }
+  }
+
+  decisions {
+    BaseSourceDeletion {
+      Decision: Represent additions and replacements, but not deletion of a source
+      present in the immutable base.
+
+      Scope: Governs the source-text proposal map for the initial add-or-modify
+      feature.
+
+      Trade-offs: A design that removes a base source cannot yet be evaluated as one
+      proposal.
+
+      Design issues addressed: A map from path to complete source text has no
+      unambiguous deletion value.
+
+      Discarded alternatives: Empty text was rejected because it is valid source
+      content; null and tombstone values were deferred because they expand the public
+      proposal schema and fingerprint format beyond add-or-modify scope.
+
+      Consequences: Omitting a base path restores its base content, while omitting a
+      prior addition removes only that addition.
+
+      Revisit when: Proposal compilation explicitly supports source deletion.
+    }
+
+    ProposalSnapshotIdentity {
+      Decision: Use a domain-separated, versioned, length-framed SHA-256 format for
+      complete proposal override identity.
+
+      Scope: Governs proposal equality and report identity, not confidentiality or
+      authentication.
+
+      Trade-offs: Exact-byte identity and encoding changes are
+      compatibility-sensitive.
+
+      Discarded alternatives: Unframed concatenation, generation-only identity, and
+      normalized-source hashing were rejected as ambiguous, session-local, or lossy.
+
+      Consequences: Independent implementations reproduce the same proposal
+      fingerprint from identical encoded inputs.
+
+      Revisit when: SHA-256 support changes or a new encoding version is required.
+    }
+  }
+
+  cases {
+    CompilationProposal {
+      An empty proposal materializes the unchanged base as generation one with a
+      deterministic proposal fingerprint.
+
+      Replacing one source and adding another activates both atomically.
+
+      Omitting a replaced base source restores it; omission never deletes that base
+      source.
+
+      An empty string is source content and does not represent deletion.
+
+      Invalid proposal content rejects with COMPILER_INVALID_PROPOSAL.
+
+      Exhausted generation rejects with COMPILER_GENERATION_EXHAUSTED.
+
+      Filesystem activation failure rejects with COMPILER_WORKSPACE_HOST_FAILURE and
+      preserves the preceding generation.
+    }
+  }
+}
+
+component SigilTemporaryWorkspace {
+  goal {
+    Own secure operating-system temporary storage, verified ownership markers, and
+    recoverable cleanup for one proposal base epoch.
+  }
+
+  interface {
+    TemporaryWorkspaceLifecycle {
+      create(sessionIdentity) returns a private root or rejects with
+      COMPILER_INVALID_SESSION_IDENTITY or COMPILER_WORKSPACE_HOST_FAILURE
+
+      close removes the root, succeeds idempotently when already absent, and rejects
+      with COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED when ownership cannot be verified
+      or COMPILER_WORKSPACE_HOST_FAILURE when cleanup otherwise fails
+
+      verifyOwnership succeeds for the exact valid marker, rejects with
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED for missing or corrupt ownership
+      evidence, or rejects with COMPILER_WORKSPACE_HOST_FAILURE when marker
+      inspection encounters a filesystem or runtime failure
+    }
+  }
+}
+
+expand SigilTemporaryWorkspace {
+  constraints {
+    ProposalWorkspaceIsolation {
+      Create an unpredictable directory with owner-only permissions.
+
+      Atomically create an ownership marker containing the compiler format version
+      and session identity before exposing the root.
+
+      sessionIdentity is a canonical UUID version 4 string: exactly 36 lowercase
+      ASCII characters in 8-4-4-4-12 form with valid version and RFC variant bits. Do
+      not trim, case-fold, or otherwise normalize it.
+
+      Invalid sessionIdentity rejects with COMPILER_INVALID_SESSION_IDENTITY before
+      creating a directory.
+
+      Encode the marker as UTF-8 canonical JSON with recursively sorted keys and no
+      insignificant whitespace, containing numeric formatVersion and canonical
+      sessionIdentity. Compare identity by exact UTF-8 bytes after validation.
+
+      Preserve the marker after cleanup failure. Recovery removes only a directory
+      whose marker is valid for that compiler format and session identity.
+
+      A missing or corrupt marker is reported for manual inspection and never causes
+      automatic directory removal.
+
+      Expose the temporary root only to SigilProposalWorkspace for construction and
+      evaluator-capability binding.
+    }
+  }
+
+  cases {
+    TemporaryWorkspaceLifecycle {
+      Closing an already absent root succeeds.
+
+      Cleanup failure preserves a valid marker for verified retry.
+
+      Missing or corrupt marker prevents automatic recovery removal.
+    }
+  }
+}
+
+component SigilProposalWorkspace {
+  goal {
+    Coordinate cohesive base-snapshot, proposal-generation, and temporary-workspace
+    owners behind one reusable lifecycle façade for SigilCompiler.
+
+    Do not own compilation-session scheduling, evaluation, refresh, expiry, leases,
+    or human approval.
+  }
+
+  interface {
+    ProposalWorkspaceLifecycle {
+      create(filesystem, workspaceOptions, sessionIdentity) returns
+      ProposalWorkspaceAccess, base fingerprint, and selected-path manifest or
+      rejects with ProposalWorkspaceFailure whose code is
+      COMPILER_UNSAFE_SNAPSHOT_PATH, COMPILER_SNAPSHOT_CHANGED,
+      COMPILER_INVALID_SESSION_IDENTITY, COMPILER_WORKSPACE_STATE,
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, or COMPILER_WORKSPACE_HOST_FAILURE
+
+      apply(CompilationProposal proposal) returns ProposalWorkspaceAccess, allocated
+      generation, and proposal fingerprint or preserves the preceding generation and
+      rejects with ProposalWorkspaceFailure whose code is COMPILER_INVALID_PROPOSAL,
+      COMPILER_GENERATION_EXHAUSTED, COMPILER_WORKSPACE_STATE,
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, or COMPILER_WORKSPACE_HOST_FAILURE
+
+      close removes the materialized workspace and succeeds idempotently when absent
+      or rejects with ProposalWorkspaceFailure whose code is
+      COMPILER_WORKSPACE_STATE, COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, or
+      COMPILER_WORKSPACE_HOST_FAILURE
+
+      restore(filesystem, sessionIdentity, ProposalWorkspacePersistedState) verifies
+      the existing ownership marker and materialized state and returns one restored
+      SigilProposalWorkspace façade, one ProposalWorkspaceAccess, base fingerprint,
+      selected-path manifest, and optional active generation and proposal fingerprint
+      or rejects with COMPILER_INVALID_SESSION_IDENTITY, COMPILER_WORKSPACE_STATE,
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, or COMPILER_WORKSPACE_HOST_FAILURE
+    }
+
+    ProposalWorkspaceFailure {
+      category is proposal, caller-session, workspace-condition, or host
+
+      code is the exact stable failure code emitted by the rejected operation
+    }
+
+    CompilationProposal {
+      a proposal maps zero or more normalized workspace-relative .sigil paths to
+      their complete resulting UTF-8 source text
+
+      every proposal is a complete override set relative to one immutable base epoch
+      rather than a delta from the preceding proposal
+    }
+
+    ProposalWorkspaceAccess {
+      represents the immutable base view immediately after create or the allocated
+      generation view immediately after apply
+
+      coreFilesystem is a read-only filesystem capability for SigilCore
+
+      agentRoot is an opaque evaluator binding that reveals no temporary path and
+      requires the adapter to mount or sandbox the bound view read-only before access
+
+      release idempotently revokes coreFilesystem and agentRoot
+
+      after release, coreFilesystem and agentRoot reject with
+      COMPILER_WORKSPACE_STATE without reading the materialized workspace
+    }
+
+    ProposalWorkspacePersistedState {
+      version 1 contains session identity, base fingerprint, selected-path manifest
+      identity, source-eligibility identity, materialization identity, lifecycle
+      state, optional active generation, and its optional proposal fingerprint
+
+      contains no proposed source contents, credentials, temporary path, or writable
+      filesystem capability
+    }
+  }
+}
+
+expand SigilProposalWorkspace {
+  logic {
+    ProposalWorkspaceLifecycle {
+      For each create attempt, use the supplied filesystem and workspace options to
+      rerun SigilCore discovery and loading, pass that exact loaded workspace result
+      to one SigilProposalBaseSnapshot construction attempt, and do not require
+      semantic resolution before copying the base.
+
+      After a COMPILER_SNAPSHOT_CHANGED attempt, first complete failed-create
+      rollback. When rollback succeeds after attempt one or two, restart from
+      discovery; after attempt three, return COMPILER_SNAPSHOT_CHANGED.
+
+      Begin in new and transition to active only after SigilTemporaryWorkspace and
+      SigilProposalBaseSnapshot both succeed. Enter creation-cleanup-failed when
+      failed-create rollback cannot remove a verified root, and enter
+      active-cleanup-failed when cleanup after active use cannot remove one.
+
+      Enter terminal manual-recovery-required when an existing root has a missing or
+      corrupt ownership marker.
+
+      On restore, validate ProposalWorkspacePersistedState version 1, persisted base
+      identity, selected-path manifest, source eligibility, generation, proposal
+      fingerprint, and active materialization before returning the restored façade
+      and ProposalWorkspaceAccess. Never recopy the base, migrate an unsupported
+      version, or infer missing persisted state.
+
+      In active state, delegate proposal work to SigilProposalGeneration and return
+      ProposalWorkspaceAccess for the resulting active generation.
+
+      Retain the root writable filesystem authority inside SigilProposalWorkspace.
+      During apply, give SigilProposalGeneration only a narrow internal staging and
+      activation capability. Give SigilCore only coreFilesystem and give an evaluator
+      only agentRoot through the adapter's enforced read-only sandbox.
+
+      Treat the host process as trusted, but do not expose the writable capability or
+      a temporary root path through ProposalWorkspaceAccess.
+
+      Permit at most one live ProposalWorkspaceAccess handle. Reject a later apply or
+      close with COMPILER_WORKSPACE_STATE until the handle is released, without
+      making SigilProposalWorkspace aware of session scheduling or leases.
+
+      Before proposal validation, staging, or filesystem mutation, request
+      SigilTemporaryWorkspace verifyOwnership.
+
+      Ownership-unverified result enters manual-recovery-required and rejects apply
+      without proposal work. Verification host failure preserves active and rejects
+      apply so the caller may retry. Success permits proposal materialization.
+
+      When failed-create rollback succeeds for a creation failure other than the
+      first two COMPILER_SNAPSHOT_CHANGED attempts, return the original creation
+      failure, remain new, and permit a later caller retry.
+
+      When failed-create rollback cannot verify ownership, return
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED with no related public context,
+      preserve the root, and enter manual-recovery-required.
+
+      When failed-create rollback otherwise fails, return
+      COMPILER_WORKSPACE_HOST_FAILURE with no related public context, preserve the
+      verified root, and enter creation-cleanup-failed.
+
+      Retain only the original creation failure category and code in private memory
+      while handling rollback. Do not return or serialize that context, and do not
+      retain its message, proposed contents, or temporary paths.
+
+      In creation-cleanup-failed, reject apply. Before create allocates another root,
+      retry verified cleanup; successful cleanup returns to new and continues
+      creation, while another cleanup failure preserves creation-cleanup-failed and
+      rejects.
+
+      Close in creation-cleanup-failed retries verified cleanup and reaches closed
+      only after successful removal. Repeated create while active rejects with
+      COMPILER_WORKSPACE_STATE.
+
+      Every close-time COMPILER_WORKSPACE_HOST_FAILURE after active use enters
+      active-cleanup-failed, including marker-read and pre-deletion failures. In that
+      state, create and apply reject with COMPILER_WORKSPACE_STATE and only close may
+      retry.
+
+      Close retry re-verifies ownership before deletion. Success reaches closed,
+      another host failure preserves the current cleanup-failed state, and
+      ownership-unverified enters manual-recovery-required.
+
+      Apply in new or closed rejects with COMPILER_WORKSPACE_STATE. Close in new,
+      active, or closed is idempotent and leaves the façade closed after successful
+      cleanup.
+
+      Create in closed rejects with COMPILER_WORKSPACE_STATE.
+
+      Create, apply, and close in manual-recovery-required reject with
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED. Never delete, replace, or expose
+      another root from that façade.
+
+      Automatic retry cannot leave manual-recovery-required. An operator must inspect
+      and remove or quarantine the directory outside the session, abandon that
+      session, and create a new session.
+
+      In active-cleanup-failed, create and apply reject with
+      COMPILER_WORKSPACE_STATE. A later close may retry cleanup and reach closed but
+      never restores active; the caller must create a new session.
+    }
+
+    FailureMapping {
+      Return category proposal for COMPILER_INVALID_PROPOSAL and
+      COMPILER_GENERATION_EXHAUSTED.
+
+      Return category caller-session for COMPILER_INVALID_SESSION_IDENTITY and
+      COMPILER_WORKSPACE_STATE.
+
+      Return category workspace-condition for COMPILER_UNSAFE_SNAPSHOT_PATH,
+      COMPILER_SNAPSHOT_CHANGED, and COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED.
+
+      Return category host only for COMPILER_WORKSPACE_HOST_FAILURE.
+    }
+  }
+
+  decisions {
+    ProposalWorkspaceDecomposition {
+      Decision: Retain SigilProposalWorkspace as a façade over separate base,
+      generation, and temporary-storage owners.
+
+      Scope: Governs proposal materialization internals; excludes compiler session
+      lifecycle and evaluator behavior.
+
+      Trade-offs: Coordination uses explicit internal contracts and stable failure
+      mapping.
+
+      Design issues addressed: Workspace selection, fingerprint compatibility,
+      generation activation, and secure cleanup change for different reasons.
+
+      Discarded alternatives: One monolithic workspace owner was rejected because it
+      couples repository policy, identity format, staging, and cleanup.
+
+      Consequences: Each policy can be implemented and tested independently while
+      SigilCompiler retains one lifecycle dependency.
+    }
+
+    ProposalWorkspaceCapabilityIsolation {
+      Decision: Confine root writable proposal-workspace authority to the façade,
+      delegate only a narrow internal staging and activation capability to
+      SigilProposalGeneration during apply, and give SigilCore and evaluators
+      separate read-only capabilities for the active view.
+
+      Scope: Governs filesystem capability exposure after workspace creation and
+      proposal activation; it does not claim isolation from the trusted host process.
+
+      Assumptions: The host process and façade implementation are trusted, SigilCore
+      honors its read-only filesystem capability, and the adapter enforces a
+      read-only mount or sandbox before an evaluator can inspect agentRoot.
+
+      Trade-offs: Capability adapters and sandbox setup add integration complexity,
+      while keeping mutation authority out of compiler stages and agent tools.
+
+      Design issues addressed: A compiler or evaluator that receives the writable
+      root could mutate the proposal evidence during evaluation or bypass atomic
+      generation activation.
+
+      Discarded alternatives: Sharing one writable filesystem capability was rejected
+      because convention alone cannot preserve the evaluation snapshot. Copying a
+      second evaluator tree was rejected because it increases per-iteration I/O and
+      lets deterministic and agentic stages observe different materializations.
+
+      Consequences: SigilProposalGeneration remains the single staging and activation
+      owner under the façade's lifecycle control. SigilCore and evaluators inspect
+      the same active view without mutation authority, and adapters must provide the
+      promised read-only enforcement.
+
+      Revisit when: The host is no longer trusted, SigilCore requires controlled
+      writes, or an adapter cannot enforce read-only evaluator access.
+    }
+
+    SingleLiveProposalWorkspaceAccess {
+      Decision: Permit one live revocable ProposalWorkspaceAccess handle and reject
+      apply or close until that handle is released.
+
+      Scope: Governs read-view lifetime within one proposal-workspace façade; session
+      operation scheduling remains owned by SigilCompilationSession.
+
+      Assumptions: Deterministic and agentic stages for one evaluation must inspect
+      one exact materialization, and the session releases access after those stages.
+
+      Trade-offs: Callers must release access explicitly and can receive
+      COMPILER_WORKSPACE_STATE for premature apply or close.
+
+      Design issues addressed: Replacing or removing the active view while a reader
+      remains live could mix generations or make reads depend on timing.
+
+      Discarded alternatives: Multiple immutable generation handles were rejected
+      because retaining complete trees defeats reuse and increases temporary storage.
+      Automatic revocation was rejected because it can interrupt in-flight reads.
+      Waiting inside the façade was rejected because scheduling belongs to the
+      session and hidden blocking would make lifecycle timing nondeterministic.
+
+      Consequences: One materialized tree serves one evaluation at a time; release is
+      explicit, and later activation or cleanup begins only after readers finish.
+
+      Revisit when: Versioned immutable views with bounded retention or reference
+      counting can preserve exact-generation reads without repeated full copies.
+    }
+
+    ProposalFailureClassification {
+      Decision: Preserve invalid proposal and generation exhaustion as proposal
+      outcomes, lifecycle-state misuse as a caller/session outcome, unsafe, changing,
+      or ownership conditions as workspace conditions, and only filesystem or runtime
+      failures as host failures.
+
+      Scope: Governs SigilProposalWorkspace rejection classification and stable-code
+      compatibility.
+
+      Trade-offs: Callers handle four failure categories but can choose retry and
+      correction behavior from responsibility.
+
+      Design issues addressed: Proposal correction, lifecycle misuse, workspace
+      conditions, and environment failure require different attribution and recovery.
+
+      Discarded alternatives: One generic failure category was rejected because it
+      obscures responsibility and retry behavior.
+
+      Consequences: Stable codes remain exhaustive while categories retain the
+      glossary meaning of host failure.
+    }
+
+    BoundedSnapshotConstruction {
+      Decision: Retry a concurrently changing base from fresh SigilCore discovery for
+      three total attempts before returning COMPILER_SNAPSHOT_CHANGED.
+
+      Scope: Governs façade base creation; each SigilProposalBaseSnapshot
+      construction remains one attempt.
+
+      Assumptions: Most concurrent workspace edits settle within a small number of
+      immediate reconstruction attempts.
+
+      Trade-offs: Three attempts absorb short edits while bounding copy I/O and
+      caller-visible latency.
+
+      Discarded alternatives: Fail-fast was rejected as brittle during ordinary
+      editing, and elapsed-time retry was rejected as nondeterministic.
+
+      Consequences: Retry behavior and its terminal failure are reproducible.
+
+      Revisit when: Measured workspace behavior supports another fixed bound.
+    }
+
+    RollbackFailurePrecedence {
+      Decision: When create and rollback both fail, return the rollback failure and
+      suppress the original creation failure from the public result. Ownership that
+      cannot be verified returns COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED; every other
+      cleanup failure returns COMPILER_WORKSPACE_HOST_FAILURE.
+
+      Scope: Governs failure precedence and context retention during failed-create
+      cleanup.
+
+      Assumptions: Unremoved temporary storage is the immediate actionable recovery
+      problem and may contain confidential proposal evidence.
+
+      Trade-offs: Callers lose the original creation failure when cleanup also fails.
+
+      Design issues addressed: Multi-cause errors can expose temporary paths, source
+      contents, or inconsistent nested failure shapes.
+
+      Discarded alternatives: Returning both full failures was rejected for
+      confidentiality and protocol instability.
+
+      Consequences: Successful rollback returns the creation failure except when a
+      bounded changed-snapshot retry remains. Failed rollback returns its ownership
+      or host cleanup failure while retaining only original category and code
+      privately for correlation.
+
+      Revisit when: A structured secure multi-cause error format is introduced.
+    }
+
+    OwnershipVerificationFailure {
+      Decision: Treat missing or corrupt ownership evidence as terminal for the
+      façade and require manual directory handling followed by session abandonment.
+
+      Scope: Governs deletion authorization for proposal temporary roots whose marker
+      cannot be verified.
+
+      Assumptions: The ownership marker is the compiler's authorization boundary for
+      deleting a directory outside the selected workspace.
+
+      Trade-offs: A session cannot resume after marker loss even if an operator later
+      removes or quarantines the directory.
+
+      Design issues addressed: Reconstructing ownership evidence could authorize
+      deletion of an unrelated or externally replaced directory.
+
+      Discarded alternatives: Marker reconstruction and automatic deletion by path
+      pattern were rejected because neither independently proves ownership.
+
+      Consequences: The compiler fails closed, never removes unverifiable storage,
+      and requires a new session after manual intervention.
+
+      Revisit when: A stronger independently verifiable ownership mechanism is
+      available.
+    }
+
+    TerminalProposalWorkspaceClose {
+      Decision: Make successful close terminal for one SigilProposalWorkspace façade
+      instance.
+
+      Scope: Governs façade reuse after new, active, creation-cleanup-failed, or
+      active-cleanup-failed lifecycle completion.
+
+      Assumptions: One façade instance binds one ownership identity, base epoch, and
+      internal eligibility and generation state.
+
+      Trade-offs: Refresh constructs a replacement façade instead of resetting the
+      existing instance.
+
+      Design issues addressed: Reopening could mix lifecycle epochs, stale internal
+      state, and a consumed temporary-root ownership identity.
+
+      Discarded alternatives: Reset and reopen were rejected because they weaken the
+      one-instance, one-epoch invariant.
+
+      Consequences: Closed instances never allocate another root; refresh uses a new
+      façade.
+    }
+
+    PersistentProposalWorkspaceRestoration {
+      Decision: Reconstruct an active proposal-workspace façade from verified
+      non-content session metadata and its existing private materialization.
+
+      Scope: Governs cross-process session restoration; excludes creating a new base,
+      repairing inconsistent state, or authorizing filesystem access.
+
+      Trade-offs: Persisted lifecycle metadata becomes compatibility-sensitive.
+
+      Design issues addressed: Cross-process callers require one exact restoration
+      result and a deterministic compatibility boundary.
+
+      Discarded alternatives: Recopying the selected workspace and storing proposed
+      source contents in the session record were rejected because they change the
+      frozen base or duplicate confidential material.
+
+      Consequences: Independent CLI processes inspect the same base epoch and active
+      generation while malformed, unsupported, or inconsistent version-1 state fails
+      closed with COMPILER_WORKSPACE_STATE and remains preserved for recovery.
+    }
+
+    EphemeralProposalWorkspace {
+      Decision: Reuse one private operating-system temporary workspace across an
+      explicit compilation session and update only affected proposal paths.
+
+      Scope: Governs unwritten proposal evaluation; excludes ordinary compilation and
+      approved repository mutation.
+
+      Trade-offs: Local disk storage requires verified lifecycle and cleanup.
+
+      Discarded alternatives: Prompt-only and compiler-memory overlays were rejected
+      because ordinary agent and Sigil tools would inspect stale disk content.
+
+      Consequences: Deterministic and agentic stages inspect the same snapshot while
+      each base epoch is copied only once.
+    }
+
+  }
+
+  cases {
+    ProposalWorkspaceLifecycle {
+      Successful create materializes one active base view and returns revocable
+      read-only access, selected manifest, and base fingerprint. The first successful
+      apply activates generation one in that workspace and returns its matching
+      proposal fingerprint with new revocable read-only access.
+
+      Released access rejects with COMPILER_WORKSPACE_STATE without reading the
+      workspace. Apply or close while access remains live rejects with
+      COMPILER_WORKSPACE_STATE; releasing that handle permits the operation.
+
+      Apply before successful create rejects with COMPILER_WORKSPACE_STATE.
+
+      Failed create remains new and a later create may succeed.
+
+      Failed create whose rollback cleanup fails enters creation-cleanup-failed,
+      blocks apply, and exposes no second root until verified cleanup succeeds.
+
+      Create in creation-cleanup-failed retries cleanup before continuing; close in
+      creation-cleanup-failed reaches closed only after successful cleanup.
+
+      Cleanup failure after active use enters active-cleanup-failed, where create and
+      apply reject with COMPILER_WORKSPACE_STATE; successful close retry reaches
+      closed and requires a new session rather than resuming evaluation.
+
+      A close-time marker-read or other host failure after active use enters
+      active-cleanup-failed. Create and apply reject with COMPILER_WORKSPACE_STATE;
+      close retry either reaches closed, remains active-cleanup-failed on host
+      failure, or enters manual-recovery-required when ownership cannot be verified.
+
+      Repeated create while active rejects without leaking or replacing the root.
+
+      Apply after close rejects with COMPILER_WORKSPACE_STATE.
+
+      Create after close rejects with COMPILER_WORKSPACE_STATE and does not allocate
+      another root.
+
+      A missing or corrupt marker enters manual-recovery-required; create, apply, and
+      close reject with COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED until an operator
+      handles the directory and abandons the session.
+
+      Apply with a valid ownership marker continues to proposal validation. Missing
+      or corrupt marker performs no proposal work and enters
+      manual-recovery-required. Marker-read host failure preserves active and permits
+      a later apply retry.
+
+      Three consecutive changed-snapshot attempts return COMPILER_SNAPSHOT_CHANGED;
+      each internal base construction performs one attempt, and attempts two and
+      three begin only after successful rollback of the preceding attempt.
+
+      Close before create and repeated close both succeed and leave the façade
+      closed.
+
+      Restoring verified version-1 active state returns one façade, one revocable
+      read-only access, base fingerprint, selected manifest, and matching optional
+      generation identity without copying source content.
+
+      Restoring mismatched persisted identity or generation metadata rejects with
+      COMPILER_WORKSPACE_STATE and exposes no access.
+
+      Restoring a malformed or unsupported persisted-state version rejects with
+      COMPILER_WORKSPACE_STATE, performs no migration, and preserves the
+      materialization for verified cleanup.
+    }
+  }
+}

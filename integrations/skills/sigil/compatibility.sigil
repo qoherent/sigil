@@ -1,0 +1,99 @@
+component SigilSkillCompatibility {
+  goal {
+    Validate one portable skill compatibility declaration identically across hosts
+    before any workspace semantic interpretation.
+
+    Keep compatibility schema, stable caret-range policy, and failure reporting
+    separate from the skill module index and workspace bootstrap orchestration.
+  }
+
+  interface {
+    SkillCompatibility {
+      compatibility.json is an exact JSON object with required string properties
+      cliVersion, coreVersion, and sigilVersion and no unknown properties
+
+      cliVersion and coreVersion contain stable caret expressions over complete
+      semantic versions; sigilVersion contains one exact stable semantic version
+
+      validate(metadataPath, actualCliVersion, actualCoreVersion,
+      configuredSigilVersion) returns compatible or returns incompatible evidence
+      containing the metadata path, failure reason, declared expectations, and
+      available actual versions
+
+      missing, unreadable, malformed, unknown-property, prerelease, or incompatible
+      input returns incompatible before workspace interpretation and performs no
+      mutation
+    }
+  }
+}
+
+expand SigilSkillCompatibility {
+  logic {
+    SkillCompatibility {
+      Require exactly cliVersion, coreVersion, and sigilVersion as string properties.
+
+      Parse CLI and core declarations only as ^M.m.p with nonnegative integer major,
+      minor, and patch identifiers and no prerelease. Ignore build metadata for
+      precedence but reject incomplete versions and every prerelease declaration or
+      actual version.
+
+      For ^M.m.p where M is greater than zero, accept stable actual versions at least
+      M.m.p and less than (M+1).0.0. For ^0.m.p where m is greater than zero, accept
+      stable actual versions at least 0.m.p and less than 0.(m+1).0. For ^0.0.p,
+      accept only stable versions at least 0.0.p and less than 0.0.(p+1).
+
+      Require configuredSigilVersion to equal the declared stable sigilVersion after
+      ignoring build metadata for precedence.
+    }
+  }
+
+  constraints {
+    SkillCompatibility {
+      compatibility.json is required and must be readable and valid before the skill
+      relies on CLI, core, or workspace semantics.
+
+      Hosts use this exact schema and range policy rather than a host-library
+      default.
+
+      Compatibility failure reports evidence and never initializes, rewrites, or
+      interprets the selected workspace.
+    }
+  }
+
+  decisions {
+    SkillCompatibilityBoundary {
+      Decision: Own an exact three-property schema, stable caret-range evaluation for
+      CLI and core, and exact stable Sigil language-version equality in one focused
+      component.
+
+      Scope: Governs portable skill bootstrap compatibility; excludes installation
+      discovery and mutation of incompatible artifacts.
+
+      Trade-offs: Prerelease toolchains are rejected and the workflow owns a small
+      fixed range grammar instead of deferring it to host libraries.
+
+      Design issues addressed: Host-specific parsers, ambiguous prerelease matching,
+      and malformed metadata can make portable workflow behavior diverge.
+
+      Discarded alternatives: Host-library default range semantics, permissive
+      unknown properties, and implicit prerelease matching were rejected.
+
+      Consequences: Every host reaches the same compatibility result and stops with
+      comparable evidence before unsupported workspace interpretation.
+    }
+  }
+
+  cases {
+    SkillCompatibility {
+      With declared range ^0.7.0, stable 0.7.0 and 0.7.4 are compatible, while 0.8.0,
+      0.7.1-beta.1, and a prerelease declaration are incompatible.
+
+      Missing, unreadable, non-object, missing-property, non-string, or unknown-
+      property metadata reports its exact reason and performs no workspace
+      interpretation or mutation.
+
+      An incompatible stable version reports the declared expectation and available
+      actual version and stops before workspace interpretation.
+    }
+  }
+}

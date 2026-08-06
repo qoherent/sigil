@@ -1,5 +1,6 @@
 import type {
   AgentDependencyContext,
+  AgentDependentContext,
   CollectedExpansion,
   ComponentContractView,
   GlossaryContext,
@@ -7,6 +8,7 @@ import type {
   GlossaryOccurrence,
   GlossaryTerm,
   OwnedImplementationProjection,
+  PurposeRetrievalResult,
   ResolvedComponent,
   ResolvedConceptNamespace,
   ResolvedGlossaryContext,
@@ -23,9 +25,11 @@ export type CommandResult =
   | VersionCommandResult
   | ParseCommandResult
   | CheckCommandResult
+  | FmtCommandResult
   | GlossaryCommandResult
   | GraphCommandResult
   | ContextCommandResult
+  | RetrieveCommandResult
   | RenderCommandResult;
 export interface DiagnosticCounts {
   readonly error: number;
@@ -84,6 +88,15 @@ export interface CheckCommandResult extends WorkspaceMetadata {
   readonly diagnostics: readonly SigilDiagnostic[];
   readonly diagnosticCounts: DiagnosticCounts;
 }
+export interface FmtCommandResult extends WorkspaceMetadata {
+  readonly command: "fmt";
+  readonly check: boolean;
+  readonly files: readonly {
+    readonly filePath: string;
+    readonly status: "formatted" | "unchanged" | "noncanonical" | "failed";
+  }[];
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
 export interface GlossaryCommandResult extends WorkspaceMetadata {
   readonly command: "glossary";
   readonly glossaryPath: string | null;
@@ -99,7 +112,7 @@ export interface GraphCommandResult extends WorkspaceMetadata {
   readonly graph: SigilGraph;
   readonly diagnostics: readonly SigilDiagnostic[];
 }
-// @sigil implements packages/cli/#module.sigil::SigilCli::OwnershipContext interface,logic,constraints,cases
+// @sigil implements packages/cli/_module.sigil::SigilCli::OwnershipContext interface,logic,constraints,cases
 export interface ContextCommandResult extends WorkspaceMetadata {
   readonly command: "context";
   readonly selectedComponents: readonly ResolvedComponent[];
@@ -107,19 +120,23 @@ export interface ContextCommandResult extends WorkspaceMetadata {
   readonly conceptNamespaces: readonly ResolvedConceptNamespace[];
   readonly collectedExpansions: readonly CollectedExpansion[];
   readonly agentDependencyContexts: readonly AgentDependencyContext[];
+  readonly agentDependentContexts?: readonly AgentDependentContext[];
   readonly ownedImplementationProjections:
     readonly OwnedImplementationProjection[];
   readonly relatedFilePaths: readonly string[];
   readonly glossaryContext: GlossaryContextProjection | null;
   readonly diagnostics: readonly SigilDiagnostic[];
 }
+export type RetrieveCommandResult = PurposeRetrievalResult & {
+  readonly command: "retrieve";
+};
 export interface RenderCommandResult extends WorkspaceMetadata {
   readonly command: "render";
   readonly markdown: string;
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 
-// @sigil implements packages/cli/#module.sigil::SigilCli::StructuredOutput interface,constraints
+// @sigil implements packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
 export function workspaceMetadata(
   workspace: {
     readonly root: string;
@@ -135,7 +152,7 @@ export function workspaceMetadata(
   };
 }
 
-// @sigil implements packages/cli/#module.sigil::SigilCli::StructuredOutput interface,constraints
+// @sigil implements packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
 export function diagnosticCounts(
   diagnostics: readonly SigilDiagnostic[],
 ): DiagnosticCounts {

@@ -2,19 +2,25 @@ component UserProfile {
     goal {
         Stores editable profile information for a signed-in user.
 
-        Keeps profile presentation details separate from authentication identity and session rules.
+        Keeps profile presentation details separate from authentication identity and
+        session rules.
     }
 
     interface {
+        UserProfile has this public TypeScript shape:
+        ```typescript
         type UserProfile = {
             userId: UserId
             displayName: string
             profilePictureUrl?: string
         }
+        ```
 
-        type UserProfileSummary = Pick<UserProfile, "userId" | "displayName" | "profilePictureUrl">
+        type UserProfileSummary = Pick<UserProfile, "userId" | "displayName" |
+        "profilePictureUrl">
 
-        updateUserProfile(userId: UserId, input: Partial<Pick<UserProfile, "displayName" | "profilePictureUrl">>) returns UserProfile
+        updateUserProfile(userId: UserId, input: Partial<Pick<UserProfile,
+        "displayName" | "profilePictureUrl">>) returns UserProfile
 
         getUserProfile(userId: UserId) returns UserProfile
 
@@ -50,7 +56,8 @@ expand UserProfile {
 
         Auth owns credentials, sessions, roles, and permission checks.
 
-        Other modules should use UserProfile for display information instead of reading Auth private user details.
+        Other modules should use UserProfile for display information instead of reading
+        Auth private user details.
     }
 
     cases {

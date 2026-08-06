@@ -1,0 +1,197 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@packages/core/src/glossary.sigil import { SigilGlossaryEngine }
+@packages/core/src/formatter.sigil import { SigilFormatter }
+@packages/core/src/implementation-ownership.sigil import { SigilImplementationOwnership }
+@packages/core/src/context-retrieval.sigil import { SigilContextRetrieval }
+
+component SigilCore {
+  goal {
+    Provide the deterministic semantic engine shared by Sigil command-line,
+    language-server, editor, and agent integrations.
+
+    Compose source interpretation, configuration, workspace loading, glossary
+    interpretation, relationship resolution, graph construction, projections, and
+    diagnostics without owning host interaction or semantic judgment.
+  }
+
+  interface {
+    SourceInterpretation {
+      parseSigilDocument(filePath, source, options) returns a recovered source
+      document and structural diagnostics
+    }
+
+    SourceFormatting {
+      formatSigilDocument(sourceDocument, source) returns deterministic canonical
+      Sigil source, changed status, and diagnostics through SigilFormatter
+    }
+
+    ConfigurationInterpretation {
+      parseSigilConfig(source, filePath?) returns validated workspace configuration
+      or diagnostics
+    }
+
+    GlossaryParsing {
+      parseSigilGlossary(source, filePath?) returns validated authoritative glossary
+      data or diagnostics
+    }
+
+    WorkspaceProcessing {
+      discoverSigilWorkspace(filesystem, options) returns the selected configured
+      workspace boundary
+
+      loadSigilWorkspace(filesystem, options) returns selected source documents,
+      declared member roots, and accumulated diagnostics
+    }
+
+    WorkspaceResolution {
+      resolveSigilWorkspace(workspace) returns resolved imports with use evidence,
+      components, collective expansions, concept namespaces, graph relationships, and
+      diagnostics
+    }
+
+    SemanticProjections {
+      componentContracts(resolvedWorkspace) returns public component contract views
+
+      conceptNamespaceFor(resolvedWorkspace, componentName) returns resolved
+      concepts, occurrences, and contextual whole-word references for that component
+
+      collectedExpansionFor(resolvedWorkspace, componentName) returns every collected
+      expansion for that component
+
+      agentDependencyContextFor(resolvedWorkspace, componentName) returns bounded
+      agent context containing direct dependency contracts and rationale
+
+      agentDependentContextFor(resolvedWorkspace, componentName) returns direct
+      importing-file context derived from imported-component graph edges
+
+      ownedImplementationTargetsFor(resolvedWorkspace, implementationSources,
+      componentIdentity, conceptName?, sectionName?) returns implementation targets
+      linked to that Sigil contract from implementation comments
+      (SigilImplementationOwnership)
+
+      isSupportedImplementationSource and supportedImplementationSourceGlobPatterns
+      expose the shared ownership-source policy (SigilImplementationOwnership)
+    }
+
+    GlossaryInspectionFacade {
+      GlossaryInspectionFacade adapts GlossaryInspection into the SigilCore public
+      projection facade.
+
+      glossaryProjectionForWorkspace(workspace) returns contexts, entries,
+      occurrences, diagnostics, and workspace snapshot identity
+
+      glossaryContextForFiles(projection, filePaths) returns the glossary path,
+      agent-visible entries, resolved contexts, relevant occurrences, and scoped
+      diagnostics
+    }
+
+    CoreData {
+      exports immutable typed source, configuration, diagnostic, workspace,
+      resolution, graph, and projection data
+    }
+
+    RecoverableResults {
+      returns partial deterministic results with stable diagnostics when malformed
+      Sigil or configuration permits recovery
+
+      propagates required host filesystem failures instead of translating them into
+      Sigil diagnostics
+    }
+  }
+}
+
+expand SigilCore {
+  constraints {
+    PackageVersionOwnership {
+      packages/core/deno.json owns the @qoherent/sigil-core artifact version.
+
+      The package contract does not duplicate its manifest-owned version literal.
+    }
+
+    DeterministicCore {
+      Core computes structural facts and performs no model-assisted semantic
+      judgment.
+
+      Core does not own CLI arguments, LSP transport, editor APIs, agent-host
+      behavior, approval decisions, or user-interface presentation.
+    }
+
+    SourceFormatting {
+      Core formatting is in-memory, deterministic, idempotent, and independent from
+      filesystem mutation.
+    }
+
+    DependencyDirection {
+      Internal stages depend only in the declared source-to-resolution-to-projection
+      direction and do not create cyclic ownership.
+
+      Host integrations consume core semantics instead of implementing independent
+      Sigil parsers, workspace rules, resolvers, or concept interpretation.
+    }
+
+    RecoverableResults {
+      Source and configuration problems remain diagnostics when partial deterministic
+      results are meaningful.
+
+      Host filesystem and runtime failures propagate to the caller.
+    }
+  }
+
+  decisions {
+    DeterministicCore {
+      Decision: Centralize reproducible Sigil semantics in one typed shared core and
+      keep host interaction and model-assisted judgment outside it.
+
+      Scope: Governs parsing, configuration, workspace loading, resolution, graphs,
+      diagnostics, and primitive projections; excludes transport, presentation,
+      elicitation, and approval.
+
+      Trade-offs: Hosts must consume core projections and semantic readiness remains
+      a separate workflow responsibility.
+
+      Discarded alternatives: Host-specific parsers and direct model access from core
+      were rejected.
+
+      Consequences: Compatible hosts derive structural facts from the same
+      implementation boundary.
+
+      Revisit when: A required shared semantic fact cannot be represented without
+      host coupling.
+    }
+  }
+
+  cases {
+    WorkspaceResolution {
+      Resolving a loaded workspace returns imports with qualifying-use evidence,
+      components, collective expansions, concept namespaces, graph relationships, and
+      accumulated diagnostics.
+    }
+
+    SourceFormatting {
+      Formatting valid source twice returns identical canonical source.
+
+      Formatting source with error diagnostics returns no writable result.
+    }
+
+    DeterministicCore {
+      CLI and LSP callers operating on the same loaded workspace receive results
+      derived from the same core stages.
+    }
+
+    GlossaryInspection {
+      CLI and LSP callers receive glossary occurrences derived from the same core
+      projection.
+
+      Agent context callers receive scoped glossary definitions without implementing
+      independent filtering.
+    }
+
+    RecoverableResults {
+      Recoverable malformed Sigil returns partial source and workspace models with
+      stable diagnostics.
+
+      An unreadable required file rejects the operation rather than becoming an
+      unresolved-import diagnostic.
+    }
+  }
+}

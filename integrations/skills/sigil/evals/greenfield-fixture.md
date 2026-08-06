@@ -30,15 +30,24 @@ Expected skill behavior:
 10. Maintain decision states and continue until no unresolved decision can
    materially change the contract.
 11. Establish the smallest coherent component boundaries from agreed intent.
-12. Apply semantic-readiness, standards, coherence, and modularity review,
+12. Split independently changing responsibilities with distinct contracts,
+    state, lifecycle, policy, or reasons to change instead of hiding them beneath
+    one high-level component.
+13. Keep any module index as a concise architectural summary and intentional
+    namespace-assembly surface, with operational detail beside narrower owners.
+14. Inspect accessible imported public identities and reuse every semantic match
+    before creating a local component or concept.
+15. Confirm that the Sigil decomposition can guide generated implementation into
+    cohesive owning modules.
+16. Apply semantic-readiness, standards, coherence, and modularity review,
     verifying the currency and applicability of evidence created during
     conversation.
-13. Recheck affected related-Sigil coherence before synthesis.
-14. Synthesize conversation and review findings into an exact
+17. Recheck affected related-Sigil coherence before synthesis.
+18. Synthesize conversation and review findings into an exact
     `ReviewGate(action: sigil-change)` request.
-15. Write only when ReviewGate is ready, validate the Sigil, and report the
+19. Write only when ReviewGate is ready, validate the Sigil, and report the
     result without another approval gate.
-16. Treat the missing Sigil coverage as a reason to collaborate with the user on
+20. Treat the missing Sigil coverage as a reason to collaborate with the user on
     the affected Sigil before adding implementation.
-17. Implement only when `ReviewGate(action: implementation)` is ready for the
+21. Implement only when `ReviewGate(action: implementation)` is ready for the
     validated written Sigil and exact implementation scope.

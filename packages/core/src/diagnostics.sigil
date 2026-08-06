@@ -2,9 +2,12 @@
 
 component SigilDiagnostics {
   goal {
-    Construct stable machine-readable diagnostics for recoverable Sigil source, configuration, workspace, resolution, and optional host-enrichment problems.
+    Construct stable machine-readable diagnostics for recoverable Sigil source,
+    configuration, workspace, resolution, and optional host-enrichment problems.
 
-    Keep core-stage diagnostic creation independent from required host failures and higher core stages while allowing hosts to diagnose recoverable optional enrichment failures.
+    Keep core-stage diagnostic creation independent from required host failures and
+    higher core stages while allowing hosts to diagnose recoverable optional
+    enrichment failures.
   }
 
   interface {
@@ -17,7 +20,8 @@ component SigilDiagnostics {
     }
 
     DiagnosticCode {
-      diagnostic codes are stable identifiers that consumers may interpret without parsing messages
+      diagnostic codes are stable identifiers that consumers may interpret without
+      parsing messages
     }
   }
 }
@@ -27,29 +31,65 @@ expand SigilDiagnostics {
     DiagnosticConstruction {
       Diagnostic construction depends only on SigilSemanticModel data.
 
-      Parsing, configuration, workspace, and resolution problems use diagnostics when partial results remain meaningful.
+      Parsing, configuration, workspace, and resolution problems use diagnostics when
+      partial results remain meaningful.
 
-      Required core filesystem and runtime failures are not converted into Sigil diagnostics.
+      Required core filesystem and runtime failures are not converted into Sigil
+      diagnostics.
 
-      Hosts may convert an optional enrichment failure into a diagnostic when the primary result remains meaningful.
+      Hosts may convert an optional enrichment failure into a diagnostic when the
+      primary result remains meaningful.
     }
 
     DiagnosticCode {
-      Every diagnostic code has one stable severity-bearing machine-readable representation.
+      Every diagnostic code has one stable severity-bearing machine-readable
+      representation.
+
+      SIGIL_UNUSED_IMPORT is an error for one resolved imported name without
+      qualifying local use.
+
+      SIGIL_EXPAND_WITHOUT_COMPONENT is an error when an expand is neither colocated
+      with its component nor connected to it through a resolved named import.
+
+      SIGIL_DETACHED_LITERAL_BLOCK is an error when a blank line separates
+      introducing prose from an opening fence.
+
+      SIGIL_LITERAL_WITHOUT_INTRODUCTION is an error when an opening fence has no
+      preceding prose in its section or concept block.
+
+      SIGIL_UNCLOSED_LITERAL_BLOCK is an error when no qualifying closing fence
+      occurs.
+
+      SIGIL_INVALID_LITERAL_TYPE is an error when a literal type does not match
+      [A-Za-z][A-Za-z0-9_+.-]*.
+
+      SIGIL_LINE_TOO_LONG is informational when ordinary prose can be canonically
+      wrapped to the 79-character content width.
+
+      SIGIL_UNFORMATTABLE_LINE is an error when one indivisible prose token exceeds
+      the 79-character content width.
     }
   }
 
   decisions {
     DiagnosticConstruction {
-      Decision: Permit hosts to convert a host failure into a structured diagnostic only when it occurs during optional enrichment and a meaningful primary result remains available.
+      Decision: Permit hosts to convert a host failure into a structured diagnostic
+      only when it occurs during optional enrichment and a meaningful primary result
+      remains available.
 
-      Scope: Governs diagnostic construction by core consumers after successful primary processing; required core filesystem, runtime, workspace-loading, and resolution failures continue to propagate.
+      Scope: Governs diagnostic construction by core consumers after successful
+      primary processing; required core filesystem, runtime, workspace-loading, and
+      resolution failures continue to propagate.
 
-      Trade-offs: Callers retain useful partial results but must inspect diagnostics to determine whether optional enrichment is incomplete.
+      Trade-offs: Callers retain useful partial results but must inspect diagnostics
+      to determine whether optional enrichment is incomplete.
 
-      Discarded alternatives: Converting every host failure hides required-operation failure boundaries, while propagating optional enrichment failures discards meaningful primary results.
+      Discarded alternatives: Converting every host failure hides required-operation
+      failure boundaries, while propagating optional enrichment failures discards
+      meaningful primary results.
 
-      Consequences: Hosts may report optional enrichment incompleteness without changing required core failure semantics.
+      Consequences: Hosts may report optional enrichment incompleteness without
+      changing required core failure semantics.
     }
   }
 
@@ -59,29 +99,49 @@ expand SigilDiagnostics {
 
       An unsupported configured language version produces SIGIL_UNSUPPORTED_VERSION.
 
-      An imports-only #module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
+      An imports-only _module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
 
-      A contiguous ungrouped interface region produces warning SIGIL_MISSING_CONCEPT_IDENTIFIER.
+      A contiguous ungrouped interface region produces warning
+      SIGIL_MISSING_CONCEPT_IDENTIFIER.
 
-      An identifier outside [A-Za-z][A-Za-z0-9_-]* produces error SIGIL_INVALID_CONCEPT_IDENTIFIER.
+      An identifier outside [A-Za-z][A-Za-z0-9_-]* produces error
+      SIGIL_INVALID_CONCEPT_IDENTIFIER.
 
       An empty concept block produces error SIGIL_EMPTY_CONCEPT_BLOCK.
 
       A nested concept block produces error SIGIL_NESTED_CONCEPT_BLOCK.
 
-      Two different accessible concepts with identifiers equal without regard to case produce error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER.
+      Two different accessible concepts with identifiers equal without regard to case
+      produce error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER.
 
-      A valid identifier that is not PascalCase or contains a hyphen or underscore produces informational SIGIL_CONCEPT_IDENTIFIER_STYLE.
+      A valid identifier that is not PascalCase or contains a hyphen or underscore
+      produces informational SIGIL_CONCEPT_IDENTIFIER_STYLE.
 
-      An optional ownership-source enumeration failure produces warning SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY when primary context data remains available.
+      An optional ownership-source enumeration failure produces warning
+      SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY when primary context data remains
+      available.
+
+      One unused name in a multi-name resolved import produces one
+      SIGIL_UNUSED_IMPORT at that imported name.
+
+      An unimported cross-file expand produces SIGIL_EXPAND_WITHOUT_COMPONENT at the
+      expand declaration.
+
+      Apparent imports, components, concepts, or braces inside a LiteralBlock produce
+      no structural or reference diagnostic.
+
+      Leading indentation does not contribute to SIGIL_LINE_TOO_LONG or
+      SIGIL_UNFORMATTABLE_LINE.
     }
 
     DiagnosticConstruction {
       Omitting severity constructs an error diagnostic.
 
-      A filesystem permission failure during a required operation rejects the host operation instead of producing a Sigil diagnostic.
+      A filesystem permission failure during a required operation rejects the host
+      operation instead of producing a Sigil diagnostic.
 
-      A filesystem permission failure during optional host enrichment can produce a diagnostic while preserving the primary result.
+      A filesystem permission failure during optional host enrichment can produce a
+      diagnostic while preserving the primary result.
     }
   }
 }

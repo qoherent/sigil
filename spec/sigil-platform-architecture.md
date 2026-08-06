@@ -1,7 +1,7 @@
 # Sigil Platform Architecture
 
-**Status:** Accepted for platform 0.5 **Owner:** Sigil maintainers **Last
-updated:** 2026-07-23
+**Status:** Accepted for platform 0.7 **Owner:** Sigil maintainers **Last
+updated:** 2026-07-30
 
 This document defines the high-level architecture guidelines for the Sigil
 platform. Package-specific product details, public commands, editor features,
@@ -18,7 +18,7 @@ tool:
 
 - parse and understand `.sigil` files;
 - resolve workspace imports and component relationships;
-- preserve semantic lines and source locations;
+- preserve semantic units and source locations;
 - expose focused context to agents and automation;
 - expose readable and navigable views to humans;
 - support host-specific integrations without making any host the center of the
@@ -57,11 +57,11 @@ Boundary rules:
 Platform packages:
 
 - `packages/core`: implemented shared parser, workspace and reviewed-glossary
-  loader, resolver, graph, diagnostics, source-location model, and projection
-  primitives.
+  loader, resolver, graph, formatter, diagnostics, source-location model, and
+  projection primitives.
 - `packages/cli`: implemented command-line interface for agents, CI, scripts,
-  debugging, glossary inspection, context extraction, and Markdown review
-  rendering.
+  debugging, glossary inspection, explicit formatting, context extraction, and
+  Markdown review rendering.
 - `packages/lsp`: implemented pre-production language-server interface for
   shared editor-neutral diagnostics, navigation, symbols, hover, and
   resolver-backed component, concept, and glossary semantic highlighting across
@@ -94,13 +94,15 @@ core model.
 The core must own:
 
 - parsing top-level Sigil structure;
-- preserving source ranges and semantic lines;
+- preserving source ranges, blank-line-delimited semantic units, and attached
+  literal blocks;
 - validating reviewed glossary data and projecting deterministic term
   occurrences;
 - resolving imports from a workspace root;
 - collecting all matching `expand Name` blocks for a component;
 - building component and file dependency graphs;
 - producing diagnostics;
+- formatting valid Sigil deterministically without filesystem access;
 - exposing reusable projection primitives for agents and humans.
 
 The core must not depend on:
@@ -137,7 +139,7 @@ term when needed. Platform packages walk upward and select the nearest ancestor
 config when every higher configured workspace excludes that nearer root, unless
 an explicit root containing the config is supplied. Missing and unexcluded
 nested configs are errors; configs inside excluded subtrees define independent
-workspaces. `#module.sigil` may appear in any included directory as its explicit
+workspaces. `_module.sigil` may appear in any included directory as its explicit
 directory-import index. Package manifests do not independently declare workspace
 members or Brownfield summary boundaries.
 
@@ -203,14 +205,17 @@ Rationale: Separate interpretations would drift and make trust worse.
 Tradeoff: The shared core needs careful boundaries before host integrations
 grow.
 
-### ADR-004: Preserve Semantic Lines As First-Class Data
+### ADR-004: Preserve Semantic Units As First-Class Data
 
-Decision: Every non-empty section line becomes a semantic line with source
-location.
+Decision: Every blank-line-delimited prose paragraph becomes one semantic unit
+with source location, retained physical lines, and any directly attached
+literal block.
 
-Rationale: This supports review, diagnostics, and code/spec drift detection.
+Rationale: This supports review, diagnostics, formatter-safe physical wrapping,
+and code/spec drift detection.
 
-Tradeoff: The parser model is more detailed than a simple document tree.
+Tradeoff: Authors must use blank lines to separate ideas and attached fences for
+layout-sensitive multiline content.
 
 ### ADR-005: Keep The Parser Structurally Strict And Body-Tolerant
 
@@ -282,7 +287,7 @@ Status: Rejected; no active Sigil contract.
 
 Historical proposal: Keep `.sigil` source human-authored, generate attributed
 Receipts from deterministic facts and host contributions, keep models outside
-core, reuse one semantic-line identity across Receipts and anchors, and preserve
+core, reuse one semantic-unit identity across Receipts and anchors, and preserve
 human approval as an independent action.
 
 Discussion: See
@@ -307,7 +312,7 @@ Guardrail: all surfaces use `sigil-core`.
 
 ### Losing Source Fidelity
 
-If source locations and semantic lines are not preserved from the beginning,
+If source locations and semantic units are not preserved from the beginning,
 anchors and drift detection become expensive later.
 
 Guardrail: source ranges are core parser output, not metadata added later.

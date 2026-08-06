@@ -61,7 +61,7 @@ Expected skill behavior:
 23. Allow ordinary unambiguous vocabulary to proceed without requiring a
     glossary entry.
 24. When model-assisted extraction finds no material candidate, report the
-    changed semantic lines and relevant surrounding occurrences inspected
+    changed semantic units and relevant surrounding occurrences inspected
     instead of citing the diagnostic count.
 25. Continue to the next applicable ReviewGate action after applying and
     validating an approved glossary change.

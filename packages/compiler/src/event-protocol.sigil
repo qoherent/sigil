@@ -1,0 +1,109 @@
+component SigilCompilationEventProtocol {
+  goal {
+    Own compatible streaming of long-running compiler progress and authoritative
+    terminal outcomes.
+  }
+
+  interface {
+    CompilationEventProtocol {
+      CompilationEvent is a versioned JSON Lines envelope containing protocolVersion,
+      runId, sequence, type, and payload
+
+      protocolVersion 1 is the supported event envelope version
+
+      successful settlement requires a completed terminal event containing the
+      authoritative CompilationReport
+
+      a failed terminal event contains the stable rejection code selected by the
+      invoking compiler operation
+    }
+  }
+}
+
+expand SigilCompilationEventProtocol {
+  constraints {
+    CompilationEventProtocol {
+      JSON Lines mode writes only CompilationEvent envelopes to standard output.
+      Human progress and host logs use standard error.
+
+      Sequence values increase within one run and one terminal event ends the stream.
+      Failed and cancelled runs emit terminal events only when a compatible event
+      stream is writable at the moment the terminal envelope is written.
+
+      A completed method settlement returns the same authoritative CompilationReport
+      carried by the completed terminal event. Cancellation returns no
+      CompilationReport and rejects with COMPILER_CANCELLED. Other operation failures
+      return no report and preserve the invoking component's stable rejection code in
+      the failed event and method settlement.
+
+      Own event encoding, framing, ordering, and compatibility, but do not reclassify
+      proposal, session, workspace, evaluator, persistence, or transport-loss
+      outcomes selected by invoking components. Invalid encoding, framing, ordering,
+      or protocol compatibility rejects with COMPILER_FAILED.
+
+      Loss while writing a nonterminal progress event may suppress later progress
+      while work continues toward settlement. A terminal event remains mandatory.
+
+      An unavailable stream or failure while writing a completed, cancelled, or
+      failed terminal event supersedes the pending outcome with COMPILER_FAILED and
+      returns no CompilationReport. Do not attempt another terminal write through the
+      failed transport.
+
+      An unsupported event protocol version is a protocol failure, returns no
+      CompilationReport, and rejects with COMPILER_FAILED. A failed terminal event is
+      emitted only when a compatible writable transport remains available.
+    }
+  }
+
+  decisions {
+    CompilationEventProtocol {
+      Decision: Use a versioned JSON Lines stream with one authoritative report in
+      the completed terminal event.
+
+      Scope: Governs compiler streaming to every host surface.
+
+      Trade-offs: Consumers process an ordered stream instead of one JSON object.
+
+      Discarded alternatives: Mixed stdout and unframed JSON were rejected because
+      they cannot safely carry incremental events.
+
+      Consequences: Hosts validate compatibility, ordering, completion, failure, and
+      cancellation consistently; component-owned failure identity is preserved when
+      its terminal event is written, while terminal transport failure supersedes it.
+
+      Revisit when: A protocol revision requires a compatibility window or negotiated
+      transition beyond version 1.
+    }
+  }
+
+  cases {
+    CompilationEventProtocol {
+      A successful run emits ordered progress then one completed event containing the
+      report.
+
+      Cancelled and failed runs emit their corresponding terminal event when the
+      process can still write it.
+
+      Cancellation after work begins rejects with COMPILER_CANCELLED and emits one
+      cancelled terminal event when transport remains writable.
+
+      A proposal, session, workspace, evaluator, or persistence failure rejects with
+      its invoking component's stable code and emits one failed event carrying that
+      code when transport remains writable.
+
+      An encoding, framing, ordering, or protocol compatibility failure rejects with
+      COMPILER_FAILED and emits one failed terminal event only when a distinct
+      compatible stream remains writable.
+
+      Failure before a writable event stream exists cannot settle through its
+      required terminal event and therefore rejects with COMPILER_FAILED.
+
+      Loss while writing progress may omit progress. If the terminal event cannot be
+      written, the method rejects with COMPILER_FAILED and returns no report rather
+      than exposing completion, cancellation, or the preceding failure identity.
+
+      A consumer receiving an unsupported protocol version rejects the run with
+      COMPILER_FAILED before interpreting its payload.
+    }
+  }
+}

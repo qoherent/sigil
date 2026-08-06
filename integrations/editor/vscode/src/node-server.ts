@@ -5,7 +5,7 @@ import { normalizePath } from "@qoherent/sigil-core";
 import { runLanguageServer } from "../../../../packages/lsp/src/protocol.ts";
 import { SigilLanguageServer } from "../../../../packages/lsp/src/server.ts";
 
-// @sigil implements integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::SupportedExtensionHosts interface,constraints,cases
+// @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::SupportedExtensionHosts interface,constraints,cases
 class NodeSigilFileSystem implements SigilFileSystem {
   async readTextFile(path: string): Promise<string> {
     return await readFile(path, "utf8");

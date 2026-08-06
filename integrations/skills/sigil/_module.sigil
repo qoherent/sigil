@@ -1,0 +1,90 @@
+@spec/language.sigil import { SigilLanguage }
+@packages/cli import { SigilCli }
+@integrations/skills/sigil/workspace-bootstrap.sigil import { SigilWorkspaceBootstrap }
+@integrations/skills/sigil/design-compilation-review.sigil import { SigilDesignCompilationReview }
+@integrations/skills/sigil/standards-review.sigil import { SigilStandardsReview }
+@integrations/skills/sigil/authoring-workflow.sigil import { SigilAuthoringWorkflow }
+@integrations/skills/sigil/glossary-workflow.sigil import { SigilGlossaryWorkflow }
+@integrations/skills/sigil/implementation-workflow.sigil import { SigilImplementationWorkflow }
+@integrations/skills/sigil/review-gate.sigil import { SigilReviewGate }
+@integrations/skills/sigil/design-conversation.sigil import { SigilDesignConversation }
+@integrations/skills/sigil/external-guidance-evidence.sigil import { ExternalGuidanceEvidence }
+@integrations/skills/sigil/compatibility.sigil import { SigilSkillCompatibility }
+
+component SigilSkill {
+  goal {
+    Provide coding-agent hosts with one reusable workflow for designing, reviewing,
+    reconciling, and implementing software through approved Sigil contracts.
+
+    Keep ambiguity resolution, evidence classification, standards review, and human
+    approval in the host workflow while consuming compiler-owned semantic and
+    architecture evaluation as provisional design evidence.
+  }
+
+  interface {
+SkillPackage {
+      SKILL.md is the portable workflow entrypoint
+
+      VERSION owns the skill artifact version
+
+      compatibility.json declares compatible CLI, core, and language versions
+
+      SigilSkillCompatibility owns compatibility schema, range evaluation, and
+      failure behavior before workspace interpretation
+
+      references are loaded progressively when their procedures apply
+
+      host installation locations and adapters do not alter workflow semantics
+    }
+
+    SkillWorkflow {
+      SKILL.md dispatches applicable procedures to the imported workspace, design-
+      compilation, standards, authoring, glossary, implementation, review-gate,
+      design-conversation, and external-evidence components
+
+      directory imports expose those cohesive workflow components without making the
+      module index own their operational policy or mutable lifecycle
+    }
+  }
+}
+
+expand SigilSkill {
+  constraints {
+SkillPackage {
+      The skill workflow remains semantically host-neutral.
+
+      Each host adapter may define discovery and presentation mechanics but does not
+      redefine ReviewGate or approval authority.
+
+      Skill artifact version ownership is independent from language and distributable
+      tool versions.
+
+      Compatibility policy remains outside this module index and is exposed through
+      the imported SigilSkillCompatibility component.
+    }
+  }
+
+  decisions {
+    HostNeutralSkillBoundary {
+      Decision: Keep workflow semantics host-neutral, let adapters vary only
+      discovery and presentation, and keep skill artifact version ownership separate
+      from language and tool versions.
+
+      Scope: Governs the portable skill package, its host adapters, artifact release,
+      and compatibility declaration; excludes host-specific installation mechanics.
+
+      Trade-offs: Every host must implement the same approval semantics and perform
+      explicit compatibility validation before workspace interpretation.
+
+      Design issues addressed: Host-specific authority rules and duplicated version
+      ownership would make the same skill behave differently across installations.
+
+      Discarded alternatives: Adapter-defined approval and one shared version across
+      skill, CLI, core, and language artifacts were rejected.
+
+      Consequences: SKILL.md remains portable while compatibility.json explicitly
+      binds it to supported tool and language versions.
+    }
+
+  }
+}

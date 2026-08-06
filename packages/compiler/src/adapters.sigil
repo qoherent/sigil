@@ -1,0 +1,121 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
+
+expand SigilAgentAdapter {
+  logic {
+    AgentAdapter {
+      Supply each adapter the minimal target request, evaluation skill, output
+      schema, workspace root, and capabilities declared for its evaluation run.
+
+      Start the provider agent with enforced direct read-only workspace inspection
+      and consume its structured event stream.
+
+      Validate structured adapter output before normalizing any finding.
+
+      Reject an adapter that cannot enforce the effective capability contract.
+    }
+  }
+
+  constraints {
+    CapabilityPolicy {
+      Every profile declares readable repository scope, executable tool categories,
+      network policy, execution budgets, sensitive exclusions, and applicable
+      research requirements.
+
+      Direct workspace inspection requires enforced read-only filesystem access, the
+      selected workspace as working root, no approval escalation, and ephemeral agent
+      state.
+
+      Network access is disabled for every compiler evaluation. Profiles cannot
+      broaden this capability.
+
+      An adapter capability mismatch fails the required evaluation rather than
+      broadening access.
+    }
+
+    EvidenceThreshold {
+      An error identifies a violated rule or contradictory contract and provides
+      reproducible deterministic or repository evidence.
+
+      A warning cites concrete evidence and states the remaining ambiguity or
+      material risk.
+
+      An optimization explains its expected benefit and accepted trade-off.
+
+      Hidden reasoning is never required or retained as diagnostic evidence.
+    }
+
+    CompilationDiagnostic {
+      Evaluation skills may propose findings but cannot redefine compiler severities,
+      diagnostic identity, lifecycle, or compilation color.
+
+      A finding whose rule code is not declared by its evaluation skill is rejected.
+
+      Required evaluator disagreement produces a warning until the conflict is
+      resolved.
+
+      Green permits no warning waiver.
+    }
+  }
+
+  decisions {
+    ProviderNeutralEvaluation {
+      Decision: Let the compiler own the evaluation protocol, diagnostic schema, and
+      native skill-package contract while adapters map enforced direct workspace
+      inspection and structured events to provider capabilities.
+
+      Scope: Governs every agent and evaluation skill integration.
+
+      Trade-offs: Provider-specific sandbox, working-directory, event-stream, and
+      usage controls require explicit adapter mapping.
+
+      Consequences: Changing providers does not change compiler semantics.
+    }
+
+    EvidenceBackedDiagnostics {
+      Decision: Allow only evidence-backed errors and warnings to affect compilation
+      color.
+
+      Scope: Governs deterministic, model-assisted, repository, and experimental
+      findings.
+
+      Trade-offs: Some plausible concerns remain informational until sufficient
+      evidence exists.
+
+      Consequences: Unsupported model claims cannot block progress toward green.
+    }
+
+    StableDiagnosticLifecycle {
+      Decision: Derive stable diagnostic fingerprints from rule, stage, subject, and
+      location facts and compare them across runs.
+
+      Scope: Governs report comparison and editor progress feedback.
+
+      Trade-offs: Rules must define stable semantic subjects independently from
+      message wording.
+
+      Consequences: Users can distinguish new, unchanged, resolved, and regressed
+      findings.
+    }
+  }
+
+  cases {
+    AgentAdapter {
+      A required adapter that cannot enforce the configured network policy fails its
+      evaluation and produces red.
+
+      A required adapter that cannot enforce direct read-only workspace access fails
+      before invoking its evaluator.
+
+      Invalid or unsupported adapter output cannot introduce an error or warning.
+
+      An undeclared diagnostic code is rejected before it can affect compilation
+      color.
+    }
+
+    EvaluatorDisagreement {
+      Two required evaluators reaching materially incompatible findings produce a
+      compiler warning and yellow status.
+    }
+  }
+}

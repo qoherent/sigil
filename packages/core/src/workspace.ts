@@ -21,12 +21,14 @@ import {
   normalizePath,
   relativePath,
 } from "./path.ts";
+import { sha256Canonical } from "./canonical.ts";
 
 // @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::WorkspaceDiscovery interface,logic,cases
 export interface WorkspaceDiscoveryResult {
   readonly root: string;
   readonly configPath?: string;
   readonly config?: SigilConfig;
+  readonly configSource?: string;
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 
@@ -98,7 +100,11 @@ export async function discoverSigilWorkspace(
   return selected;
 }
 
-// @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::WorkspaceLoading interface,logic,cases
+/*
+ * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::WorkspaceLoading interface,logic,cases
+ * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::GlossaryInterpretationLoading interface
+ * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::GlossaryInterpretation logic,constraints,cases
+ */
 export async function loadSigilWorkspace(
   fs: SigilFileSystem,
   options: WorkspaceLoadOptions,
@@ -109,6 +115,7 @@ export async function loadSigilWorkspace(
   if (!discovery.config || !discovery.configPath) {
     return {
       ...discovery,
+      workspaceSnapshotIdentity: await sha256Canonical({ records: [] }),
       memberRoots: [],
       files: loadedFiles,
       diagnostics,
@@ -163,19 +170,28 @@ export async function loadSigilWorkspace(
     const parsed = parseSigilDocument(path, source, {
       sigilVersion: discovery.config.sigilVersion,
     });
-    loadedFiles.push({ path, document: parsed.document });
+    loadedFiles.push({ path, source, document: parsed.document });
     diagnostics.push(...parsed.diagnostics);
   }
 
   const glossaryPath = joinPath(discovery.root, SIGIL_GLOSSARY_PATH);
   if (await fs.exists(glossaryPath)) {
+    const glossarySource = await fs.readTextFile(glossaryPath);
     const parsed = parseSigilGlossary(
-      await fs.readTextFile(glossaryPath),
+      glossarySource,
       glossaryPath,
     );
     diagnostics.push(...parsed.diagnostics);
     return {
       ...discovery,
+      workspaceSnapshotIdentity: await workspaceSnapshotIdentity(
+        discovery.root,
+        discovery.configPath,
+        discovery.configSource!,
+        loadedFiles,
+        glossaryPath,
+        glossarySource,
+      ),
       glossaryPath,
       glossary: parsed.glossary,
       memberRoots,
@@ -184,7 +200,18 @@ export async function loadSigilWorkspace(
     };
   }
 
-  return { ...discovery, memberRoots, files: loadedFiles, diagnostics };
+  return {
+    ...discovery,
+    workspaceSnapshotIdentity: await workspaceSnapshotIdentity(
+      discovery.root,
+      discovery.configPath,
+      discovery.configSource!,
+      loadedFiles,
+    ),
+    memberRoots,
+    files: loadedFiles,
+    diagnostics,
+  };
 }
 
 async function readDiscoveredConfig(
@@ -202,16 +229,50 @@ async function readDiscoveredConfig(
       )],
     };
   }
+  const configSource = await fs.readTextFile(configPath);
   const parsed = parseSigilConfig(
-    await fs.readTextFile(configPath),
+    configSource,
     configPath,
   );
   return {
     root,
     configPath,
     config: parsed.config,
+    configSource,
     diagnostics: parsed.diagnostics,
   };
+}
+
+async function workspaceSnapshotIdentity(
+  root: string,
+  configPath: string,
+  configSource: string,
+  files: readonly LoadedSigilFile[],
+  glossaryPath?: string,
+  glossarySource?: string,
+): Promise<string> {
+  const records = [
+    {
+      kind: "config",
+      path: relativePath(root, configPath),
+      text: configSource,
+    },
+    ...files.map((file) => ({
+      kind: "sigil",
+      path: relativePath(root, file.path),
+      text: file.source ?? "",
+    })),
+    ...(glossaryPath && glossarySource !== undefined
+      ? [{
+        kind: "glossary",
+        path: relativePath(root, glossaryPath),
+        text: glossarySource,
+      }]
+      : []),
+  ].sort((left, right) =>
+    left.path.localeCompare(right.path) || left.kind.localeCompare(right.kind)
+  );
+  return `sha256:${await sha256Canonical({ records })}`;
 }
 
 function isSigilConfigPath(path: string): boolean {

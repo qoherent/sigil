@@ -1,6 +1,9 @@
 # Implementation Coverage And Component Selection
 
-<!-- @sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::ImplementationOwnershipWorkflow interface,logic,constraints,cases -->
+<!--
+@sigil implements integrations/skills/sigil/implementation-workflow.sigil::SigilImplementationWorkflow::ImplementationOwnershipWorkflow interface,logic,constraints,cases
+@sigil implements integrations/skills/sigil/implementation-workflow.sigil::SigilImplementationWorkflow::ImplementationCoverage interface,logic,constraints,cases
+-->
 
 Use this procedure before every implementation mutation. It prevents artifact
 classification, an outcome request, or successful validation from bypassing
@@ -71,6 +74,10 @@ dependents, tests, and relevant Sigil. Identify material concerns such as:
 - algorithms or transformations whose rationale is not safely reconstructable;
 - dependency direction, ownership, and binding architecture decisions.
 
+Also identify the implementation namespace-assembly surface and every
+independently owned responsibility behind it. An entrypoint or index is not the
+default owner for behavior merely because it exposes the public namespace.
+
 A component's goal and interface are public relative to its dependents. The
 interface contains the operations, data, events, results, errors, and observable
 promises available to them. It need not be exposed to an end user, external
@@ -116,6 +123,12 @@ concern without knowing its private mechanics. If yes, prefer a component. If
 the detail only explains how an existing owner fulfills its contract, prefer an
 expand.
 
+The selected components and expands must collectively describe the architecture
+that code generation should preserve. Split an owner when unrelated lifecycle,
+state, policy, or reasons to change would otherwise produce a bulky
+implementation unit. Keep a public implementation index focused on namespace
+assembly or explicitly owned boundary-wide orchestration.
+
 ## 4. Review UI Component Coverage
 
 Treat a screen, view, or reusable UI surface as a component when it owns a
@@ -151,9 +164,14 @@ captured by the selected components and expands. A material choice without a
 matching decision record or justified omission keeps implementation coverage
 partial and blocks coding.
 
+For each non-omitted concern, verify that the owning location maps to a cohesive
+implementation module. Verify separately that any public entrypoint or index
+only assembles the approved namespace and does not absorb unrelated behavior or
+mutable state.
+
 ## 6. Link Implementation Ownership
 
-Ownership annotations are implementation comments, not Sigil semantic lines.
+Ownership annotations are implementation comments, not Sigil semantic units.
 Never write them into a `.sigil` file. Add or reconcile them only when
 `ReviewGate(action: implementation)` is ready for the governing validated
 written Sigil, exact implementation scope, and proposed comments.

@@ -1,0 +1,134 @@
+@spec/language.sigil import { SigilLanguage }
+@packages/core/src/model.sigil import { SigilSemanticModel }
+@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
+@packages/core/src/parser.sigil import { SigilParser }
+
+component SigilFormatter {
+  goal {
+    Produce a deterministic canonical representation of valid Sigil source without
+    changing resolved semantic units or literal content.
+
+    Give command-line and future host consumers one reusable formatter independent
+    from filesystem mutation and presentation.
+  }
+
+  interface {
+    Formatting {
+      formatSigilDocument(sourceDocument, source) returns FormatResult
+
+      FormatResult contains optional formatted source, changed status, and
+      diagnostics
+
+      formatted source is present only when formatting succeeds; changed is false
+      when formatted source is absent
+    }
+  }
+}
+
+expand SigilFormatter {
+  logic {
+    Formatting {
+      Validate that SigilParser produced no error diagnostics before formatting.
+
+      Wrap SemanticUnit prose at 79 content characters without counting leading
+      indentation.
+
+      Retain one blank line between distinct prose semantic units.
+
+      Place an attached opening fence directly after its introducing prose without an
+      intervening blank line.
+
+      Preserve LiteralBlock source lines, internal blank lines, trailing whitespace,
+      and relative indentation.
+
+      Compare the rendered source with the input to derive changed status.
+    }
+  }
+
+  constraints {
+    DeterministicFormatting {
+      Formatting is deterministic and idempotent.
+
+      Formatting requires a recovered source document with no error diagnostics.
+
+      Formatting does not repair unresolved imports, invalid structure, or semantic
+      problems.
+
+      Formatting removes trailing whitespace outside LiteralBlock bodies.
+
+      Prose wrapping occurs only at whitespace boundaries and never changes
+      SemanticUnit identity.
+
+      Structural lines, fence delimiters, and LiteralBlock bodies are excluded from
+      prose-width wrapping.
+
+      Formatting does not normalize structural indentation.
+
+      An indivisible token longer than 79 content characters remains retained in the
+      parsed source, produces SIGIL_UNFORMATTABLE_LINE, returns no formatted source,
+      and returns changed false.
+
+      Formatting preserves the input source's final-newline presence.
+    }
+
+    MutationBoundary {
+      SigilFormatter performs no filesystem access and returns formatted data without
+      writing source.
+
+      Hosts own explicit selection, validation, write atomicity, output, and failure
+      reporting.
+    }
+
+    DependencyDirection {
+      SigilFormatter consumes source structures from SigilSemanticModel, parse
+      validity from SigilParser, and diagnostic construction from SigilDiagnostics.
+    }
+  }
+
+  decisions {
+    DeterministicFormatting {
+      Decision: Canonically render valid Sigil with 79-character prose content width
+      while preserving structural indentation, semantic units, and literal values.
+
+      Scope: Governs reusable in-memory source formatting; excludes source selection,
+      filesystem mutation, semantic repair, and host presentation.
+
+      Trade-offs: Indivisible long tokens remain unformatted and produce an explicit
+      diagnostic.
+
+      Design issues addressed: Host-specific formatting would drift, and line-based
+      semantic identity previously prevented safe prose wrapping.
+
+      Discarded alternatives: Independent CLI formatting, indentation-inclusive
+      width, structural indentation rewriting, and formatting literal bodies were
+      rejected.
+
+      Consequences: Every host can obtain the same idempotent canonical source
+      without reinterpreting language structure.
+    }
+  }
+
+  cases {
+    Formatting {
+      Rewrapping one prose semantic unit preserves its normalized prose and semantic
+      identity.
+
+      Six leading spaces do not reduce the 79-character prose-content allowance.
+
+      Introducing prose and its opening fence remain adjacent.
+
+      A LiteralBlock retains internal blank lines, unmatched braces, and relative
+      indentation.
+
+      Formatting canonical source returns identical bytes and changed false.
+
+      Formatting the result of a successful formatting operation produces the same
+      result.
+
+      A source with any error diagnostic returns no writable formatted result.
+
+      An unformattable indivisible token returns no formatted source, changed false,
+      and SIGIL_UNFORMATTABLE_LINE.
+    }
+  }
+}

@@ -4,34 +4,52 @@
 
 component SigilGlossaryEngine {
   goal {
-    Parse, validate, resolve, and project reviewed workspace glossary data for deterministic core consumers.
+    Parse, validate, resolve, and project reviewed workspace glossary data for
+    deterministic core consumers.
 
-    Keep vocabulary extraction, semantic judgment, approval, presentation, and source mutation outside core.
+    Keep vocabulary extraction, semantic judgment, approval, presentation, and
+    source mutation outside core.
   }
 
   interface {
     GlossaryInterpretation {
       GLOSSARY_SCHEMA_VERSION identifies the supported GlossarySchema version
 
-      parseSigilGlossary(source, filePath?) returns validated WorkspaceGlossary data or accumulated diagnostics
+      parseSigilGlossary(source, filePath?) returns validated WorkspaceGlossary data
+      or accumulated diagnostics
     }
 
-    GlossaryModel {
-      exports immutable glossary entries, contexts, occurrences, projections, and parse results
+    GlossaryModelProjection {
+      GlossaryModelProjection adapts GlossaryModel from SigilSemanticModel into
+      immutable engine exports.
+
+      exports immutable SigilSemanticModel glossary entries, contexts, occurrences,
+      projections, and parse results
     }
 
-    ContextResolution {
-      resolveGlossaryForFile(glossary, filePath) returns the effective entries, matched context, and diagnostics
+    ContextResolutionEngine {
+      ContextResolutionEngine adapts ContextResolution into deterministic engine
+      behavior.
+
+      resolveGlossaryForFile(glossary, filePath) returns the effective entries,
+      matched context, and diagnostics
     }
 
-    TermRecognition {
-      glossaryOccurrencesForDocument(glossary, document) returns ordered source-ranged occurrences
+    TermRecognitionEngine {
+      TermRecognitionEngine adapts TermRecognition into deterministic engine
+      behavior.
+
+      glossaryOccurrencesForDocument(glossary, document) returns ordered
+      source-ranged occurrences
     }
 
     GlossaryInspection {
-      glossaryProjectionForWorkspace(workspace) returns contexts, entries, occurrences, and diagnostics
+      glossaryProjectionForWorkspace(workspace) returns contexts, entries,
+      occurrences, diagnostics, and the exact workspace.workspaceSnapshotIdentity
 
-      glossaryContextForFiles(projection, filePaths) returns the glossary path, agent-visible effective entries, resolved contexts, and occurrences relevant to normalized selected files
+      glossaryContextForFiles(projection, filePaths) returns the glossary path,
+      agent-visible effective entries, resolved contexts, and occurrences relevant to
+      normalized selected files plus scoped diagnostics
     }
   }
 }
@@ -39,36 +57,52 @@ component SigilGlossaryEngine {
 expand SigilGlossaryEngine {
   logic {
     GlossaryInterpretation {
-      Parse strict JSON and validate the complete GlossarySchema before returning authoritative data.
+      Parse strict JSON and validate the complete GlossarySchema before returning
+      authoritative data.
 
-      Preserve source ranges for canonical term declarations so consumers can navigate to GlossaryFile.
+      Preserve source ranges for canonical term declarations so consumers can
+      navigate to GlossaryFile.
     }
 
     ContextResolution {
-      Resolve only normalized workspace-relative paths belonging to loaded Sigil documents.
+      Resolve only normalized workspace-relative paths belonging to loaded Sigil
+      documents.
 
       Diagnose every loaded source matched by more than one bounded context.
 
-      Build each source's effective spelling map from workspace entries followed by its matched context entries.
+      Build each source's effective spelling map from workspace entries followed by
+      its matched context entries.
     }
 
     TermRecognition {
-      Scan recovered semantic lines while tracking fenced-code regions and excluding inline code and URLs.
+      Scan recovered SemanticUnit prose while excluding inline code and URLs.
 
       Emit non-overlapping occurrences in deterministic source order.
     }
 
     GlossaryInspection {
-      Aggregate resolved contexts, effective entries, occurrences, and glossary diagnostics without changing source data.
+      Aggregate resolved contexts, effective entries, occurrences, and glossary
+      diagnostics without changing source data.
 
-      Filter a workspace projection by normalized selected source paths while preserving deterministic source and declaration order.
+      Copy workspaceSnapshotIdentity from the supplied SigilWorkspace into every
+      GlossaryProjection without recomputing it.
 
-      Exclude entries whose agentContext is false together with their occurrences from agent-facing scoped context.
+      Filter a workspace projection by normalized selected source paths while
+      preserving deterministic source and declaration order.
+
+      Preserve source-less diagnostics, diagnostics attached to a selected source
+      path, and GlossaryFile diagnostics whose range overlaps the declaration range
+      of an effective selected term. Exclude every other diagnostic.
+
+      Exclude entries whose agentContext is false together with their occurrences
+      from agent-facing scoped context.
     }
   }
 
   constraints {
     GlossaryInterpretation {
+      SigilDiagnostics owns every glossary diagnostic emitted by this engine.
+
       JSON syntax failures produce SIGIL_GLOSSARY_PARSE.
 
       Schema and field failures produce SIGIL_GLOSSARY_INVALID.
@@ -86,12 +120,16 @@ expand SigilGlossaryEngine {
       Recognition uses source ranges already owned by recovered Sigil documents.
 
       Unknown prose remains ordinary text without a missing-glossary-term diagnostic.
+
+      LiteralBlock type and body content are excluded without independently tracking
+      fence state.
     }
 
     GlossaryInspection {
       Every projection is immutable and suitable for CLI and LSP consumption.
 
-      Scoped context excludes terms that are neither effective in nor recognized within a selected source.
+      Scoped context excludes terms that are neither effective in nor recognized
+      within a selected source.
     }
   }
 
@@ -103,19 +141,26 @@ expand SigilGlossaryEngine {
     }
 
     ContextResolution {
-      Context-local spellings override workspace spellings without changing other contexts.
+      Context-local spellings override workspace spellings without changing other
+      contexts.
     }
 
     TermRecognition {
-      Longest-first matching emits one workspace root occurrence rather than overlapping workspace and workspace root occurrences.
+      Longest-first matching emits one workspace root occurrence rather than
+      overlapping workspace and workspace root occurrences.
+
+      A glossary spelling appearing only inside a LiteralBlock produces no
+      occurrence.
     }
 
     GlossaryInspection {
       CLI and LSP consumers receive the same resolved occurrence ranges from core.
 
-      Selecting a component source and its related expansion sources returns their effective bounded-context definitions without unrelated workspace vocabulary.
+      Selecting a component source and its related expansion sources returns their
+      effective bounded-context definitions without unrelated workspace vocabulary.
 
-      An entry excluded from agent context remains present in the complete glossary projection.
+      An entry excluded from agent context remains present in the complete glossary
+      projection.
     }
   }
 }

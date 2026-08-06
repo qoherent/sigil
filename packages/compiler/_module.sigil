@@ -1,0 +1,177 @@
+@packages/core import { SigilCore, SigilContextRetrieval }
+@packages/compiler/src/proposal-workspace.sigil import { SigilProposalWorkspace }
+@packages/compiler/src/session.sigil import { SigilCompilationSession }
+@packages/compiler/src/session-store.sigil import { SigilCompilationSessionStore }
+@packages/compiler/src/profile.sigil import { SigilCompilationProfile }
+@packages/compiler/src/status.sigil import { SigilCompilationStatus }
+@packages/compiler/src/event-protocol.sigil import { SigilCompilationEventProtocol }
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+@packages/compiler/src/evaluation-registry.sigil import { SigilEvaluationSkillRegistry }
+@packages/compiler/src/evaluation.sigil import { SigilCompilationEvaluation }
+@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
+@packages/compiler/src/history-store.sigil import { SigilCompilationHistoryStore }
+@packages/compiler/src/report-export.sigil import { SigilCompilationReportExporter }
+@packages/compiler/src/session-factory.sigil import { SigilCompilationSessionFactory }
+
+component SigilCompiler {
+  goal {
+    Give designers and architects a compiler-like improvement loop for high-level
+    Sigil contracts through profile-scoped deterministic and agentic evaluation.
+
+    Orchestrate evidence-backed evaluation without modifying the selected
+    workspace, replacing human design approval, or moving semantic judgment into
+    SigilCore.
+  }
+
+  interface {
+    CompilationInvocation {
+      compile(workspacePath, target, profileName, CompilationOptions?) streams
+      CompilationEvent
+
+      completed evaluation returns CompilationReport and emits a completed terminal
+      event carrying the same authoritative report
+
+      completed, cancelled, and failed settlement requires its terminal event write;
+      terminal transport failure supersedes the pending outcome with COMPILER_FAILED
+      and returns no CompilationReport
+
+      cancellation rejects with COMPILER_CANCELLED, returns no CompilationReport, and
+      emits a cancelled terminal event whenever transport remains writable
+
+      host or protocol failure rejects with COMPILER_FAILED, returns no
+      CompilationReport, and emits a failed terminal event whenever transport remains
+      writable
+
+      an unknown target, profile, stage, or focus rejects with
+      COMPILER_INVALID_INVOCATION, returns no CompilationReport, and emits a failed
+      terminal event whenever transport remains writable
+
+      unavailable required evaluators reject with
+      COMPILER_PROFILE_EVALUATORS_REQUIRED, return no CompilationReport, and emit a
+      failed terminal event whenever transport remains writable
+    }
+
+    CompilationOptions {
+      requestedStage optionally selects one exact stage and its dependency closure;
+      focus optionally maps design to architecture-design or implementation to
+      current-code-compatibility and its dependency closure
+
+      requestedStage and focus are mutually exclusive; omitting both executes the
+      complete selected profile; an unknown or conflicting selection rejects with
+      COMPILER_INVALID_INVOCATION
+
+      disableHistory defaults to false and, when true, disables both
+      CompilationHistoryStore lookup and replacement
+
+      cancellationSignal is optional; reportExport optionally requests
+      CompilationReportExport
+
+      hostWarningSink is an optional callback receiving each non-authoritative
+      CompilationHistoryWarning; when omitted, compilation preserves settlement but
+      does not externally deliver those warnings
+    }
+
+    CompilationTarget {
+      CompilationTarget is a tagged union of component, file, location, and workspace
+
+      a component target contains kind component, an exact case-sensitive component
+      name, and an optional normalized workspace-relative declarationPath
+
+      a file target contains kind file and one normalized workspace-relative loaded
+      Sigil filePath
+
+      a location target contains kind location, one normalized workspace-relative
+      loaded Sigil filePath, and a source position
+
+      a workspace target contains kind workspace and no additional selector
+
+      name-only component selection must resolve exactly one loaded declaration;
+      declarationPath, filePath, and location targets must remain inside the selected
+      workspace and resolve through its loaded source selection
+
+      missing, ambiguous, excluded, outside-workspace, or identity-mismatched targets
+      reject with COMPILER_INVALID_INVOCATION before evaluation
+
+      a location target identifies one file-backed source position and resolves the
+      enclosing component or expand to one exact component identity
+
+      source positions use one-based physical lines and one-based UTF-16 code-unit
+      columns, with LF and CRLF each delimiting one physical line
+
+      component and expand ranges are start-inclusive and end-exclusive; their
+      opening and closing delimiter characters are inside the selectable range, while
+      the position immediately after the closing delimiter is outside
+
+      a file target resolves to every component declared by that file plus every
+      parent component represented by an expand in that file, deduplicated by exact
+      component identity
+
+      a workspace target resolves to every component declaration loaded by the
+      selected configured workspace and schedules that complete set through its
+      dependency graph
+
+      component evaluation requires inspection of matching expands, relevant
+      dependencies and importers, glossary context, and implementation evidence
+
+      SigilContextRetrieval selects that evidence once per exact component and
+      purpose before evaluator invocation; evaluators consume the selected graph and
+      aggregated context without independently determining authoritative membership
+    }
+  }
+}
+
+expand SigilCompiler {
+  constraints {
+    HumanAuthorityBoundary {
+      Green status is evidence that one exact source snapshot passed one exact
+      profile.
+
+      Green status does not approve the design, authorize implementation, or replace
+      an accountable human review.
+    }
+  }
+
+  decisions {
+    CompilerBoundary {
+      Decision: Place agent orchestration in a separate @qoherent/sigil-compiler
+      package and expose it through thin host façades.
+
+      Scope: Governs agentic Sigil compilation; excludes deterministic language
+      interpretation owned by SigilCore.
+
+      Trade-offs: Distribution gains another package and compatibility boundary.
+
+      Design issues addressed: Agentic evaluation must not weaken the deterministic
+      core contract.
+
+      Discarded alternatives: Making SigilCore or SigilCli directly own semantic
+      evaluation was rejected.
+
+      Consequences: CLI, editors, and future hosts share one compiler protocol
+      without duplicating orchestration.
+    }
+
+    HumanAuthorityBoundary {
+      Decision: Treat green as profile-scoped evidence rather than design approval or
+      implementation authorization.
+
+      Scope: Governs every compilation report and downstream workflow.
+
+      Consequences: Critical design handoff retains accountable human review.
+    }
+
+    InvalidCompilationInvocation {
+      Decision: Reject an unknown target, profile, stage, or focus through one stable
+      COMPILER_INVALID_INVOCATION caller error.
+
+      Scope: Governs compiler invocation validation; excludes evaluator availability,
+      cancellation, and host or protocol failure.
+
+      Trade-offs: One code covers several caller-correctable input categories.
+
+      Consequences: Hosts receive one predictable no-report failure contract without
+      multiplying public error identities.
+    }
+
+  }
+}

@@ -1,0 +1,309 @@
+@packages/compiler/src/evaluation-registry.sigil import { SigilEvaluationSkillRegistry }
+
+expand SigilEvaluationSkillRegistry {
+  logic {
+    EvaluationSkillPackage {
+      Discover each built-in evaluation skill from its SKILL.md and compile.json
+      package.
+
+      Validate manifest identity, version, inputs, dependencies, capabilities, rules,
+      implementation-evidence policy, and output contract before scheduling the
+      skill.
+
+      Supply the complete selected SKILL.md guidance to the adapter and bind accepted
+      findings to the manifest's declared rule set.
+    }
+
+    ImplementationEvidencePolicy {
+      Inject the selected skill's context-only or compare implementation-evidence
+      policy into every evaluator request.
+
+      Let context-only evaluators inspect implementation when it establishes a
+      repository, platform, version, environment, or feasibility constraint.
+
+      Let compare evaluators assess current implementation against desired Sigil.
+    }
+
+    UnifiedSemanticReadiness {
+      Preserve the existing ambiguity, contradiction, missing-observable-behavior,
+      and missing-rationale evaluation.
+
+      Also assess goal responsibility and boundary clarity, materially applicable
+      interface inputs, outputs, failures, side effects, lifecycle, ordering,
+      authorization, retry, and compatibility behavior.
+
+      Derive observable cases from material state and constraints and audit durable
+      rationale coverage for material choices across every semantic section.
+
+      Inspect the selected component, matching expands, direct dependencies,
+      dependency decisions, and affected importers before reporting alignment.
+
+      Run graph and selected context inspection when re-exposure, namespace
+      ambiguity, ownership, or a suspected cross-Sigil contradiction makes the
+      initially selected evidence insufficient.
+
+      Distinguish a suspected problem requiring more evidence from a confirmed
+      contradiction and report incomplete evidence rather than silently producing no
+      finding.
+    }
+
+    ArchitectureModularityAndGraphHarmony {
+      Evaluate the selected component as desired architecture through its matching
+      expands, direct dependencies, direct importers, relevant module indexes, and
+      accessible imported public namespace.
+
+      Use targeted graph and context inspection for relationships and traverse
+      farther only to confirm a dependency cycle, re-exposed concept, namespace
+      ambiguity, ownership chain, transitive coupling, or boundary-summary
+      disagreement.
+
+      Assess responsibility cohesion, state and policy ownership, interface size,
+      information hiding, coupling, dependency direction, reasons to change,
+      component and expand decomposition, contract-to-implementation guidance,
+      module-index scope, and imported namespace reuse.
+
+      Let architecture-design declare ARCHITECTURE_BOUNDARY, COMPONENT_DECOMPOSITION,
+      OWNERSHIP_BOUNDARY, DESIGN_COHESION, INTERFACE_BOUNDARY, COUPLING,
+      DEPENDENCY_DIRECTION, DEPENDENCY_CYCLE, MODULE_INDEX_SCOPE, and
+      IMPORTED_NAMESPACE_REUSE.
+
+      Distinguish public-contract contradictions owned by semantic-readiness from
+      ownership, dependency, decomposition, coupling, namespace, and change-locality
+      findings owned by architecture-design.
+    }
+  }
+
+  constraints {
+    EvaluationSkillPackage {
+      Hard-coded stage summaries do not replace packaged evaluation guidance.
+
+      Missing, malformed, incompatible, or capability-mismatched required skill
+      packages leave their stage incomplete.
+
+      Evaluation skills cannot grant mutation, network, approval, or implementation
+      authority.
+    }
+
+    ImplementationEvidencePolicy {
+      context-only stages treat selected Sigil as the desired contract and do not
+      report a finding solely because current implementation differs, is missing, or
+      lacks ownership annotations.
+
+      A context-only stage may use implementation evidence only when the resulting
+      finding exists independently in Sigil or repository evidence demonstrates a
+      genuine feasibility constraint rather than a different current structure.
+
+      current-code-compatibility is the compare stage and exclusively owns
+      implementation drift, missing implementation, ownership gaps, and current-code
+      conformance.
+
+      The manifest rule set remains an independent boundary and rejects diagnostic
+      codes not declared by the selected skill.
+    }
+
+    UnifiedSemanticReadiness {
+      Semantic readiness remains provisional evidence within the evaluated scope.
+
+      Detailed cohesion, coupling, dependency-direction, and boundary classification
+      belongs to architecture-design; semantic-readiness reports only the suspected
+      issue and evidence needed when architectural analysis is required.
+
+      Compatibility behavior in semantic-readiness means compatibility promised by
+      the public contract rather than compatibility with current code.
+
+      External standards research remains owned by standards-risk.
+
+      ReviewGate, design conversation, workflow selection, concept grouping, glossary
+      extraction, Sigil mutation, and implementation authorization remain outside
+      compiler semantic readiness.
+    }
+
+    ArchitectureModularityAndGraphHarmony {
+      Graph edges are evidence rather than findings by themselves.
+
+      Architecture findings require a concrete ownership, dependency, coupling,
+      decomposition, interface, namespace, or change-locality consequence.
+
+      Architecture evaluation is qualitative and does not assign numeric modularity
+      scores or report subjective style preferences.
+
+      Each ModuleIndexFile remains a concise architectural summary and intentional
+      namespace-assembly surface with one local boundary summary and imports for the
+      cohesive components intended for shorthand.
+
+      A module index matching expand retains only constraints and durable decisions
+      that genuinely govern the whole indexed boundary.
+
+      Material operational logic, mutable state, detailed lifecycle behavior, and
+      independently changing policy belong to narrower components or expands unless
+      they genuinely govern the whole indexed boundary.
+
+      The component and expand decomposition must be specific enough to guide
+      implementation into cohesive owning modules while an implementation index
+      assembles the public namespace rather than owning unrelated behavior or state.
+
+      Accessible semantically matching imported components and public concepts are
+      reused before local identities; similar terminology with materially different
+      responsibility does not force reuse.
+
+      Current implementation structure may demonstrate a genuine feasibility
+      constraint but is not authoritative desired architecture.
+    }
+  }
+
+  decisions {
+    EvaluationSkillLoading {
+      Decision: Make versioned compiler skill packages the authoritative evaluator
+      guidance and rule contract instead of hard-coded stage summaries.
+
+      Scope: Governs built-in agentic compiler stages and adapter prompts; excludes
+      host workflow skills and deterministic SigilCore validation.
+
+      Trade-offs: Packaging, versioning, and manifest validation become required
+      runtime responsibilities.
+
+      Design issues addressed: Published SKILL.md and compile.json files cannot
+      govern evaluation while runtime prompts ignore them.
+
+      Consequences: Compiler behavior can be reviewed, tested, and versioned through
+      the same package that declares its capabilities and findings.
+    }
+
+    UnifiedSemanticReadiness {
+      Decision: Extend the compiler's existing readiness evaluator with the
+      host-skill semantic checks that determine contract completeness while leaving
+      workflow governance and detailed architecture evaluation in their existing
+      owners.
+
+      Scope: Governs the semantic-readiness compiler stage; excludes standards-risk,
+      architecture-design classification, ReviewGate, authoring, and mutation.
+
+      Trade-offs: The readiness package becomes more detailed and requires broader
+      evidence fixtures.
+
+      Design issues addressed: Separate host and compiler readiness checklists can
+      produce materially different assessments from equivalent evidence.
+
+      Discarded alternatives: Replacing compiler readiness with the complete host
+      workflow and keeping two independent readiness authorities were rejected.
+
+      Consequences: The compiler can be compared with current host readiness without
+      duplicating approval or authoring workflows.
+
+      Revisit when: Equivalence evaluations show that a check belongs in
+      architecture-design or standards-risk instead.
+    }
+
+    ReadinessStageBoundary {
+      Decision: Let semantic-readiness identify semantic completeness and suspected
+      cross-boundary issues while architecture-design owns detailed modularity
+      classification.
+
+      Scope: Separates semantic-readiness from architecture-design and
+      standards-risk.
+
+      Trade-offs: Some suspected readiness findings require a later architecture
+      stage for final classification.
+
+      Consequences: The stages share evidence without issuing duplicate detailed
+      findings.
+    }
+
+    StageEvidenceAuthority {
+      Decision: Declare context-only or compare implementation-evidence authority in
+      every evaluation skill manifest and inject that authority into evaluator
+      instructions.
+
+      Scope: Governs implementation evidence across compiler evaluation stages;
+      excludes capability restrictions and current-code-compatibility rule details.
+
+      Trade-offs: Prompt and manifest validation can constrain diagnostic authority
+      but cannot deterministically prove that a model did not misclassify evidence
+      under a generic allowed rule.
+
+      Design issues addressed: Broad workspace traversal lets semantic and
+      architecture evaluators observe current code and mistakenly report intentional
+      design divergence as a defect.
+
+      Discarded alternatives: Restricting traversal and creating duplicate design
+      skills were rejected because repository facts remain useful evidence and the
+      existing stages already own distinct questions.
+
+      Consequences: Design evaluation can inspect implementation context without
+      treating ordinary mismatch as drift, while current-code-compatibility retains
+      exclusive comparison authority.
+    }
+
+    ArchitectureModularityAndGraphHarmony {
+      Decision: Align architecture-design with the host Sigil skill's qualitative
+      modularity, graph-harmony, ModuleIndexFile, and imported-namespace rules.
+
+      Scope: Governs architecture-design findings for selected components, related
+      contracts, graph neighborhoods, and module indexes; excludes public semantic
+      contradiction and current implementation conformance.
+
+      Trade-offs: Architecture evaluation requires broader targeted context and more
+      precise diagnostic rules.
+
+      Design issues addressed: Component-only cohesion checks cannot detect ownership
+      overlap, cycles, module-index overreach, namespace duplication, or disharmony
+      across related Sigil.
+
+      Consequences: Architecture findings identify concrete structural problems while
+      preserving the semantic-readiness and current-code-compatibility boundaries.
+    }
+  }
+
+  cases {
+    EvaluationSkillPackage {
+      A packaged semantic-readiness skill is loaded with its declared rules before
+      the first adapter invocation.
+
+      A finding with a rule absent from compile.json cannot affect compilation color.
+
+      A missing required SKILL.md leaves semantic-readiness incomplete.
+
+      A missing or unknown implementation-evidence policy leaves its required stage
+      incomplete.
+    }
+
+    UnifiedSemanticReadiness {
+      A clear contract with no material gap produces no semantic-readiness finding.
+
+      A material choice without reconstructable rationale produces a declared
+      rationale-gap finding.
+
+      A possible transitive contradiction causes direct graph and related-context
+      inspection before it can become a confirmed error.
+
+      An architectural cohesion concern is labeled suspected and delegated to
+      architecture-design rather than duplicated as a detailed readiness finding.
+
+      Current code that has not adopted a coherent desired contract produces no
+      semantic-readiness finding solely for that mismatch.
+    }
+
+    ArchitectureModularityAndGraphHarmony {
+      A component with unrelated state, policy, lifecycle, and reasons to change
+      produces a component-decomposition finding.
+
+      Two related contracts that claim the same mutable state produce an
+      ownership-boundary finding.
+
+      A dependency cycle confirmed through graph inspection produces a
+      dependency-cycle finding.
+
+      A ModuleIndexFile that owns narrower operational behavior produces a
+      module-index-scope finding.
+
+      Boundary-wide orchestration that cannot coherently belong to a narrower owner
+      remains valid in its module index.
+
+      A local public identity that duplicates an accessible semantically matching
+      imported identity produces an imported-namespace-reuse finding.
+
+      Current code organized differently from coherent desired Sigil produces no
+      architecture finding without a genuine feasibility constraint.
+    }
+  }
+}

@@ -1,0 +1,201 @@
+@packages/compiler/src/proposal-workspace.sigil import { SigilProposalWorkspace }
+
+component SigilCompilationSessionStore {
+  goal {
+    Persist and serialize local compilation sessions across independent CLI
+    processes without a daemon or selected-workspace mutation.
+
+    Keep session discovery, caller isolation, record durability, and operation
+    locking separate from proposal materialization and compilation evaluation.
+  }
+
+  interface {
+    CompilationSessionStorage {
+      create(sessionIdentity, sessionRecord) validates a version-1 SessionRecord,
+      atomically creates an owner-private session beneath the operating-system
+      temporary directory, and returns its verified record and exclusive SessionLease
+      or rejects with a stable invalid-session, ownership, state, or host-failure
+      code
+
+      open(sessionIdentity) validates the stored identity, ownership marker, and
+      version-1 SessionRecord and returns its verified record and exclusive
+      SessionLease, including when lifecycle state is expired, or rejects with a
+      stable invalid-session, ownership, busy, state, or host-failure code
+
+      commit(SessionLease, sessionRecord) validates the lease, storage envelope,
+      identity, ownership, version, and structural state, atomically replaces the
+      durable record, and retains the lease on success or failure; invalid or
+      released lease, envelope, version, identity, or state mismatch rejects with
+      COMPILER_WORKSPACE_STATE, unverifiable ownership rejects with
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, and write, sync, or atomic replacement
+      failure rejects with COMPILER_WORKSPACE_HOST_FAILURE
+
+      remove(SessionLease) removes only the verified session record and container
+      after proposal-workspace cleanup and releases the lease on success; rejection
+      preserves recovery evidence and retains the lease; invalid or released lease,
+      envelope, version, identity, or state mismatch rejects with
+      COMPILER_WORKSPACE_STATE, unverifiable ownership rejects with
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED, and verified removal failure rejects
+      with COMPILER_WORKSPACE_HOST_FAILURE
+    }
+
+    SessionRecord {
+      version 1 contains session identity, selected workspace identity, target,
+      profile, focus, capability contract, lifecycle state, expiry, base epoch,
+      generation identity, base and proposal fingerprints, opaque
+      ProposalWorkspacePersistedState, and latest completed report identity
+
+      contains no proposed source contents, credentials, temporary path, or hidden
+      evaluator reasoning
+    }
+
+    SessionLease {
+      represents one nonblocking exclusive operating-system file lock and the
+      verified session record for one CLI operation
+
+      release unlocks and closes its file handle idempotently
+    }
+  }
+}
+
+expand SigilCompilationSessionStore {
+  logic {
+    CompilationSessionStorage {
+      Resolve one private compiler-session parent through the host operating-system
+      temporary-directory facility and derive the child name from the validated
+      canonical session UUID.
+
+      Use one persistent lock file per session. Acquire a nonblocking exclusive
+      Deno.FsFile lock before reading or changing session state and return
+      COMPILER_SESSION_BUSY when another process owns the lock.
+
+      Return the verified record with the lease and leave proposal-workspace restore,
+      access release, and close ordering to SigilCompilationSession. Commit state
+      through write, sync, and atomic replacement while retaining the lease.
+
+      Let operating-system file locks release automatically when a process exits.
+      Never add a daemon, process registry, stale-lock timer, or bearer credential.
+    }
+  }
+
+  constraints {
+    CompilationSessionStorage {
+      The session parent, each session directory, lock file, record, marker, and
+      materialized proposal workspace are accessible only to the creating operating-
+      system user whenever the host can enforce owner-private storage.
+
+      A UUID version 4 session identity locates a record but never authorizes access.
+      Access additionally requires the creating operating-system user's filesystem
+      authority plus exact record and ownership-marker validation.
+
+      Reject symbolic links, unexpected file kinds, invalid outer record schemas,
+      identity mismatch, and ownership mismatch before returning a record or
+      performing storage cleanup. Leave ProposalWorkspacePersistedState compatibility
+      and record-to-materialization consistency to SigilProposalWorkspace.
+
+      Support exactly SessionRecord version 1. Reject an unsupported version or
+      malformed record with COMPILER_WORKSPACE_STATE, preserve its directory for
+      recovery, and perform no migration.
+
+      A rejected commit leaves the preceding valid record durable and retains the
+      SessionLease for explicit cleanup or release. No opener observes a partial
+      replacement.
+
+      Commit and remove verify storage ownership before classifying other failures.
+      Unverifiable ownership takes precedence as
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED. Invalid or released lease, storage-
+      envelope, schema, version, identity, or structural-state mismatch rejects with
+      COMPILER_WORKSPACE_STATE. Write, sync, atomic replacement, or verified removal
+      failure rejects with COMPILER_WORKSPACE_HOST_FAILURE. Every rejection retains
+      the lease and preserves recovery evidence.
+
+      Proposed Sigil contents remain only in the private materialized proposal
+      workspace. SessionRecord never duplicates them.
+
+      Failure to enforce the owner-private boundary or durable atomic update rejects
+      with COMPILER_WORKSPACE_HOST_FAILURE rather than broadening access.
+    }
+  }
+
+  decisions {
+    LocalSessionPersistence {
+      Decision: Persist compilation sessions in owner-private operating-system
+      temporary storage and coordinate independent CLI processes with advisory file
+      locks instead of a daemon.
+
+      Scope: Governs local session discovery, serialization, durability, and
+      operation exclusion; excludes proposal contents and compilation semantics.
+
+      Assumptions: The host exposes an owner-private temporary directory and releases
+      advisory locks when the holding process exits.
+
+      Trade-offs: Session continuity depends on local temporary storage and is not
+      portable between users or hosts.
+
+      Discarded alternatives: A background daemon, repository-local session state,
+      and UUID bearer authorization were rejected as unnecessary infrastructure,
+      workspace mutation, or an unsafe trust boundary.
+
+      Consequences: Separate CLI invocations can safely resume one local session
+      without retaining a process or treating the session identifier as a secret.
+    }
+
+    AtomicSessionRecordCommit {
+      Decision: Validate and atomically replace one versioned session record while an
+      explicit operation lease remains held.
+
+      Scope: Governs record compatibility, commit visibility, and lease disposition;
+      excludes proposal-workspace lifecycle and session settlement.
+
+      Trade-offs: Version mismatch fails closed and requires recovery or cleanup
+      rather than implicit migration.
+
+      Design issues addressed: Independent processes must never observe partial state
+      or infer whether a failed commit released serialization.
+
+      Consequences: A caller can coordinate cleanup after failure while later openers
+      observe either the preceding valid record or the complete replacement.
+    }
+  }
+
+  cases {
+    CompilationSessionStorage {
+      A second CLI process opening a currently locked session receives
+      COMPILER_SESSION_BUSY without waiting or changing state.
+
+      Process exit releases its advisory lock and permits a later command to open the
+      unchanged durable record.
+
+      Interruption before atomic replacement leaves the preceding valid record
+      observable. Successful replacement exposes the complete new record, and no
+      opener can observe a partial record.
+
+      Commit rejection preserves the preceding record and retains the lease until the
+      caller releases it or verified removal succeeds.
+
+      Commit or remove with unverifiable ownership rejects with
+      COMPILER_WORKSPACE_OWNERSHIP_UNVERIFIED even when another state defect is also
+      present and preserves recovery evidence.
+
+      Commit or remove with an invalid or released lease, malformed envelope,
+      unsupported version, identity mismatch, or structural-state mismatch rejects
+      with COMPILER_WORKSPACE_STATE and retains the lease when one remains held.
+
+      Commit write, sync, or atomic-replacement failure and verified removal failure
+      reject with COMPILER_WORKSPACE_HOST_FAILURE, retain the lease, and preserve
+      recovery evidence.
+
+      Opening an expired record returns its record and lease so close may perform
+      expiry cleanup; evaluate and refresh enforce expiry after open.
+
+      An unsupported record version rejects with COMPILER_WORKSPACE_STATE without
+      migration, proposal inspection, or automatic removal.
+
+      Another operating-system user, a symbolic-link substitution, or a mismatched
+      marker cannot open or delete the session.
+
+      A missing or malformed record rejects without inspecting or removing proposal
+      contents.
+    }
+  }
+}

@@ -4,28 +4,42 @@
 
 component SigilProjections {
   goal {
-    Provide small structured views over resolved Sigil data for CLI, LSP, renderer, and agent integrations.
+    Provide small structured views over resolved Sigil data for CLI, LSP, renderer,
+    and agent integrations.
 
-    Prevent hosts from reinterpreting raw declarations to obtain component, concept, and expansion views.
+    Prevent hosts from reinterpreting raw declarations to obtain component,
+    concept, and expansion views.
   }
 
   interface {
     ContractProjection {
-      componentContracts(resolvedWorkspace) returns one ComponentContractView per resolved component
+      componentContracts(resolvedWorkspace) returns one ComponentContractView per
+      resolved component
 
-      ComponentContractView exposes component name, source path, goal lines, interface lines, ungrouped interface lines, and interface concept blocks
+      ComponentContractView exposes component name, source path, goal lines,
+      interface lines, ungrouped interface lines, and interface concept blocks
     }
 
     ConceptNamespaceProjection {
-      conceptNamespaceFor(resolvedWorkspace, componentName) returns that component's contextual resolved concept namespace or undefined
+      conceptNamespaceFor(resolvedWorkspace, componentName) returns that component's
+      contextual resolved concept namespace or undefined
     }
 
     ExpansionProjection {
-      collectedExpansionFor(resolvedWorkspace, componentName) returns every matching expansion or undefined
+      collectedExpansionFor(resolvedWorkspace, componentName) returns every matching
+      expansion or undefined
     }
 
     AgentDependencyContext {
-      agentDependencyContextFor(resolvedWorkspace, componentName) returns the selected component, its collected expansions, direct dependency public contracts, direct dependency decision sections, and related source paths, or undefined
+      agentDependencyContextFor(resolvedWorkspace, componentName) returns the
+      selected component, its collected expansions, direct dependency public
+      contracts, direct dependency decision sections, and related source paths, or
+      undefined
+    }
+
+    AgentDependentContext {
+      agentDependentContextFor(resolvedWorkspace, componentName) returns direct
+      importing-file context for the selected component, or undefined
     }
   }
 }
@@ -37,11 +51,13 @@ expand SigilProjections {
 
       Return goal and interface semantic text without adding interpretation.
 
-      Preserve concept identifiers, grouped lines, source ranges, and ungrouped interface lines.
+      Preserve concept identifiers, grouped lines, source ranges, and ungrouped
+      interface lines.
     }
 
     ConceptNamespaceProjection {
-      Return the namespace built by SigilResolver without changing identity, visibility, origin, contextual occurrences, references, or source order.
+      Return the namespace built by SigilResolver without changing identity,
+      visibility, origin, contextual occurrences, references, or source order.
     }
 
     ExpansionProjection {
@@ -49,49 +65,105 @@ expand SigilProjections {
     }
 
     AgentDependencyContext {
-      Resolve direct dependencies from imports declared by the selected component source.
+      Resolve direct dependencies from imports declared by the selected component
+      source.
 
       Preserve deterministic import order and include each resolved dependency once.
 
       Project each direct dependency's public goal and interface.
 
-      Include only decisions sections from each direct dependency's collected expansions.
+      Include only decisions sections from each direct dependency's collected
+      expansions.
+    }
+
+    AgentDependentContext {
+      Resolve direct importing files from imported-component graph edges targeting
+      the selected component name and file.
+
+      Preserve deterministic ordering by importing file path and imported-component
+      edge identity.
+
+      Project public contracts declared in each importing file only as contextual
+      contracts.
     }
   }
 
   constraints {
     DependencyDirection {
-      Projections consume resolved workspace and graph-backed data without filesystem access, parsing, resolution, Markdown rendering, or agent ranking.
+      Projections consume SigilSemanticModel data resolved by SigilResolver and
+      graph-backed data built by SigilGraphBuilder.
+
+      They perform no filesystem access, parsing, resolution, Markdown rendering, or
+      agent ranking.
     }
 
     RecoverableResults {
-      Missing goal or interface sections project as empty collections while diagnostics remain in the resolved workspace.
+      Missing goal or interface sections project as empty collections while
+      diagnostics remain in the resolved workspace.
     }
 
     AgentDependencyContext {
-      Agent dependency context is out-of-band inspection and does not change language-level import visibility.
+      Agent dependency context is out-of-band inspection and does not change
+      language-level import visibility.
 
-      Dependency decisions provide rationale and do not become dependent-facing or transitively binding.
+      Dependency decisions provide rationale and do not become dependent-facing or
+      transitively binding.
 
-      Transitive dependency decisions and direct dependency state, logic, constraints, cases, and private concepts remain excluded by default.
+      Transitive dependency decisions and direct dependency state, logic,
+      constraints, cases, and private concepts remain excluded by default.
+    }
+
+    AgentDependentContext {
+      Dependent context is derived from resolved graph data without filesystem
+      access, parsing, or semantic inference.
+
+      A component declared in an importing file is contextual information and is not
+      a proven dependent.
+
+      Only direct importing files contribute dependent context.
     }
   }
 
   decisions {
     AgentDependencyContext {
-      Decision: Automatically include durable decisions from direct dependencies in agent context.
+      Decision: Automatically include durable decisions from direct dependencies in
+      agent context.
 
-      Scope: Applies to agent context projection for direct dependencies and excludes language-level imports, transitive dependencies, and other private operational sections.
+      Scope: Applies to agent context projection for direct dependencies and excludes
+      language-level imports, transitive dependencies, and other private operational
+      sections.
 
-      Trade-offs: Uses additional context and may include irrelevant rationale in exchange for reducing missed architectural intent and extra discovery calls.
+      Trade-offs: Uses additional context and may include irrelevant rationale in
+      exchange for reducing missed architectural intent and extra discovery calls.
 
-      Revisit when: Typical dependency decision sets become too large or evidence shows that automatic rationale reduces agent accuracy.
+      Revisit when: Typical dependency decision sets become too large or evidence
+      shows that automatic rationale reduces agent accuracy.
+    }
+
+    AgentDependentContext {
+      Decision: Derive dependent context from resolved imported-component graph edges
+      as file-level importing context.
+
+      Scope: Applies to optional agent context for selected components and excludes
+      resolver changes, graph generation changes, source reparsing, and inferred
+      component-level dependency claims.
+
+      Trade-offs: File-level context may include components that do not actually
+      depend on the selected component, but avoids unsupported semantic inference and
+      preserves deterministic structural behavior.
+
+      Consequences: Consumers must treat declared components in importing files as
+      contextual contracts only, not proven dependents.
+
+      Revisit when: Sigil represents component-level import ownership rather than
+      file-level import declarations.
     }
   }
 
   cases {
     ContractProjection {
-      A resolved component projects its public contract with declaration path and source-aware concept blocks.
+      A resolved component projects its public contract with declaration path and
+      source-aware concept blocks.
     }
 
     ConceptNamespaceProjection {
@@ -107,11 +179,30 @@ expand SigilProjections {
     }
 
     AgentDependencyContext {
-      Selecting a component includes the public contracts and decision sections of its direct dependencies.
+      Selecting a component includes the public contracts and decision sections of
+      its direct dependencies.
 
-      A dependency's decisions remain labeled as rationale rather than part of its public contract.
+      A dependency's decisions remain labeled as rationale rather than part of its
+      public contract.
 
       A transitive dependency contributes no decisions unless selected explicitly.
+    }
+
+    AgentDependentContext {
+      Selecting a component with importing files reports each direct importing file
+      once.
+
+      Duplicate import edges do not duplicate an importing file.
+
+      An importing file with multiple component declarations reports each declaration
+      as contextual contract information.
+
+      An importing file with no component declarations still reports the importing
+      file and import-edge information.
+
+      A component with no direct importing files reports an empty dependent context.
+
+      Import cycles do not make the selected component its own dependent.
     }
   }
 }

@@ -1,15 +1,29 @@
+import { COMPILATION_STAGE_IDS } from "@qoherent/sigil-compiler";
+
 export type CommandName =
   | "skill"
   | "init"
   | "version"
   | "parse"
   | "check"
+  | "fmt"
   | "glossary"
   | "graph"
   | "context"
+  | "retrieve"
+  | "compile"
   | "render";
-export type HelpTopic = "root" | CommandName | "skill-list" | "skill-install";
-export type OutputFormat = "json" | "text" | "markdown";
+export type HelpTopic =
+  | CommandName
+  | "root"
+  | "skill-list"
+  | "skill-install"
+  | "compile-session"
+  | "compile-session-start"
+  | "compile-session-evaluate"
+  | "compile-session-refresh"
+  | "compile-session-close";
+export type OutputFormat = "json" | "jsonl" | "text" | "markdown";
 export type SkillAgent = "codex" | "claude" | "opencode" | "pi";
 
 export interface GlobalOptions {
@@ -26,9 +40,13 @@ export type CommandRequest =
   | VersionRequest
   | ParseRequest
   | CheckRequest
+  | FmtRequest
   | GlossaryRequest
   | GraphRequest
   | ContextRequest
+  | RetrieveRequest
+  | CompileRequest
+  | CompileSessionRequest
   | RenderRequest;
 export interface SkillListRequest extends GlobalOptions {
   readonly command: "skill-list";
@@ -56,6 +74,12 @@ export interface ParseRequest extends GlobalOptions {
 export interface CheckRequest extends GlobalOptions {
   readonly command: "check";
   readonly path?: string;
+  readonly showLocations: boolean;
+}
+export interface FmtRequest extends GlobalOptions {
+  readonly command: "fmt";
+  readonly path?: string;
+  readonly check: boolean;
 }
 export interface GlossaryRequest extends GlobalOptions {
   readonly command: "glossary";
@@ -69,7 +93,40 @@ export interface ContextRequest extends GlobalOptions {
   readonly command: "context";
   readonly component?: string;
   readonly file?: string;
+  readonly includeDependents: boolean;
   readonly path?: string;
+}
+export interface RetrieveRequest extends GlobalOptions {
+  readonly command: "retrieve";
+  readonly component?: string;
+  readonly file?: string;
+  readonly purpose: "semantic" | "architecture" | "implementation";
+  readonly path?: string;
+}
+export interface CompileRequest extends GlobalOptions {
+  readonly command: "compile";
+  readonly stage?: string;
+  readonly focus?: "design" | "implementation";
+  readonly component?: string;
+  readonly file?: string;
+  readonly position?: {
+    readonly line: number;
+    readonly column: number;
+  };
+  readonly path?: string;
+  readonly profile?: string;
+  readonly noCache: boolean;
+  readonly output?: string;
+}
+export interface CompileSessionRequest extends GlobalOptions {
+  readonly command: "compile-session";
+  readonly action: "start" | "evaluate" | "refresh" | "close";
+  readonly sessionIdentity?: string;
+  readonly focus?: "design" | "implementation";
+  readonly component?: string;
+  readonly file?: string;
+  readonly path?: string;
+  readonly profile?: string;
 }
 export interface RenderRequest extends GlobalOptions {
   readonly command: "render";
@@ -90,7 +147,10 @@ export type ParseArgsResult = {
   readonly kind: "cli-version";
 } | UsageError;
 
-// @sigil implements packages/cli/#module.sigil::SigilCli::CliInvocation interface,logic,cases
+/*
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CompilationFacade interface,logic,constraints,cases
+ */
 export function parseArgs(argv: readonly string[]): ParseArgsResult {
   if (argv[0] === "--help") return { kind: "help", helpTopic: "root" };
   if (argv[0] === "--version") return { kind: "cli-version" };
@@ -100,7 +160,7 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
     return usage(
       commandName
         ? `Unknown command "${commandName}".`
-        : "Expected command: skill, init, version, parse, check, glossary, graph, context, or render.",
+        : "Expected command: skill, init, version, parse, check, fmt, glossary, graph, context, retrieve, compile, or render.",
       "root",
     );
   }
@@ -125,7 +185,14 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       );
     }
   } else if (rest.includes("--help")) {
-    return { kind: "help", helpTopic: commandName };
+    return {
+      kind: "help",
+      helpTopic: commandName === "compile" && rest[0] === "session"
+        ? rest[1] && ["start", "evaluate", "refresh", "close"].includes(rest[1])
+          ? `compile-session-${rest[1]}` as HelpTopic
+          : "compile-session"
+        : commandName,
+    };
   }
 
   const positional: string[] = [];
@@ -135,11 +202,20 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   let quiet = false;
   let component: string | undefined;
   let file: string | undefined;
+  let position: CompileRequest["position"];
+  let includeDependents = false;
   let name: string | undefined;
   const include: string[] = [];
   const exclude: string[] = [];
   let project = false;
   let agent: SkillAgent | "all" | undefined;
+  let showLocations = false;
+  let profile: string | undefined;
+  let focus: CompileRequest["focus"];
+  let noCache = false;
+  let output: string | undefined;
+  let check = false;
+  let purpose: RetrieveRequest["purpose"] | undefined;
 
   for (let index = 0; index < rest.length; index++) {
     const arg = rest[index];
@@ -174,6 +250,9 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       case "--quiet":
         quiet = true;
         break;
+      case "--show-locations":
+        showLocations = true;
+        break;
       case "--project":
         project = true;
         break;
@@ -199,6 +278,67 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
         const value = take(arg);
         if (typeof value !== "string") return value;
         file = value;
+        break;
+      }
+      case "--position": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        const match = /^([1-9]\d*):([1-9]\d*)$/.exec(value);
+        if (!match) {
+          return usage(
+            "--position must be a one-based line:column pair.",
+            commandHelpTopic,
+          );
+        }
+        position = { line: Number(match[1]), column: Number(match[2]) };
+        break;
+      }
+      case "--profile": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        profile = value;
+        break;
+      }
+      case "--focus": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        if (value !== "design" && value !== "implementation") {
+          return usage(
+            "--focus must be design or implementation.",
+            commandHelpTopic,
+          );
+        }
+        focus = value;
+        break;
+      }
+      case "--no-cache":
+        noCache = true;
+        break;
+      case "--check":
+        check = true;
+        break;
+      case "--output": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        output = value;
+        break;
+      }
+      case "--include-dependents":
+        includeDependents = true;
+        break;
+      case "--purpose": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        if (
+          value !== "semantic" && value !== "architecture" &&
+          value !== "implementation"
+        ) {
+          return usage(
+            "--purpose must be semantic, architecture, or implementation.",
+            commandHelpTopic,
+          );
+        }
+        purpose = value;
         break;
       }
       case "--name": {
@@ -228,9 +368,31 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   }
 
   const base = { root, format, pretty, quiet };
-  if (commandName !== "context" && (component || file)) {
+  if (commandName !== "fmt" && check) {
+    return usage(`${commandName} does not accept --check.`, commandHelpTopic);
+  }
+  if (
+    commandName !== "context" && commandName !== "retrieve" &&
+    commandName !== "compile" &&
+    (component || file || position)
+  ) {
     return usage(
-      `${commandName} does not accept --component or --file.`,
+      `${commandName} does not accept --component, --file, or --position.`,
+      commandHelpTopic,
+    );
+  }
+  if (commandName !== "context" && includeDependents) {
+    return usage(
+      `${commandName} does not accept --include-dependents.`,
+      commandHelpTopic,
+    );
+  }
+  if (commandName !== "retrieve" && purpose) {
+    return usage(`${commandName} does not accept --purpose.`, commandHelpTopic);
+  }
+  if (commandName !== "compile" && position) {
+    return usage(
+      `${commandName} does not accept --position.`,
       commandHelpTopic,
     );
   }
@@ -243,6 +405,21 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   if (commandName !== "skill" && (project || agent)) {
     return usage(
       `${commandName} does not accept skill options.`,
+      commandHelpTopic,
+    );
+  }
+  if (commandName !== "check" && showLocations) {
+    return usage(
+      `${commandName} does not accept --show-locations.`,
+      commandHelpTopic,
+    );
+  }
+  if (
+    commandName !== "compile" &&
+    (profile || focus || noCache || output || format === "jsonl")
+  ) {
+    return usage(
+      `${commandName} does not accept compile options.`,
       commandHelpTopic,
     );
   }
@@ -330,10 +507,17 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
     };
   }
   if (
-    commandName === "check" || commandName === "glossary" ||
+    commandName === "check" || commandName === "fmt" ||
+    commandName === "glossary" ||
     commandName === "graph" ||
     commandName === "render"
   ) {
+    if (
+      commandName === "fmt" && format &&
+      !["json", "text"].includes(format)
+    ) {
+      return usage("--format must be text or json for fmt.", "fmt");
+    }
     if (positional.length > 1) {
       return usage(
         `${commandName} accepts at most one path.`,
@@ -342,11 +526,186 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
     }
     return {
       kind: "ok",
-      request: { command: commandName, path: positional[0], ...base } as
+      request: {
+        command: commandName,
+        path: positional[0],
+        ...(commandName === "fmt" ? { check } : {}),
+        ...base,
+        ...(commandName === "check" ? { showLocations } : {}),
+      } as
         | CheckRequest
+        | FmtRequest
         | GlossaryRequest
         | GraphRequest
         | RenderRequest,
+    };
+  }
+  if (commandName === "retrieve") {
+    if (positional.length > 1) {
+      return usage("retrieve accepts at most one workspace path.", "retrieve");
+    }
+    if (!purpose) {
+      return usage(
+        "retrieve requires --purpose semantic, architecture, or implementation.",
+        "retrieve",
+      );
+    }
+    if (!!component === !!file) {
+      return usage(
+        "retrieve requires exactly one of --component or --file.",
+        "retrieve",
+      );
+    }
+    if (format && !["json", "markdown"].includes(format)) {
+      return usage(
+        "--format must be json or markdown for retrieve.",
+        "retrieve",
+      );
+    }
+    return {
+      kind: "ok",
+      request: {
+        command: "retrieve",
+        component,
+        file,
+        purpose,
+        path: positional[0],
+        ...base,
+      },
+    };
+  }
+  if (commandName === "compile") {
+    if (positional[0] === "session") {
+      const action = positional[1];
+      if (
+        !action || !["start", "evaluate", "refresh", "close"].includes(action)
+      ) {
+        return usage(
+          "compile session requires start, evaluate, refresh, or close.",
+          "compile-session",
+        );
+      }
+      const operand = positional[2];
+      if (positional.length > 3) {
+        return usage(
+          `compile session ${action} accepts exactly one operand.`,
+          `compile-session-${action}` as HelpTopic,
+        );
+      }
+      if (action === "start") {
+        if (!focus) {
+          return usage(
+            "compile session start requires --focus design or implementation.",
+            "compile-session-start",
+          );
+        }
+        if (component && file) {
+          return usage(
+            "compile session start accepts only one of --component or --file.",
+            "compile-session-start",
+          );
+        }
+        if (position || noCache || output || format === "jsonl") {
+          return usage(
+            "compile session start does not accept --position, --no-cache, --output, or jsonl.",
+            "compile-session-start",
+          );
+        }
+        return {
+          kind: "ok",
+          request: {
+            command: "compile-session",
+            action,
+            path: operand,
+            focus,
+            component,
+            file,
+            profile,
+            ...base,
+          },
+        };
+      }
+      if (!operand) {
+        return usage(
+          `compile session ${action} requires a session identifier.`,
+          `compile-session-${action}` as HelpTopic,
+        );
+      }
+      if (
+        component || file || position || profile || focus || noCache || output
+      ) {
+        return usage(
+          `compile session ${action} does not accept compilation selection options.`,
+          `compile-session-${action}` as HelpTopic,
+        );
+      }
+      if (action !== "evaluate" && format === "jsonl") {
+        return usage(
+          `compile session ${action} does not accept jsonl.`,
+          `compile-session-${action}` as HelpTopic,
+        );
+      }
+      return {
+        kind: "ok",
+        request: {
+          command: "compile-session",
+          action: action as "evaluate" | "refresh" | "close",
+          sessionIdentity: operand,
+          ...base,
+        },
+      };
+    }
+    const stage = COMPILATION_STAGE_IDS.includes(
+        positional[0] as typeof COMPILATION_STAGE_IDS[number],
+      )
+      ? positional[0]
+      : undefined;
+    const paths = stage ? positional.slice(1) : positional;
+    if (stage && focus) {
+      return usage(
+        "compile accepts either a positional stage or --focus, not both.",
+        "compile",
+      );
+    }
+    if (paths.length > 1) {
+      return usage(
+        "compile accepts an optional stage followed by at most one path.",
+        "compile",
+      );
+    }
+    if (component && file) {
+      return usage(
+        "compile accepts only one of --component or --file.",
+        "compile",
+      );
+    }
+    if (position && !file) {
+      return usage("compile accepts --position only with --file.", "compile");
+    }
+    if (position && component) {
+      return usage(
+        "compile does not accept --position with --component.",
+        "compile",
+      );
+    }
+    if (format && format !== "jsonl" && format !== "text") {
+      return usage("--format must be text or jsonl for compile.", "compile");
+    }
+    return {
+      kind: "ok",
+      request: {
+        command: "compile",
+        stage,
+        focus,
+        component,
+        file,
+        position,
+        path: paths[0],
+        profile,
+        noCache,
+        output,
+        ...base,
+      },
     };
   }
   if (positional.length > 1) {
@@ -361,12 +720,19 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   if (!component && !file) {
     return usage("context requires --component or --file.", "context");
   }
+  if (includeDependents && !component) {
+    return usage(
+      "context accepts --include-dependents only with --component.",
+      "context",
+    );
+  }
   return {
     kind: "ok",
     request: {
       command: "context",
       component,
       file,
+      includeDependents,
       path: positional[0],
       ...base,
     },
@@ -376,8 +742,11 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
 function isCommand(value: string | undefined): value is CommandName {
   return value === "skill" || value === "init" || value === "version" ||
     value === "parse" ||
-    value === "check" || value === "glossary" || value === "graph" ||
+    value === "check" || value === "fmt" || value === "glossary" ||
+    value === "graph" ||
     value === "context" ||
+    value === "retrieve" ||
+    value === "compile" ||
     value === "render";
 }
 function isSkillAgent(value: string): value is SkillAgent {
@@ -385,7 +754,8 @@ function isSkillAgent(value: string): value is SkillAgent {
     value === "pi";
 }
 function isFormat(value: string): value is OutputFormat {
-  return value === "json" || value === "text" || value === "markdown";
+  return value === "json" || value === "jsonl" || value === "text" ||
+    value === "markdown";
 }
 function helpTopicFor(
   commandName: CommandName,

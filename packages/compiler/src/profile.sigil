@@ -1,0 +1,149 @@
+component SigilCompilationProfile {
+  goal {
+    Own built-in and project compiler profiles, evaluator selection, stage
+    dependency closure, budgets, and reproducible effective-profile identity.
+  }
+
+  interface {
+    CompilationProfile {
+      resolve(name, toolsCompile, requestedStage?) returns ordered stages,
+      evaluators, skills, capabilities, execution budgets, resource limits, and an
+      effective-profile fingerprint or rejects an unknown profile or stage with
+      COMPILER_INVALID_INVOCATION and an unavailable required evaluator with a stable
+      profile failure
+
+      standard and critical-system are built in; project profiles may configure or
+      omit stages subject to dependency rules
+    }
+  }
+}
+
+expand SigilCompilationProfile {
+  logic {
+    CompilationProfile {
+      Merge built-in defaults with the selected tools.compile project profile.
+
+      Resolve execution budgets from tools.compile.budgets and request/session limits
+      from tools.compile.limits. Omitted fields use the compiler's
+      backward-compatible defaults.
+
+      Treat the singular adapter as the backward-compatible default evaluator and
+      select configured evaluator identities through evaluatorIds.
+
+      Validate only selected evaluator identities. Resolve requestedStage to its
+      complete transitive dependency closure without enabling unrelated stages.
+
+      Fingerprint effective stages, skills, adapters, models, capabilities, execution
+      budgets, resource limits, disabled stages, and relevant versions.
+    }
+  }
+
+  constraints {
+    ProfileConfiguration {
+      ConfigFile tools.compile contains no credentials or secret values.
+
+      tools.compile.budgets configures execution values and limits configures request
+      sizes and proposal-session retention. Every configured value is a positive safe
+      integer.
+
+      Evaluator identities are unique; evaluatorIds contains no duplicates and
+      references configured evaluators.
+
+      Unselected evaluator configuration does not affect workspace loading or another
+      profile.
+    }
+
+    StageConfiguration {
+      Profiles configure stages subject to declared dependencies. Disabled stages are
+      not required for green and remain visible in the report and fingerprint.
+
+      Stage-scoped compilation cannot bypass dependencies or select a disabled stage.
+    }
+
+    BuiltInProfiles {
+      standard requires deterministic foundation and configured design evaluation
+      through one evaluator.
+
+      critical-system adds standards and risk evaluation, at least two distinct
+      available evaluator identities, and material-disagreement detection.
+
+      Invalid critical-system evaluator configuration fails only that selected run.
+    }
+  }
+
+  decisions {
+    ConfigurableCompilationResources {
+      Decision: Make execution budgets, evaluation request limits, and
+      proposal-session retention explicit tools.compile configuration with
+      backward-compatible omitted-field defaults.
+
+      Scope: Governs compiler profile resolution, adapter request validation, and
+      compilation-session expiry; excludes provider credentials and semantic
+      evaluation policy.
+
+      Trade-offs: Workspaces can size compilation for their available resources,
+      while effective profiles retain the resolved values for auditability and
+      reproducibility.
+
+      Design issues addressed: Hidden source-level constants made resource policy
+      vary without a visible workspace contract and prevented operators from
+      adjusting safe limits for larger repositories.
+
+      Consequences: Configuration changes alter the effective-profile fingerprint and
+      can change acceptance of large requests, evaluator execution, and session
+      retention.
+    }
+
+    ProfileScopedCompilation {
+      Decision: Compute status against an exact named profile and environment
+      fingerprint whose stages are configurable.
+
+      Scope: Governs built-in and project profiles.
+
+      Trade-offs: Green is never an unconditional property of a Sigil file.
+
+      Consequences: Evaluation depth remains configurable and auditable.
+    }
+
+    StageScopedCompilation {
+      Decision: Invoke one named stage with its complete dependency closure and no
+      unrelated stages.
+
+      Scope: Governs focused compiler runs and effective-profile identity.
+
+      Trade-offs: Stage identifiers are reserved compile operands.
+
+      Consequences: Readiness evaluation avoids unrelated stage cost and meaning.
+    }
+
+    CriticalEvaluatorRedundancy {
+      Decision: Require at least two configured evaluator identities for every
+      critical-system agentic stage and detect material disagreement.
+
+      Scope: Governs critical-system profile validation and evaluator selection.
+
+      Trade-offs: Critical runs cost more and may remain non-green on disagreement.
+
+      Discarded alternatives: One evaluator or an extra stage was rejected as false
+      redundancy.
+
+      Consequences: Critical status records independent completion and disagreement.
+    }
+  }
+
+  cases {
+    StageConfiguration {
+      A disabled optional stage can still permit green and is recorded.
+
+      Requesting semantic-readiness executes deterministic-foundation first and no
+      unrelated later stage.
+    }
+
+    BuiltInProfiles {
+      Missing critical evaluator configuration does not prevent standard compilation.
+
+      Selecting critical-system with fewer than two evaluators rejects with
+      COMPILER_PROFILE_EVALUATORS_REQUIRED before agentic evaluation.
+    }
+  }
+}

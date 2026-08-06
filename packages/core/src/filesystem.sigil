@@ -4,7 +4,8 @@ component SigilFileSystem {
   goal {
     Isolate deterministic core behavior from host-specific filesystem APIs.
 
-    Provide the asynchronous filesystem port and deterministic in-memory implementation used by core hosts and tests.
+    Provide the asynchronous filesystem port and deterministic in-memory
+    implementation used by core hosts and tests.
   }
 
   interface {
@@ -19,7 +20,8 @@ component SigilFileSystem {
     }
 
     InMemoryFileSystem {
-      InMemorySigilFileSystem(files) supplies normalized deterministic file behavior from a record or map
+      InMemorySigilFileSystem(files) supplies normalized deterministic file behavior
+      from a record or map
     }
   }
 }
@@ -37,9 +39,12 @@ expand SigilFileSystem {
 
   constraints {
     FileSystemPort {
+      SigilFileSystem supplies host-neutral access for SigilSemanticModel data.
+
       Parsing and resolution do not access host filesystems directly.
 
-      Filesystem implementations preserve host failures rather than translating them into Sigil diagnostics.
+      Filesystem implementations preserve host failures rather than translating them
+      into Sigil diagnostics.
     }
 
     InMemoryFileSystem {
@@ -49,7 +54,8 @@ expand SigilFileSystem {
 
   cases {
     FileSystemPort {
-      A host filesystem and InMemorySigilFileSystem can load the same workspace through SigilWorkspaceLoader.
+      A host filesystem and InMemorySigilFileSystem can load the same workspace
+      through SigilWorkspaceLoader.
     }
 
     InMemoryFileSystem {

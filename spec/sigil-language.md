@@ -1,8 +1,8 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.5.0
+**Sigil version:** 0.7.0
 **Status:** Accepted
-**Released:** 2026-07-24
+**Released:** 2026-08-04
 
 Sigil is a lightweight, rationale-oriented modeling language for software systems.
 It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
@@ -35,12 +35,15 @@ It can describe programming abstractions, user-facing modules, infrastructure bo
 
 Sigil source files use the `.sigil` extension.
 
-The directory-index filename is `#module.sigil`.
-It may appear in any included directory and defines the component names that
-resolve through directory-import shorthand for that directory.
+The directory-index filename is `_module.sigil`.
+It may appear in any directory where the file itself is selected by the
+workspace configuration and defines the component names that resolve through
+directory-import shorthand for that directory.
 It does not grant or restrict component visibility.
-Every `#module.sigil` must declare at least one local component; an imports-only
+Every `_module.sigil` must declare at least one local component; an imports-only
 index is invalid.
+The legacy `#module.sigil` filename is an ordinary Sigil source and is selected
+only by an explicit file import.
 
 A strict JSON `.sigil/config.json` is required at the workspace root.
 It selects the Sigil version and defines workspace file discovery. The config
@@ -63,26 +66,30 @@ export or re-export form.
 
 At configured workspace boundaries, the Brownfield workflow maintains ordinary
 project-summary components in the workspace-root and declared-member
-`#module.sigil` files. Those summaries use normal component and expand semantics;
+`_module.sigil` files. Those summaries use normal component and expand semantics;
 they have no special parser or resolver status. Internal directories may use
-`#module.sigil` as an index without a project summary, but the index still
+`_module.sigil` as an index without a project summary, but the index still
 declares at least one local component.
 
 ### Module indexes
 
-A directory import resolves to `#module.sigil` in the target directory. Its
+A directory import resolves to `_module.sigil` in the target directory. Its
 directory-import surface consists of:
 
-- components declared directly in that `#module.sigil`;
+- components declared directly in that `_module.sigil`;
 - component names successfully resolved by direct imports in that file.
 
-An imports-only `#module.sigil` produces
-`SIGIL_MODULE_WITHOUT_COMPONENT` while retaining its partial parsed document.
+An imports-only `_module.sigil` produces
+`SIGIL_MODULE_WITHOUT_COMPONENT` while retaining independently resolved names
+in its partial directory-import surface.
 
 Other files beneath the directory, unnamed dependencies of indexed components,
 and components imported only by those indexed files are not added implicitly.
 They remain public through explicit file imports. Explicit chains of module
-indexes may make the same component resolvable through several directory paths.
+indexes converge to a least fixed point, including through cycles. Contributions
+of the same declaration identity deduplicate. A name contributed by distinct
+declarations is absent from the exposed surface while unaffected names remain
+available.
 
 ### Workspace and project vocabulary
 
@@ -173,9 +180,9 @@ The `@` prefix resolves from the Sigil workspace root.
 
 Tools discover the workspace by walking upward from the current file or command target and selecting the nearest ancestor `.sigil/config.json` whose root is excluded by every higher configured workspace.
 An explicit root must contain `.sigil/config.json` directly.
-Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `#module.sigil` discovery.
+Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `_module.sigil` discovery.
 
-A directory import resolves to `#module.sigil` in the target directory.
+A directory import resolves to `_module.sigil` in the target directory.
 
 ```sigil
 @packages/cli import { SigilCli }
@@ -184,11 +191,11 @@ A directory import resolves to `#module.sigil` in the target directory.
 Given this file layout:
 
 ```text
-packages/cli/#module.sigil
+packages/cli/_module.sigil
 packages/cli/deno.json
 ```
 
-`@packages/cli import { SigilCli }` resolves through its `#module.sigil`.
+`@packages/cli import { SigilCli }` resolves through its `_module.sigil`.
 The directory does not need to be declared in `workspace.members`; the target
 module index only needs to be included in the selected workspace.
 
@@ -216,6 +223,24 @@ when the provider is explicitly selected.
 An imported name must resolve to a `component Name` in the explicit source or
 the directory index's local declarations and direct imports.
 An import that resolves only to `expand Name` without `component Name` is unresolved.
+
+Import paths are normalized lexically from the workspace root. Backslashes become
+slashes, repeated slashes and `.` segments collapse, and an internal `..` removes
+one preceding segment. A leading or excess `..` is outside-workspace traversal and
+remains unresolved. A normalized path ending in `.sigil` selects that exact file;
+other paths select the directory's `_module.sigil`.
+
+Component names are unique across the workspace. When the same exact name is
+declared more than once, every declaration is retained and diagnosed, but that
+name binds no import, matching expand, or concept context. Each imported name in
+an import list is resolved and checked for use independently, including repeated
+entries.
+
+Missing paths are diagnosed in source and import-declaration order before missing
+names. Import cycles are then discovered depth first in source-discovery and
+import-edge order. Every edge returning to an active source produces one
+`SIGIL_IMPORT_CYCLE` diagnostic over the closing import declaration while resolved
+edges, names, and declarations outside the cycle remain available.
 
 ## 5. Components
 
@@ -358,7 +383,8 @@ component BookingCalendarView {
 
 ### `state`
 
-`state` describes meaningful configurations that persist or change during execution.
+`state` describes meaningful runtime or domain data, configurations, modes, and
+conditions that exist or change during execution.
 
 It is not storage layout.
 Database schema belongs in `state` only when the schema itself carries domain meaning.
@@ -455,7 +481,7 @@ interface {
 }
 ```
 
-`SessionLifecycle` identifies the concept described by the semantic lines in
+`SessionLifecycle` identifies the concept described by the semantic units in
 the block. A block may represent a single concept with many uses throughout the
 contract or group several lines that are reused together.
 
@@ -490,10 +516,13 @@ collected expansion details.
 
 Imported public concepts enter the consumer's namespace as bare identifiers.
 Sigil deliberately provides no dotted notation, aliases, or local shadowing.
-Reusing an imported identifier keeps the concept's originating identity while
-the new semantic lines remain contextual to the consumer. Reusing it in the
-consumer's `interface` re-exposes that same identity to downstream importers.
-Consumer occurrences never flow backward into the provider.
+Reusing an imported identifier keeps the concept's originating identity only
+when the identifier is reused in a matching `expand`. Reusing it in that
+expand's `interface` re-exposes the same identity to downstream importers. A
+same-named concept declared directly on the importing `component` remains a
+distinct local identity and is therefore ambiguous with the imported identity;
+Sigil provides neither qualification nor shadowing. Consumer occurrences never
+flow backward into the provider.
 
 Known identifiers used as whole words inside semantic content resolve as
 concept references for highlighting and navigation. Unknown words remain
@@ -509,15 +538,17 @@ Concept diagnostics include:
 - `SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER` for case-insensitive namespace collisions;
 - `SIGIL_CONCEPT_IDENTIFIER_STYLE` as an informational formatting suggestion.
 
-## 9. Semantic Lines
+## 9. Semantic Units
 
-Inside each section, each non-empty line is a semantic unit.
+Inside each section, each blank-line-delimited prose paragraph is one semantic
+unit. Adjacent physical prose lines belong to the same semantic unit and
+normalize to one space between their content. Rewrapping those physical lines
+does not change semantic identity.
 
-A concept-block header identifies and groups semantic lines but is not itself a
-semantic line. Each non-empty line inside the block remains a semantic unit and
-records its concept identifier.
+A concept-block header identifies and groups semantic units but is not itself a
+semantic unit. Each paragraph inside the block records the concept identifier.
 
-A semantic line is a:
+A semantic unit is a:
 
 - source unit;
 - interpretation unit;
@@ -526,14 +557,12 @@ A semantic line is a:
 - possible anchor target.
 
 Blank lines are allowed for readability.
-Blank lines do not create semantic units.
+Blank lines terminate semantic units and do not create semantic units.
 
 Separate distinct prose-level semantic ideas with blank lines in every section.
-Lines belonging to one compact free-form construct, such as a type shape or an
-ASCII diagram, may remain adjacent when separation would reduce readability.
-
-Prefer one distinct idea per line.
-Avoid burying multiple decisions in a paragraph when those decisions may need separate review, diffing, or source mapping.
+Prefer one distinct idea per semantic unit. Avoid burying multiple decisions in
+a paragraph when those decisions may need separate review, diffing, or source
+mapping.
 
 Section bodies may use clear free-form notation, including:
 
@@ -547,8 +576,33 @@ Section bodies may use clear free-form notation, including:
 - domain notation;
 - ASCII sketches.
 
-The notation should remain coherent inside a project.
-ASCII content should avoid unmatched `{` or `}` characters because the current parser uses braces to track section boundaries.
+The notation should remain coherent inside a project. Multiline code,
+configuration, data, diagrams, or other content that must preserve physical
+layout belongs in an attached literal block:
+
+````sigil
+Configuration is represented by this JSON:
+```json
+{
+  "enabled": true
+}
+```
+````
+
+Three or more backticks open a literal block. The opener may be followed by one
+optional type matching `[A-Za-z][A-Za-z0-9_+.-]*`. The closing fence contains
+at least as many backticks as the opener and no other content.
+
+The opening fence must directly follow its introducing prose with no blank line.
+The prose and attached literal block form one semantic unit. Literal bodies
+preserve blank lines, braces, apparent Sigil syntax, and relative indentation.
+They do not create component, concept, import, glossary, ownership, or other
+semantic references.
+
+Ordinary prose is limited to 79 content characters per physical line. Leading
+indentation does not count. Structural lines, fence delimiters, and literal
+bodies are excluded. Canonical wrapping occurs only at whitespace boundaries.
+An indivisible prose token longer than 79 content characters is unformattable.
 
 ## 10. Validity Rules
 
@@ -556,10 +610,13 @@ A valid Sigil source file may contain one or more top-level forms.
 
 An `import` must specify a path and one or more names.
 
-An import path without a `.sigil` filename resolves to `#module.sigil` inside
-the target directory.
+An import path without a `.sigil` filename resolves to `_module.sigil` inside
+the target directory when that file is selected by workspace configuration.
 
 An import path with a `.sigil` filename resolves to that exact file.
+
+The legacy `#module.sigil` basename has no directory-index behavior and may be
+selected only through such an explicit file import.
 
 Import paths resolve from the Sigil workspace root.
 
@@ -568,7 +625,22 @@ Missing or unexcluded nested configs are invalid, and an explicit root must cont
 
 An imported name must resolve to a matching `component Name`.
 
-A `#module.sigil` must declare at least one local component.
+Each resolved imported name must also have at least one qualifying use in the
+source that declares it. The following count independently for each name:
+
+- an exact-case component-name reference in `interface`, `state`, `logic`,
+  `constraints`, or `cases`;
+- an exact-case reference to one of the imported component's public concepts in
+  those sections;
+- a local `expand` of the imported component;
+- direct exposure by a `_module.sigil` directory surface.
+
+Mentions in `goal`, `decisions`, literal bodies, comments, annotations, other
+source files, differently cased words, or identifier substrings do not count.
+Each resolved unused name produces `SIGIL_UNUSED_IMPORT`. Unresolved or
+ambiguous names do not also produce that diagnostic.
+
+A `_module.sigil` must declare at least one local component.
 
 A `component` must contain `goal` and `interface`.
 
@@ -581,7 +653,7 @@ Section names are fixed.
 
 Section bodies are free-form text.
 
-Concept blocks must use a valid identifier, contain at least one semantic line,
+Concept blocks must use a valid identifier, contain at least one semantic unit,
 remain unnested, and be unambiguous across the component's accessible namespace.
 
 The conventional section order is recommended but not semantically required.
@@ -593,7 +665,8 @@ Implementation-hiding rules and forbidden internal access belong in
 
 Architecture, stack, ownership, and dependency decisions belong in `constraints`.
 
-Runtime configurations, lifecycle states, and meaningful domain modes belong in `state`.
+Meaningful runtime or domain data, configurations, lifecycle states, modes, and
+conditions belong in `state`.
 
 Behavior, transitions, algorithms, transformations, and decision paths belong
 in `logic`.
@@ -605,11 +678,14 @@ Examples, acceptance criteria, and externally observable edge cases belong in `c
 
 ## 11. Recommended Style
 
-Write concise, reviewable lines.
+Write concise, reviewable semantic units.
 
-Keep each non-empty line focused on one idea.
+Keep each blank-line-delimited paragraph focused on one idea.
 
 Use blank lines between distinct prose-level ideas without changing meaning.
+
+Use `sigil fmt [path]` to canonically wrap selected valid Sigil prose.
+`sigil fmt [path] --check` reports noncanonical sources without writing.
 
 Name components after the concept other parts of the system depend on.
 
@@ -765,14 +841,14 @@ constraints {
 Larger examples live in:
 
 - `examples/promise/promise.sigil`
-- `examples/slotted/#module.sigil`
+- `examples/slotted/_module.sigil`
 - `examples/slotted/auth.sigil`
 - `examples/slotted/user-profile.sigil`
 
 ## 13. Historical Platform Proposal: Anchors
 
 Anchors are a rejected historical platform proposal for connecting Sigil
-semantic lines to implementation evidence.
+semantic units to implementation evidence.
 
 An anchor would not change the meaning of a Sigil line.
 It would record traceability between specification intent and implementation evidence.

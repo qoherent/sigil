@@ -26,6 +26,10 @@ export class DenoSigilFileSystem implements SigilFileSystem {
     await Deno.writeTextFile(path, source, { createNew: true });
   }
 
+  async replaceTextFile(path: string, source: string): Promise<void> {
+    await Deno.writeTextFile(path, source);
+  }
+
   async makeDirectory(path: string): Promise<void> {
     await Deno.mkdir(path, { recursive: true });
   }
@@ -77,4 +81,27 @@ export function normalizePath(path: string): string {
 
 export function joinPath(...parts: string[]): string {
   return normalizePath(parts.filter(Boolean).join("/"));
+}
+
+export function compilationCacheDirectory(): string {
+  const environment = (name: string): string | undefined => {
+    try {
+      return Deno.env.get(name);
+    } catch {
+      return undefined;
+    }
+  };
+  const home = environment(
+    Deno.build.os === "windows" ? "USERPROFILE" : "HOME",
+  );
+  if (!home) {
+    throw new Error(
+      "Cannot determine the OS user cache directory for compilation history.",
+    );
+  }
+  return Deno.build.os === "darwin"
+    ? joinPath(home, "Library", "Caches", "sigil", "compiler")
+    : Deno.build.os === "windows"
+    ? joinPath(home, "AppData", "Local", "Sigil", "Cache", "compiler")
+    : joinPath(home, ".cache", "sigil", "compiler");
 }

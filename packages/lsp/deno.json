@@ -1,6 +1,6 @@
 {
   "name": "@qoherent/sigil-lsp",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "exports": {
     ".": "./src/mod.ts",
     "./main": "./src/main.ts"
@@ -13,7 +13,7 @@
     ],
     "exclude": [
       "tests/",
-      "#module.sigil"
+      "_module.sigil"
     ]
   },
   "tasks": {

@@ -1,0 +1,21 @@
+@packages/compiler/src/adapter.sigil import { SigilAgentAdapter }
+
+component SigilEvaluationSkillRegistry {
+  goal {
+    Discover and validate versioned compiler-native evaluation skill packages and
+    their rule, evidence, dependency, capability, and output contracts.
+
+    Express required provider capabilities using the AgentAdapter contract.
+  }
+
+  interface {
+    EvaluationSkillPackage {
+      load(stageIdentity, version) returns validated SKILL.md guidance and
+      compile.json policy or leaves a required stage incomplete
+
+      implementation-evidence policy is context-only or compare
+
+      required capabilities use the AgentAdapter capability vocabulary
+    }
+  }
+}

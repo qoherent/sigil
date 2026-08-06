@@ -9,7 +9,8 @@ expand SigilWorkspaceConfig {
     SourceSelection {
       default files.include is ["**/*.sigil"]
 
-      default files.exclude is [".git/**", ".deno/**", "node_modules/**", "build/**", "coverage/**"]
+      default files.exclude is [".git/**", ".deno/**", "node_modules/**", "build/**",
+      "coverage/**"]
     }
 
     ToolConfiguration {
@@ -19,17 +20,23 @@ expand SigilWorkspaceConfig {
 
   logic {
     WorkspaceBoundary {
-      Without an explicit root, discovery walks from the target toward filesystem root and selects the nearest eligible ConfigFile.
+      Without an explicit root, discovery walks from the target toward filesystem
+      root and selects the nearest eligible ConfigFile.
 
-      A nearer ConfigFile owns the target when every configured parent excludes that nearer workspace root.
+      A nearer ConfigFile owns the target when every configured parent excludes that
+      nearer workspace root.
 
-      A configured parent that includes the nearer workspace root produces a multiple-ancestor configuration error.
+      A configured parent that includes the nearer workspace root produces a
+      multiple-ancestor configuration error.
 
-      With an explicit root, discovery requires ConfigFile directly inside the supplied root and does not search elsewhere.
+      With an explicit root, discovery requires ConfigFile directly inside the
+      supplied root and does not search elsewhere.
 
-      A nested ConfigFile inside an excluded subtree defines an independent workspace and is skipped by the parent.
+      A nested ConfigFile inside an excluded subtree defines an independent workspace
+      and is skipped by the parent.
 
-      A nested ConfigFile inside an included subtree produces an error and its subtree is not loaded.
+      A nested ConfigFile inside an included subtree produces an error and its
+      subtree is not loaded.
     }
 
     ConfigValidation {
@@ -37,11 +44,13 @@ expand SigilWorkspaceConfig {
     }
 
     SourceSelection {
-      File discovery evaluates include globs against normalized workspace-relative POSIX paths.
+      File discovery evaluates include globs against normalized workspace-relative
+      POSIX paths.
 
       Exclude matches take precedence over include matches.
 
-      The pattern **/*.sigil matches Sigil files at the workspace root and in nested directories.
+      The pattern **/*.sigil matches Sigil files at the workspace root and in nested
+      directories.
     }
   }
 
@@ -55,23 +64,29 @@ expand SigilWorkspaceConfig {
     }
 
     WorkspaceBoundary {
-      workspace contains required name and optional members keys and rejects unknown keys.
+      workspace contains required name and optional members keys and rejects unknown
+      keys.
 
-      workspace.members contains unique non-root workspace-relative directory paths that do not overlap.
+      workspace.members contains unique non-root workspace-relative directory paths
+      that do not overlap.
 
-      Package manifests may inform human proposals but do not participate in workspace discovery.
+      Package manifests may inform human proposals but do not participate in
+      workspace discovery.
 
       ConfigFile, not ModuleIndexFile, defines workspace roots and members.
 
-      workspace.members identifies configured summary boundaries for Brownfield review without granting or restricting ModuleIndexFile eligibility.
+      workspace.members identifies configured summary boundaries for Brownfield
+      review without granting or restricting ModuleIndexFile eligibility.
     }
 
     SourceSelection {
-      files contains required include and optional exclude keys and rejects unknown keys.
+      files contains required include and optional exclude keys and rejects unknown
+      keys.
     }
 
     ToolConfiguration {
-      tools is optional and core preserves namespaced JSON objects without interpreting them.
+      tools is optional and core preserves namespaced JSON objects without
+      interpreting them.
     }
 
     ConfigurationScope {
@@ -83,13 +98,16 @@ expand SigilWorkspaceConfig {
 
   cases {
     WorkspaceBoundary {
-      A target below one eligible ConfigFile resolves its containing directory as the workspace root.
+      A target below one eligible ConfigFile resolves its containing directory as the
+      workspace root.
 
-      A target with no ancestor ConfigFile reports SIGIL_CONFIG_NOT_FOUND and loads no Sigil files.
+      A target with no ancestor ConfigFile reports SIGIL_CONFIG_NOT_FOUND and loads
+      no Sigil files.
 
       A nested ConfigFile excluded by every configured parent resolves independently.
 
-      A nested ConfigFile still included by a configured parent reports SIGIL_NESTED_CONFIG and loads no source.
+      A nested ConfigFile still included by a configured parent reports
+      SIGIL_NESTED_CONFIG and loads no source.
 
       An explicit root without a direct ConfigFile reports SIGIL_CONFIG_NOT_FOUND.
     }
@@ -97,21 +115,26 @@ expand SigilWorkspaceConfig {
     ConfigValidation {
       Malformed JSON reports SIGIL_CONFIG_PARSE and loads no Sigil files.
 
-      Missing, mistyped, empty, or unknown fields report SIGIL_CONFIG_INVALID and load no Sigil files.
+      Missing, mistyped, empty, or unknown fields report SIGIL_CONFIG_INVALID and
+      load no Sigil files.
     }
 
     ConfiguredLanguageVersion {
-      An unsupported sigilVersion reports an error diagnostic and loads no Sigil files.
+      An unsupported sigilVersion reports an error diagnostic and loads no Sigil
+      files.
     }
 
     SourceSelection {
-      A matching excluded path is not loaded even when an include pattern also matches it.
+      A matching excluded path is not loaded even when an include pattern also
+      matches it.
     }
 
     WorkspaceBoundary {
-      The workspace root and each declared member are configured summary boundaries for Brownfield review.
+      The workspace root and each declared member are configured summary boundaries
+      for Brownfield review.
 
-      An undeclared package directory is not a configured summary boundary even when it contains a package manifest.
+      An undeclared package directory is not a configured summary boundary even when
+      it contains a package manifest.
     }
   }
 }

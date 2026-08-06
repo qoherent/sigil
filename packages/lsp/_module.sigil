@@ -1,0 +1,590 @@
+@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
+@spec/glossary.sigil import { SigilWorkspaceGlossary }
+@packages/core import { SigilCore }
+
+component SigilLsp {
+  goal {
+    Provide editor-neutral Sigil language intelligence through Language Server
+    Protocol.
+
+    Reuse deterministic core semantics without depending on VS Code APIs or
+    agent-host behavior.
+  }
+
+  interface {
+    LspPackage {
+      provides importable server APIs and an executable standard-input/output
+      entrypoint declared by packages/lsp/deno.json
+    }
+
+    ProtocolSession {
+      implements Language Server Protocol 3.18 over JSON-RPC standard input and
+      standard output
+
+      supports initialize, initialized, shutdown, and exit lifecycle messages
+
+      supports client responses to server-initiated capability-registration requests
+
+      uses UTF-16 positions
+
+      rejects requests received before initialization
+    }
+
+    DocumentSynchronization {
+      supports textDocument/didOpen, textDocument/didChange, and
+      textDocument/didClose with full-document synchronization
+
+      open-document content overrides filesystem content until close
+
+      after initialized, requests client-side workspace/didChangeWatchedFiles
+      registration when the client advertises dynamic registration
+
+      accepts workspace/didChangeWatchedFiles notifications delivered for the
+      registered workspace watch
+    }
+
+    DiagnosticPublishing {
+      publishes structural and workspace diagnostics through
+      textDocument/publishDiagnostics
+    }
+
+    NavigationAndInspection {
+      supports hierarchical document symbols for components, expands, and sections
+
+      supports definition navigation for imports, component declarations, expand
+      declarations, and resolved component references
+
+      supports hover for component contracts and collected expansions
+
+      component hover presents every owned implementation target linked to the
+      selected component
+
+      concept hover presents owned implementation targets linked to the hovered
+      concept identity and section occurrence at its originating component
+
+      owned implementation targets appear in the final hover section after contract,
+      collected-expansion, and glossary content
+
+      each owned implementation target displays its selected Sigil occurrence
+      sections
+
+      supports full-document semantic tokens for resolved component names
+
+      every hover renders resolver-confirmed component and concept references in
+      displayed Sigil semantic-unit prose as inline links to their originating
+      declarations
+    }
+
+    ConceptLanguageFeatures {
+      supports document symbols, definition, hover, diagnostics, and semantic
+      highlighting for resolved concept identities
+
+      hover on a reused concept presents its collective public interface occurrences
+      from the origin through the current component context
+
+      when a concept declaration or reference spelling matches an effective reviewed
+      glossary term or alias in the hovered file's glossary context, hover presents
+      the concept content together with the canonical term, definition, scope, and
+      matched alias
+    }
+
+    GlossaryLanguageFeatures {
+      supports hover, definition navigation, and semantic highlighting for resolved
+      glossary occurrences
+    }
+
+    WorkspaceSupport {
+      operates on file-backed workspaces selected from workspaceFolders, rootUri, or
+      the current directory
+    }
+
+    ReadOnlyLanguageService {
+      language-server operations do not modify .sigil source
+    }
+  }
+}
+
+expand SigilLsp {
+  state {
+    ProtocolSession {
+      Server lifecycle is uninitialized, running, shutdown-requested, or exited.
+    }
+
+    DocumentSynchronization {
+      Open documents retain URI, client version, and current in-memory text.
+    }
+
+    OwnershipSourceIndex {
+      The process-local ownership-source snapshot is empty, loading, or ready for one
+      initialized workspace root.
+    }
+
+    OwnershipHoverCache {
+      Generation-specific component, concept, and optional section projections are
+      empty, loading, or ready for the current resolved workspace generation.
+    }
+
+    WorkspaceSupport {
+      The initialized workspace starts from the first workspaceFolders entry,
+      rootUri, or current directory.
+    }
+  }
+
+  logic {
+    ProtocolSession {
+      initialize resolves the selected workspace, advertises implemented
+      capabilities, and reports UTF-16 position encoding.
+
+      shutdown completes outstanding work, returns null, and enters
+      shutdown-requested state.
+
+      exit succeeds only after shutdown.
+
+      Client responses to server-initiated capability-registration requests complete
+      without entering client-request dispatch.
+    }
+
+    DocumentSynchronization {
+      didOpen and didChange parse in-memory content and publish updated diagnostics.
+
+      didClose removes the overlay and republishes diagnostics from the filesystem
+      source when available.
+
+      Workspace operations prefer open-document overlays.
+
+      When the client advertises workspace/didChangeWatchedFiles dynamic
+      registration, initialized requests one **/* workspace watcher for create,
+      change, and delete events.
+    }
+
+    NavigationAndInspection {
+      Definition maps core source ranges to declaration locations.
+
+      Hover presents core contract and expansion projections without inventing
+      semantics.
+
+      Hover renders component and collected-expansion source paths relative to the
+      resolved workspace root.
+
+      Definition, hover, and semantic-token classification share one
+      component-reference resolver.
+
+      Hover derives inline navigation targets from the shared component and concept
+      reference resolvers and encodes them as file-URI Markdown links to declaration
+      identifier ranges.
+
+      Concept hover queries ownership using the originating component, hovered
+      concept identifier, and hovered section.
+
+      Hover appends owned implementation targets after all other hover content.
+
+      Document symbols preserve declaration and section hierarchy.
+
+      Hover preserves attached LiteralBlock type and body content without
+      interpreting it as navigation or glossary evidence.
+    }
+
+    OwnershipSourceIndex {
+      Initial workspace resolution starts one shared asynchronous load of supported
+      ownership implementation sources without delaying the initialize response for
+      completion.
+
+      Sigil document reloads reuse the in-flight or ready source snapshot while the
+      workspace root remains unchanged.
+
+      A supported workspace/didChangeWatchedFiles event or workspace-root change
+      invalidates the source snapshot.
+    }
+
+    OwnershipHoverCache {
+      Each resolved workspace generation receives a new memoized component, concept,
+      and optional section projection cache over the current ownership-source
+      snapshot.
+
+      Concurrent and later hovers reuse in-flight or ready projection work for the
+      same component, optional concept, and optional section.
+
+      Sigil document reloads replace generation-specific projections without
+      rereading unchanged implementation sources.
+    }
+
+    OwnershipSourceWatching {
+      After initialized, the server requests watched-file registration using the
+      shared supported implementation-source patterns.
+
+      Received watched-file changes invalidate ownership state only when at least one
+      changed URI is accepted by the shared implementation-source predicate.
+    }
+
+    ConceptLanguageFeatures {
+      Concept features consume core namespace identities, occurrences, and references
+      while preserving imported-concept origin.
+
+      Definition and hover include contextual occurrences for the selected component
+      without adding consumer content upstream.
+
+      Definition, hover, and semantic highlighting do not independently reinterpret
+      semantic text as concept references.
+
+      Concept hover combines originating public interface occurrences with public
+      contextual reuse occurrences available through the current component's import
+      path.
+
+      Hover preserves each occurrence's component, section, and source attribution.
+    }
+
+    GlossaryLanguageFeatures {
+      Glossary features consume core glossary occurrences without independently
+      scanning prose.
+
+      Hover presents canonical spelling, definition, context, and matched alias.
+
+      Concept declaration and reference hover matches the identifier spelling against
+      the hovered file's effective glossary entries without creating a glossary
+      occurrence.
+
+      When a concept declaration or reference matches an effective glossary entry,
+      Hover appends glossary Markdown after concept Markdown in one response.
+
+      Definition targets the canonical term declaration in GlossaryFile.
+
+      Semantic tokens classify resolved occurrences with the term token type.
+    }
+  }
+
+  constraints {
+    ArtifactVersionOwnership {
+      packages/lsp/deno.json owns the LSP artifact version.
+
+      The LSP Sigil contract does not claim package-registry publication or duplicate
+      a manifest version.
+    }
+
+    ProtocolSession {
+      Standard output contains protocol messages only and logging uses standard
+      error.
+
+      Every advertised position uses UTF-16 code units.
+
+      Malformed requests return protocol errors without terminating the server.
+    }
+
+    NavigationAndInspection {
+      Semantic highlighting uses standard full-document responses and distinguishes
+      component and concept tokens from free text.
+
+      Client cancellation prevents an obsolete result when cancellation is observed
+      before completion.
+
+      Hover navigation uses standard LSP Markdown links without command URIs, trusted
+      command execution, or custom protocol methods.
+
+      Only resolver-confirmed component and concept references become links;
+      unresolved identifiers and ordinary prose remain unchanged.
+
+      LiteralBlock types and bodies never become component, concept, glossary, or
+      ownership navigation.
+
+      Human-facing hover source paths use normalized workspace-relative display
+      paths, while file access, diagnostics, definition targets, and protocol
+      locations keep absolute normalized paths and file URIs.
+
+      Owned implementation hover links point to the originating artifact location and
+      remain standard Markdown links.
+    }
+
+    OwnershipSourceIndex {
+      The source snapshot is process-local, read-only, root-scoped, and reusable
+      across resolved workspace generations for the same workspace root.
+
+      A workspace-root change never reuses the previous root's source snapshot.
+    }
+
+    OwnershipHoverCache {
+      Projection results are process-local, read-only, and never reused across
+      resolved workspace generations.
+
+      Immediate ownership-link freshness uses successfully registered client watchers
+      and their delivered supported workspace/didChangeWatchedFiles notifications.
+    }
+
+    OwnershipSourceWatching {
+      The server requests watched-file capability only when the client advertises
+      workspace/didChangeWatchedFiles dynamic registration.
+
+      Clients without watched-file dynamic-registration support remain limited to
+      cache invalidation from notifications they independently deliver or from
+      workspace reloads.
+    }
+
+    ConceptLanguageFeatures {
+      Imported-concept hover does not expose private state, logic, constraints,
+      decisions, cases, or expansion occurrences.
+
+      Concept features use SemanticUnit prose and never independently scan
+      LiteralBlock content.
+    }
+
+    GlossaryLanguageFeatures {
+      Glossary occurrence features apply only to SemanticUnit prose in loaded .sigil
+      documents.
+
+      The semantic-token legend includes term and preserves non-overlapping UTF-16
+      ranges.
+
+      The server does not infer unknown terms or modify GlossaryFile.
+
+      Concept identifiers remain structural syntax and do not become glossary
+      occurrences, term semantic tokens, or GlossaryFile definition targets.
+
+      Definition navigation on a concept declaration or reference targets the concept
+      origin even when its spelling matches an effective glossary entry.
+
+      Combined hover does not change semantic-token overlap resolution.
+    }
+
+    SourceFormatting {
+      The initial language-server change consumes SemanticUnit and LiteralBlock
+      models without advertising a document-formatting capability.
+    }
+
+    WorkspaceSupport {
+      Transport and workspace access support standard input/output and file URIs
+      only.
+    }
+
+    DependencyDirection {
+      SigilLsp consumes SigilCore parsing, workspace, resolution, graph, projection,
+      and diagnostic facts.
+
+      SigilLsp does not duplicate core semantics and does not depend on VS Code or
+      agent-host APIs.
+    }
+
+    ReadOnlyLanguageService {
+      The server produces diagnostics and language-feature results but no workspace
+      edits, text edits, file creation, deletion, or rename operations.
+    }
+  }
+
+  decisions {
+    ProtocolSession {
+      Decision: Use Language Server Protocol 3.18 over JSON-RPC standard input and
+      output with UTF-16 positions and full-document synchronization.
+
+      Scope: Governs protocol transport, lifecycle, position encoding, and document
+      synchronization; excludes editor-specific user interfaces.
+
+      Trade-offs: Full-document synchronization is simpler and deterministic but may
+      transfer more text than incremental synchronization.
+
+      Consequences: Editors can reuse standard lifecycle, diagnostics, navigation,
+      hover, and semantic-token behavior.
+
+      Revisit when: Large-document evidence requires incremental synchronization or a
+      supported non-stdio host becomes necessary.
+    }
+
+    HoverSourcePathPresentation {
+      Decision: Render component and collected-expansion source paths in hover
+      Markdown relative to the resolved Sigil workspace root, while keeping absolute
+      normalized paths and file URIs for file access, diagnostics, definition, and
+      protocol locations.
+
+      Scope: Governs human-facing hover and the reused VS Code component preview;
+      excludes stored core paths, graph and JSON output, diagnostic URIs, and
+      definition targets.
+
+      Design issues addressed: Absolute paths are machine-specific and can leak local
+      directory or user names in screenshots and copied hover content.
+
+      Consequences: Hover and the VS Code preview show workspace-relative POSIX
+      paths; navigation and file access are unchanged.
+    }
+
+    NavigationAndInspection {
+      Decision: Surface implementation-comment-linked targets in component hover and
+      section-filtered targets in concept-occurrence hover as clickable Markdown
+      links labeled with their selected occurrence sections in a final Owned
+      implementations section.
+
+      Scope: Governs ownership-link content, occurrence filtering, and placement in
+      SigilLsp hover; cache lifecycle is governed by OwnershipHoverCache.
+
+      Trade-offs: Placing links last keeps contract, expansion, and glossary content
+      together but may require scrolling in large hovers; section labels expose
+      contract relevance directly but omit the implementation artifact kind from
+      hover.
+
+      Consequences: Users can navigate from components and exact concept section
+      occurrences to explicitly linked implementation artifacts.
+
+      Revisit when: Hover content requires collapsible or separately requested
+      implementation details.
+    }
+
+    OwnershipHoverCache {
+      Decision: Reuse one process-local ownership-source snapshot across resolved
+      workspace generations for the same root while keeping memoized component,
+      concept, and optional section projections generation-specific.
+
+      Scope: Governs SigilLsp ownership-hover loading, reuse, and invalidation;
+      excludes persistence and shared core ownership-query semantics.
+
+      Trade-offs: Sigil document reloads avoid implementation rescans, while the
+      first hover may still await an unfinished initial load and supported
+      implementation changes require a refreshed snapshot.
+
+      Discarded alternatives: Replacing the snapshot on every Sigil reload repeats
+      workspace I/O; scanning on every hover causes the reported latency; time-based
+      expiration permits stale links and periodically repeats the scan.
+
+      Consequences: Opening, editing, or closing Sigil documents rebuilds semantic
+      projections without rereading unchanged implementation sources.
+
+      Revisit when: Large-workspace evidence requires incremental per-file indexing.
+    }
+
+    OwnershipSourceWatching {
+      Decision: Dynamically register shared supported implementation-source watcher
+      patterns after initialized and validate received paths with the shared core
+      predicate before invalidating ownership state.
+
+      Scope: Governs SigilLsp acquisition and filtering of ownership-source file
+      changes; excludes client implementation and server-side filesystem watching.
+
+      Assumptions: A registration-capable client that accepts the request delivers
+      matching external filesystem events, with renames represented by delete and
+      create events.
+
+      Trade-offs: Precise watcher patterns reduce unrelated traffic, while predicate
+      validation preserves correctness if a client delivers broader notifications.
+
+      Consequences: Unrelated workspace changes do not discard ownership data, while
+      supported source changes refresh the next ownership hover.
+
+      Revisit when: The protocol provides an incremental ownership-index update or
+      reliable freshness is required from clients without dynamic-registration
+      support.
+    }
+  }
+
+  cases {
+    DocumentSynchronization {
+      Opening or changing malformed in-memory source publishes ranged diagnostics.
+
+      Fixing the source clears diagnostics that no longer apply.
+
+      Closing an overlay restores filesystem-derived diagnostics.
+    }
+
+    NavigationAndInspection {
+      Definition on an imported component opens its original declaration.
+
+      Definition on an expand opens its matching component.
+
+      Hover exposes the public contract and every collected expansion source.
+
+      Hovering a component displays its source and every collected-expansion path
+      relative to the resolved workspace root, so a root file appears as
+      _module.sigil and a nested file as spec/language.sigil.
+
+      A workspace-member component displays paths relative to its containing
+      workspace root, including the member directory.
+
+      Displayed hover source paths use forward slashes on Windows, macOS, and Linux.
+
+      The VS Code component preview displays the same workspace-relative source paths
+      because it reuses the standard hover response.
+
+      Unmatched capitalized prose remains ordinary text.
+
+      Component-contract and collected-expansion hovers link displayed component and
+      concept references to their origins.
+
+      Component-contract hover also lists owned implementation targets as clickable
+      links when the contract declares them.
+
+      Concept hover lists implementation targets annotated to the concept's
+      originating component, identifier, and hovered section.
+
+      Owned implementation target links display their selected interface, state,
+      logic, constraints, or cases sections.
+
+      The Owned implementations section is the final section of component and concept
+      hover.
+
+      A displayed name without a resolved component or concept identity remains plain
+      hover text.
+
+      Apparent component and concept names inside a LiteralBlock produce no
+      navigation or semantic highlighting.
+    }
+
+    OwnershipHoverCache {
+      Concurrent and repeated hovers within one workspace generation share projection
+      work.
+
+      Opening, changing, or closing a Sigil document creates new projections while
+      reusing the same ownership-source snapshot.
+
+      Changing the workspace root replaces both the source snapshot and projections.
+    }
+
+    OwnershipSourceWatching {
+      A capable client receives watcher registration for the shared supported
+      implementation-source patterns after initialized.
+
+      Creating, changing, or deleting a supported ownership source invalidates the
+      source snapshot and projections.
+
+      An unsupported watched-file change leaves ownership state intact.
+
+      A client without watched-file dynamic-registration support receives no
+      registration request and the protocol session remains valid.
+    }
+
+    ConceptLanguageFeatures {
+      An imported concept navigates to its originating declaration.
+
+      A resolved whole-word concept receives highlighting, definition, and hover.
+
+      Hovering a reused imported concept shows both its originating interface content
+      and the consumer's public contextual content.
+
+      Hovering a reused imported concept does not reveal the provider's private
+      collective expansion content.
+
+      Concept hover links displayed references to other concepts and components while
+      preserving the existing visibility rules for imported concepts.
+
+      Ungrouped interface content receives one warning per contiguous region.
+
+      A valid nonpreferred identifier produces a hint.
+    }
+
+    GlossaryLanguageFeatures {
+      Hovering an alias displays its canonical term and reviewed definition.
+
+      Definition on a recognized occurrence opens its GlossaryFile entry.
+
+      A recognized term receives highlighting while the same spelling inside inline
+      code does not.
+
+      Hovering a concept declaration or reference whose identifier matches a
+      canonical glossary term or alias shows concept details followed by reviewed
+      glossary details.
+
+      Go to Definition on that concept opens the originating concept declaration
+      rather than GlossaryFile.
+    }
+
+    WorkspaceSupport {
+      Invalid workspace configuration is reported without crashing the server.
+    }
+
+    ProtocolSession {
+      Shutdown followed by exit succeeds.
+    }
+  }
+}

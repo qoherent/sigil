@@ -49,7 +49,7 @@ export function isSigilFile(path: string): boolean {
 }
 
 export function isModuleFile(path: string): boolean {
-  return basename(path) === "#module.sigil";
+  return basename(path) === "_module.sigil";
 }
 
 export function basename(path: string): string {

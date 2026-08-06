@@ -1,0 +1,50 @@
+component SigilCompilationStatus {
+  goal {
+    Own one strict compiler status calculation shared by terminal, CLI, CI, editor,
+    and automation surfaces.
+  }
+
+  interface {
+    CompilationStatus {
+      derive(diagnostics, requiredEvaluatorOutcomes) returns red, yellow, or green
+    }
+  }
+}
+
+expand SigilCompilationStatus {
+  logic {
+    CompilationStatus {
+      Produce red for any error or incomplete, unavailable, failed, or invalid-output
+      required evaluator.
+
+      Produce yellow when no error exists and at least one warning exists.
+
+      Produce a compiler-owned warning for material required-evaluator disagreement.
+
+      Produce green only when every required evaluator completes and no error,
+      warning, or material disagreement remains.
+    }
+  }
+
+  decisions {
+    CompilationColor {
+      Decision: Use red for errors or incomplete required evaluation, yellow for
+      warnings without errors, and green only for complete warning-free evaluation.
+
+      Scope: Governs every compiler status presentation.
+
+      Discarded alternatives: Warning waivers that still produce green were rejected.
+
+      Consequences: Green has one strict meaning across surfaces.
+    }
+  }
+
+  cases {
+    CompilationStatus {
+      A syntax error produces red. One warning without errors produces yellow.
+
+      Complete evaluation with no errors or warnings produces green; optimization and
+      information messages do not prevent green.
+    }
+  }
+}

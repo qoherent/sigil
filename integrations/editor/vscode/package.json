@@ -2,7 +2,7 @@
   "name": "sigil",
   "displayName": "Sigil",
   "description": "Language support and component previews for Sigil.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "publisher": "sigil-dev",
   "license": "MIT",
   "repository": {
@@ -38,7 +38,10 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "onLanguage:sigil",
-    "onCommand:sigil.showComponentPreview"
+    "onCommand:sigil.showComponentPreview",
+    "onCommand:sigil.compileComponent",
+    "onCommand:sigil.compileWorkspace",
+    "onCommand:sigil.selectCompilationFocus"
   ],
   "contributes": {
     "languages": [
@@ -79,13 +82,68 @@
         "command": "sigil.showComponentPreview",
         "title": "Sigil: Show Component Preview",
         "category": "Sigil"
+      },
+      {
+        "command": "sigil.compileComponent",
+        "title": "Sigil: Compile Component",
+        "category": "Sigil",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sigil.compileWorkspace",
+        "title": "Sigil: Compile Workspace",
+        "category": "Sigil"
+      },
+      {
+        "command": "sigil.selectCompilationFocus",
+        "title": "Sigil: Select Compilation Focus",
+        "category": "Sigil"
       }
     ],
+    "configuration": {
+      "title": "Sigil",
+      "properties": {
+        "sigil.compile.executable": {
+          "type": "string",
+          "default": "sigil",
+          "description": "Path to a compatible external Sigil CLI executable."
+        },
+        "sigil.compile.profile": {
+          "type": "string",
+          "default": "standard",
+          "description": "Compilation profile used by editor commands."
+        },
+        "sigil.compile.focus": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "design",
+            "implementation"
+          ],
+          "default": "ask",
+          "description": "Default compilation focus used by editor commands."
+        }
+      }
+    },
     "menus": {
       "commandPalette": [
         {
           "command": "sigil.showComponentPreview",
           "when": "editorLangId == sigil"
+        },
+        {
+          "command": "sigil.compileComponent",
+          "when": "editorLangId == sigil"
+        },
+        {
+          "command": "sigil.compileWorkspace"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "sigil.compileComponent",
+          "when": "editorLangId == sigil",
+          "group": "navigation"
         }
       ]
     },

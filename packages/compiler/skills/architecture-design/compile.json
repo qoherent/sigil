@@ -1,0 +1,21 @@
+{
+  "id": "architecture-design",
+  "version": "1.1.0",
+  "inputs": ["workspace-root", "component-target"],
+  "dependencies": ["semantic-readiness"],
+  "capabilities": ["read-workspace"],
+  "implementationEvidence": "context-only",
+  "rules": [
+    "ARCHITECTURE_BOUNDARY",
+    "COMPONENT_DECOMPOSITION",
+    "OWNERSHIP_BOUNDARY",
+    "DESIGN_COHESION",
+    "INTERFACE_BOUNDARY",
+    "COUPLING",
+    "DEPENDENCY_DIRECTION",
+    "DEPENDENCY_CYCLE",
+    "MODULE_INDEX_SCOPE",
+    "IMPORTED_NAMESPACE_REUSE"
+  ],
+  "output": "compiler-findings-v1"
+}

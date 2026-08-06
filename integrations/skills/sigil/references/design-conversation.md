@@ -1,4 +1,4 @@
-<!-- @sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::DesignConversation interface,state,logic,constraints,cases -->
+<!-- @sigil implements integrations/skills/sigil/design-conversation.sigil::SigilDesignConversation::DesignConversation interface,state,logic,constraints,cases -->
 
 # Sigil Design Conversation
 

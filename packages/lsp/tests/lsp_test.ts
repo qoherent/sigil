@@ -21,7 +21,7 @@ const consumerPath = `${root}/consumer.sigil`;
 const contractUri = pathToFileUri(contractPath);
 const consumerUri = pathToFileUri(consumerPath);
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
 Deno.test("file URI conversion preserves Sigil paths", () => {
   assertEquals(
     fileUriToPath(pathToFileUri("/tmp/a #module.sigil")),
@@ -29,8 +29,8 @@ Deno.test("file URI conversion preserves Sigil paths", () => {
   );
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
-Deno.test("initializes with the approved 0.5 capabilities and lifecycle", async () => {
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+Deno.test("initializes with the approved 0.7 capabilities and lifecycle", async () => {
   const server = makeServer();
   const before = await server.handle(request(1, "shutdown"));
   assertEquals(errorCode(before), -32002);
@@ -64,9 +64,9 @@ Deno.test("initializes with the approved 0.5 capabilities and lifecycle", async 
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::OwnershipSourceWatching constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::OwnershipSourceWatching constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
  */
 Deno.test("dynamically registers ownership-source workspace watchers", async () => {
   const server = makeServer();
@@ -114,7 +114,7 @@ Deno.test("dynamically registers ownership-source workspace watchers", async () 
   );
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::OwnershipSourceWatching constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::OwnershipSourceWatching constraints,cases
 Deno.test("does not register watched files without client support", async () => {
   const server = makeServer();
   const initialized = await server.handle(
@@ -131,8 +131,8 @@ Deno.test("does not register watched files without client support", async () => 
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
  */
 Deno.test("publishes and clears diagnostics from open document overlays", async () => {
   const server = makeServer();
@@ -157,7 +157,71 @@ Deno.test("publishes and clears diagnostics from open document overlays", async 
   assertEquals(diagnosticsFor(closed, contractUri).length, 0);
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
+Deno.test("publishes concept ambiguity for module indexes and ordinary files", async () => {
+  const modulePath = `${root}/_module.sigil`;
+  const workspacePath = `${root}/workspace.sigil`;
+  const providerPath = `${root}/glossary.sigil`;
+  const consumer = (name: string) =>
+    `@glossary.sigil import { SigilGlossaryEngine }
+
+component ${name} {
+  goal {
+    Present glossary inspection.
+  }
+
+  interface {
+    GlossaryInspection {
+      A local facade for SigilGlossaryEngine GlossaryInspection.
+    }
+  }
+}
+`;
+  const moduleSource = consumer("SigilCore");
+  const server = new SigilLanguageServer({
+    currentDirectory: root,
+    fs: new InMemorySigilFileSystem({
+      [`${root}/.sigil/config.json`]: JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "lsp-concept-ambiguity", members: [] },
+        files: { include: ["**/*.sigil"], exclude: [] },
+        tools: {},
+      }),
+      [providerPath]: `component SigilGlossaryEngine {
+  goal {
+    Inspect glossary data.
+  }
+
+  interface {
+    GlossaryInspection {
+      Inspect reviewed glossary terms.
+    }
+  }
+}
+`,
+      [modulePath]: moduleSource,
+      [workspacePath]: consumer("SigilWorkspace"),
+    }),
+  });
+  await initialize(server);
+  const published = await server.handle(notification("textDocument/didOpen", {
+    textDocument: {
+      uri: pathToFileUri(modulePath),
+      version: 1,
+      text: moduleSource,
+    },
+  }));
+  for (const path of [modulePath, workspacePath]) {
+    const diagnostics = diagnosticsFor(published, pathToFileUri(path));
+    assert(
+      diagnostics.some((item) =>
+        item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
+      ),
+    );
+  }
+});
+
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 Deno.test("returns hierarchical symbols, definitions, and component hover", async () => {
   const server = makeServer();
   await initialize(server);
@@ -318,7 +382,7 @@ Deno.test("returns hierarchical symbols, definitions, and component hover", asyn
   assert(decoded.some((item) => item.tokenType === 1));
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 Deno.test("component hover includes clickable owned implementation links", async () => {
   const source = `component Thing {
   goal {
@@ -430,9 +494,9 @@ expand Thing {
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::OwnershipSourceWatching logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::OwnershipSourceWatching logic,constraints,cases
  */
 Deno.test("ownership hover cache shares scans and invalidates on watched changes", async () => {
   const fs = new CountingSigilFileSystem(
@@ -520,7 +584,7 @@ Deno.test("ownership hover cache shares scans and invalidates on watched changes
   assertEquals(fs.implementationReads, readsAfterConcurrentHovers + 4);
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
 Deno.test("navigates and hovers contextual imported concepts", async () => {
   const server = makeServer();
   await initialize(server);
@@ -569,20 +633,16 @@ Deno.test("navigates and hovers contextual imported concepts", async () => {
   );
   assert(
     markdown.includes(
-      "**interface** — [Thing](file:///workspace/contract.sigil#L1,11) in `/workspace/contract.sigil`",
+      "**interface** — [Thing](file:///workspace/contract.sigil#L1,11) in `contract.sigil`",
     ),
   );
   assert(markdown.includes("run()"));
   assert(
     markdown.includes(
-      "**interface** — [Consumer](file:///workspace/consumer.sigil#L3,11) in `/workspace/consumer.sigil`",
+      "**interface** — [Consumer](file:///workspace/consumer.sigil#L3,11) in `consumer.sigil`",
     ),
   );
-  assert(
-    markdown.includes(
-      "run() uses [Execution](file:///workspace/contract.sigil#L7,5).",
-    ),
-  );
+  assert(markdown.includes("Re-expose "));
   assert(!markdown.includes("Running succeeds."));
   assert(!markdown.includes("Consumer retries are private."));
 
@@ -592,7 +652,7 @@ Deno.test("navigates and hovers contextual imported concepts", async () => {
       "textDocument/hover",
       {
         textDocument: { uri: consumerUri },
-        position: { line: 8, character: 6 },
+        position: { line: 19, character: 6 },
       },
     )),
   ) as Record<string, unknown>;
@@ -605,15 +665,9 @@ Deno.test("navigates and hovers contextual imported concepts", async () => {
     ),
   );
   assert(declarationMarkdown.includes("run()"));
-  assert(
-    declarationMarkdown.includes(
-      "run() uses [Execution](file:///workspace/contract.sigil#L7,5).",
-    ),
-  );
+  assert(declarationMarkdown.includes("Re-expose "));
   assert(!declarationMarkdown.includes("Running succeeds."));
   assert(!declarationMarkdown.includes("Consumer retries are private."));
-  assert(declarationMarkdown.includes("ExecutionCache remain prose."));
-  assert(!declarationMarkdown.includes("[ExecutionCache]"));
 
   const componentHover = responseResult(
     await server.handle(request(
@@ -677,7 +731,7 @@ Deno.test("navigates and hovers contextual imported concepts", async () => {
   );
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
 Deno.test("highlights, explains, and navigates reviewed glossary terms", async () => {
   const glossaryPath = `${root}/.sigil/glossary.json`;
   const glossaryUri = pathToFileUri(glossaryPath);
@@ -768,9 +822,9 @@ Deno.test("highlights, explains, and navigates reviewed glossary terms", async (
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
  */
 Deno.test("combines concept and glossary hover while preserving concept navigation", async () => {
   const glossaryPath = `${root}/.sigil/glossary.json`;
@@ -885,8 +939,8 @@ Deno.test("combines concept and glossary hover while preserving concept navigati
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
  */
 Deno.test("publishes invalid glossary diagnostics without crashing", async () => {
   const glossaryPath = `${root}/.sigil/glossary.json`;
@@ -912,7 +966,7 @@ Deno.test("publishes invalid glossary diagnostics without crashing", async () =>
   );
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
 Deno.test("publishes concept style information as an LSP hint", async () => {
   const source = contractSource.replaceAll("Execution", "session-lifecycle");
   const server = new SigilLanguageServer({
@@ -936,9 +990,9 @@ Deno.test("publishes concept style information as an LSP hint", async () => {
   assertEquals(hint.severity, 4);
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 Deno.test("directory-index definitions navigate to the original declaration", async () => {
-  const modulePath = `${root}/module/#module.sigil`;
+  const modulePath = `${root}/module/_module.sigil`;
   const indexedContractPath = `${root}/module/contract.sigil`;
   const indexedConsumerPath = `${root}/indexed-consumer.sigil`;
   const indexedConsumerUri = pathToFileUri(indexedConsumerPath);
@@ -981,14 +1035,43 @@ Deno.test("directory-index definitions navigate to the original declaration", as
       },
     )),
   ) as Record<string, unknown>;
+  const indexedHoverValue = String(
+    (hover.contents as Record<string, unknown>).value,
+  );
   assert(
-    String((hover.contents as Record<string, unknown>).value).includes(
+    indexedHoverValue.includes(
       "component [Thing](file:///workspace/module/contract.sigil#L1,11)",
     ),
   );
+  assert(indexedHoverValue.includes("Source: `module/contract.sigil`"));
+  assert(!indexedHoverValue.includes("Source: `/workspace"));
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+Deno.test("renders component and collected-expansion source paths relative to the workspace root", async () => {
+  const server = makeServer();
+  await initialize(server);
+
+  const hover = responseResult(
+    await server.handle(request(
+      2,
+      "textDocument/hover",
+      {
+        textDocument: { uri: contractUri },
+        position: { line: 0, character: 12 },
+      },
+    )),
+  ) as Record<string, unknown>;
+  const value = String((hover.contents as Record<string, unknown>).value);
+
+  assert(value.includes("Source: `contract.sigil`"));
+  assert(value.includes("**Collected expansions**"));
+  // The collected-expansion path is displayed relative, not as `/workspace/...`.
+  assert(value.includes("\n`contract.sigil`"));
+  assert(!value.includes("Source: `/workspace"));
+  assert(!value.includes("`/workspace/contract.sigil`"));
+});
+
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 Deno.test("returns protocol errors for bad requests and observes cancellation", async () => {
   const server = makeServer();
   await initialize(server);
@@ -1006,8 +1089,8 @@ Deno.test("returns protocol errors for bad requests and observes cancellation", 
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::DiagnosticPublishing interface
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
  */
 Deno.test("surfaces workspace configuration failures without crashing", async () => {
   const server = new SigilLanguageServer({
@@ -1031,7 +1114,7 @@ Deno.test("surfaces workspace configuration failures without crashing", async ()
   assertEquals(server.state, "running");
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 Deno.test("exit without shutdown reports an unsuccessful process status", async () => {
   const server = makeServer();
   await initialize(server);
@@ -1039,7 +1122,7 @@ Deno.test("exit without shutdown reports an unsuccessful process status", async 
   assertEquals(server.exitCode, 1);
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 Deno.test("frames split messages and runs an ordered in-memory protocol session", async () => {
   const initializeMessage = encodeLspMessage(
     request(1, "initialize", {
@@ -1087,7 +1170,7 @@ Deno.test("frames split messages and runs an ordered in-memory protocol session"
   assertEquals(messages[2].id, 2);
 });
 
-// @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 Deno.test("malformed JSON returns a parse error without dropping adjacent frames", async () => {
   const inputBytes = joinBytes([
     rawFrame("{"),
@@ -1121,8 +1204,8 @@ Deno.test("malformed JSON returns a parse error without dropping adjacent frames
 });
 
 /*
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::LspPackage interface
- * @sigil tests packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::LspPackage interface
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
  */
 Deno.test("stdio executable completes initialize, shutdown, and exit", async () => {
   const input = joinBytes([
@@ -1180,10 +1263,19 @@ component Consumer {
   }
 
   interface {
-    Execution {
+    ConsumerSurface {
       run() uses Execution.
 
       execution and ExecutionCache remain prose.
+    }
+  }
+
+}
+
+expand Consumer {
+  interface {
+    Execution {
+      Re-expose Execution to Consumer dependents.
     }
   }
 

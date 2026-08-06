@@ -4,27 +4,48 @@
     {
       "term": "component",
       "definition": "A coherent system part whose goal and interface form a reusable public Sigil contract.",
-      "aliases": ["components"]
+      "aliases": [
+        "components"
+      ]
     },
     {
       "term": "expand",
       "definition": "A declaration that contributes operational detail to a matching component without overriding its public contract or other expands.",
-      "aliases": ["expands", "expansion", "expansions"]
+      "aliases": [
+        "expands",
+        "expansion",
+        "expansions"
+      ]
     },
     {
       "term": "public contract",
       "definition": "The goal, interface, and public concept identities that a component exposes to dependents.",
-      "aliases": ["public contracts"]
+      "aliases": [
+        "public contracts"
+      ]
     },
     {
       "term": "concept identity",
-      "definition": "A reusable identity grouping collective semantic-line occurrences across a component and its matching expands; it is public when it occurs in interface.",
-      "aliases": ["concept identities"]
+      "definition": "A reusable identity grouping collective semantic-unit occurrences across a component and its matching expands; it is public when it occurs in interface.",
+      "aliases": [
+        "concept identities"
+      ]
     },
     {
-      "term": "semantic line",
-      "definition": "A non-empty line of Sigil prose expressing one distinct semantic idea.",
-      "aliases": ["semantic lines"]
+      "term": "semantic unit",
+      "definition": "A blank-line-delimited Sigil prose paragraph, including any directly attached literal block, whose physical wrapping may change without changing semantic identity.",
+      "aliases": [
+        "semantic units"
+      ]
+    },
+    {
+      "term": "literal block",
+      "definition": "An optionally typed backtick-fenced body attached directly to introducing Sigil prose and preserved as uninterpreted content outside semantic-reference and prose-formatting rules.",
+      "aliases": [
+        "literal blocks",
+        "fenced literal block",
+        "fenced literal blocks"
+      ]
     },
     {
       "term": "collected expansion",
@@ -41,42 +62,62 @@
     {
       "term": "ConfigFile",
       "definition": "The strict .sigil/config.json file that declares a workspace's language version, boundary, source selection, and tool configuration.",
-      "aliases": [".sigil/config.json", "config file"]
+      "aliases": [
+        ".sigil/config.json",
+        "config file"
+      ]
     },
     {
       "term": "workspace boundary",
       "definition": "The configured Sigil workspace selected and governed by its eligible ConfigFile.",
-      "aliases": ["workspace boundaries"]
+      "aliases": [
+        "workspace boundaries"
+      ]
     },
     {
       "term": "configured summary boundary",
       "definition": "The workspace root or a declared workspace member that requires an ordinary Brownfield summary component.",
-      "aliases": ["configured summary boundaries"]
+      "aliases": [
+        "configured summary boundaries"
+      ]
     },
     {
       "term": "ModuleIndexFile",
-      "definition": "An included #module.sigil file that defines intentional directory-import shorthand without controlling workspace membership or component visibility.",
-      "aliases": ["module index file", "#module.sigil"]
+      "definition": "An included Sigil source whose language-reserved basename defines intentional directory-import shorthand without controlling workspace membership or component visibility.",
+      "aliases": [
+        "module index file",
+        "_module.sigil"
+      ]
     },
     {
       "term": "directory-import surface",
-      "definition": "The local components and successfully resolved directly imported names exposed by a ModuleIndexFile.",
-      "aliases": ["directory import surface"]
+      "definition": "The converged component names exposed by a ModuleIndexFile from local declarations and independently resolved imports after names with multiple declaration identities are excluded.",
+      "aliases": [
+        "directory import surface"
+      ]
     },
     {
       "term": "GlossaryFile",
       "definition": "The optional strict .sigil/glossary.json file containing reviewed workspace and bounded-context terminology.",
-      "aliases": [".sigil/glossary.json", "glossary file"]
+      "aliases": [
+        ".sigil/glossary.json",
+        "glossary file"
+      ]
     },
     {
       "term": "bounded context",
       "definition": "A path-scoped glossary domain whose terms may replace workspace spellings for sources matched by that context alone.",
-      "aliases": ["bounded-context", "bounded contexts"]
+      "aliases": [
+        "bounded-context",
+        "bounded contexts"
+      ]
     },
     {
       "term": "normative contract",
       "definition": "An approved Sigil semantic contract whose wording governs when it conflicts with glossary prose or implementation evidence.",
-      "aliases": ["normative contracts"]
+      "aliases": [
+        "normative contracts"
+      ]
     },
     {
       "term": "Greenfield",
@@ -89,7 +130,9 @@
     {
       "term": "review gate",
       "definition": "The reusable workflow that determines whether a repository mutation is blocked, requires review, or is ready from the exact action, scope, change set, applicable evidence, and explicit user approval.",
-      "aliases": ["review gates"]
+      "aliases": [
+        "review gates"
+      ]
     },
     {
       "term": "LanguageVersion",
@@ -113,7 +156,9 @@
     {
       "term": "workspace root",
       "definition": "The directory containing the eligible ConfigFile that defines a Sigil workspace.",
-      "aliases": ["workspace roots"]
+      "aliases": [
+        "workspace roots"
+      ]
     },
     {
       "term": "workspace member",
@@ -140,17 +185,23 @@
     {
       "term": "concept identifier",
       "definition": "The source spelling used to denote a Sigil concept identity.",
-      "aliases": ["concept identifiers"]
+      "aliases": [
+        "concept identifiers"
+      ]
     },
     {
       "term": "concept namespace",
       "definition": "The flat set of local and accessible concept identities resolved for a component and all of its matching expands.",
-      "aliases": ["concept namespaces"]
+      "aliases": [
+        "concept namespaces"
+      ]
     },
     {
       "term": "contextual occurrence",
       "definition": "A consumer-local occurrence of a concept that preserves the concept's originating identity while recording its use in the current component context.",
-      "aliases": ["contextual occurrences"]
+      "aliases": [
+        "contextual occurrences"
+      ]
     },
     {
       "term": "deterministic semantics",
@@ -215,12 +266,16 @@
     {
       "term": "glossary occurrence",
       "definition": "A recognized canonical term or alias in free-form Sigil prose, linked to its effective glossary entry and exact source range.",
-      "aliases": ["glossary occurrences"]
+      "aliases": [
+        "glossary occurrences"
+      ]
     },
     {
       "term": "glossary projection",
       "definition": "The deterministic workspace-wide view of resolved glossary contexts, entries, source occurrences, and diagnostics.",
-      "aliases": ["glossary projections"]
+      "aliases": [
+        "glossary projections"
+      ]
     },
     {
       "term": "glossary context",
@@ -295,22 +350,262 @@
     {
       "term": "implementation artifact",
       "definition": "Source code, configuration, migrations, scripts, workflow instructions, tests, fixtures, metadata, validators, generated assets, or documentation governed as part of implementation.",
-      "aliases": ["implementation artifacts"]
+      "aliases": [
+        "implementation artifacts"
+      ]
     },
     {
       "term": "implementation mutation",
       "definition": "A creation, modification, move, or deletion of an implementation artifact; excludes read-only inspection and exact user-requested rollback of the current agent's unapproved changes.",
-      "aliases": ["implementation mutations"]
+      "aliases": [
+        "implementation mutations"
+      ]
     },
     {
       "term": "ownership-source snapshot",
       "definition": "A process-local, workspace-root-scoped collection of supported implementation-source contents reused for ownership queries until a supported source or the workspace root changes.",
-      "aliases": ["ownership source snapshot", "source snapshot"]
+      "aliases": [
+        "ownership source snapshot",
+        "source snapshot"
+      ]
     },
     {
       "term": "section selector",
       "definition": "A section name in an implementation ownership annotation that identifies an implementation-related section occurrence on the targeted component or concept.",
-      "aliases": ["section selectors"]
+      "aliases": [
+        "section selectors"
+      ]
+    },
+    {
+      "term": "compilation profile",
+      "definition": "A named compiler configuration selecting an evaluation-stage dependency graph, evaluators, evaluation skills, capability limits, and execution budgets.",
+      "aliases": [
+        "compilation profiles",
+        "effective profile",
+        "effective profiles",
+        "project profile",
+        "project profiles"
+      ]
+    },
+    {
+      "term": "compilation focus",
+      "definition": "The user-selected design or implementation question that maps a compilation invocation to architecture-design or current-code-compatibility and its dependency closure.",
+      "aliases": [
+        "compile focus"
+      ]
+    },
+    {
+      "term": "implementation-evidence policy",
+      "definition": "An evaluation-skill manifest value declaring whether implementation is contextual constraint evidence or is compared with desired Sigil.",
+      "aliases": [
+        "implementation evidence policy"
+      ]
+    },
+    {
+      "term": "graph harmony",
+      "definition": "Qualitative coherence of ownership, dependency direction, coupling, decomposition, module-index scope, and imported namespace reuse across an inspected Sigil graph neighborhood.",
+      "aliases": [
+        "graph-harmony"
+      ]
+    },
+    {
+      "term": "critical-system",
+      "definition": "An optional built-in compilation profile requiring standards and risk evaluation plus at least two distinct available evaluator identities.",
+      "aliases": [
+        "critical-system profile"
+      ]
+    },
+    {
+      "term": "compilation status",
+      "definition": "The red, yellow, or green outcome computed for one exact source snapshot and effective compilation profile.",
+      "aliases": [
+        "compilation color",
+        "green status"
+      ]
+    },
+    {
+      "term": "compilation report",
+      "definition": "The authoritative versioned JSON result binding compilation status and diagnostics to source, profile, stage, skill, adapter, and evaluator provenance.",
+      "aliases": [
+        "compilation reports",
+        "CompilationReport",
+        "authoritative report",
+        "authoritative reports"
+      ]
+    },
+    {
+      "term": "compilation event",
+      "definition": "One ordered versioned JSON Lines envelope carrying progress or a terminal compilation outcome.",
+      "aliases": [
+        "compilation events",
+        "CompilationEvent",
+        "CompilationEvents",
+        "terminal event",
+        "terminal events"
+      ]
+    },
+    {
+      "term": "location target",
+      "definition": "A compilation target containing a file path and one-based source position that resolves the enclosing component or expand to one exact component identity.",
+      "aliases": [
+        "location targets"
+      ]
+    },
+    {
+      "term": "compilation history",
+      "definition": "The latest compatible compilation report retained in the operating-system user cache for diagnostic lifecycle comparison without becoming project authority.",
+      "aliases": [
+        "external history",
+        "interactive run history"
+      ]
+    },
+    {
+      "term": "evaluation stage",
+      "definition": "A profile-selected unit of compilation work whose dependencies and lifecycle determine when it may execute.",
+      "aliases": [
+        "evaluation stages"
+      ]
+    },
+    {
+      "term": "evaluator",
+      "definition": "One profile-selected execution of evaluation work whose completion and findings contribute to compilation status.",
+      "aliases": [
+        "evaluators",
+        "required evaluator",
+        "required evaluators",
+        "configured evaluator",
+        "configured evaluators"
+      ]
+    },
+    {
+      "term": "evaluator identity",
+      "definition": "A unique configured identifier that selects one provider and optional model configuration for profile-scoped evaluation.",
+      "aliases": [
+        "evaluator identities"
+      ]
+    },
+    {
+      "term": "evaluation skill",
+      "definition": "A compiler-native package containing SKILL.md guidance and a compile.json manifest that defines one evaluation procedure and its contract.",
+      "aliases": [
+        "evaluation skills",
+        "compiler-native evaluation skill",
+        "compiler-native evaluation skills"
+      ]
+    },
+    {
+      "term": "evaluation context",
+      "definition": "The metadata and deterministic PurposeRetrievalResult supplied to one component- and stage-scoped evaluator run, together with limited selected-evidence inspection used to verify citations or diagnose retrieval gaps. The initial request carries target identity, skill, capabilities, schema, budgets, selected graph, aggregated context, provenance, diagnostics, and fingerprint. Read-only workspace inspection does not redefine authoritative evidence membership.",
+      "aliases": [
+        "evaluation contexts",
+        "component evaluation context",
+        "component evaluation contexts"
+      ]
+    },
+    {
+      "term": "owner-private session",
+      "definition": "A compiler session whose filesystem access is restricted to the creating operating-system user; its identifier alone grants no authority.",
+      "aliases": [
+        "owner-private sessions"
+      ]
+    },
+    {
+      "term": "base epoch",
+      "definition": "The immutable selected-workspace snapshot identity against which proposal generations are evaluated; refresh commits a new epoch and clears generation and report history.",
+      "aliases": [
+        "base epochs",
+        "baseEpoch"
+      ]
+    },
+    {
+      "term": "manual-recovery-required",
+      "definition": "A terminal state entered when cleanup authority cannot be verified; automatic mutation and deletion remain disabled while read-only status may identify required operator recovery.",
+      "aliases": [
+        "manual recovery required"
+      ]
+    },
+    {
+      "term": "success linearization point",
+      "definition": "The instant after which cancellation no longer changes a one-shot compilation outcome.",
+      "aliases": [
+        "success linearization points",
+        "compilation success linearization point"
+      ]
+    },
+    {
+      "term": "agent adapter",
+      "definition": "A provider integration that executes bounded evaluation requests and declares enforceable capabilities without owning compiler semantics.",
+      "aliases": [
+        "agent adapters"
+      ]
+    },
+    {
+      "term": "profile fingerprint",
+      "definition": "A stable identity derived from the effective stages, skills, adapters, models, capabilities, budgets, and relevant versions of a compilation profile.",
+      "aliases": [
+        "profile fingerprints"
+      ]
+    },
+    {
+      "term": "diagnostic fingerprint",
+      "definition": "A diagnostic identity derived from stable rule, stage, subject, and source-location facts rather than evaluator wording.",
+      "aliases": [
+        "diagnostic fingerprints",
+        "stable diagnostic fingerprint",
+        "stable diagnostic fingerprints"
+      ]
+    },
+    {
+      "term": "purpose retrieval result",
+      "definition": "The immutable purpose-specific result for an exact target containing its selected retrieval graph, ordered evidence and provenance, exclusions, aggregated context, diagnostics, and reproducibility fingerprint.",
+      "aliases": [
+        "PurposeRetrievalResult",
+        "purpose retrieval results"
+      ],
+      "agentContext": true
+    },
+    {
+      "term": "selected retrieval graph",
+      "definition": "The deterministic subset of typed retrieval nodes and relations admitted by one purpose policy for an exact target.",
+      "aliases": [
+        "SelectedRetrievalGraph",
+        "selected retrieval graphs"
+      ],
+      "agentContext": true
+    },
+    {
+      "term": "evidence unit",
+      "definition": "The smallest ordered retrieval item carrying one semantic, glossary, ownership, implementation, or diagnostic fact together with its optional source range and inclusion provenance.",
+      "aliases": [
+        "EvidenceUnit",
+        "evidence units"
+      ],
+      "agentContext": true
+    },
+    {
+      "term": "retrieval fingerprint",
+      "definition": "The RFC 8785 and SHA-256 cache identity of a complete purpose retrieval result excluding its fingerprint field; it is not a signature or proof that collisions are impossible.",
+      "aliases": [
+        "retrieval fingerprints"
+      ],
+      "agentContext": true
+    },
+    {
+      "term": "workspace snapshot identity",
+      "definition": "The content-derived RFC 8785 and SHA-256 identity of the exact selected ConfigFile, GlossaryFile, and loaded Sigil source path-and-text records used to associate deterministic projections and auxiliary evidence.",
+      "aliases": [
+        "workspaceSnapshotIdentity",
+        "workspace snapshot identities"
+      ],
+      "agentContext": true
+    },
+    {
+      "term": "exclusion frontier",
+      "definition": "The deterministic one-hop relations deliberately stopped by a purpose policy's explicit non-transitive, cycle-boundary, or module-import rules.",
+      "aliases": [
+        "exclusion frontiers"
+      ],
+      "agentContext": true
     }
   ],
   "contexts": [
@@ -319,37 +614,45 @@
       "include": [
         "spec/language.sigil",
         "packages/core/**/*.sigil",
-        "packages/cli/#module.sigil"
+        "packages/cli/_module.sigil"
       ],
       "exclude": [],
       "terms": [
         {
           "term": "source selection",
           "definition": "ConfigFile include and exclude rules applied to determine which Sigil source documents belong to a loaded workspace.",
-          "aliases": ["SourceSelection"]
+          "aliases": [
+            "SourceSelection"
+          ]
         }
       ]
     },
     {
       "id": "SkillInstallation",
-      "include": ["packages/cli/src/installer.sigil"],
+      "include": [
+        "packages/cli/src/installer.sigil"
+      ],
       "exclude": [],
       "terms": [
         {
           "term": "skill-source selection",
           "definition": "Selection of the installation-relative skill assets owned by the Sigil executable or source module chosen for installation.",
-          "aliases": ["source selection"]
+          "aliases": [
+            "source selection"
+          ]
         }
       ]
     },
     {
       "id": "SigilSkillWorkflow",
-      "include": ["integrations/skills/sigil/**/*.sigil"],
+      "include": [
+        "integrations/skills/sigil/**/*.sigil"
+      ],
       "exclude": [],
       "terms": [
         {
           "term": "semantic readiness",
-          "definition": "A provisional skill-assessed state indicating that no unresolved material semantic, architectural, or design problem remains within the reviewed Sigil scope.",
+          "definition": "A provisional compiler-stage assessment of semantic contract coherence and completeness within the exact evaluated scope. It is distinct from architecture-design, remains evidence rather than approval, and is consumed by the host workflow.",
           "aliases": [
             "semantic-readiness",
             "semantic readiness review",
@@ -366,7 +669,7 @@
         },
         {
           "term": "concept grouping",
-          "definition": "The reviewed authoring activity that groups coherent interface semantic lines under new or reusable concept identifiers.",
+          "definition": "The reviewed authoring activity that groups coherent interface semantic units under new or reusable concept identifiers.",
           "aliases": [
             "concept-identifier grouping"
           ]
@@ -406,7 +709,9 @@
         {
           "term": "evidence packet",
           "definition": "A conversation-scoped, nonbinding record of an external-guidance investigation containing its question, source authority and identity, applicability, environment match, findings, limitations, conflicts, and freshness conditions.",
-          "aliases": ["evidence packets"]
+          "aliases": [
+            "evidence packets"
+          ]
         }
       ]
     }

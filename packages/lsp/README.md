@@ -1,7 +1,7 @@
 # sigil-lsp
 
 Implemented pre-production language-server package for editor-facing Sigil
-semantics, versioned for publication as `@qoherent/sigil-lsp` 0.7.0.
+semantics, versioned for publication as `@qoherent/sigil-lsp` 0.7.1.
 
 The language server should be the reusable bridge between `sigil-core` and
 concrete editor integrations.
@@ -37,7 +37,7 @@ Non-responsibilities:
 - own Codex-specific behavior;
 - replace the CLI for automation.
 
-The approved package contract lives in [#module.sigil](./%23module.sigil).
+The approved package contract lives in [_module.sigil](./_module.sigil).
 
 Run the server locally:
 

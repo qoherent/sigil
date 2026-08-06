@@ -1,6 +1,6 @@
 # sigil-core
 
-Current package version: **0.7.0**. Import with:
+Current package version: **0.7.1**. Import with:
 
 ```ts
 import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.7";
@@ -17,7 +17,7 @@ instead of reinterpreting Sigil independently.
 
 Package docs:
 
-- [#module.sigil](./%23module.sigil): public `SigilCore` contract and
+- [_module.sigil](./_module.sigil): public `SigilCore` contract and
   package-wide operational decisions.
 - [spec.md](spec.md): version 0.7 product requirements and acceptance scenarios.
 - [architecture.md](architecture.md): architecture style, internal modules,
@@ -29,7 +29,11 @@ Platform context lives in
 Responsibilities:
 
 - parse `.sigil` files;
-- preserve source locations and semantic lines;
+- preserve source locations and semantic units;
+- preserve attached typed literal blocks outside structural and reference
+  interpretation;
+- report strict per-name unused imports;
+- canonically wrap prose at 79 content characters without counting indentation;
 - parse and validate optional `.sigil/glossary.json`;
 - resolve path-scoped glossary contexts and source-ranged prose occurrences;
 - project only agent-visible glossary terms recognized in selected
@@ -42,7 +46,7 @@ Responsibilities:
 - resolve imports;
 - project direct dependencies' public contracts and durable decisions into
   bounded agent dependency context;
-- resolve `#module.sigil` as an explicit index in any included directory;
+- resolve `_module.sigil` as an explicit index in any included directory;
 - keep every component public through explicit-file imports;
 - collect component expansions;
 - diagnose ungrouped interface concepts without making warnings fatal;

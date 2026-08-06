@@ -1,4 +1,7 @@
-<!-- @sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::BrownfieldWorkflow logic,constraints,cases -->
+<!--
+@sigil implements integrations/skills/sigil/workspace-bootstrap.sigil::SigilWorkspaceBootstrap::BrownfieldWorkflow logic,constraints,cases
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ModuleIndexFile logic,constraints,cases
+-->
 
 # Brownfield Sigil Adoption
 
@@ -46,10 +49,10 @@ unsupported.
 Before focusing on the requested implementation task, inspect the workspace
 root and every path declared by `workspace.members`. Each configured boundary
 must have a meaningful, approved ordinary summary component in its
-`#module.sigil`. The component and any matching expand use normal Sigil forms
+`_module.sigil`. The component and any matching expand use normal Sigil forms
 and receive no special parser or resolver status.
 
-An internal `#module.sigil` outside a configured boundary is only a directory
+An internal `_module.sigil` outside a configured boundary is only a directory
 index and requires no project summary, but it still declares at least one local
 component. Do not infer additional summary boundaries from package manifests or
 arbitrary directory structure.
@@ -99,10 +102,21 @@ goal and interface as a separate decision.
 ### Propose Boundary Module Indexes
 
 After goal and interface confirmation, propose an ordinary summary component in
-each configured boundary's `#module.sigil`. A boundary module index may also
+each configured boundary's `_module.sigil`. A boundary module index may also
 directly import components that should resolve through its directory shorthand.
 Those imports do not grant visibility; every component remains public through
 its explicit `.sigil` path.
+
+Keep the summary and its matching expand small by responsibility. Retain only
+boundary-wide goal, interface, architecture constraints, and durable design
+decisions. Extract material state, operational logic, lifecycle behavior, and
+independently changing policy into components or expands beside their
+implementation owners.
+
+Inspect the complete accessible namespace of every import before creating local
+components or concepts. Reuse semantically matching imported public identities
+and create a local identity only for a materially distinct responsibility or
+meaning.
 
 Classify confirmed boundary-wide detail for an optional matching expand:
 
@@ -116,6 +130,12 @@ Keep secrets, volatile values, incidental dependencies, low-level configuration,
 private algorithms, and task-specific behavior outside boundary summaries.
 Present the exact summary components, expands, module-index imports, and
 locations before editing.
+
+Also show how the proposed components decompose the implementation boundary and
+which imported components form the intentional directory-import surface. A
+high-level summary alone is insufficient when separate implementation owners
+have stable contracts, state, lifecycle, policy, or independent reasons to
+change.
 
 Submit the exact boundary module indexes to
 `ReviewGate(action: sigil-change)`. When ready, write only that change set, run
@@ -304,20 +324,21 @@ decision-rationale coverage map before requesting ReviewGate readiness.
 After `ReviewGate(action: sigil-change)` returns ready for the exact task-Sigil
 scope and change set:
 
-1. create or update only approved Sigil files;
-2. colocate components and implementation-specific expands as proposed;
-3. update only approved imports;
-4. run `sigil check`;
-5. use `sigil graph` or `sigil context` when relationships changed;
-6. reread the files and repeat semantic, coherence, and modularity review;
-7. repeat the decision-rationale coverage audit against the written semantic
+1. materialize the approved complete source into the target workspace;
+2. create or update only approved Sigil files;
+3. colocate components and implementation-specific expands as proposed;
+4. update only approved imports;
+5. run `sigil check`;
+6. use `sigil graph` or `sigil context` when relationships changed;
+7. reread the files and repeat semantic, coherence, and modularity review;
+8. repeat the decision-rationale coverage audit against the written semantic
    lines and return to proposal review when coverage is missing;
-8. if concept grouping is still required, use ReviewGate with `sigil-change`,
+9. if concept grouping is still required, use ReviewGate with `sigil-change`,
    then rerun deterministic and semantic review;
-9. perform glossary candidate extraction only after the final semantic review
+10. perform glossary candidate extraction only after the final semantic review
    appears aligned;
-10. report the validated written task Sigil without creating another approval
-    gate.
+11. report the validated written task Sigil without creating another approval
+   gate.
 
 Do not modify implementation in the same pass. When implementation is
 requested, submit the validated written task Sigil and exact implementation

@@ -1,10 +1,13 @@
-@spec/language.sigil import { SigilWorkspaceConfig }
+@spec/language.sigil import { SigilLanguage }
 
 component SigilWorkspaceGlossary {
   goal {
-    Define the optional reviewed vocabulary authority for one configured Sigil workspace.
+    Define the optional reviewed vocabulary authority for one configured Sigil
+    workspace.
 
-    Give authors and deterministic tools unambiguous workspace-wide and bounded-context meanings without changing Sigil source syntax or concept identity.
+    Give authors and deterministic tools unambiguous workspace-wide and
+    bounded-context meanings without changing Sigil source syntax or concept
+    identity.
   }
 
   interface {
@@ -53,7 +56,8 @@ component SigilWorkspaceGlossary {
 
       a Sigil source matches at most one bounded context
 
-      context terms override workspace terms with the same case-insensitive spelling in that source
+      context terms override workspace terms with the same case-insensitive spelling
+      in that source
     }
 
     TermRecognition {
@@ -61,9 +65,10 @@ component SigilWorkspaceGlossary {
 
       the longest matching phrase wins
 
-      occurrences resolve only inside free-form Sigil prose
+      occurrences resolve only inside SemanticUnit prose
 
-      structural syntax, code fences, inline code, and URLs do not contain glossary occurrences
+      structural syntax, LiteralBlock types and bodies, inline code, and URLs do not
+      contain glossary occurrences
     }
   }
 }
@@ -71,27 +76,34 @@ component SigilWorkspaceGlossary {
 expand SigilWorkspaceGlossary {
   logic {
     ContextResolution {
-      Resolve context include and exclude globs against normalized workspace-relative source paths.
+      Resolve context include and exclude globs against normalized workspace-relative
+      source paths.
 
       Combine workspace entries with the one matched context.
 
-      Replace a workspace spelling with the matched context entry that owns the same case-insensitive canonical or alias spelling.
+      Replace a workspace spelling with the matched context entry that owns the same
+      case-insensitive canonical or alias spelling.
     }
 
     TermRecognition {
-      Order effective canonical and alias spellings by descending length before scanning each eligible semantic line.
+      Order effective canonical and alias spellings by descending length before
+      scanning each eligible semantic unit.
 
-      Accept a match only when adjacent characters are not Unicode letters, numbers, or underscore.
+      Accept a match only when adjacent characters are not Unicode letters, numbers,
+      or underscore.
 
-      Preserve the canonical entry, matched spelling, context, source file, and exact occurrence range.
+      Preserve the canonical entry, matched spelling, context, source file, and exact
+      occurrence range.
     }
   }
 
   constraints {
     GlossaryFile {
-      GlossaryFile is UTF-8 JSON interpreted independently from Sigil source include globs.
+      GlossaryFile is UTF-8 JSON interpreted independently from Sigil source include
+      globs.
 
-      The glossary summarizes approved terminology and does not override an approved normative contract.
+      The glossary summarizes approved terminology and does not override an approved
+      normative contract.
     }
 
     GlossarySchema {
@@ -105,19 +117,23 @@ expand SigilWorkspaceGlossary {
 
       One spelling cannot resolve to multiple entries in the same effective context.
 
-      A glossary entry does not create, import, alias, or shadow a Sigil concept identity.
+      A glossary entry does not create, import, alias, or shadow a Sigil concept
+      identity.
 
-      Agent-context exclusion does not affect glossary authority, validation, term recognition, glossary inspection, or editor features.
+      Agent-context exclusion does not affect glossary authority, validation, term
+      recognition, glossary inspection, or editor features.
     }
 
     BoundedContext {
       Context globs cannot escape the workspace.
 
-      Matching more than one context is invalid and context order never selects a winner.
+      Matching more than one context is invalid and context order never selects a
+      winner.
     }
 
     TermRecognition {
-      Deterministic recognition never infers an unknown term or definition from prose.
+      Deterministic recognition never infers an unknown term or definition from
+      prose.
 
       Matching does not alter Sigil source or GlossaryFile.
     }
@@ -125,47 +141,66 @@ expand SigilWorkspaceGlossary {
 
   decisions {
     GlossaryFile {
-      Decision: Use an optional committed strict-JSON GlossaryFile as human-reviewed terminology authority.
+      Decision: Use an optional committed strict-JSON GlossaryFile as human-reviewed
+      terminology authority.
 
-      Scope: Governs workspace and bounded-context vocabulary; excludes behavioral contracts and Sigil concept identity.
+      Scope: Governs workspace and bounded-context vocabulary; excludes behavioral
+      contracts and Sigil concept identity.
 
       Trade-offs: Teams maintain an additional reviewed JSON artifact.
 
-      Discarded alternatives: Generated authority, Markdown authority, and new glossary syntax inside Sigil source were rejected.
+      Discarded alternatives: Generated authority, Markdown authority, and new
+      glossary syntax inside Sigil source were rejected.
 
-      Consequences: Approved normative Sigil remains authoritative during conflicts and GlossaryFile must be corrected explicitly.
+      Consequences: Approved normative Sigil remains authoritative during conflicts
+      and GlossaryFile must be corrected explicitly.
 
-      Revisit when: JSON maintenance becomes impractical or another format can provide equivalent strict validation and review.
+      Revisit when: JSON maintenance becomes impractical or another format can
+      provide equivalent strict validation and review.
     }
 
     ContextResolution {
-      Decision: Resolve workspace terminology plus at most one path-glob-bounded context for each Sigil source.
+      Decision: Resolve workspace terminology plus at most one path-glob-bounded
+      context for each Sigil source.
 
-      Scope: Governs effective glossary-entry selection for loaded Sigil sources; excludes workspace membership and component resolution.
+      Scope: Governs effective glossary-entry selection for loaded Sigil sources;
+      excludes workspace membership and component resolution.
 
-      Trade-offs: Overlapping contexts are invalid instead of being resolved by ordering.
+      Trade-offs: Overlapping contexts are invalid instead of being resolved by
+      ordering.
 
-      Discarded alternatives: One global namespace and mandatory per-source context annotations were rejected.
+      Discarded alternatives: One global namespace and mandatory per-source context
+      annotations were rejected.
 
-      Consequences: Context-local spellings may replace workspace spellings only within their matched source boundary.
+      Consequences: Context-local spellings may replace workspace spellings only
+      within their matched source boundary.
 
-      Revisit when: Repository paths cannot represent common terminology boundaries safely.
+      Revisit when: Repository paths cannot represent common terminology boundaries
+      safely.
     }
 
     AgentContextVisibility {
-      Decision: Allow each glossary entry to opt out of agent-facing scoped context with agentContext false while defaulting omitted values to true.
+      Decision: Allow each glossary entry to opt out of agent-facing scoped context
+      with agentContext false while defaulting omitted values to true.
 
-      Scope: Governs GlossaryContextProjection supplied to agent context; excludes glossary validation, recognition, inspection, and editor behavior.
+      Scope: Governs GlossaryContextProjection supplied to agent context; excludes
+      glossary validation, recognition, inspection, and editor behavior.
 
-      Trade-offs: Consumers must distinguish complete glossary projections from agent-facing scoped projections.
+      Trade-offs: Consumers must distinguish complete glossary projections from
+      agent-facing scoped projections.
 
-      Design issues addressed: Workspace conventions may already be known to an agent and would otherwise consume context with duplicated explanations.
+      Design issues addressed: Workspace conventions may already be known to an agent
+      and would otherwise consume context with duplicated explanations.
 
-      Discarded alternatives: A glossary-wide exclusion flag was rejected because project terminology and conventional terminology may coexist in one GlossaryFile.
+      Discarded alternatives: A glossary-wide exclusion flag was rejected because
+      project terminology and conventional terminology may coexist in one
+      GlossaryFile.
 
-      Consequences: Existing schemaVersion 1 files retain their current behavior because omitted agentContext values remain included.
+      Consequences: Existing schemaVersion 1 files retain their current behavior
+      because omitted agentContext values remain included.
 
-      Revisit when: Context consumers require named audiences or more than included and excluded visibility.
+      Revisit when: Context consumers require named audiences or more than included
+      and excluded visibility.
     }
   }
 
@@ -173,7 +208,8 @@ expand SigilWorkspaceGlossary {
     ContextResolution {
       A source matching no context receives workspace terms only.
 
-      A context definition of hold replaces the workspace definition of hold only for sources matched by that context.
+      A context definition of hold replaces the workspace definition of hold only for
+      sources matched by that context.
 
       A source matched by two contexts produces SIGIL_GLOSSARY_CONTEXT_OVERLAP.
     }
@@ -185,9 +221,11 @@ expand SigilWorkspaceGlossary {
 
       A term inside inline code or a URL remains ordinary text.
 
-      Two local entries claiming the same case-insensitive spelling produce SIGIL_GLOSSARY_TERM_COLLISION.
+      Two local entries claiming the same case-insensitive spelling produce
+      SIGIL_GLOSSARY_TERM_COLLISION.
 
-      A recognized entry with agentContext false remains visible to glossary inspection and editor features but is absent from agent-facing scoped context.
+      A recognized entry with agentContext false remains visible to glossary
+      inspection and editor features but is absent from agent-facing scoped context.
     }
   }
 }

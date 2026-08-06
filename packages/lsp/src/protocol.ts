@@ -10,7 +10,7 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const FRAME_PARSE_ERROR = Symbol("FRAME_PARSE_ERROR");
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 export class LspMessageFramer {
   #buffer: Uint8Array<ArrayBufferLike> = new Uint8Array();
 
@@ -36,7 +36,7 @@ export class LspMessageFramer {
   }
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 export function encodeLspMessage(
   message: JsonRpcIncoming | JsonRpcOutgoing,
 ): Uint8Array {
@@ -45,7 +45,7 @@ export function encodeLspMessage(
   return concatenate(header, body);
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 export function parseIncoming(
   value: unknown,
 ): { readonly message: JsonRpcIncoming } | {
@@ -73,7 +73,7 @@ export function parseIncoming(
   return { failure: protocolFailure(null, -32600, "Invalid Request") };
 }
 
-// @sigil implements packages/lsp/#module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
 export async function runLanguageServer(
   input: ReadableStream<Uint8Array>,
   output: WritableStream<Uint8Array>,

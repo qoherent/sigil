@@ -1,8 +1,8 @@
 # sigil-cli Requirements
 
-**Status:** Accepted for 0.7.0 **Last updated:** 2026-07-28
+**Status:** Accepted for 0.7.1 **Last updated:** 2026-08-04
 
-This document defines the 0.6 product requirements for `sigil-cli`.
+This document defines the 0.7 product requirements for `sigil-cli`.
 
 `sigil-cli` is the command-line interface over `sigil-core`. It exists for
 agents, CI, scripts, debugging, and review/documentation workflows. It is not
@@ -45,7 +45,7 @@ Version 0.7 must not implement:
 - watch mode;
 - generated diagrams;
 - anchors or code/spec synchronization;
-- mutation or formatting of `.sigil` files.
+- automatic repository-wide source mutation.
 
 Anchors remain outside the implemented 0.5 surface. The rejected historical
 anchor surface is defined below and does not change the 0.6 acceptance criteria.
@@ -158,7 +158,7 @@ Required output data:
 - imports;
 - components;
 - expands;
-- semantic lines;
+- semantic units;
 - diagnostics.
 
 This command should not load or resolve a full workspace unless a later option
@@ -180,6 +180,23 @@ Required output data for JSON:
 - diagnostic counts by severity.
 
 Default human output may be concise text, but JSON must remain available.
+
+### `sigil fmt [path] [--check]`
+
+Loads the workspace, selects the requested file or included `.sigil` sources
+beneath the requested directory, and delegates canonical rendering to
+`sigil-core`.
+
+Formatting wraps ordinary prose at 79 content characters without counting
+leading indentation. It preserves semantic-unit identity and literal-block
+content. Every selected source must parse and resolve without errors before any
+file is written.
+
+Without `--check`, the command writes only changed selected sources. With
+`--check`, it performs no writes and exits `1` when any selected source is
+noncanonical. Output identifies formatted, unchanged, noncanonical, and failed
+sources. The command does not automatically select the whole repository unless
+the user explicitly selects its workspace root.
 
 ### `sigil glossary [path]`
 
@@ -340,7 +357,7 @@ The following rejected design is retained for history. Version 0.7 has no
 
 ### `sigil anchors candidates [path] --component <name>`
 
-Read-only. Returns the selected component, collected expansions, semantic-line
+Read-only. Returns the selected component, collected expansions, semantic-unit
 locators, and no more than twenty deterministically ordered TypeScript
 candidates per line. Each candidate reports inspectable ordering signals. The
 command does not invoke a model.

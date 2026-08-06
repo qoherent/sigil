@@ -5,7 +5,7 @@ directory defines the root used for imports and file discovery.
 
 ```json
 {
-  "sigilVersion": "0.5.0",
+  "sigilVersion": "0.7.0",
   "workspace": {
     "name": "example",
     "members": ["packages/example-cli"]
@@ -41,7 +41,7 @@ declarations may inform an initialization proposal, but they do not create
 Sigil workspace members.
 
 The workspace root and each declared member are configured project-summary
-boundaries for Brownfield workflow. `#module.sigil` may appear in any included
+boundaries for Brownfield workflow. `_module.sigil` may appear in any included
 directory regardless of membership. `files.include` and `files.exclude`
 control source discovery; they do not declare module-index locations.
 

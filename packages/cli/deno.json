@@ -1,6 +1,6 @@
 {
   "name": "@qoherent/sigil",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "exports": "./src/main.ts",
   "publish": {
     "include": [
@@ -15,7 +15,7 @@
     ]
   },
   "tasks": {
-    "install": "deno install --global --force --config ../../deno.json --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil src/main.ts",
+    "install": "deno install --global --force --config ../../deno.json --allow-read --allow-write --allow-run --allow-env=HOME,USERPROFILE --name sigil src/main.ts",
     "test": "deno test --allow-read --allow-write --allow-run",
     "publish:dry-run": "deno publish --dry-run"
   },

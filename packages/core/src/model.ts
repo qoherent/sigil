@@ -24,8 +24,15 @@ export type SigilDiagnosticCode =
   | "SIGIL_NESTED_CONCEPT_BLOCK"
   | "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
   | "SIGIL_CONCEPT_IDENTIFIER_STYLE"
+  | "SIGIL_DETACHED_LITERAL_BLOCK"
+  | "SIGIL_LITERAL_WITHOUT_INTRODUCTION"
+  | "SIGIL_UNCLOSED_LITERAL_BLOCK"
+  | "SIGIL_INVALID_LITERAL_TYPE"
+  | "SIGIL_LINE_TOO_LONG"
+  | "SIGIL_UNFORMATTABLE_LINE"
   | "SIGIL_UNRESOLVED_IMPORT_PATH"
   | "SIGIL_UNRESOLVED_IMPORTED_COMPONENT"
+  | "SIGIL_UNUSED_IMPORT"
   | "SIGIL_EXPAND_WITHOUT_COMPONENT"
   | "SIGIL_DUPLICATE_COMPONENT"
   | "SIGIL_IMPORT_CYCLE"
@@ -39,9 +46,17 @@ export type SigilDiagnosticCode =
   | "SIGIL_GLOSSARY_INVALID"
   | "SIGIL_GLOSSARY_CONTEXT_OVERLAP"
   | "SIGIL_GLOSSARY_TERM_COLLISION"
-  | "SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY";
+  | "SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY"
+  | "SIGIL_RETRIEVAL_TARGET_PATH_INVALID"
+  | "SIGIL_RETRIEVAL_COMPONENT_NOT_FOUND"
+  | "SIGIL_RETRIEVAL_COMPONENT_IDENTITY_MISMATCH"
+  | "SIGIL_RETRIEVAL_FILE_NOT_FOUND"
+  | "SIGIL_RETRIEVAL_FILE_EMPTY"
+  | "SIGIL_RETRIEVAL_IMPLEMENTATION_DISCOVERY_UNAVAILABLE"
+  | "SIGIL_RETRIEVAL_IDENTITY_COLLISION"
+  | "SIGIL_RETRIEVAL_EVIDENCE_SNAPSHOT_MISMATCH";
 
-export const SIGIL_VERSION = "0.5.0";
+export const SIGIL_VERSION = "0.7.0";
 export const SIGIL_CORE_VERSION = metadata.version;
 export const SIGIL_CONFIG_PATH = ".sigil/config.json" as const;
 export const SIGIL_GLOSSARY_PATH = ".sigil/glossary.json" as const;
@@ -86,34 +101,47 @@ export interface SigilDiagnostic {
   readonly range?: SourceRange;
 }
 
-export interface SemanticLine {
+export interface LiteralBlock {
+  readonly type?: string;
+  readonly body: string;
+  readonly sourceLines: readonly string[];
+  readonly range: SourceRange;
+  readonly bodyRange: SourceRange;
+  readonly fenceLength: number;
+  readonly indentation: number;
+}
+
+export interface SemanticUnit {
   readonly filePath: string;
   readonly range: SourceRange;
   readonly ownerKind: SigilFormKind;
   readonly ownerName: string;
   readonly sectionName: SigilSectionName;
   readonly conceptIdentifier?: string;
-  readonly text: string;
+  readonly prose: string;
+  readonly sourceLines: readonly string[];
+  readonly literalBlocks: readonly LiteralBlock[];
 }
 
 export interface ConceptBlock {
   readonly identifier: string;
   readonly range: SourceRange;
   readonly bodyRange: SourceRange;
-  readonly lines: readonly SemanticLine[];
+  readonly units: readonly SemanticUnit[];
 }
 
 export interface Section {
   readonly name: SigilSectionName;
   readonly range: SourceRange;
   readonly bodyRange: SourceRange;
-  readonly lines: readonly SemanticLine[];
+  readonly units: readonly SemanticUnit[];
   readonly concepts: readonly ConceptBlock[];
 }
 
 export interface ImportDeclaration {
   readonly path: string;
   readonly names: readonly string[];
+  readonly nameRanges: readonly SourceRange[];
   readonly range: SourceRange;
 }
 
@@ -142,6 +170,12 @@ export interface SigilDocument {
 
 export interface ParseResult {
   readonly document: SigilDocument;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+
+export interface FormatResult {
+  readonly formattedSource?: string;
+  readonly changed: boolean;
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 
@@ -199,6 +233,7 @@ export interface GlossaryOccurrence {
 }
 
 export interface GlossaryProjection {
+  readonly workspaceSnapshotIdentity: string;
   readonly glossaryPath?: string;
   readonly schemaVersion?: 1;
   readonly terms: readonly GlossaryTerm[];
@@ -232,6 +267,18 @@ export interface ImplementationSource {
   readonly text: string;
 }
 
+export interface ImplementationEvidenceInput {
+  readonly workspaceSnapshotIdentity: string;
+  readonly discoveryState: "complete" | "unavailable";
+  readonly sources: readonly ImplementationSource[];
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+
+export interface ComponentIdentity {
+  readonly componentName: string;
+  readonly declarationPath: string;
+}
+
 export interface OwnedImplementationTarget {
   readonly relation: ImplementationRelation;
   readonly artifactKind: ImplementationArtifactKind;
@@ -239,6 +286,8 @@ export interface OwnedImplementationTarget {
   readonly sections: readonly ImplementationSection[];
   readonly symbolIdentity?: string;
   readonly range?: SourceRange;
+  readonly targetRange?: SourceRange;
+  readonly annotationRange: SourceRange;
 }
 
 export interface OwnedImplementationProjection {
@@ -258,11 +307,13 @@ export interface SigilFileSystem {
 
 export interface LoadedSigilFile {
   readonly path: string;
+  readonly source?: string;
   readonly document: SigilDocument;
 }
 
 export interface SigilWorkspace {
   readonly root: string;
+  readonly workspaceSnapshotIdentity: string;
   readonly configPath?: string;
   readonly config?: SigilConfig;
   readonly glossaryPath?: string;
@@ -289,6 +340,21 @@ export interface ResolvedImportName {
   readonly name: string;
   readonly component?: ComponentDeclaration;
   readonly componentFile?: string;
+  readonly used: boolean;
+  readonly uses: readonly ImportUse[];
+}
+
+export interface ImportUse {
+  readonly kind:
+    | "component-reference"
+    | "public-concept-reference"
+    | "structural-expand"
+    | "module-index-surface";
+  readonly filePath: string;
+  readonly ownerKind?: SigilFormKind;
+  readonly ownerName?: string;
+  readonly sectionName?: SigilSectionName;
+  readonly range: SourceRange;
 }
 
 export interface CollectedExpansion {
@@ -323,6 +389,24 @@ export interface AgentDependencyContext {
   readonly dependencyContracts: readonly ComponentContractView[];
   readonly dependencyDecisions: readonly DependencyDecisionView[];
   readonly relatedFilePaths: readonly string[];
+}
+
+export interface AgentDependentContext {
+  readonly selectedComponent: ResolvedComponent;
+  readonly importingFiles: readonly DependentImportingFileContext[];
+  readonly relatedFilePaths: readonly string[];
+}
+
+export interface DependentImportingFileContext {
+  readonly filePath: string;
+  readonly importedComponent: ImportedComponentReference;
+  readonly importEdges: readonly ImportedComponentEdge[];
+  readonly contextualContracts: readonly ComponentContractView[];
+}
+
+export interface ImportedComponentReference {
+  readonly name: string;
+  readonly filePath: string;
 }
 
 export interface ResolvedExpansion {
@@ -405,6 +489,8 @@ export interface ImportedComponentEdge {
   readonly targetFile: string;
   readonly componentName: string;
   readonly importPath: string;
+  readonly sourceComponents: readonly ComponentIdentity[];
+  readonly originRange: SourceRange;
 }
 
 export interface FileDependencyEdge {
@@ -427,4 +513,118 @@ export interface ResolvedSigilWorkspace {
   readonly graph: SigilGraph;
   readonly glossary: GlossaryProjection;
   readonly diagnostics: readonly SigilDiagnostic[];
+}
+
+// @sigil implements packages/core/src/model.sigil::SigilSemanticModel::RetrievalModel interface,constraints
+export type RetrievalPurpose = "semantic" | "architecture" | "implementation";
+export type PurposeRetrievalTarget =
+  | {
+    readonly kind: "component";
+    readonly componentName: string;
+    readonly path: string;
+  }
+  | { readonly kind: "file"; readonly path: string };
+export interface RetrievalTargetIdentity {
+  readonly kind: "component" | "file";
+  readonly componentName?: string;
+  readonly pathStatus: "accepted" | "rejected";
+  readonly path: string;
+}
+export type RetrievalNodeKind =
+  | "request-target"
+  | "component-declaration"
+  | "sigil-file"
+  | "expansion"
+  | "module-index"
+  | "public-concept-origin"
+  | "implementation-target"
+  | "implementation-source";
+export type RetrievalRelation =
+  | "selected-declaration"
+  | "matching-expansion"
+  | "direct-dependency"
+  | "direct-importer"
+  | "containing-module-index"
+  | "cycle-member"
+  | "public-concept-origin"
+  | "owned-implementation";
+export type EvidenceKind =
+  | "selected-contract"
+  | "selected-expansion"
+  | "dependency-contract"
+  | "dependency-decision"
+  | "importer-contract"
+  | "cycle-contract"
+  | "module-index-summary"
+  | "public-concept-origin"
+  | "glossary-definition"
+  | "ownership-projection"
+  | "implementation-source"
+  | "diagnostic";
+export interface RetrievalNode {
+  readonly identity: string;
+  readonly kind: RetrievalNodeKind;
+  readonly path: string;
+  readonly componentName?: string;
+  readonly range?: SourceRange;
+}
+export interface RetrievalEdge {
+  readonly identity: string;
+  readonly relation: RetrievalRelation;
+  readonly sourceIdentity: string;
+  readonly targetIdentity: string;
+  readonly originPath: string;
+  readonly originRange?: SourceRange;
+}
+export interface SelectedRetrievalGraph {
+  readonly nodes: readonly RetrievalNode[];
+  readonly edges: readonly RetrievalEdge[];
+}
+export interface EvidenceUnit {
+  readonly identity: string;
+  readonly kind: EvidenceKind;
+  readonly path?: string;
+  readonly componentName?: string;
+  readonly sectionName?: SigilSectionName | ImplementationSection;
+  readonly conceptIdentity?: string;
+  readonly range?: SourceRange;
+  readonly text: string;
+  readonly inclusionReasonIdentities: readonly string[];
+}
+export interface InclusionReason {
+  readonly identity: string;
+  readonly rule: string;
+  readonly seedIdentity: string;
+  readonly selectedIdentity: string;
+  readonly edgeIdentities: readonly string[];
+}
+export interface ExcludedRelation {
+  readonly identity: string;
+  readonly rule: string;
+  readonly edgeIdentity: string;
+  readonly sourceIdentity: string;
+  readonly targetIdentity: string;
+}
+export interface ContextSection {
+  readonly kind: EvidenceKind;
+  readonly text: string;
+  readonly evidenceIdentity: string;
+  readonly inclusionReasonIdentities: readonly string[];
+}
+export interface AggregatedRetrievalContext {
+  readonly sections: readonly ContextSection[];
+}
+export interface PurposeRetrievalResult {
+  readonly schema: "sigil-purpose-retrieval/v1";
+  readonly policyVersion: 1;
+  readonly workspaceSnapshotIdentity: string;
+  readonly target: RetrievalTargetIdentity;
+  readonly purpose: RetrievalPurpose;
+  readonly graph: SelectedRetrievalGraph;
+  readonly evidence: readonly EvidenceUnit[];
+  readonly inclusionReasons: readonly InclusionReason[];
+  readonly exclusions: readonly ExcludedRelation[];
+  readonly context: AggregatedRetrievalContext;
+  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly fingerprint: string;
 }

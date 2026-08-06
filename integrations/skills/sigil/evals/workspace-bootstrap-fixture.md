@@ -1,7 +1,7 @@
 # Workspace bootstrap fixture
 
 The target repository contains several `.sigil` files, including a root
-`#module.sigil`, but no `.sigil/config.json`. It may contain implementation, but
+`_module.sigil`, but no `.sigil/config.json`. It may contain implementation, but
 the agent has not yet inspected it and therefore cannot classify the semantic
 workflow.
 

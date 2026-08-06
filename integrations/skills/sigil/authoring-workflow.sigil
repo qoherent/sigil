@@ -1,0 +1,351 @@
+@spec/language.sigil import { SigilLanguage, SigilModuleIndex }
+@integrations/skills/sigil/design-compilation-review.sigil import { SigilDesignCompilationReview }
+@integrations/skills/sigil/review-gate.sigil import { SigilReviewGate }
+
+component SigilAuthoringWorkflow {
+  goal {
+    Author coherent Sigil boundaries, semantic units, concept identities, imports,
+    module indexes, and durable decision rationale after provisional design
+    evidence has been reviewed.
+  }
+
+  interface {
+ImportSemanticsGuidance {
+      ImportSemanticsGuidance adapts ImportSemantics into authoring guidance.
+
+      inspects the complete accessible imported public namespace before creating a
+      local component or concept with overlapping meaning
+
+      reuses every semantically matching imported component and public concept so
+      dependency contracts retain provider identity and vocabulary
+    }
+
+ModuleIndexFileGuidance {
+      ModuleIndexFileGuidance adapts ModuleIndexFile into authoring guidance.
+
+      keeps one small local summary component and assembles an intentional
+      directory-import surface from cohesive imported components
+
+      retains only boundary-wide goal, interface, architectural constraints, and
+      durable design decisions
+
+      delegates independently owned state, operational logic, lifecycle, and
+      implementation detail to components and expands colocated with their owners
+    }
+
+ConceptIdentifierWorkflow {
+      discovers reusable identities across the complete component, matching expands,
+      accessible imports, and relevant direct consumers
+
+      checks deterministic concept diagnostics before proposing identifiers
+
+      uses one proposal-only concept-identifier subagent when subagents are available
+    }
+
+SemanticUnitDisciplineGuidance {
+      SemanticUnitDisciplineGuidance adapts SemanticUnitDiscipline into authoring
+      guidance.
+
+      preserves one distinct idea per blank-line-delimited semantic unit and allows
+      physical prose wrapping without changing semantic identity
+
+      places an attached LiteralBlock directly after its introducing prose without a
+      blank line
+
+      limits ordinary prose to 79 content characters without counting leading
+      indentation
+    }
+
+DecisionRationaleWorkflow {
+      records material selected choices and the rationale needed for future review,
+      maintenance, and agent sessions
+
+      applies a consistent authoring convention while preserving the language's
+      free-form decisions syntax
+
+      uses automatically projected direct-dependency decisions as scoped rationale
+      without treating them as imported public contract
+
+      audits every new or changed material selected choice for durable rationale
+      before ReviewGate for sigil-change can return ready
+
+      reports each choice as covered by a decisions occurrence or intentionally
+      omitted with concrete evidence
+    }
+  }
+}
+
+expand SigilAuthoringWorkflow {
+  logic {
+ImportSemantics {
+      Inspect accessible imported components and public concepts before proposing
+      local identities.
+
+      Reuse every semantic match and create a local identity only for a materially
+      distinct responsibility or meaning.
+    }
+
+ModuleIndexFile {
+      Extract independently changing responsibilities and material state, lifecycle,
+      or operational logic into colocated components and expands.
+
+      Import the components intended for directory shorthand and leave the local
+      summary focused on boundary-wide architecture.
+    }
+
+ConceptIdentifierWorkflow {
+      Begin concept reuse discovery, grouping, and identifier proposals only after
+      DesignCompilationReview is green or every yellow finding is explicitly reviewed
+      and accepted as nonblocking for the selected scope.
+
+      Inspect the affected section, every other section of the component, and every
+      matching expand for the same semantic idea.
+
+      Inspect accessible imported public concepts before creating a local identity.
+
+      Inspect direct importers for relevant use cases and established terminology.
+
+      Traverse transitive importers only when a concept is re-exposed or namespace
+      ambiguity must be assessed.
+
+      Classify each affected region as local reuse, imported public reuse, or a new
+      identity.
+
+      Give the proposal-only subagent the affected regions, complete component and
+      expands, local occurrences, imported candidates, consumer evidence, and graph
+      paths.
+
+      After approved grouping changes, return to DesignCompilationReview before
+      glossary candidate extraction.
+    }
+
+DecisionRationaleWorkflow {
+      Use one concise PascalCase concept block for each material decision.
+
+      Record Decision and Scope for every authored material decision.
+
+      Scope states the governed boundary and important exclusions without attempting
+      to enumerate every current dependent.
+
+      Record Assumptions, Trade-offs, Design issues addressed, Discarded
+      alternatives, Consequences, and Revisit when when materially applicable.
+
+      Omit an inapplicable rationale label instead of adding filler.
+
+      Reuse an accessible concept identifier when decisions concern the same semantic
+      idea.
+
+      Scope states the local boundary of a contextual decision occurrence; concept
+      reuse does not make a decision transitively binding.
+
+      Keep the binding selected outcome in constraints and use decisions to explain
+      why it was selected.
+
+      Before presenting an exact semantic proposal, inventory every new or changed
+      selected choice expressed across goal, interface, state, logic, constraints,
+      and cases.
+
+      Treat a choice as material when future review, maintenance, or implementation
+      cannot safely reconstruct why it was selected or what alternatives it excludes.
+
+      Map each material selected choice to a matching decisions occurrence that
+      preserves its durable rationale.
+
+      When the binding outcome is confirmed but its decision record is missing,
+      include the exact decision record in the semantic proposal.
+
+      When the governing rationale is unresolved or conflicts with evidence, return
+      to DesignConversation in the applicable mode before proposing the decision
+      record.
+
+      Repeat the decision-rationale coverage audit after writing approved Sigil and
+      before ReviewGate for implementation can return ready.
+    }
+  }
+
+  constraints {
+ImportSemantics {
+      Namespace reuse is maximized only where meaning is coherent; superficially
+      similar but materially distinct concepts retain separate identities.
+
+      Imported public identities are reused directly without aliases, dotted
+      notation, local synonyms, or duplicated provider contracts.
+    }
+
+ModuleIndexFile {
+      Every semantic unit in ModuleIndexFile applies to the indexed directory or
+      configured boundary as a whole.
+
+      Material operational logic, mutable state, detailed lifecycle behavior, and
+      independently changing policy belong to their owning components or expands.
+
+      ModuleIndexFile may retain only genuinely boundary-wide state or orchestration
+      that cannot coherently belong to a narrower owner.
+
+      Smallness is assessed by responsibility and ownership rather than an arbitrary
+      line-count threshold.
+    }
+
+ConceptIdentifierWorkflow {
+      Missing interface concept identifiers remain deferred until pre-grouping
+      DesignCompilationReview is green or reviewed yellow, then are repaired before
+      final design compilation.
+
+      Consumer terminology is naming evidence but is not reusable identity unless
+      accessible through valid imports.
+
+      The subagent reports each region, grouping decision, new or reused status,
+      occurrences, graph paths, rejected alternatives, and proposed concise names.
+
+      Concept creation, reuse, regrouping, renaming, and warning repair require
+      ReviewGate readiness for sigil-change before mutation.
+
+      Concept-identifier work does not invoke anchor persistence, proposal, or
+      reconciliation behavior.
+    }
+
+SemanticUnitDiscipline {
+      Concept blocks group coherent identities without merging distinct semantic
+      ideas into one unit.
+
+      Goal and decisions references never satisfy strict import use.
+
+      LiteralBlock content remains excluded from import, concept, glossary, and
+      ownership reference evidence.
+    }
+
+    DecisionRationaleWorkflow {
+      Decision records summarize durable rationale rather than prompts, raw session
+      transcripts, or hidden reasoning.
+
+      Responsibility, accountability, approver, and handoff metadata are outside the
+      initial authoring convention.
+
+      The absence of a decisions section is structurally valid but blocks skill
+      semantic readiness when a material selected choice lacks durable rationale.
+
+      A material selected choice cannot make ReviewGate ready for sigil-change or
+      implementation without decision-rationale coverage.
+
+      A trivial, mechanically derived, or safely reconstructable choice does not
+      require a filler decision record.
+
+      Successful CLI validation does not establish decision-rationale coverage.
+    }
+  }
+
+  decisions {
+ImportSemantics {
+      Decision: Maximize coherent reuse of accessible imported public identities
+      before introducing local component or concept identities.
+
+      Scope: Governs Sigil authoring across direct imports and accessible public
+      concept namespaces.
+
+      Trade-offs: Authors must inspect provider contracts before choosing local
+      names.
+
+      Design issues addressed: Local synonyms and duplicated contracts fragment
+      architecture vocabulary and obscure dependency ownership.
+
+      Consequences: Importers remain consistent with provider namespaces while
+      materially distinct meanings retain independent identities.
+    }
+
+ModuleIndexFile {
+      Decision: Keep ModuleIndexFile as a small architectural summary and intentional
+      directory-namespace assembly surface.
+
+      Scope: Governs configured-boundary and internal module indexes; excludes
+      independently owned operational behavior and state.
+
+      Trade-offs: A modular boundary uses more Sigil files and explicit imports.
+
+      Design issues addressed: Large module indexes encourage generated god modules
+      whose unrelated responsibilities change together.
+
+      Consequences: Detailed responsibilities move beside their owners while the
+      index preserves the high-level architecture and public usable namespace.
+
+      Revisit when: A boundary-wide responsibility cannot be assigned coherently to a
+      narrower component.
+    }
+
+DecisionRationaleWorkflow {
+      Decision: Require a decision-rationale coverage audit before ReviewGate can
+      return ready for sigil-change and again after approved Sigil is written.
+
+      Scope: Governs new or changed material selected choices in semantic Sigil
+      proposals; excludes trivial, mechanically derived, and safely reconstructable
+      choices.
+
+      Trade-offs: Every material proposal requires an additional coverage review and
+      may require more semantic units.
+
+      Design issues addressed: Material workflow choices previously reached approval
+      because decision authoring described record format without requiring coverage.
+
+      Consequences: Missing rationale blocks semantic readiness, and exact decision
+      records must be included in the approved proposal.
+
+      Revisit when: Deterministic tooling can identify decision-rationale coverage
+      without treating model judgment as language validity.
+    }
+
+    ConceptProposalIsolation {
+      Decision: Use one proposal-only concept-identifier subagent when available and
+      otherwise perform the same evidence-bounded analysis in the primary agent.
+
+      Scope: Governs concept reuse, grouping, and identifier proposals after accepted
+      DesignCompilationReview evidence; excludes repository mutation and approval.
+
+      Trade-offs: Delegation adds coordination overhead and may be unavailable.
+
+      Design issues addressed: A separate proposal pass reduces anchoring on the
+      primary author's preferred grouping without multiplying competing proposals.
+
+      Discarded alternatives: Multiple parallel naming agents and subagent edit
+      authority were rejected as noisy and outside ReviewGate authority.
+
+      Consequences: Exactly one advisory proposal is independently checked; the
+      primary agent remains responsible for validation and user review.
+    }
+  }
+
+  cases {
+ImportSemantics {
+      An importer reuses an accessible provider concept instead of introducing a
+      synonymous local concept, but creates a new identity when the meanings differ.
+    }
+
+ModuleIndexFile {
+      A boundary with multiple independently owned responsibilities declares their
+      components beside their owners and imports the intended public components into
+      ModuleIndexFile instead of placing operational detail in its local summary.
+    }
+
+ConceptIdentifierWorkflow {
+      The same idea in an interface and matching expand reuses one collective
+      identifier.
+
+      An accessible imported public identity is reused instead of creating a synonym.
+
+      Two accessible imported identities with the same name are reported for
+      resolution rather than qualified with dotted syntax.
+    }
+
+DecisionRationaleWorkflow {
+      An importer may reuse a provider's public concept in decisions to explain local
+      rationale while Scope confines that decision to the importer.
+
+      A proposal that changes validation and enrichment ordering includes a matching
+      decision record explaining why the order was selected.
+
+      A proposal with no material selected choice reports the inspected changes and
+      why no decision record is required.
+
+      A written material constraint without matching durable rationale returns to
+      proposal review before implementation.
+    }
+  }
+}

@@ -7,7 +7,7 @@ import { buildSigilGraph } from "./graph.ts";
 import { glossaryProjectionForWorkspace } from "./glossary.ts";
 import { resolveSigilRelationships } from "./resolver.ts";
 
-// @sigil implements packages/core/#module.sigil::SigilCore::WorkspaceResolution interface,logic,cases
+// @sigil implements packages/core/_module.sigil::SigilCore::WorkspaceResolution interface,logic,cases
 export function resolveSigilWorkspace(
   workspace: SigilWorkspace,
 ): ResolvedSigilWorkspace {

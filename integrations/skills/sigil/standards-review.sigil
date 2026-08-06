@@ -1,0 +1,124 @@
+@integrations/skills/sigil/external-guidance-evidence.sigil import { ExternalGuidanceEvidence }
+
+component SigilStandardsReview {
+  goal {
+    Classify repository and external-guidance evidence, assess applicable
+    standards, and present scoped findings without replacing project decisions or
+    approval.
+  }
+
+  interface {
+EvidenceReview {
+      separates observed behavior, documented intent, user-confirmed intent,
+      unresolved ambiguity, suspected accidental behavior, and external guidance
+    }
+
+StandardsReview {
+      assesses applicable authoritative guidance and classifies findings before
+      proposing informed semantic changes
+    }
+  }
+}
+
+expand SigilStandardsReview {
+  state {
+EvidenceReview {
+      Evidence is classified as observed behavior, documented intent, user-confirmed
+      intent, unresolved ambiguity, suspected accidental behavior, or external
+      guidance.
+    }
+
+StandardsReview {
+      A researched finding is compatible guidance, a potential conflict, a definite
+      conflict, unverifiable guidance, or non-applicable.
+    }
+  }
+
+  logic {
+EvidenceReview {
+      Inspect relevant Sigil, implementation, tests, documentation, manifests, and
+      executable configuration.
+
+      Keep every evidence category distinct in analysis and proposals.
+
+      Report contradictions instead of silently choosing one source as intent.
+    }
+
+StandardsReview {
+      Use ApplicabilityAssessment and EvidencePacket from ExternalGuidanceEvidence on
+      every Sigil review and acquire required or recommended authoritative research.
+
+      Verify the currency and environment match of evidence created during design
+      conversation before reusing it.
+
+      Classify each current finding and present compatible changes as exact proposed
+      semantic units.
+
+      Preserve current Sigil and request a decision when guidance potentially or
+      definitely conflicts.
+    }
+  }
+
+  constraints {
+EvidenceReview {
+      Code is evidence of current behavior, not proof of desired behavior or
+      rationale.
+
+      Suspected accidental behavior does not become a contract without user
+      confirmation.
+    }
+
+StandardsReview {
+      Design conversation shows directly relevant source identity with
+      evidence-informed recommendations.
+
+      Standards review records complete source details and maps findings to their
+      supporting evidence.
+
+      Approved Sigil may retain a source identifier and applicable version only when
+      needed to reconstruct material rationale or its revisit condition.
+
+      Source URLs and full bibliographic records remain outside Sigil unless a
+      separate policy is approved.
+
+      Approved additions are written as project decisions rather than claims of
+      certification.
+
+      A conflict never silently overrides approved Sigil.
+    }
+  }
+
+  decisions {
+StandardsReview {
+      Decision: Consume shared ExternalGuidanceEvidence while retaining standards
+      review authority over finding classification and gate consequences.
+
+      Scope: Governs standards-aware semantic review; excludes evidence acquisition
+      mechanics and design-conversation recommendation policy.
+
+      Trade-offs: Reused evidence must receive a separate currency and applicability
+      verification.
+
+      Design issues addressed: Shared evidence should not allow its producer or an
+      earlier design conversation to determine approval consequences.
+
+      Consequences: Research remains reusable while standards review independently
+      owns conflicts, compliance language, and blocking outcomes.
+
+      Revisit when: Evidence classification and workflow approval become one
+      intentionally governed component.
+    }
+  }
+
+  cases {
+EvidenceReview {
+      Conflicting code, tests, and documentation are reported for user decision
+      rather than silently reconciled.
+    }
+
+StandardsReview {
+      Unavailable compliance-critical guidance blocks implementation while low-risk
+      unverifiable guidance is reported for explicit acceptance.
+    }
+  }
+}

@@ -1,0 +1,161 @@
+@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
+
+component SigilCompilationHistoryStore {
+  goal {
+    Supply compiler consumers with optional prior-report evidence for diagnostic
+    lifecycle comparison without mutating the selected workspace or making local
+    history project authority.
+  }
+
+  interface {
+    CompilationHistoryStore {
+      loadLatest(workspaceIdentity, targetIdentity, reportVersion,
+      profileFingerprint) returns CompilationHistoryLookupResult
+
+      replaceLatest(CompilationReport) atomically replaces the matching cached report
+      and returns no warning, or preserves prior history and returns one
+      CompilationHistoryWarning when replacement fails; history disabled performs no
+      replacement and returns no warning
+
+      neither operation emits CompilationEvent or changes compilation settlement
+    }
+
+    CompilationHistoryLookupResult {
+      contains the latest compatible prior CompilationReport when available and
+      otherwise no prior evidence
+
+      contains one CompilationHistoryWarning only when cache read or runtime failure
+      made history unavailable; disabled, missing, corrupt, or incompatible history
+      contains no warning
+    }
+
+    CompilationHistoryWarning {
+      is a non-authoritative host record containing operation read or replace and
+      reason cache-host-failure
+
+      contains no CompilationDiagnostic, never enters CompilationEvent output, and
+      cannot change CompilationReport status or invocation settlement
+    }
+  }
+}
+
+expand SigilCompilationHistoryStore {
+  logic {
+    CompilationHistoryStore {
+      Resolve the latest compatible report for the same workspace, target, report
+      version, and effective profile from the host-provided operating-system user
+      cache.
+
+      Supply that report to SigilCompilationReportProtocol for lifecycle comparison.
+
+      Atomically replace the matching latest compatible report when the caller
+      requests replacement and history is enabled. Do not determine when compilation
+      cancellation, export, or terminal settlement permits that request.
+
+      On write, sync, or atomic-replacement failure, preserve the preceding cache and
+      return one CompilationHistoryWarning to the caller.
+
+      On cache read or runtime failure, return CompilationHistoryLookupResult with no
+      prior evidence and one CompilationHistoryWarning.
+
+      Treat missing, corrupt, incompatible, or host-unreadable history as unavailable
+      evidence rather than a compilation failure.
+    }
+  }
+
+  constraints {
+    CompilationHistoryStore {
+      Store no implicit history inside the selected workspace.
+
+      History lookup and latest-report replacement are enabled by default unless the
+      invoking compiler options explicitly disable both.
+
+      Retain only complete CompilationReport values and never treat cached history as
+      human approval or durable project authority.
+
+      Warning delivery belongs to the compiler host boundary. The history store only
+      returns structured warnings and never selects stderr, logging, callback, or
+      presentation behavior.
+    }
+  }
+
+  decisions {
+    ExternalCompilationHistory {
+      Decision: Keep implicit interactive history outside the repository and make
+      durable report transfer explicit.
+
+      Scope: Governs local cache, CI, and team handoff; excludes explicit user-
+      selected export destinations.
+
+      Consequences: Compilation remains read-only while lifecycle comparison remains
+      available.
+    }
+
+    LatestCompatibleReportHistory {
+      Decision: Retain only the latest compatible report for each workspace, target,
+      report version, and effective profile in the host-provided operating-system
+      user cache.
+
+      Scope: Governs implicit local lifecycle comparison; excludes repository files,
+      explicit report exports, CI retention, and team handoff.
+
+      Trade-offs: Local history does not preserve a complete timeline and remains
+      host-specific.
+
+      Design issues addressed: Diagnostic lifecycle cannot be derived when every run
+      is treated as unrelated.
+
+      Discarded alternatives: Repository-local caches and unbounded implicit history
+      were rejected because they mutate selected workspaces or create unmanaged
+      retention.
+
+      Consequences: Completed runs can derive lifecycle state without making local
+      history durable project authority. Cache-read and cache-write failure remain
+      observable host warnings rather than authoritative compilation failures.
+    }
+
+    DefaultCompilationHistory {
+      Decision: Enable latest-compatible operating-system user-cache history by
+      default and provide one option that disables both lookup and replacement.
+
+      Scope: Governs implicit one-shot compilation history defaults; excludes
+      explicit exports, session proposal history, CI retention, and project
+      authority.
+
+      Assumptions: Diagnostic lifecycle is more useful when ordinary repeated runs
+      can compare with the immediately preceding compatible result.
+
+      Trade-offs: Default retention stores one report per compatible key in private
+      host-local cache, while privacy-sensitive callers must opt out explicitly.
+
+      Discarded alternatives: Opt-in history and session-only history were rejected
+      because ordinary CLI runs would lose lifecycle continuity or require an
+      unrelated proposal session.
+
+      Consequences: Default runs show lifecycle changes without repository mutation;
+      disableHistory performs no read or replacement.
+
+      Revisit when: Privacy policy, retention regulation, or deployment constraints
+      require opt-in or shorter-lived history.
+    }
+  }
+
+  cases {
+    CompilationHistoryStore {
+      Recompiling after resolving one stable finding supplies its prior report so
+      SigilCompilationReportProtocol can mark the finding resolved.
+
+      Disabling history reads no prior report and writes no replacement report.
+
+      Corrupt or incompatible history supplies no prior evidence and does not prevent
+      completion.
+
+      Cache read or runtime failure reports a non-authoritative host warning,
+      supplies no prior evidence, and does not prevent completion.
+
+      Replacement failure preserves the prior cache and reports a host warning
+      through CompilationHistoryWarning without changing its caller's authoritative
+      outcome.
+    }
+  }
+}

@@ -1,7 +1,10 @@
 {
   "name": "@qoherent/sigil-core",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "exports": "./src/mod.ts",
+  "imports": {
+    "ajv-2020": "npm:ajv@8/dist/2020.js"
+  },
   "publish": {
     "include": [
       "README.md",

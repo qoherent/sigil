@@ -1,41 +1,103 @@
 component SigilImplementationOwnership {
   goal {
-    Provide the shared core query that returns implementation targets linked to a Sigil contract from implementation comments.
+    Provide the shared core query that returns implementation targets linked to a
+    Sigil contract from implementation comments.
 
-    Keep implementation-to-contract ownership discovery deterministic and reusable for CLI and LSP without writing annotations into Sigil source.
+    Keep implementation-to-contract ownership discovery deterministic and reusable
+    for CLI and LSP without writing annotations into Sigil source.
   }
 
   interface {
-    OwnedImplementationLookup {
-      ownedImplementationTargetsFor(resolvedWorkspace, implementationSources, componentName, conceptName?, sectionName?) returns an owned-implementation projection or undefined
+    ImplementationEvidenceInput {
+      contains exactly workspaceSnapshotIdentity, discoveryState, sources, and
+      diagnostics
 
-      The query scans implementation comments that link entrypoint definitions or agent-facing Markdown back to the selected Sigil component and optional concept and section scopes.
+      workspaceSnapshotIdentity is copied from the ResolvedSigilWorkspace for which
+      the host performed implementation-source discovery
+
+      discoveryState is exactly complete or unavailable
+
+      sources is an immutable ordered collection of ImplementationSourceRecord values
+
+      diagnostics is an immutable ordered collection of SigilDiagnostic values owned
+      by SigilSemanticModel
+
+      ImplementationSourceRecord contains exactly path and sourceText; path is one
+      normalized workspace-relative path accepted by isSupportedImplementationSource,
+      and sourceText is the exact decoded text the host read from that path
+
+      complete means every successfully discovered supported source is present,
+      including the valid zero-source case; records are ordered by normalized path
+      and duplicate normalized paths are rejected
+
+      unavailable requires an empty source collection and at least one discovery
+      diagnostic
+
+      discovery diagnostics are ordered by severity, path with absent first, range
+      with absent first, code, then message
+    }
+
+    OwnedImplementationLookup {
+      ownedImplementationTargetsFor(resolvedWorkspace, implementationSources,
+      componentIdentity, conceptName?, sectionName?) returns an owned-implementation
+      projection or undefined
+
+      componentIdentity contains the exact case-sensitive componentName and
+      normalized workspace-relative declarationPath of one resolved component
+
+      returns undefined only when componentIdentity identifies no exact resolved
+      component or conceptName is supplied and identifies no concept in that
+      component
+
+      returns a projection with an empty targets collection when the component and
+      optional concept resolve but no annotation matches the optional section scope
+
+      The query scans implementation comments that link entrypoint definitions or
+      agent-facing Markdown back to the selected Sigil component and optional concept
+      and section scopes.
     }
 
     OwnedImplementationProjection {
-      includes the owning contract, optional concept and section scopes, normalized implementation targets, and diagnostics
+      includes the owning contract, optional concept and section scopes, normalized
+      implementation targets, and diagnostics
     }
 
     OwnedImplementationTarget {
       each target identifies one owned implementation artifact
 
-      each target preserves the artifact kind, file path, selected sections, and optional symbol identity when available
+      each target preserves the artifact kind, file path, selected sections, and
+      optional symbol identity when available
+
+      targetRange is the exact adjacent code entrypoint-definition range or the
+      complete agent-facing Markdown document range; annotationRange is the exact
+      ownership-comment range used as provenance
     }
 
     ImplementationSourceSupport {
-      isSupportedImplementationSource(filePath) returns whether the path can contain a supported ownership annotation
+      isSupportedImplementationSource(filePath) returns whether the path can contain
+      a supported ownership annotation
 
-      supportedImplementationSourceGlobPatterns returns immutable workspace watcher patterns covering the same supported source extensions
+      supportedImplementationSourceGlobPatterns returns immutable workspace watcher
+      patterns covering the same supported source extensions
     }
 
     ImplementationAnnotation {
-      identifies a relation, repository-relative Sigil path, component name, optional concept name, and one or more selected sections
+      identifies a relation, repository-relative Sigil path, component name, optional
+      concept name, and one or more selected sections
 
-      the containing implementation file and adjacent entrypoint definition identify the owned implementation target
+      the containing implementation file and adjacent entrypoint definition identify
+      the owned implementation target
 
-      uses @sigil <relation> <file>::<component>[::<concept>] <section>[,<section>...]
+      uses @sigil <relation> <file>::<component>[::<concept>]
+      <section>[,<section>...]
 
       file is a repository-relative Sigil path
+
+      file may identify either the component declaration source or a source
+      containing a matching expand for the named component
+
+      an annotation through a matching expand resolves to the parent component
+      identity
 
       implements links an artifact that implements the selected section occurrences.
 
@@ -53,35 +115,61 @@ expand SigilImplementationOwnership {
 
       resolve each annotation target against the selected Sigil workspace
 
-      resolve each annotation's selected sections against the targeted component or concept occurrences
+      resolve each annotation's selected sections against the targeted component or
+      concept occurrences
 
-      normalize code, tests, and agent-facing workflow Markdown into one shared result shape
+      normalize code, tests, and agent-facing workflow Markdown into one shared
+      result shape
 
-      derive symbol-level targets from annotated language entrypoint definitions and use file-level targets for Markdown
+      derive symbol-level targets from annotated language entrypoint definitions and
+      use file-level targets for Markdown
+
+      preserve exact targetRange and annotationRange values in every normalized
+      target
+
+      return undefined before scanning when the component or supplied concept does
+      not resolve; otherwise return one projection after scanning even when it has no
+      targets
     }
   }
 
   constraints {
-    AnnotationStorage {
-      Ownership annotations exist only in implementation comments and never in Sigil source.
+    ImplementationEvidenceInput {
+      Ownership lookup preserves supplied source text exactly and performs no
+      filesystem discovery or reads.
 
-      Each annotation points from an implementation artifact to a repository-relative Sigil path, component, optional concept, and selected sections.
+      Complete and unavailable describe source-enumeration availability, not whether
+      any ownership annotation exists.
+    }
+
+    AnnotationStorage {
+      Ownership annotations exist only in implementation comments and never in Sigil
+      source.
+
+      Each annotation points from an implementation artifact to a repository-relative
+      Sigil path, component, optional concept, and selected sections.
     }
 
     SectionSelection {
-      Every annotation selects one or more interface, state, logic, constraints, or cases sections.
+      Every annotation selects one or more interface, state, logic, constraints, or
+      cases sections.
 
       Goal and decisions sections cannot be ownership targets.
 
-      For a component target, each selector resolves to an existing section occurrence on the component or one of its matching expands.
+      For a component target, each selector resolves to an existing section
+      occurrence on the component or one of its matching expands.
 
-      For a concept target, each selector resolves to an occurrence of that concept in the selected section.
+      For a concept target, each selector resolves to an occurrence of that concept
+      in the selected section.
 
-      Empty, repeated, unknown, or unresolved section selectors produce diagnostics instead of an inferred relationship.
+      Empty, repeated, unknown, or unresolved section selectors produce diagnostics
+      instead of an inferred relationship.
     }
 
     AnnotationPlacement {
-      A source annotation is immediately associated with a language entrypoint definition such as a class, function, method, interface, struct, or equivalent stable definition.
+      A source annotation is immediately associated with a language entrypoint
+      definition such as a class, function, method, interface, struct, or equivalent
+      stable definition.
 
       One annotation uses the language's single-line comment form.
 
@@ -97,11 +185,14 @@ expand SigilImplementationOwnership {
 
       v1 includes Markdown only for agent-facing instructions or workflow documents.
 
-      Sigil sources, JSON, general prose documentation, configs, and non-text artifacts remain out of scope.
+      Sigil sources, JSON, general prose documentation, configs, and non-text
+      artifacts remain out of scope.
 
-      The exported support predicate and watcher patterns describe one shared implementation-source extension policy.
+      The exported support predicate and watcher patterns describe one shared
+      implementation-source extension policy.
 
-      Every watcher-pattern match is accepted by isSupportedImplementationSource, while the predicate remains authoritative for received paths.
+      Every watcher-pattern match is accepted by isSupportedImplementationSource,
+      while the predicate remains authoritative for received paths.
     }
 
     TargetResolution {
@@ -109,133 +200,304 @@ expand SigilImplementationOwnership {
 
       Resolve agent-facing Markdown annotations at file level.
 
-      Ignore ambiguous or detached annotations and return diagnostics rather than inferring ownership.
+      Treat an annotation's Sigil path as governing the named component when it is
+      either the component declaration source or a matching expand source.
+
+      Do not infer ownership from an expand for a different component in the same
+      file.
+
+      Ignore ambiguous or detached annotations and return diagnostics rather than
+      inferring ownership.
+    }
+
+    LookupAbsenceSemantics {
+      An unresolved exact component identity or supplied concept returns undefined.
+
+      Name-only fallback is forbidden; duplicate component names remain
+      distinguishable by declarationPath.
+
+      A resolved lookup with zero matching targets returns an empty projection and
+      preserves its owning component, optional concept, optional section scope, and
+      diagnostics.
     }
   }
 
   decisions {
+    SnapshotBoundImplementationEvidence {
+      Decision: Accept implementation evidence only through one immutable envelope
+      carrying the governing workspace snapshot identity, discovery state, ordered
+      source records, and ordered diagnostics.
+
+      Scope: Governs host-to-core implementation evidence supplied to ownership and
+      purpose retrieval; excludes filesystem discovery policy and retrieval result
+      membership.
+
+      Assumptions: The host copies workspaceSnapshotIdentity from the resolved
+      workspace before enumerating implementation sources for that request.
+
+      Trade-offs: Hosts must preserve an explicit envelope and distinguish complete
+      zero-source discovery from unavailable discovery, while core lookup remains
+      filesystem-free and reproducible.
+
+      Design issues addressed: A bare source array cannot distinguish valid absence
+      from failed discovery or prove association with the selected Sigil snapshot.
+
+      Discarded alternatives: Implicit host state, filesystem reads during lookup,
+      nullable source arrays, and unbound discovery diagnostics were rejected as
+      ambiguous or nondeterministic.
+
+      Consequences: Retrieval can reject cross-snapshot evidence before scanning and
+      can preserve complete versus unavailable discovery semantics.
+
+      Revisit when: Core owns an atomic workspace-and-implementation snapshot
+      boundary.
+    }
+
     AnnotationStorage {
-      Decision: Store ownership links in implementation comments that point back to governing Sigil components and concepts.
+      Decision: Store ownership links in implementation comments that point back to
+      governing Sigil components and concepts.
 
-      Scope: Governs shared CLI and LSP ownership discovery for source code, tests, and agent-facing Markdown; excludes annotations inside Sigil and JSON support.
+      Scope: Governs shared CLI and LSP ownership discovery for source code, tests,
+      and agent-facing Markdown; excludes annotations inside Sigil and JSON support.
 
-      Trade-offs: Implementation-local links are visible where code changes occur, but scanners must understand language comment and entrypoint syntax.
+      Trade-offs: Implementation-local links are visible where code changes occur,
+      but scanners must understand language comment and entrypoint syntax.
 
-      Design issues addressed: Sigil contracts should remain implementation-independent while code retains a reviewable link to its governing rationale.
+      Design issues addressed: Sigil contracts should remain
+      implementation-independent while code retains a reviewable link to its
+      governing rationale.
 
-      Consequences: Ownership discovery scans implementation artifacts, and Sigil files contain no implementation-link annotations.
+      Consequences: Ownership discovery scans implementation artifacts, and Sigil
+      files contain no implementation-link annotations.
 
-      Revisit when: A language cannot expose a stable comment or entrypoint association.
+      Revisit when: A language cannot expose a stable comment or entrypoint
+      association.
     }
 
     AnnotationGrammar {
-      Decision: Encode each ownership link as @sigil <relation> <file>::<component>[::<concept>] <section>[,<section>...] and allow only implements, uses, or tests.
+      Decision: Encode each ownership link as @sigil <relation>
+      <file>::<component>[::<concept>] <section>[,<section>...] and allow only
+      implements, uses, or tests.
 
-      Scope: Governs payloads parsed from supported implementation comments; file is a repository-relative Sigil path, component is required, concept is optional, and one or more sections are required.
+      Scope: Governs payloads parsed from supported implementation comments; file is
+      a repository-relative Sigil path, component is required, concept is optional,
+      and one or more sections are required.
 
-      Trade-offs: A small fixed vocabulary and required occurrence selectors keep ownership queries precise and deterministic, but existing sectionless annotations require reviewed migration.
+      Trade-offs: A small fixed vocabulary and required occurrence selectors keep
+      ownership queries precise and deterministic, but existing sectionless
+      annotations require reviewed migration.
 
-      Design issues addressed: Component-level and concept-level links otherwise cannot identify which contract occurrences the implementation uses, implements, or tests.
+      Design issues addressed: Component-level and concept-level links otherwise
+      cannot identify which contract occurrences the implementation uses, implements,
+      or tests.
 
-      Discarded alternatives: follows, validates, related, goal and decisions selectors, and sectionless annotations do not provide the selected implementation-occurrence precision required by the ownership query.
+      Discarded alternatives: follows, validates, related, goal and decisions
+      selectors, and sectionless annotations do not provide the selected
+      implementation-occurrence precision required by the ownership query.
 
-      Consequences: Parsers reject unsupported relations and annotations without valid implementation-related section selectors.
+      Consequences: Parsers reject unsupported relations and annotations without
+      valid implementation-related section selectors.
 
-      Revisit when: Ownership queries need another behavioral relation or section occurrences are insufficiently precise.
+      Revisit when: Ownership queries need another behavioral relation or section
+      occurrences are insufficiently precise.
     }
 
     AnnotationPlacement {
-      Decision: Attach annotations to stable language entrypoint definitions, using single-line comments for one link and multiline comments for multiple links.
+      Decision: Attach annotations to stable language entrypoint definitions, using
+      single-line comments for one link and multiline comments for multiple links.
 
-      Scope: Governs source annotation placement and comment form; Markdown uses HTML comments and remains file-scoped.
+      Scope: Governs source annotation placement and comment form; Markdown uses HTML
+      comments and remains file-scoped.
 
-      Trade-offs: Entrypoint placement improves symbol navigation but requires language-aware scanning.
+      Trade-offs: Entrypoint placement improves symbol navigation but requires
+      language-aware scanning.
 
-      Consequences: Classes, functions, methods, interfaces, structs, and equivalent definitions become linkable ownership entrypoints.
+      Consequences: Classes, functions, methods, interfaces, structs, and equivalent
+      definitions become linkable ownership entrypoints.
 
-      Revisit when: Supported languages require declaration metadata instead of comments.
+      Revisit when: Supported languages require declaration metadata instead of
+      comments.
     }
 
     ScopeSelection {
-      Decision: Allow optional concept and section scopes so a contract can return all owned targets, one concept's targets, or only targets selecting one section occurrence.
+      Decision: Allow optional concept and section scopes so a contract can return
+      all owned targets, one concept's targets, or only targets selecting one section
+      occurrence.
 
-      Scope: Governs query scoping within one contract; section scope filters selected annotation sections and excludes cross-contract aggregation and transitive ownership inference.
+      Scope: Governs query scoping within one contract; section scope filters
+      selected annotation sections and excludes cross-contract aggregation and
+      transitive ownership inference.
 
-      Trade-offs: Concept and section scoping increase precision without forcing separate query shapes, but callers must supply the occurrence scope when they need a narrower view.
+      Trade-offs: Concept and section scoping increase precision without forcing
+      separate query shapes, but callers must supply the occurrence scope when they
+      need a narrower view.
 
-      Consequences: The same API serves whole-contract, concept-specific, and section-specific ownership views.
+      Consequences: The same API serves whole-contract, concept-specific, and
+      section-specific ownership views.
 
-      Revisit when: Component, concept, and section scoping prove too coarse or too fine for routine use.
+      Revisit when: Component, concept, and section scoping prove too coarse or too
+      fine for routine use.
     }
 
     SectionSelection {
-      Decision: Resolve component-target selectors against component and matching-expand sections, and resolve concept-target selectors only against sections containing that concept.
+      Decision: Resolve component-target selectors against component and
+      matching-expand sections, and resolve concept-target selectors only against
+      sections containing that concept.
 
-      Scope: Governs annotation validation, projection metadata, and optional section-scoped lookup; excludes goal, decisions, and semantic-line-level selectors.
+      Scope: Governs annotation validation, projection metadata, and optional
+      section-scoped lookup; excludes goal, decisions, and semantic-unit-level
+      selectors.
 
-      Trade-offs: Occurrence validation detects stale or impossible links, but moving a concept between sections requires its annotations to be reconciled.
+      Trade-offs: Occurrence validation detects stale or impossible links, but moving
+      a concept between sections requires its annotations to be reconciled.
 
-      Design issues addressed: A section name has different precision when the annotation targets an entire component versus one concept.
+      Design issues addressed: A section name has different precision when the
+      annotation targets an entire component versus one concept.
 
-      Consequences: Component annotations may select implementation-related component or expand sections, while concept annotations may select only implementation-related sections where that concept occurs.
+      Consequences: Component annotations may select implementation-related component
+      or expand sections, while concept annotations may select only
+      implementation-related sections where that concept occurs.
 
-      Revisit when: Ownership needs semantic-line-level or cross-component occurrence selection.
+      Revisit when: Ownership needs semantic-unit-level or cross-component occurrence
+      selection.
     }
 
     ImplementationTargetScope {
-      Decision: Limit v1 implementation targets to source code and tests with supported comments plus agent-facing instruction or workflow Markdown, and expose one shared source-support policy for host filtering and watcher registration.
+      Decision: Limit v1 implementation targets to source code and tests with
+      supported comments plus agent-facing instruction or workflow Markdown, and
+      expose one shared source-support policy for host filtering and watcher
+      registration.
 
-      Scope: Governs eligible implementation artifacts, the support predicate, and extension-based watcher patterns; excludes filesystem traversal and host-specific watcher lifecycle.
+      Scope: Governs eligible implementation artifacts, the support predicate, and
+      extension-based watcher patterns; excludes filesystem traversal and
+      host-specific watcher lifecycle.
 
-      Trade-offs: Shared patterns prevent host integrations from duplicating the extension list, while received paths still require predicate validation.
+      Trade-offs: Shared patterns prevent host integrations from duplicating the
+      extension list, while received paths still require predicate validation.
 
-      Consequences: CLI, LSP, and editor integrations can share one definition of supported ownership sources.
+      Consequences: CLI, LSP, and editor integrations can share one definition of
+      supported ownership sources.
 
-      Revisit when: Other artifact classes become meaningful implementation evidence or a supported host cannot express the shared patterns.
+      Revisit when: Other artifact classes become meaningful implementation evidence
+      or a supported host cannot express the shared patterns.
     }
 
     TargetResolution {
-      Decision: Resolve source annotations to adjacent language entrypoint definitions and resolve agent-facing Markdown at file level.
+      Decision: Resolve source annotations to adjacent language entrypoint
+      definitions and resolve agent-facing Markdown at file level.
 
-      Scope: Governs how owned implementation targets are normalized inside the query result; excludes detached-annotation inference and human approval.
+      Scope: Governs how owned implementation targets are normalized inside the query
+      result; excludes detached-annotation inference and human approval.
 
-      Trade-offs: Language-aware entrypoint resolution improves navigation, while Markdown remains useful through file-level links.
+      Trade-offs: Language-aware entrypoint resolution improves navigation, while
+      Markdown remains useful through file-level links.
 
-      Consequences: The same query can link source and test entrypoints plus file-level Markdown targets without guessing ambiguous ownership.
+      Consequences: The same query can link source and test entrypoints plus
+      file-level Markdown targets without guessing ambiguous ownership.
 
-      Revisit when: Supported languages need declaration metadata or Markdown requires section-level targets.
+      Revisit when: Supported languages need declaration metadata or Markdown
+      requires section-level targets.
+    }
+
+    ExpandPathOwnershipResolution {
+      Decision: Accept either the component declaration path or a matching expand
+      path in an ownership annotation and normalize both to the parent component
+      identity.
+
+      Scope: Governs ownership annotation target resolution; excludes component-name
+      inference, imports, and unrelated expands in the same file.
+
+      Trade-offs: One component can have multiple valid annotation paths.
+
+      Design issues addressed: Implementation beside an expand should link to that
+      local rationale without losing the parent component's ownership projection.
+
+      Discarded alternatives: Requiring every annotation to name the component
+      declaration file was rejected because it breaks colocation with
+      implementation-specific expands.
+
+      Consequences: Context collects locally linked implementation under the parent
+      component while preserving exact component-name validation.
+    }
+
+    LookupAbsenceSemantics {
+      Decision: Require exact component name and declaration-path identity, reserve
+      undefined for an unresolved exact component or supplied concept, and return an
+      empty projection for every resolved lookup with zero matching targets.
+
+      Scope: Governs OwnedImplementationLookup result presence; excludes annotation
+      diagnostics, source discovery, and host failure.
+
+      Trade-offs: Callers must inspect targets and diagnostics separately, but can
+      distinguish an invalid contract scope from valid absence of implementation
+      ownership evidence.
+
+      Discarded alternatives: Returning undefined for zero matches and returning an
+      empty projection for unknown contract identities were rejected because both
+      erase a material lookup distinction.
+
+      Consequences: Retrieval and host consumers can treat empty ownership evidence
+      as complete while handling unresolved identities explicitly.
     }
   }
 
   cases {
-    ImplementationSourceSupport {
-      A supported source path is accepted by the predicate and matched by a shared watcher pattern.
+    ImplementationEvidenceInput {
+      Complete discovery with zero records is valid evidence and differs from
+      unavailable discovery with zero records and at least one diagnostic.
 
-      Sigil, JSON, unsupported, and extensionless paths are rejected by the predicate.
+      Two records that normalize to the same workspace-relative path are rejected
+      before ownership scanning.
+    }
+
+    ImplementationSourceSupport {
+      A supported source path is accepted by the predicate and matched by a shared
+      watcher pattern.
+
+      Sigil, JSON, unsupported, and extensionless paths are rejected by the
+      predicate.
     }
 
     OwnedImplementationLookup {
-      A TypeScript line comment immediately before one function links that function to a Sigil component or concept.
+      A TypeScript line comment immediately before one function links that function
+      to a Sigil component or concept.
 
-      A language multiline comment contains multiple ownership annotations for one class, method, interface, struct, or equivalent entrypoint.
+      A language multiline comment contains multiple ownership annotations for one
+      class, method, interface, struct, or equivalent entrypoint.
 
-      An HTML comment links an agent-facing Markdown workflow file to a Sigil component or concept.
+      An HTML comment links an agent-facing Markdown workflow file to a Sigil
+      component or concept.
 
-      A component annotation can implement logic and constraints occurrences without naming a concept.
+      A component annotation can implement logic and constraints occurrences without
+      naming a concept.
 
       A concept annotation can use the interface occurrence of that concept.
 
       JSON content is ignored.
+
+      An unknown exact component identity or supplied concept returns undefined.
+
+      Two components with the same name but different declaration paths are queried
+      independently and never share ownership targets through name-only fallback.
+
+      A resolved exact component with no matching annotation returns an empty
+      projection.
     }
 
     TargetResolution {
-      A source annotation adjacent to a supported entrypoint produces a symbol-level implementation target.
+      A source annotation adjacent to a supported entrypoint produces a symbol-level
+      implementation target.
 
       A Markdown instruction comment produces a file-level implementation target.
 
-      A detached or ambiguous annotation produces a diagnostic instead of an inferred target.
+      A detached or ambiguous annotation produces a diagnostic instead of an inferred
+      target.
 
-      A concept annotation naming a section where the concept does not occur produces a diagnostic.
+      A concept annotation naming a section where the concept does not occur produces
+      a diagnostic.
+
+      An annotation naming an expand-only source and its expanded component resolves
+      to the parent component's ownership projection.
     }
   }
 }

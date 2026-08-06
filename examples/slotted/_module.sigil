@@ -1,14 +1,17 @@
 component Slotted {
     goal {
-        A room booking platform built as a testbed for a Sigil-driven development workflow.
+        A room booking platform built as a testbed for a Sigil-driven development
+        workflow.
 
         Slotted connects room owners and renters in one authenticated app.
 
         Owners create and manage rooms and availability.
 
-        Renters book rooms for specific time slots with conflict detection and cancellation support.
+        Renters book rooms for specific time slots with conflict detection and
+        cancellation support.
 
-        The product is intentionally small; the real goal is testing whether Sigil can preserve rationale from schema design through implementation and tests.
+        The product is intentionally small; the real goal is testing whether Sigil can
+        preserve rationale from schema design through implementation and tests.
     }
 
     interface {
@@ -40,9 +43,11 @@ expand Slotted {
 
         Renters search available rooms and request a time slot.
 
-        Booking checks identity, room availability, scheduling rules, and conflicts before confirming a booking.
+        Booking checks identity, room availability, scheduling rules, and conflicts
+        before confirming a booking.
 
-        Cancellations update booking state without deleting the historical booking record.
+        Cancellations update booking state without deleting the historical booking
+        record.
 
         Calendar view reads from module contracts and shapes the data for presentation.
     }
@@ -52,33 +57,41 @@ expand Slotted {
 
         The system ships as a single Next.js app.
 
-        Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
+        Modules communicate through explicit contracts, not direct access to another
+        module's database tables or private logic.
 
-        Each module separates Presentation, Application, Domain, Infrastructure, and Contracts concerns where useful.
+        Each module separates Presentation, Application, Domain, Infrastructure, and
+        Contracts concerns where useful.
 
         Domain logic should be testable with zero mocks and zero I/O.
 
         Infrastructure is private to the module that owns it.
 
-        Shared identifiers such as UserId and ResourceId live in a shared contracts or shared-kernel area.
+        Shared identifiers such as UserId and ResourceId live in a shared contracts or
+        shared-kernel area.
 
         Identity and Access owns users, sessions, roles, and permission checks.
 
-        User Profile owns editable display profile information such as displayName and profilePictureUrl.
+        User Profile owns editable display profile information such as displayName and
+        profilePictureUrl.
 
         Resource Management owns rooms, room metadata, and base availability rules.
 
-        Booking owns booking creation, conflict detection, lifecycle, and cancellation rules.
+        Booking owns booking creation, conflict detection, lifecycle, and cancellation
+        rules.
 
-        Scheduling and Recurrence owns recurring booking patterns, series, and exceptions.
+        Scheduling and Recurrence owns recurring booking patterns, series, and
+        exceptions.
 
         Calendar Read Model composes bookings and resources for UI display.
 
         Booking must call Resource Management to answer availability questions.
 
-        Other modules must call Identity and Access for current user and permission checks.
+        Other modules must call Identity and Access for current user and permission
+        checks.
 
-        Notification is out of scope for the first implementation but remains a known module boundary.
+        Notification is out of scope for the first implementation but remains a known
+        module boundary.
 
         Stack is Next.js, Neon Postgres, and Drizzle ORM.
     }
@@ -88,7 +101,8 @@ expand Slotted {
 
         A renter books an available room for a specific time slot.
 
-        A renter cannot book a room when the requested slot conflicts with an existing confirmed booking.
+        A renter cannot book a room when the requested slot conflicts with an existing
+        confirmed booking.
 
         A renter cancels a confirmed booking.
 

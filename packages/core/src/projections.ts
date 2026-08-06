@@ -1,8 +1,11 @@
 import type {
   AgentDependencyContext,
+  AgentDependentContext,
   CollectedExpansion,
   ComponentContractView,
   DependencyDecisionView,
+  DependentImportingFileContext,
+  ImportedComponentEdge,
   ResolvedComponent,
   ResolvedConceptNamespace,
   ResolvedSigilWorkspace,
@@ -97,6 +100,70 @@ export function agentDependencyContextFor(
   };
 }
 
+export function agentDependentContextFor(
+  resolved: ResolvedSigilWorkspace,
+  componentName: string,
+): AgentDependentContext | undefined {
+  const selectedComponent = resolved.components.find((component) =>
+    component.name === componentName
+  );
+  if (!selectedComponent) return undefined;
+
+  const edgesByImportingFile = new Map<string, ImportedComponentEdge[]>();
+  for (
+    const edge of resolved.graph.importedComponentEdges.filter((edge) =>
+      edge.targetFile === selectedComponent.filePath &&
+      edge.componentName === selectedComponent.name &&
+      edge.sourceFile !== selectedComponent.filePath
+    )
+  ) {
+    const existing = edgesByImportingFile.get(edge.sourceFile) ?? [];
+    const key = importEdgeKey(edge);
+    if (!existing.some((item) => importEdgeKey(item) === key)) {
+      existing.push(edge);
+    }
+    edgesByImportingFile.set(edge.sourceFile, existing);
+  }
+
+  const importingFiles: DependentImportingFileContext[] = [
+    ...edgesByImportingFile.entries(),
+  ]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([filePath, importEdges]) => ({
+      filePath,
+      importedComponent: {
+        name: selectedComponent.name,
+        filePath: selectedComponent.filePath,
+      },
+      importEdges: [...importEdges].sort(compareImportEdges),
+      contextualContracts: resolved.components
+        .filter((component) => component.filePath === filePath)
+        .map(componentContractView),
+    }));
+
+  return {
+    selectedComponent,
+    importingFiles,
+    relatedFilePaths: importingFiles.map((item) => item.filePath).sort(),
+  };
+}
+
+function importEdgeKey(edge: ImportedComponentEdge): string {
+  return [
+    edge.sourceFile,
+    edge.targetFile,
+    edge.componentName,
+    edge.importPath,
+  ].join("\0");
+}
+
+function compareImportEdges(
+  left: ImportedComponentEdge,
+  right: ImportedComponentEdge,
+): number {
+  return importEdgeKey(left).localeCompare(importEdgeKey(right));
+}
+
 function componentContractView(
   component: ResolvedComponent,
 ): ComponentContractView {
@@ -109,15 +176,15 @@ function componentContractView(
   return {
     name: component.name,
     filePath: component.filePath,
-    goalLines: goal?.lines.map((line) => line.text) ?? [],
-    interfaceLines: iface?.lines.map((line) => line.text) ?? [],
+    goalLines: goal?.units.map((unit) => unit.prose) ?? [],
+    interfaceLines: iface?.units.map((unit) => unit.prose) ?? [],
     ungroupedInterfaceLines:
-      iface?.lines.filter((line) => line.conceptIdentifier === undefined).map((
-        line,
-      ) => line.text) ?? [],
+      iface?.units.filter((unit) => unit.conceptIdentifier === undefined).map((
+        unit,
+      ) => unit.prose) ?? [],
     interfaceConcepts: iface?.concepts.map((concept) => ({
       identifier: concept.identifier,
-      lines: concept.lines.map((line) => line.text),
+      lines: concept.units.map((unit) => unit.prose),
       sourceRange: concept.range,
     })) ?? [],
   };

@@ -6,11 +6,14 @@ component User {
     }
 
     interface {
+        User has this public TypeScript shape:
+        ```typescript
         type User = {
             id: UserId
             email: string
             isHomeOwner: boolean
         }
+        ```
 
         exposes user identity: User.id, User.email
 
@@ -20,14 +23,18 @@ component User {
 
 component Auth {
     goal {
-        Manages identity and access so a user can sign in as a renter or room owner and use the correct parts of the app.
+        Manages identity and access so a user can sign in as a renter or room owner and
+        use the correct parts of the app.
     }
 
     interface {
+        SignInCredentials has this public TypeScript shape:
+        ```typescript
         type SignInCredentials = {
             email: User.email
             password: string
         }
+        ```
 
         signIn(credentials: SignInCredentials) returns JWT
 
@@ -63,11 +70,14 @@ expand Auth {
     constraints {
         Renters and room owners share the same User entity.
 
+        Auth uses UserProfile only through its public contract.
+
         Next.js authentication is the intended auth foundation.
 
         JWT is the session representation exposed to the app.
 
-        Other modules should ask Auth for current user and permissions instead of reading Auth private details directly.
+        Other modules should ask Auth for current user and permissions instead of
+        reading Auth private details directly.
 
         Password storage and verification details are private to Auth.
     }

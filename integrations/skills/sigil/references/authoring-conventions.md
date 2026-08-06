@@ -1,6 +1,12 @@
 <!--
-@sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::SemanticLineDiscipline interface,constraints
-@sigil implements integrations/skills/sigil/#module.sigil::SigilSkill::DecisionRationaleWorkflow interface,logic,constraints,cases
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::SemanticUnitDisciplineGuidance interface
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::SemanticUnitDiscipline constraints
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::DecisionRationaleWorkflow interface,logic,constraints,cases
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ImportSemanticsGuidance interface
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ImportSemantics logic,constraints,cases
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ModuleIndexFileGuidance interface
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ModuleIndexFile logic,constraints,cases
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ConceptIdentifierWorkflow interface,logic,constraints
 -->
 
 # Sigil Authoring Conventions
@@ -26,6 +32,39 @@ Sigil. Read `sigil-format.md` when syntax details or examples are needed.
 UI interface content may use natural language, brace-safe ASCII, repository
 image references, or design links. Preserve the author's natural wording and do
 not invent visual-authority keywords.
+
+## Architectural Modularity And Module Indexes
+
+Write Sigil at the architectural boundaries that implementation should preserve.
+When a responsibility owns an independently relied-upon contract, mutable state,
+lifecycle, policy, or durable reason to change, give it its own component. Put
+implementation-specific operational detail in an expand beside its owner. Do
+not place several independently changing responsibilities beneath one
+high-level component merely because they share a package or product boundary.
+
+Before proposing local components or concept identifiers, inspect the complete
+accessible imported public namespace. Reuse every imported component and public
+concept whose meaning matches. Create a local identity only for a materially
+distinct responsibility or meaning. Do not create aliases, dotted names, local
+synonyms, or duplicate provider contracts. Never force reuse when similar words
+represent different concepts.
+
+Keep each `ModuleIndexFile` small by responsibility, not by an arbitrary line
+count. It contains one concise local summary component for its directory or
+configured boundary and imports the cohesive components intended for directory
+shorthand. Its matching expand retains only boundary-wide architecture
+constraints and durable design decisions.
+
+Move material operational logic, mutable state, detailed lifecycle behavior,
+and independently changing policy into components or expands beside their
+owners. A module index may retain state or orchestration only when it genuinely
+governs the whole indexed boundary and cannot coherently belong to a narrower
+owner.
+
+Before approval, verify that the proposed component and expand decomposition can
+guide code generation into cohesive implementation modules. The corresponding
+implementation entrypoint or index assembles the approved public namespace; it
+does not become the default owner of unrelated behavior or state.
 
 ## Decision Rationale
 
@@ -79,8 +118,29 @@ hidden reasoning. Responsibility, accountability, approver, and handoff metadata
 remain outside the convention.
 
 After writing approved Sigil, repeat the coverage audit against the exact
-written semantic lines. A missing material decision returns to
+written semantic units. A missing material decision returns to
 `ReviewGate(action: sigil-change)` and blocks implementation readiness.
+
+## Semantic Units, Width, And Literals
+
+Treat each blank-line-delimited prose paragraph as one semantic unit. Physical
+wrapping inside that paragraph is presentation only. Keep distinct ideas
+separated by blank lines and keep ordinary prose within 79 content characters;
+leading indentation does not count.
+
+Use a directly attached typed literal block when code, JSON, configuration,
+data, or a diagram needs multiple physical lines. Put no blank line between the
+introducing prose and opening fence. Literal bodies are preserved and do not
+provide import, concept, glossary, or ownership evidence.
+
+Every resolved imported name needs a qualifying exact-case use in `interface`,
+`state`, `logic`, `constraints`, or `cases`, or a structural use through a
+matching local `expand` or `_module.sigil` surface. `goal`, `decisions`, and
+literal blocks are documentary for import-use purposes.
+
+Use `sigil fmt <selected-path> --check` after approved edits. Apply `sigil fmt`
+only when formatting that selected scope is approved; never infer permission
+for a repository-wide formatting pass.
 
 ## Concept Identifiers
 
@@ -146,9 +206,9 @@ After applying an approved grouping or identifier change:
 5. begin glossary candidate extraction only when the final review appears
    aligned.
 
-## Semantic Lines
+## Semantic Units
 
-- Keep each non-empty line as one distinct idea.
+- Keep each blank-line-delimited semantic unit focused on one distinct idea.
 - Separate distinct prose-level ideas with blank lines in every section.
 - Blank lines do not create semantic units.
 - Keep lines in one compact free-form construct adjacent when separation would
@@ -166,10 +226,10 @@ multiple implementations depend on it. Put implementation-specific expands
 beside the code they explain. Split files that describe owners in different
 directories without duplicating a public component declaration.
 
-Do not move a configured-boundary `#module.sigil`; its ordinary summary remains
+Do not move a configured-boundary `_module.sigil`; its ordinary summary remains
 at the workspace root or declared-member boundary. Internal module indexes may
 move with their owning directories.
 
 Update affected imports after an approved placement-only move, run
 `sigil check`, and use `graph` or `context` when relationships matter. Any
-semantic-line change requires `ReviewGate(action: sigil-change)`.
+semantic-unit change requires `ReviewGate(action: sigil-change)`.

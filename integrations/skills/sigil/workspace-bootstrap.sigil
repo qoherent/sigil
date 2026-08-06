@@ -1,0 +1,231 @@
+@spec/language.sigil import { SigilWorkspaceConfig }
+@packages/cli import { SigilCli }
+@integrations/skills/sigil/review-gate.sigil import { SigilReviewGate }
+@integrations/skills/sigil/compatibility.sigil import { SigilSkillCompatibility }
+
+component SigilWorkspaceBootstrap {
+  goal {
+    Establish a compatible configured Sigil workspace and select the appropriate
+    greenfield, brownfield, or established-contract workflow before semantic work.
+    Keep initialization authority and workspace mutation boundaries explicit.
+  }
+
+  interface {
+WorkspaceBootstrap {
+      identifies the target repository and its configuration state before semantic
+      workflow selection
+
+      handles configured workspaces, unconfigured repositories with existing Sigil,
+      and unconfigured repositories without Sigil
+
+      reports a missing ConfigFile without mutation and initializes only when
+      ReviewGate for workspace-initialization returns ready
+    }
+
+WorkflowSelection {
+      selects Greenfield design, Brownfield adoption, or established-Sigil review
+      from implementation and Sigil evidence after workspace bootstrap
+
+      validates ConfigFile and SkillCompatibility before relying on workspace
+      semantics
+    }
+  }
+}
+
+expand SigilWorkspaceBootstrap {
+  state {
+WorkspaceBootstrap {
+      Configuration state is configured, unconfigured with existing Sigil,
+      unconfigured without Sigil, invalid, or outside the selected target.
+    }
+
+WorkflowSelection {
+      Greenfield applies when no existing implementation constrains the selected
+      behavior or component.
+
+      Brownfield applies when relevant implementation exists but Sigil coverage is
+      absent, partial, ambiguous, or suspected to have drifted.
+
+      Established-Sigil review applies when the selected boundary already has
+      credible contract coverage.
+    }
+  }
+
+  logic {
+WorkspaceBootstrap {
+      Resolve the selected repository root and any eligible ancestor workspace before
+      interpreting Sigil sources.
+
+      When a valid ConfigFile governs the target, validate that configured workspace
+      without initialization.
+
+      When no ConfigFile governs the target, inventory existing Sigil paths and
+      report the repository as unconfigured without mutation.
+
+      Invoke initialization only when ReviewGate for workspace-initialization returns
+      ready.
+
+      When an existing ConfigFile is invalid, preserve it and stop with diagnostics.
+
+      Ask SigilSkillCompatibility to validate the portable skill metadata and
+      resolved tool versions. Stop before semantic workflow selection when
+      SkillCompatibility fails.
+    }
+
+WorkflowSelection {
+      Complete WorkspaceBootstrap, then inspect relevant implementation and Sigil
+      evidence.
+
+      Select GreenfieldWorkflow, BrownfieldWorkflow, or established-Sigil review from
+      that evidence.
+    }
+
+GreenfieldWorkflow {
+      Begin with the problem, intended users or callers, outcomes, boundaries,
+      non-responsibilities, and important constraints.
+
+      Resolve material product, contract, ownership, lifecycle, architecture, risk,
+      and verification decisions through DesignConversation.
+
+      Establish the smallest coherent component boundary and draft goal and interface
+      before operational detail.
+
+      Run evidence, standards, design compilation, implementation-coverage, and
+      concept-identifier review as applicable.
+
+      Synthesize exact Sigil, obtain ReviewGate readiness for sigil-change, write and
+      validate it, then report the result before implementation review.
+    }
+
+BrownfieldWorkflow {
+      Use WorkspaceBootstrap and stop boundary inspection while the repository
+      remains unconfigured.
+
+      Validate WorkspaceBoundary and inspect the root plus every declared member.
+
+      Gather boundary documentation, manifests, executable configuration, and
+      entrypoints.
+
+      Confirm each configured boundary's responsibility, intended outcome, users or
+      systems, and external interaction surface.
+
+      Propose and review an ordinary summary component in each boundary's
+      ModuleIndexFile.
+
+      After ReviewGate returns ready for the boundary-summary sigil-change and the
+      summary is written and validated, narrow to the requested coherent task
+      boundary and reconcile its evidence.
+
+      Present exact task components, expands, locations, and imports to ReviewGate
+      with sigil-change, then write only when ready and validate the result.
+    }
+  }
+
+  constraints {
+WorkspaceBootstrap {
+      Existing Sigil sources without ConfigFile are unconfigured evidence, not an
+      established workspace and not a compatibility failure until bootstrap is
+      attempted.
+
+      Initialization never overwrites an existing ConfigFile or semantically rewrites
+      existing Sigil sources.
+
+      Workflow classification does not determine whether a missing ConfigFile may be
+      initialized.
+
+      Review and diagnosis do not initialize an unconfigured repository.
+
+      Workspace initialization requires ReviewGate approval for the exact selected
+      repository root and files that may be created.
+    }
+
+WorkflowSelection {
+      Deterministic facts come from compatible CLI and core behavior.
+
+      Model-assisted judgment, ambiguity resolution, and approval remain
+      host-workflow responsibilities.
+    }
+
+GreenfieldWorkflow {
+      Major product, architecture, persistence, authorization, deployment, and
+      lifecycle decisions are not invented silently.
+
+      Implementation does not begin until ReviewGate for implementation is ready for
+      the validated Sigil and exact implementation scope.
+    }
+
+BrownfieldWorkflow {
+      ConfigFile initialization never overwrites an existing configuration.
+
+      Configured boundary summaries precede task-specific modeling.
+
+      Additional summary boundaries are not inferred from package manifests or
+      directory structure.
+
+      Existing user changes and unrelated dirty-worktree content are preserved.
+    }
+
+WorkspaceMutationBoundary {
+      CLI and language-server operations do not semantically edit .sigil sources.
+
+      ConfigFile initialization is the narrow CLI mutation exception.
+
+      Semantic Sigil mutation belongs to the approved agent workflow.
+    }
+  }
+
+  decisions {
+WorkspaceBootstrap {
+      Decision: Keep review and diagnosis bootstrap non-mutating and require
+      ReviewGate approval before workspace initialization.
+
+      Scope: Governs repositories without an eligible ConfigFile; excludes validation
+      of already configured workspaces.
+
+      Trade-offs: An unconfigured repository requires one explicit initialization
+      approval before semantic workspace interpretation.
+
+      Design issues addressed: Automatic initialization contradicted the read-only
+      review contract.
+
+      Consequences: Missing configuration is reported without mutation, and
+      initialization creates files only after scoped approval.
+
+      Revisit when: The host provides an explicitly authorized initialization mode
+      before the Sigil workflow begins.
+    }
+  }
+
+  cases {
+WorkspaceBootstrap {
+      An unconfigured repository is inventoried and reported without creating files
+      during review or diagnosis.
+
+      Approved workspace-initialization creates only the reviewed ConfigFile and
+      optional seeded GlossaryFile.
+
+      An invalid existing ConfigFile is reported without replacement.
+    }
+
+WorkflowSelection {
+      A component with credible existing Sigil uses established-Sigil review unless
+      evidence shows drift.
+    }
+
+GreenfieldWorkflow {
+      An undecided public behavior discovered during implementation returns to
+      ReviewGate with sigil-change.
+    }
+
+BrownfieldWorkflow {
+      A workspace without ConfigFile is reported as unconfigured before boundary
+      inspection and initialized only when ReviewGate for workspace-initialization
+      returns ready.
+    }
+
+WorkspaceMutationBoundary {
+      A read-only validation command reports diagnostics without rewriting Sigil
+      sources.
+    }
+  }
+}

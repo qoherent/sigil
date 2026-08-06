@@ -1,6 +1,7 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runTests } from "@vscode/test-electron";
+import { downloadAndUnzipVSCode, runTests } from "@vscode/test-electron";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const extension = path.resolve(directory, "..");
@@ -14,13 +15,32 @@ for (const key of Object.keys(process.env)) {
   }
 }
 
-await runTests({
+let vscodeExecutablePath = await downloadAndUnzipVSCode({
   version: "stable",
+  timeout: 120_000,
+});
+if (
+  process.platform === "darwin" &&
+  !existsSync(vscodeExecutablePath) &&
+  vscodeExecutablePath.endsWith("/Electron")
+) {
+  const renamedExecutable = vscodeExecutablePath.slice(
+    0,
+    -"/Electron".length,
+  ) + "/Code";
+  if (existsSync(renamedExecutable)) vscodeExecutablePath = renamedExecutable;
+}
+
+await runTests({
+  vscodeExecutablePath,
   extensionDevelopmentPath: extension,
   extensionTestsPath: path.join(extension, "dist/test/extension.js"),
   launchArgs: [
     path.join(repository, "examples/slotted"),
     "--disable-extensions",
   ],
-  extensionTestsEnv: { SIGIL_REPO_ROOT: repository },
+  extensionTestsEnv: {
+    SIGIL_REPO_ROOT: repository,
+    SIGIL_TEST_NODE: process.execPath,
+  },
 });

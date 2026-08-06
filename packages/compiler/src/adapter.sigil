@@ -1,0 +1,26 @@
+@packages/compiler/src/profile.sigil import { SigilCompilationProfile }
+@packages/compiler/src/report-protocol.sigil import { SigilCompilationReportProtocol }
+
+component SigilAgentAdapter {
+  goal {
+    Map one provider-neutral bounded evaluation request to an enforceable
+    code-agent execution without changing compiler semantics.
+
+    Enforce the capability contract from CompilationProfile and emit only evidence
+    accepted as CompilationDiagnostic input.
+  }
+
+  interface {
+    AgentAdapter {
+      execute(request, evaluatorIdentity, capabilityContract) streams validated
+      provider events or rejects when required capabilities cannot be enforced
+
+      capabilityContract is resolved by CompilationProfile and accepted findings are
+      candidates for CompilationDiagnostic normalization
+
+      an evaluator identity is one configured provider and optional model binding
+
+      adapter output remains untrusted until protocol and evidence validation succeed
+    }
+  }
+}

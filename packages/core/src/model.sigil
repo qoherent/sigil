@@ -3,9 +3,11 @@
 
 component SigilSemanticModel {
   goal {
-    Define the immutable typed data exchanged by deterministic core stages and public core consumers.
+    Define the immutable typed data exchanged by deterministic core stages and
+    public core consumers.
 
-    Keep source, configuration, diagnostics, workspaces, resolutions, concepts, and graphs structurally consistent across the package.
+    Keep source, configuration, diagnostics, workspaces, resolutions, concepts, and
+    graphs structurally consistent across the package.
   }
 
   interface {
@@ -14,37 +16,53 @@ component SigilSemanticModel {
     }
 
     ConfigurationModel {
-      SigilConfig represents ConfiguredLanguageVersion, WorkspaceBoundary, SourceSelection, and ToolConfiguration data
+      SigilConfig represents ConfiguredLanguageVersion, WorkspaceBoundary,
+      SourceSelection, and ToolConfiguration data
 
-      SigilConfigParseResult contains validated configuration when available and accumulated diagnostics
+      SigilConfigParseResult contains validated configuration when available and
+      accumulated diagnostics
     }
 
     GlossaryModel {
-      GlossaryTerm preserves its canonical spelling, definition, aliases, agent-context visibility, scope, and declaration range
+      GlossaryTerm preserves its canonical spelling, definition, aliases,
+      agent-context visibility, scope, and declaration range
 
       WorkspaceGlossary contains validated workspace terms and bounded contexts
 
-      ResolvedGlossaryContext contains the effective entries and optional matched context for one source
+      ResolvedGlossaryContext contains the effective entries and optional matched
+      context for one source
 
-      GlossaryOccurrence preserves its canonical entry, matched spelling, source file, semantic-line owner, and exact range
+      GlossaryOccurrence preserves its canonical entry, matched spelling, source
+      file, semantic-unit owner, and exact range
 
-      GlossaryProjection contains resolved contexts, entries, ordered occurrences, and diagnostics
+      GlossaryProjection contains resolved contexts, entries, ordered occurrences,
+      diagnostics, and the workspace snapshot identity from which it was derived
 
-      GlossaryContextProjection contains the glossary path, effective terms, resolved bounded contexts, and occurrences relevant to selected source files
+      GlossaryContextProjection contains the glossary path, effective terms, resolved
+      bounded contexts, occurrences, and diagnostics relevant to selected source
+      files
 
-      GlossaryParseResult contains validated authoritative data when available and accumulated diagnostics
+      GlossaryParseResult contains validated authoritative data when available and
+      accumulated diagnostics
     }
 
     SourceModel {
       SourceLocation and SourceRange identify source positions
 
-      SigilSectionName represents goal, interface, state, logic, constraints, decisions, and cases
+      SigilSectionName represents goal, interface, state, logic, constraints,
+      decisions, and cases
 
-      SemanticLine preserves owner, section, optional concept identity, text, file path, and source range
+      SemanticUnit preserves owner, section, optional concept identity, normalized
+      prose, original physical lines, attached literal blocks, file path, and source
+      range
 
-      ConceptBlock and Section preserve grouped and free semantic content
+      LiteralBlock preserves its optional type, dedented body, original physical
+      lines, fence ranges, and containing semantic-unit relationship
 
-      ImportDeclaration, ComponentDeclaration, and ExpandDeclaration preserve recovered source forms
+      ConceptBlock and Section preserve grouped and free semantic units
+
+      ImportDeclaration, ComponentDeclaration, and ExpandDeclaration preserve
+      recovered source forms
 
       SigilDocument contains imports, components, expands, and source diagnostics
 
@@ -52,37 +70,101 @@ component SigilSemanticModel {
     }
 
     DiagnosticModel {
-      SigilDiagnostic contains a stable code, severity, message, optional file path, and optional source range
+      SigilDiagnostic contains a stable code, severity, message, optional file path,
+      and optional source range
     }
 
     FileSystemModel {
-      SigilFileSystem defines asynchronous text reading, existence checks, and recursive file listing
+      SigilFileSystem defines asynchronous text reading, existence checks, and
+      recursive file listing
     }
 
     WorkspaceModel {
-      SigilWorkspace contains the selected root, configuration, member roots, loaded source documents, and diagnostics
+      SigilWorkspace contains the selected root, configuration, member roots, loaded
+      source documents, diagnostics, and workspaceSnapshotIdentity
 
-      WorkspaceLoadOptions identifies a start path and may select an explicit root or current directory
+      WorkspaceLoadOptions identifies a start path and may select an explicit root or
+      current directory
     }
 
     ResolutionModel {
-      SigilResolution contains the source workspace, resolved imports, resolved components, collective expansions, concept namespaces, and diagnostics
+      SigilResolution contains the source workspace, resolved imports, resolved
+      components, collective expansions, concept namespaces, and diagnostics
 
-      ResolvedConcept preserves its originating identity, visibility, import status, and contextual occurrences
+      ResolvedImportName preserves its resolved component and qualifying local use
+      evidence
 
-      ResolvedConceptReference contains conceptIdentity, componentName, filePath, ownerKind, ownerName, sectionName, and exact source range
+      ImportUse records component-reference, public-concept-reference,
+      structural-expand, or module-index-surface evidence with source ownership and
+      range
 
-      ResolvedConceptNamespace contains local, accessible, and public concepts plus contextual whole-word references
+      ResolvedConcept preserves its originating identity, visibility, import status,
+      and contextual occurrences
 
-      AgentDependencyContext preserves the selected component, its collected expansions, direct dependency contract views, source-aware decision sections, and related file paths
+      ResolvedConceptReference contains conceptIdentity, componentName, filePath,
+      ownerKind, ownerName, sectionName, and exact source range
+
+      ResolvedConceptNamespace contains local, accessible, and public concepts plus
+      contextual whole-word references
+
+      AgentDependencyContext preserves the selected component, its collected
+      expansions, direct dependency contract views, source-aware decision sections,
+      and related file paths
+
+      AgentDependentContext preserves the selected component, direct importing files,
+      imported-component edge details, contextual public contracts declared by
+      importing files, and related file paths
     }
 
     GraphModel {
-      SigilGraph contains component nodes, file dependency edges, imported-component edges, and component-expansion edges
+      SigilGraph contains component nodes, file dependency edges, imported-component
+      edges, and component-expansion edges
+    }
+
+    RetrievalModel {
+      PurposeRetrievalResult contains schema identity, policy version,
+      RetrievalTargetIdentity, purpose, SelectedRetrievalGraph, ordered EvidenceUnit,
+      InclusionReason, and ExcludedRelation values, AggregatedRetrievalContext,
+      diagnostics, and fingerprint
+
+      RetrievalTargetIdentity contains target kind component or file, optional exact
+      requested component-name Unicode scalar sequence for component kind, pathStatus
+      accepted or rejected, and path. The component name is never trimmed, case
+      folded, or Unicode-normalized. An accepted path is the normalized
+      workspace-relative path. A rejected path is the exact requested Unicode-scalar
+      string, including empty or NUL-containing values, and is serialized with RFC
+      8785 escaping in fingerprint input without being treated as a workspace path.
+
+      SelectedRetrievalGraph contains ordered RetrievalNode and RetrievalEdge values
+
+      RetrievalNode contains stable identity, kind, optional component name,
+      normalized workspace-relative path, and optional source range
+
+      RetrievalEdge contains stable identity, RetrievalRelation, endpoint identities,
+      and normalized originating evidence
+
+      EvidenceUnit contains stable identity, EvidenceKind, optional normalized path,
+      optional component, section, and concept identity, optional source range,
+      semantic or implementation text, and selecting inclusion-reason identities
+
+      Every non-diagnostic EvidenceUnit requires path and source range. Diagnostic
+      evidence preserves its SigilDiagnostic optional path and range; an absent path
+      also requires an absent range.
+
+      InclusionReason contains stable identity, policy rule, exact seed identity,
+      selected identity, and ordered RetrievalEdge path from that seed
+
+      ExcludedRelation contains stable identity, frontier edge and endpoint
+      identities, and exact excluding policy rule
+
+      AggregatedRetrievalContext contains ordered ContextSection values; each section
+      contains its EvidenceKind, semantic or selected implementation text, evidence
+      identity, and ordered inclusion-reason identities without presentation markup
     }
 
     ResolvedWorkspaceModel {
-      ResolvedSigilWorkspace combines SigilResolution with SigilGraph
+      ResolvedSigilWorkspace combines SigilResolution with SigilGraph and preserves
+      its source SigilWorkspace workspaceSnapshotIdentity
     }
   }
 }
@@ -90,73 +172,110 @@ component SigilSemanticModel {
 expand SigilSemanticModel {
   constraints {
     SupportedLanguageVersion {
-      SupportedLanguageVersion exposes the language contract supported by core and does not establish a second language-version owner.
+      SupportedLanguageVersion exposes the language contract supported by core and
+      does not establish a second language-version owner.
 
-      packages/core/deno.json owns the core package version, not the LanguageVersion contract.
+      packages/core/deno.json owns the core package version, not the LanguageVersion
+      contract.
     }
 
     ImmutableData {
       Public model fields are immutable to consumers.
 
-      Model declarations contain data shapes and constants but no parsing, filesystem, resolution, graph, or projection behavior.
+      Model declarations contain data shapes and constants but no parsing,
+      filesystem, resolution, graph, or projection behavior.
     }
 
     GlossaryModel {
+      SigilWorkspaceGlossary owns the language contract represented by glossary data.
+
       Glossary declarations and occurrences are immutable to consumers.
 
-      GlossaryContextProjection excludes glossary entries unrelated to its selected source files and entries whose agentContext is false.
+      GlossaryContextProjection excludes glossary entries unrelated to its selected
+      source files and entries whose agentContext is false.
 
-      Invalid glossary input remains representable through diagnostics without becoming authoritative data.
+      Invalid glossary input remains representable through diagnostics without
+      becoming authoritative data.
 
       Glossary identity remains separate from concept identity.
     }
 
     SourceModel {
-      Source models preserve source order and ranges supplied by deterministic stages.
+      Source models preserve source order and ranges supplied by deterministic
+      stages.
 
       Partial documents remain representable when structural recovery succeeds.
+
+      Physical wrapping is retained as source data without changing SemanticUnit
+      identity.
+
+      Literal bodies remain distinct from normalized prose and semantic reference
+      content.
     }
 
     ResolutionModel {
       Concept identity is distinct from its ordered contextual occurrences.
 
-      Provider context excludes semantic lines contributed by importing consumers.
+      Provider context excludes semantic units contributed by importing consumers.
 
-      ResolvedConceptNamespace.references contains only references resolved inside the selected component and its matching expands.
+      ResolvedConceptNamespace.references contains only references resolved inside
+      the selected component and its matching expands.
 
-      References preserve deterministic source order and never flow from consumer namespaces into provider namespaces.
+      References preserve deterministic source order and never flow from consumer
+      namespaces into provider namespaces.
 
-      Concept-block declarations remain represented by concept occurrences rather than semantic-content references.
+      Concept-block declarations remain represented by concept occurrences rather
+      than semantic-content references.
+
+      Import-use evidence excludes goal, decisions, literal bodies, comments,
+      annotations, other source documents, case-mismatched text, and identifier
+      substrings.
     }
 
     PublicModel {
-      The package public entrypoint re-exports the semantic model used by core operations.
+      The package public entrypoint re-exports the semantic model used by core
+      operations.
     }
   }
 
   cases {
     SourceModel {
-      A recovered semantic line retains its file, owner, section, text, optional concept identifier, and source range.
+      A recovered semantic unit retains its file, owner, section, normalized prose,
+      original physical lines, optional concept identifier, attached literal blocks,
+      and complete source range.
+
+      A typed JSON fence retains dedented JSON body content without exposing its
+      braces as Sigil structure.
     }
 
     GlossaryModel {
-      An alias occurrence retains both its matched spelling and canonical GlossaryTerm.
+      An alias occurrence retains both its matched spelling and canonical
+      GlossaryTerm.
 
-      One GlossaryOccurrence identifies the semantic line and exact source range containing the recognized prose.
+      One GlossaryOccurrence identifies the semantic unit and exact source range
+      containing the recognized prose.
 
-      A context projection for selected and related files contains only definitions effective in or occurring within those files.
+      A context projection for selected and related files contains only definitions
+      effective in or occurring within those files.
     }
 
     ResolutionModel {
-      One concept identity may contain collective occurrences from a component and matching expands.
+      One concept identity may contain collective occurrences from a component and
+      matching expands.
 
-      Reusing an imported concept preserves its origin while recording importer-specific occurrences only in importer context.
+      Reusing an imported concept preserves its origin while recording
+      importer-specific occurrences only in importer context.
 
-      An imported concept reference retains the provider's ConceptIdentity and the consumer's contextual source location.
+      An imported concept reference retains the provider's ConceptIdentity and the
+      consumer's contextual source location.
+
+      One used and one unused name in the same import retain independent use state
+      and evidence.
     }
 
     ResolvedWorkspaceModel {
-      A resolved workspace carries source workspace data, resolution relationships, graph data, and accumulated diagnostics without host-specific objects.
+      A resolved workspace carries source workspace data, resolution relationships,
+      graph data, and accumulated diagnostics without host-specific objects.
     }
   }
 }

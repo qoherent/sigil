@@ -6,11 +6,15 @@ component SigilParser {
   goal {
     Interpret one versioned Sigil source into a source-faithful partial document.
 
-    Preserve useful declarations, concepts, semantic lines, and ranges whenever malformed structure permits deterministic recovery.
+    Preserve useful declarations, concepts, semantic units, attached literal
+    blocks, original physical lines, and ranges whenever malformed structure
+    permits deterministic recovery.
   }
 
   interface {
-    SourceDocument {
+    SourceDocumentParsing {
+      SourceDocumentParsing adapts SourceDocument into the parser API.
+
       parseSigilDocument(filePath, source, options) returns ParseResult
 
       options.sigilVersion is required and must equal SupportedLanguageVersion
@@ -29,13 +33,27 @@ expand SigilParser {
 
       Parse sections and flat concept blocks while preserving identifiers and ranges.
 
-      Parse decisions as free-form expand-section content without requiring concept blocks or labeled fields.
+      Parse decisions as free-form expand-section content without requiring concept
+      blocks or labeled fields.
 
-      Associate each semantic line inside a concept block with that identifier.
+      Combine adjacent prose physical lines into one blank-line-delimited
+      SemanticUnit.
 
-      Preserve non-empty free semantic lines outside concept blocks.
+      Associate each semantic unit inside a concept block with that identifier.
 
-      Recover unclosed forms and sections when practical.
+      Preserve non-empty free semantic units outside concept blocks.
+
+      Parse an immediately adjacent backtick fence as a LiteralBlock attached to its
+      preceding prose semantic unit.
+
+      Dedent literal body lines by the opening-fence indentation when present while
+      preserving additional indentation.
+
+      Skip malformed top-level and direct form-body lines, then resume at the same
+      structural level.
+
+      Finalize EOF-unclosed concepts, sections, components, and expands in nesting
+      order while retaining their recovered content.
     }
 
     ComponentContract {
@@ -52,8 +70,23 @@ expand SigilParser {
       Reject invalid identifiers, empty concept blocks, and nested concept blocks.
     }
 
+    LiteralBlock {
+      Reject a detached, unintroduced, invalidly typed, or unclosed literal block.
+
+      Ignore braces and apparent Sigil structure inside literal bodies.
+    }
+
+    FormattingStyle {
+      Report informational SIGIL_LINE_TOO_LONG when ordinary prose can be canonically
+      wrapped below 79 content characters.
+
+      Report error SIGIL_UNFORMATTABLE_LINE when one indivisible prose token exceeds
+      79 content characters.
+    }
+
     LanguageVersion {
-      Reject an unsupported configured language version before interpreting declarations.
+      Reject an unsupported configured language version before interpreting
+      declarations.
     }
   }
 
@@ -61,11 +94,37 @@ expand SigilParser {
     SourceDocument {
       SigilParser performs no filesystem access or workspace resolution.
 
+      Structural recognition follows SigilLanguage SourceGrammar.
+
       Warnings preserve a usable partial document and do not make parsing fail.
+    }
+
+    SourceRecovery {
+      Parser diagnostics, retained content, resume points, source ranges, and
+      ordering follow SigilLanguage SourceRecovery without host-dependent
+      synchronization.
     }
 
     ConceptIdentity {
       Concept body content remains free-form except for structural brace tracking.
+    }
+
+    SemanticUnit {
+      Blank lines terminate prose semantic units while physical wrapping does not.
+
+      SemanticUnit prose joins wrapped physical lines with one normalized space and
+      retains the original lines and complete range.
+    }
+
+    LiteralBlock {
+      Literal type tokens match [A-Za-z][A-Za-z0-9_+.-]*.
+
+      Literal bodies create no semantic references and are exempt from prose-width
+      diagnostics.
+    }
+
+    FormattingStyle {
+      Prose width counts Unicode code points after leading indentation.
     }
 
     DiagnosticConstruction {
@@ -75,27 +134,71 @@ expand SigilParser {
 
   cases {
     ParseResult {
-      Valid source returns recovered declarations and semantic lines without error diagnostics.
+      Valid source returns recovered declarations and semantic units without error
+      diagnostics.
 
-      An unclosed component returns its recoverable content with a source-ranged structural diagnostic.
+      An unclosed component returns its recoverable content with a source-ranged
+      structural diagnostic.
     }
 
     SourceDocument {
-      A decisions section preserves grouped and ungrouped semantic lines without a missing-concept-identifier diagnostic.
+      A decisions section preserves grouped and ungrouped semantic units without a
+      missing-concept-identifier diagnostic.
+    }
+
+    SourceRecovery {
+      An unexpected top-level line is skipped and a later valid declaration remains
+      available.
+
+      An EOF-unclosed concept, section, and component are finalized in order and each
+      receives its applicable diagnostic.
     }
 
     ComponentContract {
-      A component missing goal or interface remains in the partial document with required-section diagnostics.
+      A component missing goal or interface remains in the partial document with
+      required-section diagnostics.
     }
 
     ConceptIdentity {
-      A contiguous ungrouped interface region produces one SIGIL_MISSING_CONCEPT_IDENTIFIER warning.
+      A contiguous ungrouped interface region produces one
+      SIGIL_MISSING_CONCEPT_IDENTIFIER warning.
 
-      A concept block with several lines preserves one identity and every semantic line.
+      A concept block with several blank-line-delimited paragraphs preserves one
+      identity and every semantic unit.
 
       Ungrouped non-interface content produces no missing-identifier warning.
 
       Empty and nested concept blocks are invalid.
+    }
+
+    SemanticUnit {
+      Two adjacent wrapped prose lines produce one semantic unit.
+
+      A blank line between prose paragraphs produces two semantic units.
+    }
+
+    LiteralBlock {
+      Introducing prose immediately followed by a json fence produces one semantic
+      unit with one attached LiteralBlock.
+
+      Blank lines and unmatched braces inside a LiteralBlock do not close its
+      semantic unit or enclosing Sigil forms.
+
+      A blank line before an opening fence produces SIGIL_DETACHED_LITERAL_BLOCK.
+
+      An opening fence without introducing prose produces
+      SIGIL_LITERAL_WITHOUT_INTRODUCTION.
+
+      An invalid type produces SIGIL_INVALID_LITERAL_TYPE.
+
+      An unclosed fence produces SIGIL_UNCLOSED_LITERAL_BLOCK.
+    }
+
+    FormattingStyle {
+      Six leading spaces do not reduce the 79-character prose-content allowance.
+
+      An indivisible token longer than 79 content characters produces
+      SIGIL_UNFORMATTABLE_LINE.
     }
 
     ModuleIndexContents {
@@ -103,7 +206,8 @@ expand SigilParser {
     }
 
     LanguageVersion {
-      An unsupported version returns an empty partial document with SIGIL_UNSUPPORTED_VERSION.
+      An unsupported version returns an empty partial document with
+      SIGIL_UNSUPPORTED_VERSION.
     }
   }
 }

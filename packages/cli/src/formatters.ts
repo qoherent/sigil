@@ -1,7 +1,8 @@
 import type { CommandRequest } from "./args.ts";
 import type { CommandResult } from "./output-model.ts";
+import { renderContextMarkdown } from "./markdown.ts";
 
-// @sigil implements packages/cli/#module.sigil::SigilCli::StructuredOutput interface,constraints
+// @sigil implements packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
 export function formatResult(
   result: CommandResult,
   request: CommandRequest,
@@ -13,6 +14,21 @@ export function formatResult(
     (request.format === undefined || request.format === "markdown")
   ) {
     return result.markdown;
+  }
+  if (result.command === "context" && request.format === "markdown") {
+    return renderContextMarkdown(result);
+  }
+  if (result.command === "retrieve" && request.format === "markdown") {
+    const lines = [
+      `# ${result.purpose} retrieval`,
+      "",
+      `Fingerprint: ${result.fingerprint}`,
+      "",
+    ];
+    for (const section of result.context.sections) {
+      lines.push(`## ${section.kind}`, "", section.text, "");
+    }
+    return `${lines.join("\n")}\n`;
   }
   if (
     result.command === "version" &&
@@ -31,7 +47,20 @@ export function formatResult(
     return `${lines.join("\n")}\n`;
   }
   if (request.format === "text" && result.command === "check") {
-    return formatCheckText(result);
+    const showLocations = request.command === "check" && request.showLocations;
+    return formatCheckText(result, showLocations);
+  }
+  if (
+    result.command === "fmt" &&
+    (request.format === undefined || request.format === "text")
+  ) {
+    const lines = result.files.map((file) => `${file.status} ${file.filePath}`);
+    for (const diagnostic of result.diagnostics) {
+      lines.push(
+        `${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`,
+      );
+    }
+    return lines.length ? `${lines.join("\n")}\n` : "";
   }
   if (
     result.command === "glossary" &&
@@ -61,7 +90,12 @@ function normalizeResultPaths(
 
 function controllingPath(request: CommandRequest): string | undefined {
   if (request.command === "parse") return request.file;
-  if (request.command === "context") return request.path ?? request.file;
+  if (
+    request.command === "context" || request.command === "retrieve" ||
+    request.command === "compile"
+  ) {
+    return request.path ?? request.file;
+  }
   return "path" in request ? request.path : undefined;
 }
 
@@ -107,6 +141,7 @@ function isAbsolute(path: string): boolean {
 
 function formatCheckText(
   result: Extract<CommandResult, { command: "check" }>,
+  showLocations: boolean,
 ): string {
   const counts = result.diagnosticCounts;
   const lines = [
@@ -114,9 +149,15 @@ function formatCheckText(
     `Diagnostics: ${counts.error} error, ${counts.warning} warning, ${counts.info} info`,
   ];
   for (const diagnostic of result.diagnostics) {
-    lines.push(
-      `${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`,
-    );
+    const label = `${diagnostic.severity} ${diagnostic.code}`;
+    const location = showLocations && diagnostic.filePath
+      ? ` ${diagnostic.filePath}${
+        diagnostic.range
+          ? `:${diagnostic.range.start.line}:${diagnostic.range.start.column}`
+          : ""
+      }`
+      : "";
+    lines.push(`${label}${location}: ${diagnostic.message}`);
   }
   return `${lines.join("\n")}\n`;
 }

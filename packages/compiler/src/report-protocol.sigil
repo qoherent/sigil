@@ -1,0 +1,268 @@
+component SigilCompilationReportProtocol {
+  goal {
+    Own compiler diagnostic identity, report schema, proposal-report identity,
+    trace schema, staleness, and diagnostic lifecycle comparison.
+  }
+
+  interface {
+    CompilationDiagnostic {
+      every error and warning has a stable rule code, diagnostic fingerprint,
+      originating stage and skill, primary location, evidence, impact, correction
+      guidance, evaluator provenance, and zero or more compiler-verified semantic
+      subjects
+    }
+
+    DiagnosticSemanticSubject {
+      relation is direct, governing, or related
+
+      subject identity contains governing Sigil path, component, owner, section,
+      optional concept, and optional normalized semantic-unit fingerprint
+    }
+
+    CompilationReport {
+      version 2 is the authoritative durable result and binds status to source
+      hashes, component graph, effective profile, stages, evaluator environment, and
+      completed passes
+
+      currentDiagnostics contains current CompilationDiagnostic values whose
+      lifecycle is new, unchanged, or regressed; resolvedDiagnostics contains
+      retained ResolvedCompilationDiagnostic values
+
+      terminal, Markdown, CI, and editor views are projections of this report
+    }
+
+    ResolvedCompilationDiagnostic {
+      lifecycle is resolved and retained fields are stable diagnostic identity, prior
+      severity, primary location, semantic subjects, first-seen run, and last-active
+      run
+    }
+
+    CompilationProposalReport {
+      a proposal report identifies session, baseEpoch, generation, base fingerprint,
+      proposed paths, and proposal fingerprint without proposed contents or temporary
+      paths
+    }
+
+    EvaluationTrace {
+      records requested stages, command events, usage, evaluator environment, and
+      incomplete evidence without hidden reasoning or complete file contents
+    }
+
+    ReportConstruction {
+      constructReport(evaluationIdentity, currentDiagnostics, status,
+      EvaluationTrace, evaluatorOutcomes, priorReport?, proposalIdentity?) validates
+      matching source, target, profile, stage, evaluator, and optional proposal
+      identities and returns one authoritative CompilationReport
+
+      invalid or inconsistent internal construction input rejects with
+      COMPILER_FAILED and returns no partial report
+    }
+  }
+}
+
+expand SigilCompilationReportProtocol {
+  state {
+    DiagnosticLifecycle {
+      A current diagnostic is new, unchanged, or regressed relative to the selected
+      prior report. A prior active diagnostic absent from the current evaluation is
+      retained as resolved.
+    }
+  }
+
+  logic {
+    CompilationDiagnostic {
+      Derive diagnostic identity from stable rule, stage, subject, and
+      source-location facts rather than evaluator prose.
+
+      Resolve every evaluator-provided Sigil location against the deterministic
+      semantic model and attach the smallest containing semantic unit, falling back
+      to its containing concept or section when no semantic unit contains the
+      location.
+
+      Resolve an implementation location through validated ownership annotations and
+      attach every governing component or concept section selected by the owning
+      implementation entrypoint.
+
+      Preserve the physical primary location separately from its semantic subjects.
+
+      Derive semantic-unit fingerprints from normalized prose and literal content so
+      canonical formatting and physical line movement do not change semantic
+      identity.
+
+      Reject or reduce unsupported evaluator claims to information so they cannot
+      make compilation red or yellow.
+
+      Classify a current stable identity as unchanged when it was active in the prior
+      report, including when its current severity differs. Store the current severity
+      and let status calculation use current evidence.
+
+      Classify a current stable identity as regressed when the prior report retained
+      it as resolved, and as new when neither prior active nor resolved diagnostics
+      contain it.
+
+      Classify a prior active identity as resolved when current evaluation does not
+      contain it. Place it only in resolvedDiagnostics with its retained identity,
+      prior severity and location, semantic subjects, first-seen run, and last-active
+      run; resolved entries do not affect current status.
+    }
+
+    ReportConstruction {
+      Apply CompilationDiagnostic identity and DiagnosticLifecycle rules to current
+      diagnostics and the optional compatible prior report, then bind the supplied
+      status, EvaluationTrace, evaluator outcomes, and optional proposal identity to
+      the same validated evaluation identity.
+
+      Construct the complete version-2 report before returning it. Never expose a
+      mutable builder or partially validated report.
+    }
+
+  }
+
+  constraints {
+    CompilationReport {
+      CompilationReport version 2 requires semanticSubjects on every diagnostic,
+      including an empty array when deterministic resolution finds no governing Sigil
+      subject.
+
+      Direct report consumers accept exactly version 2. An older or unknown report
+      version rejects with COMPILER_FAILED before field interpretation, and no report
+      migration is provided. Optional evidence stores may instead decline an
+      incompatible report under their own lookup contract.
+
+      Semantic subject identities are compiler-owned projections; evaluator text may
+      provide candidate physical locations but cannot assign a component, section,
+      concept, relation, or semantic-unit fingerprint.
+
+      A direct subject contains the primary Sigil location, a governing subject is
+      derived from implementation ownership, and a related subject identifies
+      additional Sigil evidence for the same finding.
+
+      CompilationReport excludes credentials, hidden reasoning, and complete private
+      prompts.
+
+      Proposal reports and traces may include proposed paths, generation numbers,
+      base fingerprints, and proposal fingerprints, but never proposed source
+      contents or temporary filesystem paths.
+
+      A stage-scoped report identifies the requested stage and exact executed
+      dependency closure.
+
+      ReportConstruction rejects mismatched source, target, profile, stage,
+      evaluator, trace, status, or proposal identity with COMPILER_FAILED and exposes
+      no partial CompilationReport.
+    }
+  }
+
+  decisions {
+    SemanticDiagnosticSubjects {
+      Decision: Add compiler-verified hierarchical semantic subjects to every
+      diagnostic and make them required in CompilationReport version 2.
+
+      Scope: Governs diagnostic navigation, grouping, lifecycle identity, editor
+      integration, implementation reconciliation, and durable report compatibility.
+
+      Assumptions: SigilCore preserves semantic-unit ownership, section, optional
+      concept identity, normalized prose, literal content, and exact source range.
+
+      Trade-offs: Report consumers must migrate to version 2 and implementation
+      locations require valid ownership annotations before they can gain governing
+      semantic subjects.
+
+      Design issues addressed: A physical file and line cannot reliably group a
+      finding by component, section, concept, or semantic occurrence and changes when
+      formatting moves source lines.
+
+      Discarded alternatives: A single concept-only annotation, evaluator-assigned
+      semantic identities, and optional version-1 subject hints were rejected because
+      they lose ungrouped units, weaken trust, or leave consumers with an ambiguous
+      compatibility contract.
+
+      Consequences: Reports can navigate and group findings at every semantic level,
+      and diagnostic identity remains stable across formatting-only changes.
+
+      Revisit when: Sigil introduces explicit durable identifiers for individual
+      semantic units.
+    }
+
+    DiagnosticLifecycleComparison {
+      Decision: Compare current diagnostic identities with both active and retained
+      resolved identities from one selected prior report.
+
+      Scope: Governs new, unchanged, regressed, and resolved report representation;
+      excludes prior-report storage selection and compilation-status policy.
+
+      Trade-offs: Reports retain bounded identity metadata for resolved diagnostics.
+
+      Design issues addressed: Recurrence after resolution must differ observably
+      from a diagnostic first seen in the current run.
+
+      Consequences: Severity changes use current evidence without changing lifecycle,
+      while resolved findings remain visible but do not affect current status.
+    }
+
+    ReportVersionCompatibility {
+      Decision: Accept CompilationReport version 2 without migration and reject other
+      versions before interpreting their fields.
+
+      Scope: Governs direct report compatibility; permits optional evidence stores to
+      treat incompatible history as absent under their own contract.
+
+      Trade-offs: Consumers must upgrade explicitly instead of relying on implicit
+      migration.
+
+      Discarded alternatives: Best-effort interpretation and automatic migration were
+      rejected because they could misread authoritative diagnostic identity.
+
+      Consequences: Direct consumers fail predictably with COMPILER_FAILED, while
+      incompatible cache evidence remains safely optional.
+    }
+
+  }
+
+  cases {
+    CompilationReport {
+      Changing relevant Sigil content or the effective profile makes an exported
+      green report stale.
+
+      A diagnostic located in a grouped interface paragraph identifies its component,
+      interface section, concept, exact semantic unit, and direct relation.
+
+      A diagnostic located on an implementation entrypoint with two valid ownership
+      targets contains two governing semantic subjects.
+
+      A diagnostic outside Sigil with no valid ownership target contains an empty
+      semanticSubjects array while preserving its physical primary location.
+
+      Reformatting a semantic unit without changing its normalized prose or literal
+      content preserves its semantic-unit fingerprint.
+
+      A current identity absent from prior active and resolved diagnostics is new. A
+      prior active identity seen again is unchanged even when severity changes, and
+      the current severity controls status.
+
+      A prior active identity absent from current evaluation moves to
+      resolvedDiagnostics and no longer affects status. Its later recurrence is
+      regressed rather than new.
+
+      Direct consumption of version 1 or an unknown report version rejects with
+      COMPILER_FAILED before interpreting report fields; optional history lookup may
+      return no prior evidence instead.
+
+      Consistent evaluation, status, trace, evaluator, prior-report, and optional
+      proposal inputs construct one complete authoritative version-2 report.
+
+      Any mismatched construction identity rejects with COMPILER_FAILED and exposes
+      no partial report.
+
+      A green report handed to an implementation team still requires human approval
+      before implementation begins.
+
+      Successful and failed proposal evaluation may report permitted identifiers but
+      never proposed source contents or temporary filesystem paths.
+
+      Failed create, apply, close, and cleanup traces redact proposed contents and
+      temporary paths while retaining stable failure codes.
+
+    }
+  }
+}

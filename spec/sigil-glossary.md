@@ -86,7 +86,7 @@ and go-to-definition opens the authoritative JSON entry.
 
 After every approved Sigil write or semantic edit, the Sigil skill runs
 `sigil check` and `sigil glossary`, then extracts candidates from changed
-semantic lines. Material terminology ambiguity blocks review and implementation;
+semantic units. Material terminology ambiguity blocks review and implementation;
 ordinary unambiguous vocabulary does not require an entry.
 
 The skill presents exact JSON changes and waits for human approval. Accepted

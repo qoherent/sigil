@@ -2,7 +2,7 @@ export interface HoverLike {
   readonly contents: unknown;
 }
 
-// @sigil implements integrations/editor/vscode/#module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
+// @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::ComponentPreview interface,state,logic,cases
 export function hoverToMarkdown(
   hover: HoverLike | null | undefined,
 ): string | undefined {
