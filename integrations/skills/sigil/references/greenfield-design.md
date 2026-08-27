@@ -90,7 +90,7 @@ For each proposed component identify:
 - who or what uses it;
 - the public interface and observable guarantees;
 - the state or policy it owns;
-- important non-responsibilities;
+- important non-responsibilities, recorded in `scope`;
 - dependencies on other public contracts.
 
 Before creating local components or concepts, inspect accessible imported public

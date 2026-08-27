@@ -808,6 +808,9 @@ async function componentMarkdown(
   const iface = component.declaration.sections.find((item) =>
     item.name === "interface"
   );
+  const scope = component.declaration.sections.find((item) =>
+    item.name === "scope"
+  );
   const componentLink = await markdown.componentLink(component);
   const lines = [
     `### component ${componentLink}`,
@@ -820,6 +823,14 @@ async function componentMarkdown(
     "**Interface**",
     ...markdownList(await markdown.semanticUnits(iface?.units ?? [])),
   ];
+  // A declared boundary is public, so it belongs beside goal and interface.
+  if (scope?.units.length) {
+    lines.push(
+      "",
+      "**Scope**",
+      ...markdownList(await markdown.semanticUnits(scope.units)),
+    );
+  }
   if (includeExpansions && component.expansions.expands.length) {
     lines.push("", "**Collected expansions**");
     for (const expansion of component.expansions.expands) {

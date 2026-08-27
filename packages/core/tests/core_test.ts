@@ -36,7 +36,7 @@ import { buildSigilGraph } from "../src/graph.ts";
  */
 Deno.test("separates the core artifact and language contract versions", () => {
   assertEquals(SIGIL_CORE_VERSION, "0.7.1");
-  assertEquals(SIGIL_VERSION, "0.7.0");
+  assertEquals(SIGIL_VERSION, "0.8.0");
 });
 
 /*
@@ -3449,3 +3449,74 @@ const authSigil =
   `@user-profile.sigil import { UserProfile }\n\ncomponent Auth {\n  goal {\n    Authenticate users.\n  }\n\n  interface {\n    signIn(UserProfile)\n  }\n}\n`;
 const userProfileSigil =
   `component UserProfile {\n  goal {\n    Store profile information.\n  }\n\n  interface {\n    getProfile()\n  }\n}\n`;
+
+/*
+ * @sigil tests packages/core/src/parser.sigil::SigilParser::SemanticUnit constraints,cases
+ * @sigil tests packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalResult interface
+ */
+Deno.test("declared scope parses and reaches retrieval as public evidence", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "project.sigil": `component Project {
+  goal {
+    Own the ingest slice of the platform.
+  }
+
+  interface {
+    Ingest {
+      Accept and store incoming recordings.
+    }
+  }
+
+  scope {
+    Billing {
+      Excluded: Payment capture belongs to the finance service.
+    }
+
+    Reporting {
+      Deferred: Usage reporting is not modelled yet.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertEquals(
+    resolved.diagnostics.filter((item) => item.severity === "error").length,
+    0,
+  );
+
+  const project = resolved.components.find((item) => item.name === "Project")!;
+  const scope = project.declaration.sections.find((item) =>
+    item.name === "scope"
+  );
+  assert(scope, "component should carry a scope section");
+  assertEquals(
+    scope.units.map((unit) => unit.conceptIdentifier).join(","),
+    "Billing,Reporting",
+  );
+
+  // Both kinds are distinguishable by their leading label.
+  const text = scope.units.map((unit) => unit.prose).join(" ");
+  assert(text.includes("Excluded:"));
+  assert(text.includes("Deferred:"));
+
+  // Scope is public boundary information, so retrieval must carry it to
+  // evaluators; otherwise a declared exclusion cannot suppress a gap finding.
+  const retrieval = await retrievePurposeContext(
+    resolved,
+    { kind: "component", componentName: "Project", path: "project.sigil" },
+    "semantic",
+  );
+  const rendered = JSON.stringify(retrieval);
+  assert(
+    rendered.includes("Payment capture belongs to the finance service"),
+    "retrieval should carry the declared exclusion",
+  );
+  assert(
+    rendered.includes("Usage reporting is not modelled yet"),
+    "retrieval should carry the declared deferral",
+  );
+});

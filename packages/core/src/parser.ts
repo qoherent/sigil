@@ -23,6 +23,7 @@ import { isModuleFile } from "./path.ts";
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
   "interface",
+  "scope",
   "state",
   "logic",
   "constraints",

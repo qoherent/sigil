@@ -1,6 +1,6 @@
 # Sigil Language Specification
 
-**Sigil version:** 0.7.0
+**Sigil version:** 0.8.0
 **Status:** Accepted
 **Released:** 2026-08-04
 
@@ -423,6 +423,41 @@ Large architecture explanations may live in a separate document.
 When they define enforceable rules, summarize those rules in `constraints`.
 
 ### `decisions`
+
+`scope` is an optional component section that records what the component
+deliberately does not cover. It is public: dependents rely on knowing where a
+boundary stops as much as where it starts.
+
+Each entry states one excluded or deferred area and distinguishes the two with
+a leading label:
+
+- `Excluded:` is a settled boundary. The area belongs to someone else and is
+  not expected to arrive.
+- `Deferred:` is uncovered for now. The area is in the component's eventual
+  responsibility but is not modelled yet.
+
+```sigil
+scope {
+  Billing {
+    Excluded: Payment capture and invoicing belong to the finance service.
+  }
+
+  Reporting {
+    Deferred: Usage reporting is not modelled yet; ingest is the first slice.
+  }
+}
+```
+
+An area named in `scope` is a stated boundary rather than a missing contract.
+A reviewer or evaluator treats a declared exclusion as answered and reports a
+gap only for an area that is neither covered nor declared. A `Deferred:` entry
+remains visible work, so it is expected to disappear as coverage grows, while
+an `Excluded:` entry is expected to persist.
+
+The section body follows the ordinary concept and prose rules. The language
+does not verify that a declared area is genuinely out of scope, and it does not
+require a label on every line; an unlabeled entry is read as an exclusion
+without a stated kind.
 
 `decisions` is an optional expand section containing durable rationale for a
 chosen course. It may describe context, scope, assumptions, trade-offs, design

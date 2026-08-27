@@ -19,6 +19,32 @@ material intent, write the exact scoped Sigil draft directly in the selected fil
 Then use compiler evidence to revise and validate that written draft; do not
 require compiler evidence before creating it.
 
+## Declared Scope
+
+Put what a component deliberately does not cover in its `scope` section, not in
+prose scattered through `goal` or `constraints`. A dependent needs to know where
+a boundary stops.
+
+Label every entry. `Excluded:` is a settled boundary elsewhere. `Deferred:` is
+uncovered for now and should disappear as coverage grows.
+
+```sigil
+scope {
+  Billing {
+    Excluded: Payment capture belongs to the finance service.
+  }
+
+  Reporting {
+    Deferred: Usage reporting is not modelled yet; ingest is the first slice.
+  }
+}
+```
+
+Use it to adopt Sigil incrementally. Model one useful slice, declare the rest
+deferred, and let review and compilation report gaps only for areas that are
+neither covered nor declared. Do not use it to silence a finding about work the
+component actually owns and has already promised in its `goal` or `interface`.
+
 ## Section Discipline
 
 - Put the component's responsibility and intended outcome in `goal`.

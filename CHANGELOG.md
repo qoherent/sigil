@@ -31,6 +31,16 @@
 
 ## Unreleased
 
+- Advance the Sigil Language and configuration contract to 0.8.0 with one
+  optional component section, `scope`, recording what a component deliberately
+  does not cover. `Excluded:` is a settled boundary; `Deferred:` is uncovered
+  for now. Every 0.7 source remains valid.
+- Carry `scope` through purpose retrieval and render it in hover and preview, so
+  a declared boundary reaches evaluators and readers as public evidence rather
+  than looking like missing coverage.
+- Teach semantic-readiness and architecture-design to report a gap only for an
+  area that is neither covered nor declared, so a project can adopt Sigil one
+  useful slice at a time.
 - Extend implementation-ownership discovery to frontend surfaces. Markup
   (`.html`, `.htm`), stylesheet (`.css`, `.scss`, `.sass`, `.less`), and
   single-file component (`.vue`, `.svelte`, `.astro`) sources may now carry

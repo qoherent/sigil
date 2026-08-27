@@ -8,7 +8,7 @@ component SigilLanguage {
 
   interface {
     LanguageVersion {
-      sigilVersion = "0.7.0"
+      sigilVersion = "0.8.0"
 
       workspace configuration declares the LanguageVersion that governs
       interpretation

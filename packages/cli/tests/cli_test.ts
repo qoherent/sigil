@@ -117,7 +117,7 @@ Deno.test("CLI bundle registers the standalone OpenCode adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "opencode-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {
@@ -163,7 +163,7 @@ Deno.test("CLI bundle registers the standalone Pi adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "pi-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {
@@ -209,7 +209,7 @@ Deno.test("CLI bundle registers the standalone Claude adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "claude-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {

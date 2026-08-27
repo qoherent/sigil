@@ -85,7 +85,7 @@ expand SigilSkillCompatibility {
 
   cases {
     SkillCompatibility {
-      With declared range ^0.7.0, stable 0.7.0 and 0.7.4 are compatible, while 0.8.0,
+      With declared range ^0.8.0, stable 0.8.0 and 0.7.4 are compatible, while 0.8.0,
       0.7.1-beta.1, and a prerelease declaration are incompatible.
 
       Missing, unreadable, non-object, missing-property, non-string, or unknown-
