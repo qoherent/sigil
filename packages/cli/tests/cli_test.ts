@@ -44,6 +44,10 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
       role: "selected",
       goal: [{ text: "Use *safe* Markdown.", path: "feature.sigil" }],
       interface: [],
+      scope: [{
+        text: "Excluded: Billing belongs to the finance service.",
+        path: "feature.sigil",
+      }],
       state: [],
       logic: [],
       constraints: [],
@@ -64,6 +68,7 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
       role: "module-context",
       goal: [{ text: "Assemble the workspace.", path: "_module.sigil" }],
       interface: [],
+      scope: [],
       state: [],
       logic: [],
       constraints: [],
@@ -82,6 +87,7 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
         items: [{ text: "run()", path: "dep.sigil" }],
         ownership: [],
       }],
+      scope: [],
       state: [],
       logic: [],
       constraints: [],
@@ -107,6 +113,12 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
   assert(markdown.includes("## Module Context"));
   assert(markdown.includes("### Workspace"));
   assert(markdown.includes("- **component** — A coherent system part."));
+  // Declared scope is public, so a reader of the rendering sees it.
+  assert(markdown.includes("### Scope"), markdown);
+  assert(
+    markdown.includes("- Excluded: Billing belongs to the finance service."),
+    markdown,
+  );
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::CompilationFacade logic,cases

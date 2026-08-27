@@ -159,6 +159,7 @@ export interface RetrievalProjectionComponent {
     | "module-context";
   readonly goal: readonly RetrievalProjectionItem[];
   readonly interface: readonly RetrievalProjectionConcept[];
+  readonly scope: readonly RetrievalProjectionItem[];
   readonly state: readonly RetrievalProjectionItem[];
   readonly logic: readonly RetrievalProjectionItem[];
   readonly constraints: readonly RetrievalProjectionItem[];
