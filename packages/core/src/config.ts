@@ -160,6 +160,22 @@ export function matchesSigilFile(path: string, config: SigilConfig): boolean {
     !config.files.exclude.some((pattern) => globMatches(pattern, normalized));
 }
 
+/**
+ * Exclusion alone, for workspace content that is not a Sigil source. The
+ * include patterns select `.sigil` files, so they cannot answer whether an
+ * implementation file belongs to the workspace.
+ */
+// @sigil implements spec/language.sigil::SigilWorkspaceConfig::SourceSelection interface,logic,constraints
+export function excludesWorkspacePath(
+  path: string,
+  config: SigilConfig,
+): boolean {
+  const normalized = path.replaceAll("\\", "/").replace(/^\.\//, "");
+  return config.files.exclude.some((pattern) =>
+    globMatches(pattern, normalized)
+  );
+}
+
 // @sigil implements spec/language.sigil::SigilWorkspaceConfig::WorkspaceBoundary interface,logic,constraints,cases
 export function excludesSigilSubtree(
   path: string,
