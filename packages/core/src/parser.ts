@@ -383,10 +383,16 @@ export function parseSigilDocument(
       `Unclosed section ${section.name}.`,
       { filePath, range: singlePointRange(section.startLine) },
     ));
-    form.sections.push(
-      finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
-    );
-    reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+    // Recovery keeps a partial declaration usable, but a section rejected
+    // for its declaration form stays rejected: a consumer reading the
+    // recovered expansion would otherwise see the boundary the diagnostic
+    // denied.
+    if (!disallowedSections.has(section.name)) {
+      form.sections.push(
+        finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
+      );
+      reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+    }
   }
   if (form) {
     diagnostics.push(diagnostic(

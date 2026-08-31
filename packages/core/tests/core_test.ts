@@ -4122,3 +4122,41 @@ expand Project {
     "logic",
   );
 });
+
+// @sigil tests spec/language.sigil::SigilLanguage::SectionSemantics constraints,cases
+Deno.test("recovery does not restore a scope section rejected in an expand", async () => {
+  // The scope section is never closed, so parsing ends inside it and the
+  // end-of-input recovery path decides what the expansion keeps.
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "project.sigil": `component Project {
+  goal {
+    Own the ingest slice.
+  }
+
+  interface {
+    Ingest {
+      Accept incoming recordings.
+    }
+  }
+}
+
+expand Project {
+  scope {
+    Reporting {
+      Deferred: Usage reporting is not modelled yet.
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertHasCode(resolved.diagnostics, "SIGIL_SECTION_NOT_ALLOWED");
+  const expansion = collectedExpansionFor(resolved, "Project");
+  assert(expansion, "the partial expand should still resolve");
+  assertEquals(
+    expansion.expands[0].declaration.sections.map((item) => item.name).join(
+      ",",
+    ),
+    "",
+  );
+});
