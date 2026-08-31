@@ -23,6 +23,7 @@ import { deriveEvaluatorRetrievalBrief } from "../src/evaluator-retrieval.ts";
 import {
   assertEquals,
   assertMatch,
+  assertNotEquals,
   assertRejects,
   assertThrows,
 } from "@std/assert";
@@ -31,6 +32,7 @@ async function workspace(
   source: string,
   extraFiles: Readonly<Record<string, string>> = {},
   compileConfiguration?: unknown,
+  exclude: readonly string[] = [],
 ): Promise<string> {
   const root = await Deno.makeTempDir();
   await Deno.mkdir(`${root}/.sigil`);
@@ -39,7 +41,7 @@ async function workspace(
     JSON.stringify({
       sigilVersion: "0.8.0",
       workspace: { name: "test", members: [] },
-      files: { include: ["**/*.sigil"], exclude: [] },
+      files: { include: ["**/*.sigil"], exclude },
       tools: compileConfiguration === undefined
         ? {}
         : { compile: compileConfiguration },
@@ -47,6 +49,10 @@ async function workspace(
   );
   await Deno.writeTextFile(`${root}/main.sigil`, source);
   for (const [path, contents] of Object.entries(extraFiles)) {
+    const slash = path.lastIndexOf("/");
+    if (slash > 0) {
+      await Deno.mkdir(`${root}/${path.slice(0, slash)}`, { recursive: true });
+    }
     await Deno.writeTextFile(`${root}/${path}`, contents);
   }
   return root;
@@ -1904,3 +1910,51 @@ function finding(
     correction: "Clarify the contract.",
   };
 }
+
+// @sigil tests packages/compiler/src/compiler.sigil::SigilOneShotCompilation::OneShotCompilation logic
+Deno.test("excluded workspace paths are not implementation evidence", async () => {
+  const source = `component Example {
+  goal {
+    Explain the example.
+  }
+
+  interface {
+    Runner {
+      run()
+    }
+  }
+}
+`;
+  // One workspace throughout, so only the edited file can move the fingerprint.
+  const check = async (exclude: readonly string[]) => {
+    const root = await workspace(
+      source,
+      { "vendored/dep.ts": "export const a = 1;\n" },
+      undefined,
+      exclude,
+    );
+    try {
+      const fingerprint = async () => {
+        const report = await compile(root, { kind: "workspace" }, "standard", {
+          requestedStage: "deterministic-foundation",
+          disableHistory: true,
+        });
+        return report.sourceFingerprint;
+      };
+      const before = await fingerprint();
+      await Deno.writeTextFile(
+        `${root}/vendored/dep.ts`,
+        "export const a = 2;\n",
+      );
+      return { before, after: await fingerprint() };
+    } finally {
+      await Deno.remove(root, { recursive: true });
+    }
+  };
+  // Without the exclusion the vendored file is evidence, so editing it counts.
+  const included = await check([]);
+  assertNotEquals(included.before, included.after);
+  // With it, the same edit cannot reach the fingerprint at all.
+  const excluded = await check(["vendored/**"]);
+  assertEquals(excluded.before, excluded.after);
+});

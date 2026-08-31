@@ -1,10 +1,12 @@
 import {
+  excludesWorkspacePath,
   type ImplementationEvidenceInput,
   type ImplementationSource,
   isSupportedImplementationSource,
   loadSigilWorkspace,
   resolveSigilWorkspace,
   retrievePurposeContext,
+  type SigilConfig,
   type SigilDiagnostic,
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
@@ -294,6 +296,7 @@ export async function compile(
     const implementationSources = await loadImplementationSources(
       fs,
       workspace.root,
+      workspace.config,
     );
     const sourceFingerprint = await workspaceEvidenceFingerprint(
       workspace.root,
@@ -1358,27 +1361,53 @@ async function stageFailure(
   };
 }
 
-function workspaceEvidenceFingerprint(
+/**
+ * Each source is digested on its own and the digests are combined, because
+ * serializing an entire workspace into one string exceeds the maximum string
+ * length on a large repository and fails the run.
+ */
+async function workspaceEvidenceFingerprint(
   root: string,
   sigilDocuments: readonly unknown[],
   implementation: readonly ImplementationSource[],
 ): Promise<string> {
-  return digest(JSON.stringify({
-    sigilDocuments,
-    implementation: implementation.map((source) => ({
-      filePath: canonicalWorkspacePath(source.filePath, root),
-      text: source.text,
-    })),
-  }));
+  const parts: string[] = [];
+  for (const document of sigilDocuments) {
+    parts.push(await digest(JSON.stringify(document)));
+  }
+  for (const source of implementation) {
+    parts.push(
+      await digest(JSON.stringify({
+        filePath: canonicalWorkspacePath(source.filePath, root),
+        text: source.text,
+      })),
+    );
+  }
+  return await digest(
+    JSON.stringify({
+      sigilDocuments: parts.slice(0, sigilDocuments.length),
+      implementation: parts.slice(sigilDocuments.length),
+    }),
+  );
 }
 
+/**
+ * Implementation evidence is workspace content, so the workspace exclusions
+ * apply. Without them a vendored dependency tree or virtual environment is read
+ * in full, which is neither the caller's code nor affordable to hold in memory.
+ */
 async function loadImplementationSources(
   fs: SigilFileSystem,
   root: string,
+  config: SigilConfig | undefined,
 ): Promise<readonly ImplementationSource[]> {
   return Promise.all(
     (await fs.listFiles(root))
       .filter(isSupportedImplementationSource)
+      .filter((filePath) =>
+        !config ||
+        !excludesWorkspacePath(canonicalWorkspacePath(filePath, root), config)
+      )
       .map(async (filePath) => ({
         filePath,
         text: await fs.readTextFile(filePath),
