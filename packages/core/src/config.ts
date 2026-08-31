@@ -157,7 +157,15 @@ export function matchesSigilFile(path: string, config: SigilConfig): boolean {
   return config.files.include.some((pattern) =>
     globMatches(pattern, normalized)
   ) &&
-    !config.files.exclude.some((pattern) => globMatches(pattern, normalized));
+    !isExcludedPath(normalized, config);
+}
+
+// @sigil implements spec/language.sigil::SigilWorkspaceConfig::SourceSelection interface,logic,cases
+export function isExcludedPath(path: string, config: SigilConfig): boolean {
+  const normalized = path.replaceAll("\\", "/").replace(/^\.\//, "");
+  return config.files.exclude.some((pattern) =>
+    globMatches(pattern, normalized)
+  );
 }
 
 // @sigil implements spec/language.sigil::SigilWorkspaceConfig::WorkspaceBoundary interface,logic,constraints,cases
@@ -170,7 +178,7 @@ export function excludesSigilSubtree(
     "",
   );
   const probe = `${normalized}/__sigil_subtree__`;
-  return config.files.exclude.some((pattern) => globMatches(pattern, probe));
+  return isExcludedPath(probe, config);
 }
 
 function validateWorkspace(value: unknown, messages: string[]): void {

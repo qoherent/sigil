@@ -35,6 +35,12 @@ import type {
   SourceLocation,
   SourceRange,
 } from "./model/language.ts";
+import type {
+  RetrievalProjectionComponent,
+  RetrievalProjectionItem,
+  RetrievalProjectionLink,
+  RetrievalProjectionOwnership,
+} from "./model/retrieval.ts";
 
 const RELATION_ORDER: readonly RetrievalRelation[] = [
   "selected-declaration",
@@ -114,11 +120,35 @@ interface EvidenceDraft {
   readonly edgeKeys: readonly string[];
 }
 
+interface ProjectionEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly path: string;
+  role: RetrievalProjectionComponent["role"];
+  goal: RetrievalProjectionItem[];
+  interface: ProjectionConceptDraft[];
+  scope: RetrievalProjectionItem[];
+  state: RetrievalProjectionItem[];
+  logic: RetrievalProjectionItem[];
+  constraints: RetrievalProjectionItem[];
+  decisions: RetrievalProjectionItem[];
+  cases: RetrievalProjectionItem[];
+  ownership: RetrievalProjectionOwnership[];
+  links: RetrievalProjectionLink[];
+  concepts: Map<string, ProjectionConceptDraft>;
+}
+
+interface ProjectionConceptDraft {
+  readonly name?: string;
+  readonly items: RetrievalProjectionItem[];
+  readonly ownership: RetrievalProjectionOwnership[];
+}
+
 // @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::RetrievalProjectionDerivation interface
 export async function projectRetrieval(
   result: PurposeRetrievalResult,
 ): Promise<RetrievalProjection> {
-  const entries = new Map<string, any>();
+  const entries = new Map<string, ProjectionEntry>();
   const roleFor = (kind: EvidenceKind) =>
     kind.startsWith("dependency")
       ? "dependency"
@@ -191,17 +221,20 @@ export async function projectRetrieval(
       const existing = entries.get(id);
       if (!existing) continue;
       existing.ownership.push({
-        relation: item.text.split(" ")[0],
+        relation: item.text.split(" ")[0] as RetrievalProjectionOwnership[
+          "relation"
+        ],
         path: item.path,
         location: item.location,
         symbol: item.text.match(/ at (.+?)(?: \[|$)/)?.[1],
         sections:
-          item.text.match(/\[([^\]]*)\]/)?.[1].split(",").filter(Boolean) ?? [],
+          (item.text.match(/\[([^\]]*)\]/)?.[1].split(",").filter(Boolean) ??
+            []) as RetrievalProjectionOwnership["sections"],
       });
       continue;
     }
     if (!nextRole) continue;
-    const entry = entries.get(id) ?? {
+    const entry: ProjectionEntry = entries.get(id) ?? {
       id,
       name: item.componentName,
       path: id.slice(0, id.lastIndexOf("::")),
@@ -214,7 +247,7 @@ export async function projectRetrieval(
       constraints: [],
       decisions: [],
       cases: [],
-      ownership: [],
+      ownership: [] as RetrievalProjectionOwnership[],
       links: [],
       concepts: new Map(),
     };
@@ -228,7 +261,11 @@ export async function projectRetrieval(
       item.sectionName !== "interface" &&
       item.sectionName !== "scope"
     ) continue;
-    const value = { text: item.text, path: item.path, range: item.range };
+    const value: RetrievalProjectionItem = {
+      text: item.text,
+      path: item.path,
+      range: item.range,
+    };
     if (item.sectionName === "interface") {
       const key = item.conceptIdentity ?? "";
       const concept = entry.concepts.get(key) ??
@@ -240,7 +277,31 @@ export async function projectRetrieval(
         .includes(
           String(item.sectionName),
         )
-    ) entry[item.sectionName!].push(value);
+    ) {
+      switch (item.sectionName) {
+        case "goal":
+          entry.goal.push(value);
+          break;
+        case "scope":
+          entry.scope.push(value);
+          break;
+        case "state":
+          entry.state.push(value);
+          break;
+        case "logic":
+          entry.logic.push(value);
+          break;
+        case "constraints":
+          entry.constraints.push(value);
+          break;
+        case "decisions":
+          entry.decisions.push(value);
+          break;
+        case "cases":
+          entry.cases.push(value);
+          break;
+      }
+    }
   }
   for (const entry of entries.values()) {
     entry.interface = [...entry.concepts.values()];
@@ -253,8 +314,9 @@ export async function projectRetrieval(
   for (const edge of result.graph.edges) {
     const source = nodeIds.get(edge.sourceIdentity);
     const target = nodeIds.get(edge.targetIdentity);
-    if (source && target && entries.has(source) && entries.has(target)) {
-      entries.get(source).links.push({
+    const sourceEntry = source ? entries.get(source) : undefined;
+    if (sourceEntry && target && entries.has(target)) {
+      sourceEntry.links.push({
         relation: edge.relation,
         target,
         location: { path: edge.originPath, range: edge.originRange },
@@ -267,7 +329,7 @@ export async function projectRetrieval(
     { concepts: _concepts, ...entry },
   ) => ({
     ...entry,
-    links: entry.links.sort((left: any, right: any) =>
+    links: entry.links.sort((left, right) =>
       compare(left.relation, right.relation) ||
       compare(left.target, right.target) ||
       compare(left.location?.path ?? "", right.location?.path ?? "") ||

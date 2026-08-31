@@ -1,0 +1,243 @@
+@packages/compiler-adapter-opencode import { SigilOpenCodeCompilerAdapter }
+@packages/compiler-adapter-pi import { SigilPiCompilerAdapter }
+@packages/compiler-adapter-claude import { SigilClaudeCompilerAdapter }
+
+component SigilConfigAuthoring {
+  goal {
+    Author and validate tools.agent.profile and tools.compile fields of an existing
+    ConfigFile for one workspace without creating a missing ConfigFile, modifying
+    .sigil source, or independently revalidating compiler stage or evaluator rules.
+  }
+
+  interface {
+    DefaultProfileAssignment {
+      setDefault(workspacePath, profileName, agentProfileName?) rewrites
+      tools.compile.defaultProfile and tools.agent.profile or rejects an unknown
+      profile name
+
+      profileName selects tools.compile.defaultProfile; agentProfileName selects
+      tools.agent.profile and defaults to profileName when omitted
+    }
+
+    ProfileAuthoring {
+      setProfile(workspacePath, profileName, options) creates the named
+      tools.compile.profiles entry when absent or updates its extends, main, stages,
+      and disabledStages fields when present, and creates or updates the referenced
+      tools.compile.evaluators entries
+
+      options may set extends, one or more main evaluatorIds, one or more stage
+      bindings each naming one or more evaluatorIds, disabled stage identities, newly
+      declared evaluatorId-to-provider bindings, and per-evaluator model,
+      implementationId, and implementationVersion values
+    }
+
+    SeededDefaults {
+      seededToolConfiguration() returns the tools.agent and tools.compile content
+      sigil init writes into a newly created ConfigFile
+    }
+  }
+}
+
+expand SigilConfigAuthoring {
+  logic {
+    DefaultProfileAssignment {
+      setDefault loads, validates, and rewrites the exact ConfigFile already
+      governing the selected workspace; it does not run initialization and does not
+      create a missing ConfigFile.
+
+      setDefault rejects a profileName or agentProfileName that names neither
+      standard, critical-system, nor a configured tools.compile.profiles entry.
+    }
+
+    ProfileAuthoring {
+      setProfile validates structural well-formedness only: extends names exactly
+      standard or critical-system, matching SigilCompiler's built-in profile bases;
+      main and every stage binding name one or more nonempty evaluatorId identifiers;
+      and every model, implementationId, and implementationVersion value references
+      an evaluatorId already configured or declared by the same invocation's new
+      evaluator bindings. SigilCompiler and sigil check remain the authority on
+      whether the resulting stage and evaluator bindings compile.
+
+      setProfile requires a new evaluatorId to declare its provider the first time it
+      is used and rejects redeclaring an existing evaluatorId with a different
+      provider.
+
+      setProfile persists every newly declared evaluatorId into
+      tools.compile.evaluators even when the same invocation does not also bind it
+      through main, a stage, or a per-evaluator model, implementationId, or
+      implementationVersion value.
+
+      setProfile rejects an invocation naming the same stageId in both a stage
+      binding and a disabled-stage identity.
+
+      setProfile never removes an existing evaluator or profile; it only adds a new
+      entry or updates the exact fields named by its options.
+    }
+
+    SeededDefaults {
+      seededToolConfiguration sets tools.agent.profile and
+      tools.compile.defaultProfile to standard.
+
+      seededToolConfiguration configures the codex, claude, opencode, and pi
+      evaluators. SigilCompiler owns the codex adapter and its implementation
+      identity directly; the claude, opencode, and pi evaluators source their
+      implementation identifier and exact version from SigilClaudeCompilerAdapter,
+      SigilOpenCodeCompilerAdapter, and SigilPiCompilerAdapter respectively, the same
+      components SigilCli bundles and registers.
+
+      seededToolConfiguration configures a standard profile bound to codex, and one
+      claude, opencode, and pi profile each extending standard and bound to its own
+      evaluator.
+
+      seededToolConfiguration sets budgets elapsedTimeMs 3000000, maxCommands 512,
+      maxCommandOutputChars 3000000, maxInputTokens 4000000, and maxOutputTokens
+      4000000.
+
+      seededToolConfiguration sets limits maxCompilationRequestChars 2000000,
+      maxAgentInputChars 2000000, and sessionTtlMs 86400000. providerCleanupMs is
+      left to the compiler's backward-compatible default.
+
+      These budget and limit values are sized for large workspaces rather than the
+      compiler's smaller backward-compatible defaults.
+    }
+  }
+
+  constraints {
+    ConfigFileScope {
+      setDefault and setProfile require an existing valid ConfigFile and report
+      SIGIL_CONFIG_NOT_FOUND or existing configuration diagnostics instead of writing
+      when it is absent or invalid.
+
+      setDefault and setProfile write only tools.agent.profile and tools.compile
+      fields; they never modify sigilVersion, workspace, files, or .sigil source.
+
+      A validation failure leaves ConfigFile unchanged.
+    }
+
+    ContentValidationClassification {
+      An unknown profile name for setDefault, a stage or main evaluatorId lacking a
+      matching new-evaluator declaration, and a stageId named by both a stage binding
+      and a disabled-stage identity are all configuration diagnostics, not usage
+      errors; only malformed option syntax is a usage error.
+    }
+
+    AtomicRewrite {
+      setDefault and setProfile write the complete rewritten ConfigFile to a
+      temporary file and atomically replace ConfigFile only after that write
+      succeeds. A failure while preparing or writing the temporary file leaves the
+      existing ConfigFile byte-for-byte unchanged and is reported as a host failure.
+    }
+  }
+
+  decisions {
+    ConfigurationHelperCommands {
+      Decision: Expose tools.agent.profile and tools.compile authoring through a
+      dedicated SigilConfigAuthoring component with flag-driven setDefault and
+      setProfile operations instead of requiring direct ConfigFile edits.
+
+      Scope: Governs mutation of tools.agent.profile, tools.compile.defaultProfile,
+      tools.compile.profiles, and tools.compile.evaluators; excludes sigilVersion,
+      workspace, files, and compiler-side profile resolution.
+
+      Trade-offs: Two narrow operations cover common default, profile, model, and
+      stage-model changes while an unusual tools.compile shape still requires a
+      direct edit.
+
+      Design issues addressed: Switching the default agent, adding a profile, or
+      rebinding one stage to a different evaluator or model previously required
+      editing and revalidating raw ConfigFile JSON by hand.
+
+      Discarded alternatives: One combined operation covering every tools.compile
+      field was rejected as an unreviewable grab-bag of unrelated options;
+      interactive prompts were rejected as non-scriptable and inconsistent with every
+      other deterministic CLI command.
+
+      Consequences: Automation and authors change agent and profile defaults, add or
+      edit a profile, and set an evaluator's model or a stage's evaluator binding
+      without hand-editing JSON, while SigilCompiler and sigil check remain the sole
+      authority on whether the result compiles.
+    }
+
+    SeededCompilationDefaults {
+      Decision: Seed a newly initialized ConfigFile with all four built-in
+      evaluators, one profile per evaluator extending standard, and budgets and
+      limits sized for large workspaces, defaulting tools.agent.profile and
+      tools.compile.defaultProfile to standard, all produced by
+      SigilConfigAuthoring's SeededDefaults so init and later authoring share one
+      owner for these values.
+
+      Scope: Governs the tools object sigil init writes into a newly created
+      ConfigFile; excludes core's empty-object default for a ConfigFile that omits
+      tools entirely and excludes compiler-side default resolution for an omitted
+      field.
+
+      Trade-offs: A newly initialized workspace immediately depends on codex, claude,
+      opencode, and pi evaluator identities instead of an empty opt-in-later tools
+      object.
+
+      Design issues addressed: Workspaces previously had to hand-author the complete
+      evaluator, profile, and budget configuration this repository already carries in
+      .sigil/config.json before compiling against more than one provider; keeping
+      that content only in WorkspaceInitialization's own logic would duplicate the
+      evaluator, profile, and budget policy SigilConfigAuthoring already owns for
+      later mutation.
+
+      Discarded alternatives: Seeding only the codex evaluator was rejected because
+      switching providers would still require hand-authoring the other three
+      evaluators and their profiles.
+
+      Consequences: sigil compile --profile claude, opencode, or pi, and sigil
+      compile --agent, work immediately after init without further configuration;
+      set-default and set-profile edit these same seeded values through the one
+      component that produced them.
+
+      Revisit when: The set of built-in evaluator providers changes.
+    }
+  }
+
+  cases {
+    DefaultProfileAssignment {
+      setDefault(..., "claude") sets both tools.compile.defaultProfile and
+      tools.agent.profile to claude.
+
+      setDefault(..., "claude", "standard") sets tools.compile.defaultProfile to
+      claude and tools.agent.profile to standard.
+    }
+
+    ProfileAuthoring {
+      setProfile("nightly", { extends: "standard", main: ["claude"], model: { claude:
+      "claude-opus-5" } }) creates a nightly profile bound to claude and sets the
+      claude evaluator's model.
+
+      setProfile("standard", { stages: { "architecture-design": ["claude"] } })
+      overrides only the architecture-design stage of the existing standard profile
+      and leaves its other fields unchanged.
+
+      setProfile against a missing ConfigFile reports SIGIL_CONFIG_NOT_FOUND and
+      writes nothing.
+
+      setProfile with an unconfigured stage evaluatorId and no declared provider
+      rejects the request and writes nothing.
+
+      setProfile declaring two new evaluatorIds bound to different stages in one
+      invocation configures both evaluators and both stage bindings.
+
+      setProfile declaring a new evaluatorId through --evaluator without also binding
+      it through main, a stage, or a per-evaluator value still persists that
+      evaluator for a later invocation to bind.
+
+      setProfile("standard", { disabledStages: ["architecture-design"] }) disables
+      only that stage of the existing standard profile and leaves its main and other
+      stage bindings unchanged.
+
+      setProfile naming the same stageId in both a stage binding and a disabled-stage
+      identity rejects the request and writes nothing.
+    }
+
+    SeededDefaults {
+      seededToolConfiguration() run against an empty directory returns
+      tools.agent.profile and tools.compile.defaultProfile as standard with the
+      codex, claude, opencode, and pi evaluators and their profiles.
+    }
+  }
+}

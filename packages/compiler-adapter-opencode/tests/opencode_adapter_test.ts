@@ -47,6 +47,14 @@ function request(
         diagnostics: [],
         fingerprint: "sha256:test-retrieval",
       },
+      retrievalBrief: {
+        purpose: "semantic",
+        componentName: "Example",
+        sigilFile: "example.sigil",
+        retrievalFingerprint: "sha256:test-retrieval",
+        markdown: "Example retrieval context",
+        allowedDirectReadPaths: ["example.sigil"],
+      },
     },
     capabilities: {
       schemaVersion: 1,

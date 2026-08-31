@@ -22,6 +22,8 @@ export type CommandResult =
   | SkillListCommandResult
   | SkillInstallCommandResult
   | InitCommandResult
+  | ConfigSetDefaultCommandResult
+  | ConfigSetProfileCommandResult
   | VersionCommandResult
   | ParseCommandResult
   | CheckCommandResult
@@ -69,6 +71,16 @@ export interface WorkspaceMetadata {
 }
 export interface InitCommandResult extends WorkspaceMetadata {
   readonly command: "init";
+  readonly config: SigilConfig | null;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+export interface ConfigSetDefaultCommandResult extends WorkspaceMetadata {
+  readonly command: "config-set-default";
+  readonly config: SigilConfig | null;
+  readonly diagnostics: readonly SigilDiagnostic[];
+}
+export interface ConfigSetProfileCommandResult extends WorkspaceMetadata {
+  readonly command: "config-set-profile";
   readonly config: SigilConfig | null;
   readonly diagnostics: readonly SigilDiagnostic[];
 }

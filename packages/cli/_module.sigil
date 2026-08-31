@@ -6,6 +6,7 @@
 @packages/compiler-adapter-claude import { SigilClaudeCompilerAdapter }
 @packages/cli/src/installer.sigil import { SkillInstaller }
 @packages/cli/src/retrieval-markdown.sigil import { SigilRetrievalMarkdown }
+@packages/cli/src/config-authoring.sigil import { SigilConfigAuthoring }
 
 component SigilCli {
   goal {
@@ -14,8 +15,8 @@ component SigilCli {
     review workflows through a non-interactive command line.
 
     Keep deterministic workspace commands thin over SigilCore, keep compilation
-    thin over SigilCompiler, and isolate skill installation as a focused
-    host-filesystem responsibility.
+    thin over SigilCompiler, and isolate skill installation and compilation
+    configuration authoring as focused, independently owned responsibilities.
   }
 
   interface {
@@ -47,6 +48,37 @@ component SigilCli {
 
     WorkspaceInitialization {
       sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
+
+      init seeds tools.agent and tools.compile with SigilConfigAuthoring's
+      SeededDefaults instead of an empty tools object.
+    }
+
+    CompilationConfigurationCommand {
+      CompilationConfigurationCommand adapts SigilConfigAuthoring into a CLI command
+      surface.
+
+      sigil config set-default [path] --profile name [--agent-profile name]
+
+      sigil config set-profile name [path] [--extends base] [--main
+      evaluatorId[,evaluatorId ...]] [--stage stageId=evaluatorId[,evaluatorId ...]
+      ...] [--disable-stage stageId ...] [--evaluator evaluatorId=provider ...]
+      [--model evaluatorId=model ...] [--implementation-id evaluatorId=value ...]
+      [--implementation-version evaluatorId=value ...]
+
+      set-default's --agent-profile is a distinct, differently named option from
+      compile's valueless, --profile-mutually-exclusive --agent; flag names and arity
+      are scoped per command path.
+
+      --evaluator is repeatable; one invocation may declare more than one previously
+      unconfigured evaluatorId.
+
+      --main and each --stage value accept one or more comma-separated evaluatorIds;
+      SigilConfigAuthoring resolves per-field cardinality and SigilCompiler resolves
+      whether the result compiles.
+
+      On success, set-default and set-profile report the rewritten tools object and
+      workspace metadata as structured JSON honoring --format json, --pretty, and
+      --quiet, matching the pattern used by fmt.
     }
 
     WorkspaceInspection {
@@ -179,6 +211,10 @@ component SigilCli {
       init may create the .sigil directory, a missing ConfigFile, and a missing
       seeded GlossaryFile but no .sigil source
 
+      sigil config set-default and sigil config set-profile update only the tools
+      object of an existing ConfigFile and never create, remove, or touch .sigil
+      source
+
       fmt explicitly rewrites only selected valid .sigil source while fmt --check
       remains read-only
     }
@@ -273,8 +309,9 @@ expand SigilCli {
       init defaults workspace.name to the target-directory basename and
       workspace.members to an empty array.
 
-      init applies the configured default SourceSelection and ToolConfiguration
-      values.
+      init applies SigilWorkspaceConfig's default SourceSelection values and writes
+      the tools object produced by SigilConfigAuthoring's SeededDefaults instead of
+      an empty tools object.
 
       init creates a missing GlossaryFile containing only the decision-record field
       labels.
@@ -287,6 +324,18 @@ expand SigilCli {
 
       init preserves an existing GlossaryFile instead of merging, replacing, or
       normalizing it.
+    }
+
+    CompilationConfigurationCommand {
+      set-default delegates default-profile assignment to SigilConfigAuthoring's
+      DefaultProfileAssignment.
+
+      set-profile delegates profile and evaluator authoring to SigilConfigAuthoring's
+      ProfileAuthoring.
+
+      Both commands preserve every other tools field and every non-tools ConfigFile
+      field, and rewrite ConfigFile with the same deterministic JSON shape init
+      produces.
     }
 
     WorkspaceInspection {
@@ -504,6 +553,10 @@ expand SigilCli {
       init creates only the .sigil directory, a missing ConfigFile, and a missing
       seeded GlossaryFile.
 
+      config set-default and config set-profile mutate only tools.agent.profile and
+      tools.compile fields of an existing ConfigFile and never create, remove, or
+      touch .sigil source or GlossaryFile.
+
       fmt explicitly mutates only selected .sigil source and never formats ConfigFile
       or GlossaryFile.
 
@@ -513,6 +566,15 @@ expand SigilCli {
       Skill commands do not require or modify ConfigFile.
 
       glossary is a read-only workspace inspection command.
+    }
+
+    CompilationConfigurationCommand {
+      set-default and set-profile write only tools.agent.profile and tools.compile
+      fields of an existing ConfigFile and never modify sigilVersion, workspace,
+      files, or .sigil source.
+
+      A host failure while SigilConfigAuthoring rewrites ConfigFile exits with code
+      3.
     }
 
     SourceFormatting {
@@ -711,24 +773,29 @@ expand SigilCli {
 
     WorkspaceMutationBoundary {
       Decision: Keep workspace inspection commands read-only, restrict workspace
-      initialization to missing configuration and seed-glossary files, and permit
-      source mutation only through an explicit fmt invocation.
+      initialization to missing configuration and seed-glossary files, permit
+      ConfigFile tools mutation only through the narrow config set-default and config
+      set-profile commands, and permit .sigil source mutation only through an
+      explicit fmt invocation.
 
       Scope: Governs version, parse, check, glossary, graph, context, render, init,
-      fmt, and fmt --check; excludes explicitly requested skill-installation side
-      effects.
+      config set-default, config set-profile, fmt, and fmt --check; excludes
+      explicitly requested skill-installation side effects.
 
-      Trade-offs: Initialization performs bounded metadata creation and formatting
-      performs explicit source rewrites, while inspection provides no automatic
-      repair.
+      Trade-offs: Initialization performs bounded metadata creation, config
+      set-default and set-profile perform bounded tools-field rewrites, and
+      formatting performs explicit source rewrites, while inspection provides no
+      automatic repair.
 
       Discarded alternatives: Implicit source repair, inspection-time mutation,
-      formatter changes to ConfigFile or GlossaryFile, and partial formatting after a
+      formatter changes to ConfigFile or GlossaryFile, unbounded ConfigFile editing
+      through a single generic command, and partial formatting after a
       selected-source error were rejected.
 
       Consequences: Formatting is deliberate and bounded, semantic mutation remains
-      an explicitly approved host-workflow responsibility, and user-owned glossary
-      content is preserved.
+      an explicitly approved host-workflow responsibility, ConfigFile tools changes
+      stay legible to review as two narrow commands, and user-owned glossary content
+      is preserved.
 
       Revisit when: Formatting requires cross-file semantic rewrites, merging, or
       rollback beyond canonical source rendering.
@@ -1006,6 +1073,48 @@ expand SigilCli {
       and Revisit when:, each with agentContext false, plus an empty contexts array.
 
       init preserves an existing GlossaryFile unchanged.
+
+      init in an empty directory writes the exact tools object produced by
+      SigilConfigAuthoring's SeededDefaults.
+    }
+
+    CompilationConfigurationCommand {
+      sigil config set-default --profile claude sets both
+      tools.compile.defaultProfile and tools.agent.profile to claude.
+
+      sigil config set-default --profile claude --agent-profile standard sets
+      tools.compile.defaultProfile to claude and tools.agent.profile to standard.
+
+      sigil config set-profile nightly --extends standard --main claude --model
+      claude=claude-opus-5 creates a nightly profile bound to claude and sets the
+      claude evaluator's model.
+
+      sigil config set-profile standard --stage architecture-design=claude overrides
+      only the architecture-design stage of the existing standard profile and leaves
+      its other fields unchanged.
+
+      sigil config set-profile standard --implementation-version claude=0.7.2 updates
+      the claude evaluator's implementation version without changing its provider,
+      implementation identifier, or model.
+
+      sigil config set-profile against a missing ConfigFile reports
+      SIGIL_CONFIG_NOT_FOUND and writes nothing.
+
+      sigil config set-profile with an unconfigured --stage evaluatorId and no
+      --evaluator reports a configuration diagnostic, exits with code 1, and writes
+      nothing, matching set-default's treatment of an unknown profile name.
+
+      sigil config set-profile standard --disable-stage architecture-design disables
+      only the architecture-design stage of the existing standard profile and leaves
+      its main and other stage bindings unchanged.
+
+      sigil config set-profile naming the same stageId in both --stage and
+      --disable-stage reports a configuration diagnostic and writes nothing.
+
+      sigil config set-profile review --stage semantic-readiness=reviewer-a --stage
+      architecture-design=reviewer-b --evaluator reviewer-a=claude --evaluator
+      reviewer-b=claude declares two new evaluators and binds each to its own stage
+      in one invocation.
     }
 
     WorkspaceInspection {

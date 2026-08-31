@@ -60,6 +60,23 @@ VS Code extension releases are currently available as manually installable
 [GitHub Releases page](https://github.com/qoherent/sigil/releases). Marketplace
 publishing remains deferred.
 
+## Where To Start
+
+| Your situation | Read |
+| --- | --- |
+| Repository has no `.sigil/` yet | [Setting Up A Project](docs/setting-up-a-project.md) |
+| Code exists, contracts do not | [Brownfield Adoption](integrations/skills/sigil/references/brownfield-adoption.md) |
+| Designing something new | [Greenfield Design](integrations/skills/sigil/references/greenfield-design.md) |
+| Writing Sigil, need the syntax | [Language Specification](spec/sigil-language.md) |
+| Tuning `.sigil/config.json` | [Config Reference](spec/sigil-config.md) |
+| Upgrading an existing workspace | [Compatibility](COMPATIBILITY.md), then the `spec/migrating-to-*.md` for your target |
+| Changing Sigil itself | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+The brownfield and greenfield procedures are written for a coding agent running
+the bundled skill. They are readable on their own, but you get them applied for
+you by installing the skill above.
+
+
 ## Contributing
 
 For Contributors using the codebase directly, use the following.

@@ -30,6 +30,17 @@ export class DenoSigilFileSystem implements SigilFileSystem {
     await Deno.writeTextFile(path, source);
   }
 
+  async atomicReplaceTextFile(path: string, source: string): Promise<void> {
+    const tempPath = `${path}.tmp-${crypto.randomUUID()}`;
+    await Deno.writeTextFile(tempPath, source, { createNew: true });
+    try {
+      await Deno.rename(tempPath, path);
+    } catch (error) {
+      await Deno.remove(tempPath).catch(() => {});
+      throw error;
+    }
+  }
+
   async makeDirectory(path: string): Promise<void> {
     await Deno.mkdir(path, { recursive: true });
   }
