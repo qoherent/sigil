@@ -384,7 +384,9 @@ component BookingCalendarView {
 ### `scope`
 
 `scope` is an optional component section that records what the component
-deliberately does not cover. It is visible to dependents, which rely on knowing
+deliberately does not cover. It cannot appear in an `expand`: a component states
+its own boundary, and an expansion carrying one is reported as
+`SIGIL_SECTION_NOT_ALLOWED`. It is visible to dependents, which rely on knowing
 where a boundary stops as much as where it starts. Like every section other than
 `interface`, it does not export concept identities.
 
