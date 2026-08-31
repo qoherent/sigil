@@ -95,6 +95,7 @@ export interface RetrieveRequest extends GlobalOptions {
   readonly component?: string;
   readonly file?: string;
   readonly purpose: "semantic" | "architecture" | "implementation";
+  readonly maxEvidenceBytes?: number;
   readonly path?: string;
 }
 export interface CompileRequest extends GlobalOptions {
@@ -103,6 +104,8 @@ export interface CompileRequest extends GlobalOptions {
   readonly focus?: "design" | "implementation";
   readonly component?: string;
   readonly file?: string;
+  readonly directory?: string;
+  readonly exactTarget?: boolean;
   readonly position?: {
     readonly line: number;
     readonly column: number;
@@ -184,6 +187,9 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   let component: string | undefined;
   let file: string | undefined;
   let position: CompileRequest["position"];
+  let directory: string | undefined;
+  let exactTarget = false;
+  let maxEvidenceBytes: number | undefined;
   let includeDependents = false;
   let name: string | undefined;
   const include: string[] = [];
@@ -260,6 +266,16 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
         component = value;
         break;
       }
+      case "--directory": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        directory = value;
+        break;
+      }
+      case "--exact-target": {
+        exactTarget = true;
+        break;
+      }
       case "--file": {
         const value = take(arg);
         if (typeof value !== "string") return value;
@@ -312,6 +328,19 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       case "--include-dependents":
         includeDependents = true;
         break;
+      case "--max-evidence-bytes": {
+        const value = take(arg);
+        if (typeof value !== "string") return value;
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed < 0) {
+          return usage(
+            "--max-evidence-bytes must be a non-negative integer.",
+            commandHelpTopic,
+          );
+        }
+        maxEvidenceBytes = parsed;
+        break;
+      }
       case "--purpose": {
         const value = take(arg);
         if (typeof value !== "string") return value;
@@ -367,6 +396,12 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       commandHelpTopic,
     );
   }
+  if (commandName !== "compile" && (directory || exactTarget)) {
+    return usage(
+      `${commandName} does not accept --directory or --exact-target.`,
+      commandHelpTopic,
+    );
+  }
   if (commandName !== "context" && includeDependents) {
     return usage(
       `${commandName} does not accept --include-dependents.`,
@@ -375,6 +410,12 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
   }
   if (commandName !== "retrieve" && purpose) {
     return usage(`${commandName} does not accept --purpose.`, commandHelpTopic);
+  }
+  if (commandName !== "retrieve" && maxEvidenceBytes !== undefined) {
+    return usage(
+      `${commandName} does not accept --max-evidence-bytes.`,
+      commandHelpTopic,
+    );
   }
   if (commandName !== "compile" && position) {
     return usage(
@@ -554,6 +595,7 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       request: {
         command: "retrieve",
         component,
+        maxEvidenceBytes,
         file,
         purpose,
         path: positional[0],
@@ -610,6 +652,26 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
         "compile",
       );
     }
+    const selectors = [
+      component ? "--component" : undefined,
+      file ? "--file" : undefined,
+      directory ? "--directory" : undefined,
+    ].filter(Boolean);
+    if (selectors.length > 1) {
+      return usage(
+        `compile accepts only one of ${selectors.join(", ")}.`,
+        "compile",
+      );
+    }
+    if (position && !file) {
+      return usage("compile --position requires --file.", "compile");
+    }
+    if (exactTarget && selectors.length === 0) {
+      return usage(
+        "compile --exact-target requires a selector to preserve.",
+        "compile",
+      );
+    }
     return {
       kind: "ok",
       request: {
@@ -618,6 +680,8 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
         focus,
         component,
         file,
+        directory,
+        exactTarget,
         position,
         path: paths[0],
         profile,

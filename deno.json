@@ -5,14 +5,15 @@
     "./packages/compiler-adapter-opencode",
     "./packages/compiler-adapter-pi",
     "./packages/compiler-adapter-claude",
+    "./packages/compiler-adapter-codex",
     "./packages/cli",
     "./packages/lsp"
   ],
   "lock": true,
   "tasks": {
-    "fmt": "deno fmt --check deno.json .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json spec/sigil-config.schema.json spec/sigil-glossary.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/compiler/deno.json packages/compiler/src packages/compiler/tests packages/compiler-adapter-opencode/deno.json packages/compiler-adapter-opencode/src packages/compiler-adapter-opencode/tests packages/compiler-adapter-pi/deno.json packages/compiler-adapter-pi/src packages/compiler-adapter-pi/tests packages/compiler-adapter-claude/deno.json packages/compiler-adapter-claude/src packages/compiler-adapter-claude/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
+    "fmt": "deno fmt --check deno.json .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json spec/sigil-config.schema.json spec/sigil-glossary.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/compiler/deno.json packages/compiler/src packages/compiler/tests packages/compiler-adapter-opencode/deno.json packages/compiler-adapter-opencode/src packages/compiler-adapter-opencode/tests packages/compiler-adapter-pi/deno.json packages/compiler-adapter-pi/src packages/compiler-adapter-pi/tests packages/compiler-adapter-claude/deno.json packages/compiler-adapter-claude/src packages/compiler-adapter-claude/tests packages/compiler-adapter-codex/deno.json packages/compiler-adapter-codex/src packages/compiler-adapter-codex/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
     "lint": "deno lint",
-    "check": "deno check packages/core/src/mod.ts packages/compiler/src/mod.ts packages/compiler-adapter-opencode/src/mod.ts packages/compiler-adapter-pi/src/mod.ts packages/compiler-adapter-claude/src/mod.ts packages/cli/src/main.ts packages/lsp/src/main.ts && deno task check:vscode",
+    "check": "deno check packages/core/src/mod.ts packages/compiler/src/mod.ts packages/compiler-adapter-opencode/src/mod.ts packages/compiler-adapter-pi/src/mod.ts packages/compiler-adapter-claude/src/mod.ts packages/compiler-adapter-codex/src/mod.ts packages/cli/src/main.ts packages/lsp/src/main.ts && deno task check:vscode",
     "check:vscode": "npm --prefix integrations/editor/vscode run check",
     "install:vscode": "npm ci --prefix integrations/editor/vscode",
     "test:core": "deno task --cwd packages/core test",
@@ -20,14 +21,15 @@
     "test:compiler-adapter-opencode": "deno task --cwd packages/compiler-adapter-opencode test",
     "test:compiler-adapter-pi": "deno task --cwd packages/compiler-adapter-pi test",
     "test:compiler-adapter-claude": "deno task --cwd packages/compiler-adapter-claude test",
+    "test:compiler-adapter-codex": "deno task --cwd packages/compiler-adapter-codex test",
     "test:cli": "deno task --cwd packages/cli test",
     "test:lsp": "deno task --cwd packages/lsp test",
     "test:vscode": "npm --prefix integrations/editor/vscode test",
     "test:vscode:extension": "npm --prefix integrations/editor/vscode run test:extension",
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
-    "test": "deno task test:core && deno task test:compiler && deno task test:compiler-adapter-opencode && deno task test:compiler-adapter-pi && deno task test:compiler-adapter-claude && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill",
+    "test": "deno task test:core && deno task test:compiler && deno task test:compiler-adapter-opencode && deno task test:compiler-adapter-pi && deno task test:compiler-adapter-claude && deno task test:compiler-adapter-codex && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill",
     "package:vscode": "deno run --allow-read --allow-run scripts/ensure-vscode-deps.ts && npm --prefix integrations/editor/vscode run package",
     "package:cli": "deno run --allow-read --allow-write --allow-run scripts/build-cli-release.ts",
-    "publish:dry-run": "deno task --cwd packages/core publish:dry-run && deno task --cwd packages/compiler publish:dry-run && deno task --cwd packages/compiler-adapter-opencode publish:dry-run && deno task --cwd packages/compiler-adapter-pi publish:dry-run && deno task --cwd packages/compiler-adapter-claude publish:dry-run && deno task --cwd packages/cli publish:dry-run && deno task --cwd packages/lsp publish:dry-run && deno task package:vscode"
+    "publish:dry-run": "deno task --cwd packages/core publish:dry-run && deno task --cwd packages/compiler publish:dry-run && deno task --cwd packages/compiler-adapter-opencode publish:dry-run && deno task --cwd packages/compiler-adapter-pi publish:dry-run && deno task --cwd packages/compiler-adapter-claude publish:dry-run && deno task --cwd packages/compiler-adapter-codex publish:dry-run && deno task --cwd packages/cli publish:dry-run && deno task --cwd packages/lsp publish:dry-run && deno task package:vscode"
   }
 }

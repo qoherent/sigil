@@ -456,8 +456,8 @@ const designCompilationReviewFixture = await Deno.readTextFile(
   `${root}/evals/design-compilation-review-fixture.md`,
 );
 const requiredDesignCompilationReviewBehaviors = [
-  "resolve-nearest-importing-module-index",
-  "traverse-graph-context",
+  "seed-scope-and-delegate-boundary-selection",
+  "read-resolved-target-from-report",
   "reserve-fresh-markdown-report-path",
   "wait-for-process-exit",
   "avoid-jsonl-stream-listening",
@@ -489,8 +489,18 @@ for (const behavior of requiredDesignCompilationReviewBehaviors) {
 }
 requireText(
   designCompilationReviewFixture,
-  "Resolve the importing module\n   index whose closure covers every affected unit",
-  "nearest importing module-index selection",
+  "let the compiler resolve the\n   boundary",
+  "compiler-owned boundary selection",
+);
+requireText(
+  designCompilationReview,
+  "The compiler owns compilation-boundary selection.",
+  "boundary selection ownership",
+);
+requireText(
+  designCompilationReview,
+  "`requestedScope` is what you asked for, `target` is what was\ncompiled",
+  "requested scope and resolved target reporting",
 );
 requireText(
   designCompilationReviewFixture,
@@ -668,6 +678,8 @@ const requiredGreenfieldBehaviors = [
   "build-questions-on-answers",
   "surface-weak-assumptions",
   "build-greenfield-design-context",
+  "decide-module-structure-first",
+  "keep-small-project-one-boundary",
   "assess-guidance-after-framing",
   "research-when-required-or-recommended",
   "match-guidance-to-environment",
@@ -699,6 +711,16 @@ requireText(
   greenfieldFixture,
   "asking one primary decision per turn",
   "greenfield iterative conversation",
+);
+requireModuleWorkflow(
+  greenfieldFixture,
+  "Decide the module structure before drafting any contract",
+  "Establish the smallest coherent component boundaries",
+  "Decide the module structure before drafting any contract",
+  ["areas", "directories", "declared-member status"],
+  "Keep this service as one boundary",
+  "a second area owns a distinct deployment unit, technology boundary, or reason to change",
+  "greenfield fixture module workflow",
 );
 requireText(
   greenfieldFixture,
@@ -1444,6 +1466,16 @@ requireText(
 const greenfield = await Deno.readTextFile(
   `${root}/references/greenfield-design.md`,
 );
+requireModuleWorkflow(
+  greenfield,
+  "## 3. Decide The Module Structure",
+  "## 4. Establish Boundaries And Contracts",
+  "Present the proposed structure before writing any contract",
+  ["area", "directory", "responsibility", "declared-member status"],
+  "Do not split a small project",
+  "one boundary is correct until a second area has its own reason to change",
+  "greenfield reference module workflow",
+);
 requireText(
   greenfield,
   "one-primary-decision turns",
@@ -1693,4 +1725,140 @@ function requireText(source: string, value: string, label: string): void {
 
 function forbidText(source: string, value: string, label: string): void {
   if (source.includes(value)) throw new Error(`Found ${label}: ${value}`);
+}
+
+/**
+ * Line wrapping is not part of a guarantee, so structural checks compare
+ * whitespace-collapsed text.
+ */
+function flatten(source: string): string {
+  return source.replace(/\s+/g, " ");
+}
+
+function requireOrder(
+  source: string,
+  first: string,
+  second: string,
+  label: string,
+): void {
+  const flat = flatten(source);
+  const start = flat.indexOf(flatten(first));
+  const end = flat.indexOf(flatten(second));
+  if (start < 0) throw new Error(`Missing ${label} start: ${first}`);
+  if (end < 0) throw new Error(`Missing ${label} end: ${second}`);
+  if (start > end) {
+    throw new Error(`Out of order ${label}: ${first} must precede ${second}`);
+  }
+}
+
+/** Requires every field to appear in the sentence opened by the anchor. */
+function requireSentenceFields(
+  source: string,
+  anchor: string,
+  fields: readonly string[],
+  label: string,
+): void {
+  const flat = flatten(source);
+  const start = flat.indexOf(flatten(anchor));
+  if (start < 0) throw new Error(`Missing ${label} anchor: ${anchor}`);
+  const stop = flat.indexOf(".", start + flatten(anchor).length);
+  const sentence = flat.slice(start, stop < 0 ? undefined : stop + 1);
+  for (const field of fields) {
+    if (!sentence.includes(field)) {
+      throw new Error(`Missing ${label} field: ${field}`);
+    }
+  }
+}
+
+/**
+ * The module workflow is three guarantees rather than three phrases: structure
+ * is decided before contracts, the confirmation names every field the user
+ * needs, and the one-boundary rule keeps the condition that ends it. Each is
+ * also run against a copy with that guarantee removed, because a check that
+ * cannot fail does not protect anything.
+ */
+function requireModuleWorkflow(
+  source: string,
+  decideStructure: string,
+  draftContracts: string,
+  confirmationAnchor: string,
+  confirmationFields: readonly string[],
+  oneBoundary: string,
+  oneBoundaryCondition: string,
+  label: string,
+): void {
+  const checks: readonly [string, (text: string) => void, string][] = [
+    [
+      "ordering",
+      (text) =>
+        requireOrder(text, decideStructure, draftContracts, `${label} order`),
+      // Swapping the two steps must be rejected.
+      swap(decideStructure, draftContracts),
+    ],
+    [
+      "confirmation fields",
+      (text) =>
+        requireSentenceFields(
+          text,
+          confirmationAnchor,
+          confirmationFields,
+          `${label} confirmation`,
+        ),
+      // Dropping one required field must be rejected.
+      confirmationFields[confirmationFields.length - 1],
+    ],
+    [
+      "one-boundary condition",
+      (text) => {
+        requireText(text, oneBoundary, `${label} one-boundary rule`);
+        requireText(
+          flatten(text),
+          flatten(oneBoundaryCondition),
+          `${label} one-boundary condition`,
+        );
+      },
+      // Dropping the condition that ends the rule must be rejected.
+      oneBoundaryCondition,
+    ],
+  ];
+  for (const [name, check, removal] of checks) {
+    check(source);
+    const weakened = name === "ordering"
+      ? applySwap(source, removal)
+      : remove(source, removal);
+    if (weakened === source) {
+      throw new Error(`Cannot weaken ${label} ${name}; check is unverified.`);
+    }
+    let rejected = false;
+    try {
+      check(weakened);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) {
+      throw new Error(`${label} ${name} check passes without its guarantee.`);
+    }
+  }
+}
+
+function swap(first: string, second: string): string {
+  return `${first}\u0000${second}`;
+}
+
+function applySwap(source: string, pair: string): string {
+  const [first, second] = pair.split("\u0000");
+  const marker = "\u0001SIGIL_SWAP\u0001";
+  return source.replace(first, marker).replace(second, first).replace(
+    marker,
+    second,
+  );
+}
+
+/** Removes a guarantee, tolerating the line wrapping of the source. */
+function remove(source: string, value: string): string {
+  if (source.includes(value)) return source.replace(value, "");
+  const words = value.split(/\s+/).map((word) =>
+    word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  return source.replace(new RegExp(words.join("\\s+")), "");
 }

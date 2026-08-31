@@ -72,7 +72,7 @@ component Two {
 // @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::CompilationSurface logic,constraints,cases
 test("accepts exactly one completed terminal event with a valid report", async () => {
   const script = `
-const report = {reportVersion:2,status:"green",componentNames:["One"],diagnostics:[]};
+const report = {reportVersion:3,status:"green",componentNames:["One"],diagnostics:[]};
 console.log(JSON.stringify({protocolVersion:1,runId:"run",sequence:1,type:"started",payload:{}}));
 console.log(JSON.stringify({protocolVersion:1,runId:"run",sequence:2,type:"completed",payload:{report}}));
 `;
@@ -143,7 +143,7 @@ test("accepts stage-completed StageReport payloads", async () => {
     diagnosticCount: 0,
   };
   const report = {
-    reportVersion: 2,
+    reportVersion: 3,
     status: "green",
     componentNames: ["One"],
     diagnostics: [],
@@ -179,7 +179,7 @@ console.log(JSON.stringify({protocolVersion:1,runId:"run",sequence:4,type:"compl
 // @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::CompilationSurface constraints,cases
 test("allows a terminal while a stage remains open", async () => {
   const report = {
-    reportVersion: 2,
+    reportVersion: 3,
     status: "green",
     componentNames: ["One"],
     diagnostics: [],

@@ -22,6 +22,7 @@ import {
   resolveSigilRelationships,
   resolveSigilWorkspace,
   retrievePurposeContext,
+  selectCompilationBoundary,
   SIGIL_CORE_VERSION,
   SIGIL_VERSION,
   type SigilFileSystem,
@@ -3449,6 +3450,554 @@ const authSigil =
   `@user-profile.sigil import { UserProfile }\n\ncomponent Auth {\n  goal {\n    Authenticate users.\n  }\n\n  interface {\n    signIn(UserProfile)\n  }\n}\n`;
 const userProfileSigil =
   `component UserProfile {\n  goal {\n    Store profile information.\n  }\n\n  interface {\n    getProfile()\n  }\n}\n`;
+
+function boundaryWorkspace(): InMemorySigilFileSystem {
+  const component = (name: string, body: string) =>
+    `component ${name} {
+  goal {
+    Own the ${name} responsibility.
+  }
+
+  interface {
+    ${name}Contract {
+      Expose the ${name} operations.
+    }
+  }
+${body}}
+`;
+  return new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "_module.sigil":
+      `@pkg-a/_module.sigil import { PkgAIndex }\n@pkg-b/_module.sigil import { PkgBIndex }\n\n` +
+      component(
+        "RootIndex",
+        `
+  logic {
+    RootIndexContract {
+      Assemble PkgAIndex and PkgBIndex into one namespace.
+    }
+  }
+`,
+      ),
+    "pkg-a/_module.sigil":
+      `@pkg-a/src/alpha.sigil import { Alpha }\n@pkg-a/src/beta.sigil import { Beta }\n\n` +
+      component(
+        "PkgAIndex",
+        `
+  logic {
+    PkgAIndexContract {
+      Assemble Alpha and Beta into one namespace.
+    }
+  }
+`,
+      ),
+    "pkg-a/src/alpha.sigil": component("Alpha", ""),
+    // An expand-only file that declares no component of its own.
+    "pkg-a/src/alpha-detail.sigil": `@pkg-a/src/alpha.sigil import { Alpha }
+
+expand Alpha {
+  logic {
+    AlphaContract {
+      Apply the alpha algorithm.
+    }
+  }
+}
+`,
+    "pkg-a/src/beta.sigil": component("Beta", ""),
+    "pkg-b/_module.sigil": `@pkg-b/src/gamma.sigil import { Gamma }\n\n` +
+      component(
+        "PkgBIndex",
+        `
+  logic {
+    PkgBIndexContract {
+      Assemble Gamma into one namespace.
+    }
+  }
+`,
+      ),
+    "pkg-b/src/gamma.sigil": component("Gamma", ""),
+  });
+}
+
+/*
+ * @sigil tests packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::BoundarySelection interface,logic,constraints,cases
+ * @sigil tests packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::AffectedScope interface,logic,constraints,cases
+ */
+Deno.test("resolves a compilation seed into a covering boundary", async () => {
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(boundaryWorkspace(), { startPath: "." }),
+  );
+  assertEquals(
+    resolved.diagnostics.filter((d) => d.severity === "error").length,
+    0,
+  );
+
+  const describe = (
+    seed: Parameters<typeof selectCompilationBoundary>[1],
+    exact?: boolean,
+  ) => {
+    const result = selectCompilationBoundary(resolved, seed, {
+      exactTarget: exact,
+    });
+    const target = result.resolvedTarget;
+    const shown = target.kind === "workspace"
+      ? "workspace"
+      : target.kind === "file"
+      ? `file:${target.filePath}`
+      : `component:${target.name}`;
+    return `${shown}|${result.selection.strategy}`;
+  };
+
+  // A leaf component escalates to the module index that covers it.
+  assertEquals(
+    describe({ kind: "component", componentName: "Alpha" }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+
+  // The exact-target opt-out preserves the selector.
+  assertEquals(
+    describe({ kind: "component", componentName: "Alpha" }, true),
+    "component:Alpha|exact-target",
+  );
+
+  // A file seed and a location seed reach the same boundary.
+  assertEquals(
+    describe({ kind: "file", filePath: "pkg-a/src/alpha.sigil" }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+  assertEquals(
+    describe({
+      kind: "location",
+      filePath: "pkg-a/src/alpha.sigil",
+      line: 2,
+      column: 1,
+    }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+
+  // An expand-only file resolves through its parent component.
+  assertEquals(
+    describe({ kind: "file", filePath: "pkg-a/src/alpha-detail.sigil" }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+
+  // A directory of related contracts resolves to one nested boundary.
+  assertEquals(
+    describe({ kind: "directory", directoryPath: "pkg-a/src" }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+  // A trailing separator does not change the meaning.
+  assertEquals(
+    describe({ kind: "directory", directoryPath: "pkg-a/src/" }),
+    "file:pkg-a/_module.sigil|nearest-covering-module-index",
+  );
+
+  // A directory is not a compilable unit, so an exact request over one is
+  // rejected rather than silently widened to the whole workspace.
+  const exactDirectory = selectCompilationBoundary(resolved, {
+    kind: "directory",
+    directoryPath: "pkg-a/src",
+  }, { exactTarget: true });
+  assertEquals(exactDirectory.selection.strategy, "workspace-fallback");
+  assertEquals(
+    exactDirectory.diagnostics.map((item) => item.code).join(","),
+    "SIGIL_BOUNDARY_EXACT_TARGET_UNSUPPORTED",
+  );
+
+  // Spanning both packages escalates to the nested-then-root module index.
+  assertEquals(
+    describe({ kind: "directory", directoryPath: "." }),
+    "file:_module.sigil|nearest-covering-module-index",
+  );
+
+  // A selector matching no loaded unit falls back to the workspace.
+  const missing = selectCompilationBoundary(resolved, {
+    kind: "component",
+    componentName: "NotDeclared",
+  });
+  assertEquals(missing.resolvedTarget.kind, "workspace");
+  assertEquals(missing.selection.strategy, "workspace-fallback");
+  assert(missing.selection.reason);
+
+  // The requested scope stays distinct from the resolved target.
+  const escalated = selectCompilationBoundary(resolved, {
+    kind: "component",
+    componentName: "Alpha",
+  });
+  assertEquals(escalated.requestedScope.kind, "component");
+  assertEquals(escalated.resolvedTarget.kind, "file");
+  assertEquals(escalated.selection.uncoveredSemanticUnits.length, 0);
+  assert(
+    escalated.selection.affectedSemanticUnits.includes(
+      "file:pkg-a/src/alpha-detail.sigil",
+    ),
+  );
+
+  // Selection does not depend on component discovery order.
+  const shuffled = {
+    ...resolved,
+    components: [...resolved.components].reverse(),
+  };
+  assertEquals(
+    JSON.stringify(
+      selectCompilationBoundary(shuffled, {
+        kind: "component",
+        componentName: "Alpha",
+      }).resolvedTarget,
+    ),
+    JSON.stringify(escalated.resolvedTarget),
+  );
+});
+
+/*
+ * @sigil tests packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::BoundaryClosure interface,logic,constraints
+ * @sigil tests packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::WorkspaceFallback logic,cases
+ */
+Deno.test("compilation boundary tolerates cycles and unrelated scopes", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    // A mutual import cycle must terminate rather than loop.
+    "left/_module.sigil": `@right/_module.sigil import { RightIndex }
+
+component LeftIndex {
+  goal {
+    Own the left boundary.
+  }
+
+  interface {
+    LeftContract {
+      Expose left operations.
+    }
+  }
+
+  logic {
+    LeftContract {
+      Assemble RightIndex into the left namespace.
+    }
+  }
+}
+`,
+    "right/_module.sigil": `@left/_module.sigil import { LeftIndex }
+
+component RightIndex {
+  goal {
+    Own the right boundary.
+  }
+
+  interface {
+    RightContract {
+      Expose right operations.
+    }
+  }
+
+  logic {
+    RightContract {
+      Assemble LeftIndex into the right namespace.
+    }
+  }
+}
+`,
+    // An unrelated contract that no module index imports.
+    "solo/detached.sigil": `component Detached {
+  goal {
+    Own an unimported responsibility.
+  }
+
+  interface {
+    DetachedContract {
+      Expose detached operations.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+
+  // Terminates and selects a covering module index.
+  const cyclic = selectCompilationBoundary(resolved, {
+    kind: "component",
+    componentName: "LeftIndex",
+  });
+  assertEquals(cyclic.resolvedTarget.kind, "file");
+  assertEquals(cyclic.selection.uncoveredSemanticUnits.length, 0);
+
+  // A component no module index covers resolves to itself as the smallest
+  // complete boundary.
+  const detached = selectCompilationBoundary(resolved, {
+    kind: "component",
+    componentName: "Detached",
+  });
+  assertEquals(detached.resolvedTarget.kind, "component");
+  assertEquals(detached.selection.strategy, "covering-component");
+
+  // Unrelated directories with no common covering boundary fall back.
+  const unrelated = selectCompilationBoundary(resolved, {
+    kind: "directory",
+    directoryPath: ".",
+  });
+  assertEquals(unrelated.resolvedTarget.kind, "workspace");
+  assertEquals(unrelated.selection.strategy, "workspace-fallback");
+  assert(unrelated.selection.reason?.includes("covers the complete"));
+});
+
+// @sigil tests packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::SeedValidation interface,logic,constraints,cases
+Deno.test("compilation boundary rejects unresolvable and invalid seeds", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "a/alpha.sigil": `component Alpha {
+  goal {
+    Own the alpha responsibility.
+  }
+
+  interface {
+    AlphaContract {
+      Expose the alpha operations.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+
+  const codesFor = (seed: Parameters<typeof selectCompilationBoundary>[1]) =>
+    selectCompilationBoundary(resolved, seed).diagnostics.map((item) =>
+      item.code
+    ).join(",");
+
+  // A misspelled name must not silently widen to the whole workspace.
+  assertEquals(
+    codesFor({ kind: "component", componentName: "Alhpa" }),
+    "SIGIL_BOUNDARY_SEED_NOT_FOUND",
+  );
+  assertEquals(
+    codesFor({ kind: "file", filePath: "a/missing.sigil" }),
+    "SIGIL_BOUNDARY_SEED_NOT_FOUND",
+  );
+  assertEquals(
+    codesFor({ kind: "directory", directoryPath: "unloaded" }),
+    "SIGIL_BOUNDARY_SEED_NOT_FOUND",
+  );
+  // Escaping, absolute, and empty selectors are invalid rather than unresolved.
+  for (
+    const path of ["../elsewhere", "/absolute/dir", "", "   ", "a/../../out"]
+  ) {
+    assertEquals(
+      codesFor({ kind: "directory", directoryPath: path }),
+      "SIGIL_BOUNDARY_SEED_PATH_INVALID",
+    );
+  }
+  assertEquals(
+    codesFor({
+      kind: "component",
+      componentName: "Alpha",
+      declarationPath: "/abs.sigil",
+    }),
+    "SIGIL_BOUNDARY_SEED_PATH_INVALID",
+  );
+
+  // A resolvable seed reports no diagnostics.
+  assertEquals(codesFor({ kind: "component", componentName: "Alpha" }), "");
+  assertEquals(codesFor({ kind: "file", filePath: "a/alpha.sigil" }), "");
+  assertEquals(codesFor({ kind: "workspace" }), "");
+
+  // A rejected seed carries no inferred scope, so a caller cannot mistake the
+  // reported workspace target for a real selection.
+  const rejected = selectCompilationBoundary(resolved, {
+    kind: "component",
+    componentName: "Alhpa",
+  });
+  assertEquals(rejected.selection.affectedSemanticUnits.length, 0);
+  assert(rejected.diagnostics[0].message.includes("Alhpa"));
+
+  // A path containing a space survives the semantic-unit representation.
+  const spaced = resolveSigilWorkspace(
+    await loadSigilWorkspace(
+      new InMemorySigilFileSystem({
+        ".sigil/config.json": configSource(),
+        "my dir/alpha.sigil": `component Alpha {
+  goal {
+    Own the alpha responsibility.
+  }
+
+  interface {
+    AlphaContract {
+      Expose the alpha operations.
+    }
+  }
+}
+`,
+      }),
+      { startPath: "." },
+    ),
+  );
+  assertEquals(
+    selectCompilationBoundary(spaced, {
+      kind: "component",
+      componentName: "Alpha",
+    }).selection.affectedSemanticUnits.join("|"),
+    "component:Alpha@my dir/alpha.sigil|file:my dir/alpha.sigil",
+  );
+});
+
+// @sigil tests packages/core/src/context-retrieval.sigil::SigilContextRetrieval::EvidenceBudget interface,constraints
+Deno.test("a retrieval budget keeps the closest evidence and reports the rest", async () => {
+  const component = (name: string, extra = "") =>
+    `component ${name} {
+  goal {
+    Own the ${name} responsibility for this workspace fixture.
+  }
+
+  interface {
+    ${name}Contract {
+      Expose the ${name} operations used by its dependents and collaborators.
+    }
+  }
+${extra}}
+`;
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "seed.sigil": `@one.sigil import { One }\n@two.sigil import { Two }\n\n` +
+      component(
+        "Seed",
+        `
+  logic {
+    SeedContract {
+      Assemble One and Two into one namespace for downstream consumers.
+    }
+  }
+`,
+      ),
+    // Multibyte text in a retrieved section makes encoded bytes exceed UTF-16
+    // code units, so a budget measured in the wrong unit overshoots.
+    "one.sigil": component("One").replace(
+      "Own the One",
+      `Own \u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680} the One`,
+    ),
+    "two.sigil": component("Two").replace(
+      "Own the Two",
+      `Own \u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680}\u{1F680} the Two`,
+    ),
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  const target = {
+    kind: "component" as const,
+    componentName: "Seed",
+    path: "seed.sigil",
+  };
+
+  const full = await retrievePurposeContext(resolved, target, "architecture");
+  assertEquals(full.budget, undefined);
+  assert(full.evidence.length > 1);
+
+  // A budget of zero still returns the selected contract: a boundary without
+  // its own contract would be useless.
+  const minimal = await retrievePurposeContext(
+    resolved,
+    target,
+    "architecture",
+    resolved.glossary,
+    null,
+    { maxEvidenceBytes: 0 },
+  );
+  assert(minimal.evidence.length >= 1);
+  assert(
+    minimal.evidence.every((item) =>
+      item.kind === "selected-contract" || item.kind === "selected-expansion"
+    ),
+  );
+  assert(minimal.evidence.length < full.evidence.length);
+
+  // The withheld evidence is summarized, not itemized, and the summary adds up.
+  const budget = minimal.budget!;
+  assert(budget);
+  assertEquals(budget.maxEvidenceBytes, 0);
+  assertEquals(
+    budget.withheldCount,
+    full.evidence.length - minimal.evidence.length,
+  );
+  assert(budget.withheldBytes > 0);
+  assert(budget.withheldByKind.length > 0);
+  assertEquals(
+    budget.withheldByKind.reduce((sum, item) => sum + item.count, 0),
+    budget.withheldCount,
+  );
+
+  // A reason explains an included unit, so no reason may outlive its evidence.
+  const kept = new Set(minimal.evidence.map((item) => item.identity));
+  assert(minimal.inclusionReasons.length < full.inclusionReasons.length);
+  assert(
+    minimal.inclusionReasons.every((reason) =>
+      kept.has(reason.selectedIdentity)
+    ),
+  );
+
+  // A generous budget is indistinguishable from no budget.
+  const generous = await retrievePurposeContext(
+    resolved,
+    target,
+    "architecture",
+    resolved.glossary,
+    null,
+    { maxEvidenceBytes: 10_000_000 },
+  );
+  assertEquals(generous.evidence.length, full.evidence.length);
+  assertEquals(generous.budget?.withheldCount, 0);
+
+  // The budget is a byte budget, so multibyte text spends its encoded length
+  // rather than its UTF-16 code-unit count.
+  const encoded = (text: string) => new TextEncoder().encode(text).length;
+  const bounded = await retrievePurposeContext(
+    resolved,
+    target,
+    "architecture",
+    resolved.glossary,
+    null,
+    { maxEvidenceBytes: 200 },
+  );
+  const spent = bounded.evidence.reduce(
+    (sum, item) => sum + encoded(item.text),
+    0,
+  );
+  assertEquals(bounded.budget!.includedBytes, spent);
+  assertEquals(
+    bounded.budget!.withheldBytes,
+    full.evidence.filter((item) =>
+      !bounded.evidence.some((kept) => kept.identity === item.identity)
+    ).reduce((sum, item) => sum + encoded(item.text), 0),
+  );
+
+  // Optional selection stops at the first unit that does not fit, so a later
+  // smaller unit never displaces closer evidence.
+  const ordered = full.evidence.map((item) => item.identity);
+  assertEquals(
+    bounded.evidence.map((item) => item.identity).join(","),
+    ordered.slice(0, bounded.evidence.length).join(","),
+  );
+
+  // An unusable budget is rejected rather than silently withholding.
+  for (const invalid of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    let rejected = false;
+    try {
+      await retrievePurposeContext(
+        resolved,
+        target,
+        "architecture",
+        resolved.glossary,
+        null,
+        { maxEvidenceBytes: invalid },
+      );
+    } catch {
+      rejected = true;
+    }
+    assertEquals(rejected, true);
+  }
+});
 
 /*
  * @sigil tests packages/core/src/parser.sigil::SigilParser::SemanticUnit constraints,cases

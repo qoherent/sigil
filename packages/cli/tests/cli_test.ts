@@ -6,8 +6,9 @@ import {
 } from "@qoherent/sigil-core";
 import {
   type CompilationReport,
-  type CompilationTarget,
+  type CompilationScopeSeed,
   type CompileOptions,
+  CompilerFailure,
   renderCompilationReportMarkdown,
 } from "@qoherent/sigil-compiler";
 import { CoreAdapter } from "../src/core-adapter.ts";
@@ -25,6 +26,27 @@ import {
   EXIT_RUNTIME,
   EXIT_USAGE,
 } from "../src/exit.ts";
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::ExitStatus constraints,cases
+Deno.test("a rejected selector exits as usage, not runtime", async () => {
+  const root = await makeWorkspace("exit-status");
+  try {
+    const run = (code: "COMPILER_INVALID_INVOCATION" | "COMPILER_FAILED") =>
+      runCli(["compile", root], {
+        compiler: () => Promise.reject(new CompilerFailure(code, "rejected")),
+      });
+    // A correctable selector is an invocation error the caller can fix.
+    const invalid = await run("COMPILER_INVALID_INVOCATION");
+    assert(invalid.stderr.includes("rejected"));
+    assertEquals(invalid.exitCode, EXIT_USAGE);
+    // Every other failure stays a runtime error.
+    const failed = await run("COMPILER_FAILED");
+    assert(failed.stderr.includes("rejected"));
+    assertEquals(failed.exitCode, EXIT_RUNTIME);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
 
 // @sigil tests packages/cli/src/retrieval-markdown.sigil::SigilRetrievalMarkdown::RetrievalMarkdownProjection interface,constraints,cases
 Deno.test("retrieve Markdown renders module context and escaped ownership links", () => {
@@ -253,6 +275,54 @@ Deno.test("CLI bundle registers the standalone Claude adapter", async () => {
     assertEquals(
       report.profile.evaluators[0].implementationId,
       "builtin.claude-cli",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::CompilationFacade logic,cases
+Deno.test("two models of one provider bundle as distinct evaluators", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-codex-identities-" });
+  try {
+    const evaluator = (model: string) => ({
+      provider: "codex",
+      model,
+      implementationId: "builtin.codex-cli",
+      implementationVersion: "0.7.1",
+    });
+    await Deno.mkdir(`${root}/.sigil`);
+    await Deno.writeTextFile(
+      `${root}/.sigil/config.json`,
+      JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "codex-identities", members: [] },
+        files: { include: ["**/*.sigil"], exclude: [] },
+        tools: {
+          compile: {
+            evaluators: {
+              fast: evaluator("gpt-5-mini"),
+              deep: evaluator("gpt-5"),
+            },
+            profiles: { "critical-system": { evaluatorIds: ["fast", "deep"] } },
+          },
+        },
+      }),
+    );
+    await Deno.writeTextFile(
+      `${root}/main.sigil`,
+      `component Example {\n  goal {\n    Explain the example.\n  }\n}\n`,
+    );
+    // Sharing one identity would reject this before compilation starts.
+    const report = await compileWithBundledAdapters(
+      root,
+      { kind: "workspace" },
+      "critical-system",
+      { requestedStage: "deterministic-foundation", disableHistory: true },
+    );
+    assertEquals(
+      report.profile.evaluators.map((item) => item.model).join(","),
+      "gpt-5-mini,gpt-5",
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -609,6 +679,17 @@ Deno.test("--show-locations is rejected outside check", async () => {
     result.stderr.includes("does not accept --show-locations"),
     result.stderr,
   );
+});
+
+Deno.test("--max-evidence-bytes is rejected outside retrieve", async () => {
+  for (const command of ["version", "check", "graph"]) {
+    const result = await runCli([command, "--max-evidence-bytes", "0"]);
+    assertEquals(result.exitCode, EXIT_USAGE);
+    assert(
+      result.stderr.includes("does not accept --max-evidence-bytes"),
+      result.stderr,
+    );
+  }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::CheckSourceLocations logic,constraints,cases
@@ -2513,44 +2594,6 @@ function validSigil(name: string): string {
   return `component ${name} {\n  goal {\n    Test ${name}.\n  }\n\n  interface {\n    run()\n  }\n}\n`;
 }
 
-function greenCompilationReport(): CompilationReport {
-  return {
-    reportVersion: 2,
-    runId: "run-green",
-    workspaceRoot: "/workspace",
-    target: { kind: "workspace" },
-    componentNames: ["Example"],
-    status: "green",
-    startedAt: "2026-01-01T00:00:00.000Z",
-    completedAt: "2026-01-01T00:00:01.000Z",
-    sourceFingerprint: "source",
-    focus: "design",
-    profile: {
-      name: "standard",
-      criticalSystem: false,
-      contextBudgetChars: 1,
-      agentInputBudgetChars: 1,
-      limits: {
-        maxCompilationRequestChars: 1,
-        maxAgentInputChars: 1,
-        sessionTtlMs: 86_400_000,
-        providerCleanupMs: 1,
-      },
-      executionBudgets: {
-        elapsedTimeMs: 1,
-        maxCommands: 1,
-        maxCommandOutputChars: 1,
-        maxInputTokens: 1,
-        maxOutputTokens: 1,
-      },
-      stages: [],
-      evaluators: [],
-      fingerprint: "profile",
-    },
-    stages: [],
-    diagnostics: [],
-  };
-}
 // deno-lint-ignore no-explicit-any
 function parseJson(source: string): any {
   return JSON.parse(source);
@@ -2622,10 +2665,17 @@ class UnreadableImplementationFileSystem implements SigilFileSystem {
  */
 Deno.test("compile preserves JSONL events and compiler status exits", async () => {
   const report: CompilationReport = {
-    reportVersion: 2,
+    reportVersion: 3,
     runId: "run-1",
     workspaceRoot: "/workspace",
     target: { kind: "workspace" },
+    requestedScope: { kind: "workspace" },
+    selection: {
+      strategy: "exact-target",
+      affectedSemanticUnits: [],
+      coveredSemanticUnits: [],
+      uncoveredSemanticUnits: [],
+    },
     componentNames: ["Example"],
     status: "yellow",
     startedAt: "2026-01-01T00:00:00.000Z",
@@ -2747,7 +2797,7 @@ Deno.test("compile resolves configured default and agent profiles before standar
   const selected: string[] = [];
   const compiler = (
     _workspace: string,
-    _target: CompilationTarget | undefined,
+    _target: CompilationScopeSeed | undefined,
     profile: string,
   ) => {
     selected.push(profile);
@@ -2783,10 +2833,17 @@ Deno.test("compile rejects incompatible output formats", async () => {
 Deno.test("compile delegates design and implementation focus to the compiler", async () => {
   const focuses: Array<string | undefined> = [];
   const report: CompilationReport = {
-    reportVersion: 2,
+    reportVersion: 3,
     runId: "run-focus",
     workspaceRoot: "/workspace",
     target: { kind: "workspace" },
+    requestedScope: { kind: "workspace" },
+    selection: {
+      strategy: "exact-target",
+      affectedSemanticUnits: [],
+      coveredSemanticUnits: [],
+      uncoveredSemanticUnits: [],
+    },
     componentNames: [],
     status: "green",
     startedAt: "2026-01-01T00:00:00.000Z",
@@ -2819,7 +2876,7 @@ Deno.test("compile delegates design and implementation focus to the compiler", a
   };
   const compiler = (
     _workspace: string,
-    _target: CompilationTarget | undefined,
+    _target: CompilationScopeSeed | undefined,
     _profileName: string,
     options: CompileOptions = {},
   ) => {

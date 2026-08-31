@@ -5,7 +5,7 @@ component SigilCompilationProfile {
   goal {
     Own built-in and project compiler profiles, evaluator selection, stage
     dependency closure, operational limits, and reproducible effective-profile
-    identity for Codex, Claude, OpenCode, and Pi evaluation.
+    identity for evaluation by any registered adapter implementation.
   }
 
   interface {
@@ -19,8 +19,9 @@ component SigilCompilationProfile {
       standard and critical-system are built in; project profiles may configure or
       omit stages subject to dependency rules
 
-      evaluator providers are exactly codex, claude, opencode, or pi; their adapter
-      implementations may be supplied by the compiler host or plugins
+      each evaluator names one nonempty provider identifier; the compiler compares
+      and keys on it without interpreting it, and its adapter implementation is
+      supplied by the compiler host or a plugin
 
       each evaluator binds one stable adapter implementation identifier and exact
       implementation version
@@ -110,16 +111,16 @@ expand SigilCompilationProfile {
       Merge built-in defaults with the selected tools.compile project profile.
 
       Resolve execution budgets from tools.compile.budgets and request limits from
-      tools.compile.limits. Omitted fields use the compiler's
-      backward-compatible defaults.
+      tools.compile.limits. Omitted fields use the compiler's backward-compatible
+      defaults.
 
       Treat the singular adapter as the backward-compatible default evaluator and
       select configured evaluator identities through evaluatorIds.
 
-      Validate selected provider identities against codex, claude, opencode, and pi.
-      Resolve each selected evaluator's implementation identifier and exact version,
-      and include both in effective-profile identity. Resolve registration
-      availability only for selected evaluators.
+      Require a nonempty provider identifier on each selected evaluator. Resolve each
+      selected evaluator's implementation identifier and exact version, and include
+      both in effective-profile identity. Resolve registration availability only for
+      selected evaluators.
 
       Resolve AgentCapabilityContract and AdapterObservabilityDeclaration through
       SigilAgentCapabilityContract. Resolve AgentExecutionBudgets and
@@ -139,8 +140,7 @@ expand SigilCompilationProfile {
       ConfigFile tools.compile contains no credentials or secret values.
 
       tools.compile.budgets configures execution values and limits configures request
-      sizes. Every configured value is a positive safe
-      integer.
+      sizes. Every configured value is a positive safe integer.
 
       An initial agent-request size limit is an operational transport bound. It does
       not bound evidence that an adapter later reads from the workspace.
@@ -151,7 +151,7 @@ expand SigilCompilationProfile {
       Evaluator identities are unique; evaluatorIds contains no duplicates and
       references configured evaluators.
 
-      Every selected evaluator uses provider codex, claude, opencode, or pi.
+      Every selected evaluator names a nonempty provider identifier.
 
       Every selected evaluator declares one nonempty adapter implementation
       identifier and exact version.
@@ -181,8 +181,7 @@ expand SigilCompilationProfile {
   decisions {
     ConfigurableCompilationResources {
       Decision: Make execution budgets and evaluation request limits explicit
-      tools.compile configuration with
-      backward-compatible omitted-field defaults.
+      tools.compile configuration with backward-compatible omitted-field defaults.
 
       Scope: Governs compiler profile resolution, adapter request validation, and
       compilation resource limits; excludes provider credentials and semantic
@@ -200,18 +199,24 @@ expand SigilCompilationProfile {
       can change acceptance of large requests and evaluator execution.
     }
 
-    ClosedCliProviderSelection {
-      Decision: Restrict evaluator provider identity to Codex, Claude, OpenCode, or
-      Pi while allowing selected implementations to be supplied by the host or
-      plugins.
+    OpaqueProviderIdentity {
+      Decision: Treat the evaluator provider as an opaque identifier owned by the
+      adapter package that declares it, requiring only that it is nonempty.
 
       Scope: Governs tools.compile evaluator configuration and effective-profile
       identity; excludes adapter implementation trust and provider protocol mapping.
 
-      Trade-offs: Third-party implementations can satisfy required integrations, but
-      arbitrary provider identities require a future compiler contract change.
+      Trade-offs: A misspelled provider is reported when registration resolves rather
+      than when configuration parses, in exchange for adding a provider without
+      changing this contract.
 
-      Consequences: Profile fingerprints identify one of four stable provider names
+      Design issues addressed: A closed provider list made the compiler aware of
+      every supported provider, so each new adapter required a compiler change.
+
+      Discarded alternatives: Keeping a closed list was rejected because it couples a
+      provider-neutral compiler to the set of adapters that happen to exist.
+
+      Consequences: Profile fingerprints identify the configured provider name
       together with the explicitly selected implementation identity and version.
     }
 

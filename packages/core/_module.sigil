@@ -13,6 +13,7 @@
 @packages/core/src/pipeline.sigil import { SigilWorkspaceResolutionPipeline }
 @packages/core/src/projections.sigil import { SigilProjections }
 @packages/core/src/implementation-ownership.sigil import { SigilImplementationOwnership }
+@packages/core/src/compilation-boundary.sigil import { SigilCompilationBoundary }
 @packages/core/src/context-retrieval.sigil import { SigilContextRetrieval }
 
 component SigilCore {
@@ -93,6 +94,9 @@ expand SigilCore {
       implementation evidence.
 
       SigilContextRetrieval consumes graph, glossary, and ownership evidence.
+
+      SigilCompilationBoundary consumes the resolved import and expand graph to
+      resolve a compilation seed into a covering boundary.
 
       No core operational component imports SigilCore; the module index only
       assembles the public namespace.

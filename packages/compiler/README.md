@@ -20,13 +20,12 @@ component, component or expand owner, section, optional concept, and optional
 normalized semantic-unit fingerprint. Physical source locations remain available
 for editors and evidence display.
 
-The recognized providers are exactly Codex, Claude, OpenCode, and Pi. Adapters
-may be compiler-owned or supplied by plugins and are selected by provider,
-stable implementation identifier, exact implementation version, and optional
-model. OpenCode is supplied by the separate
-`@qoherent/sigil-compiler-adapter-opencode` package and Pi by
-`@qoherent/sigil-compiler-adapter-pi`; the compiler does not depend on those
-provider packages.
+A provider identity is an opaque identifier declared by its adapter package.
+Adapters are supplied by the host and selected by provider, stable
+implementation identifier, exact implementation version, and optional model.
+This package owns no provider implementation: Codex, Claude, OpenCode, and Pi
+each ship as a separate `@qoherent/sigil-compiler-adapter-*` package that the
+CLI registers, and the compiler depends on none of them.
 
 Adapter capability and observability declarations are self-reported metadata,
 not verified guarantees. Selecting or supplying an adapter accepts the risk that
@@ -60,8 +59,8 @@ evaluator. Independent evaluator groups are optional:
     "compile": {
       "evaluators": {
         "primary": {
-          "provider": "codex",
-          "implementationId": "builtin.codex-cli",
+          "provider": "example",
+          "implementationId": "example-plugin.example-cli",
           "implementationVersion": "0.7.1"
         },
         "reviewer": {

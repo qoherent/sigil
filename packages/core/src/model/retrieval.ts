@@ -100,6 +100,21 @@ export interface ExcludedRelation {
   readonly sourceIdentity: string;
   readonly targetIdentity: string;
 }
+/**
+ * Why a retrieval budget withheld evidence. Summarized rather than itemized:
+ * a per-unit record would cost more than the evidence it describes.
+ */
+export interface RetrievalBudgetReport {
+  readonly maxEvidenceBytes: number;
+  readonly includedBytes: number;
+  readonly withheldCount: number;
+  readonly withheldBytes: number;
+  /** Withheld counts by evidence kind, ordered by descending count. */
+  readonly withheldByKind: readonly {
+    readonly kind: EvidenceKind;
+    readonly count: number;
+  }[];
+}
 export interface ContextSection {
   readonly kind: EvidenceKind;
   readonly text: string;
@@ -122,6 +137,8 @@ export interface PurposeRetrievalResult {
   readonly context: AggregatedRetrievalContext;
   readonly diagnostics: readonly SigilDiagnostic[];
   readonly fingerprint: string;
+  /** Present only when a retrieval budget withheld evidence. */
+  readonly budget?: RetrievalBudgetReport;
 }
 export interface RetrievalProjectionLocation {
   readonly path: string;

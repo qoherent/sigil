@@ -17,36 +17,42 @@ Expected skill behavior:
    verification.
 4. Record that no related component contract exists and use available boundary
    summaries and neighboring contracts as DesignContext.
-5. After sufficient framing, assess external-guidance applicability for the
+5. Decide the module structure before drafting any contract, and present the
+   areas, their directories, and their declared-member status for confirmation.
+6. Keep this service as one boundary and say why, rather than splitting a small
+   project into backend, frontend, and infrastructure areas it does not yet
+   have; propose separate areas only when a second area owns a distinct
+   deployment unit, technology boundary, or reason to change.
+7. After sufficient framing, assess external-guidance applicability for the
    design scope.
-6. Acquire required or recommended evidence before presenting affected
+8. Acquire required or recommended evidence before presenting affected
    alternatives, pitfalls, or recommendations and match official documentation
    to the confirmed environment.
-7. Surface weak assumptions, conflicting goals, and missing failure behavior
+9. Surface weak assumptions, conflicting goals, and missing failure behavior
    constructively.
-8. Present concrete synchronous, queued, and event-driven choices with
+10. Present concrete synchronous, queued, and event-driven choices with
    consequences and tradeoffs, plus a reasoned recommendation.
-9. Let the user combine, reject, revise, or replace every presented choice.
-10. Maintain decision states and continue until no unresolved decision can
+11. Let the user combine, reject, revise, or replace every presented choice.
+12. Maintain decision states and continue until no unresolved decision can
    materially change the contract.
-11. Establish the smallest coherent component boundaries from agreed intent.
-12. Split independently changing responsibilities with distinct contracts,
+13. Establish the smallest coherent component boundaries from agreed intent.
+14. Split independently changing responsibilities with distinct contracts,
     state, lifecycle, policy, or reasons to change instead of hiding them beneath
     one high-level component.
-13. Keep any module index as a concise architectural summary and intentional
+15. Keep any module index as a concise architectural summary and intentional
     namespace-assembly surface, with operational detail beside narrower owners.
-14. Inspect accessible imported public identities and reuse every semantic match
+16. Inspect accessible imported public identities and reuse every semantic match
     before creating a local component or concept.
-15. Confirm that the Sigil decomposition can guide generated implementation into
+17. Confirm that the Sigil decomposition can guide generated implementation into
     cohesive owning modules.
-16. Apply semantic-readiness, standards, coherence, and modularity review,
+18. Apply semantic-readiness, standards, coherence, and modularity review,
     verifying the currency and applicability of evidence created during
     conversation.
-17. Recheck affected related-Sigil coherence before synthesis.
-18. Synthesize conversation and review findings into exact scoped Sigil edits.
-19. Write them directly, validate and compile the Sigil, then review the
+19. Recheck affected related-Sigil coherence before synthesis.
+20. Synthesize conversation and review findings into exact scoped Sigil edits.
+21. Write them directly, validate and compile the Sigil, then review the
     result in the file.
-20. Treat the missing Sigil coverage as a reason to collaborate with the user on
+22. Treat the missing Sigil coverage as a reason to collaborate with the user on
     the affected Sigil before adding implementation.
-21. Implement only when `ReviewGate(action: implementation)` is ready for the
+23. Implement only when `ReviewGate(action: implementation)` is ready for the
     validated written Sigil and exact implementation scope.

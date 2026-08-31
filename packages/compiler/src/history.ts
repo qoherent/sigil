@@ -1,3 +1,4 @@
+import { COMPILATION_REPORT_VERSION } from "./types.ts";
 import type {
   CompilationHistoryStore,
   CompilationReport,
@@ -56,7 +57,7 @@ export async function compilationHistoryKey(
   const bytes = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(JSON.stringify({
-      reportVersion: 2,
+      reportVersion: COMPILATION_REPORT_VERSION,
       workspaceRoot: workspaceRoot.replaceAll("\\", "/"),
       target,
       profile: profile.fingerprint,
@@ -99,10 +100,12 @@ export function applyDiagnosticLifecycle(
 function isCompatibleReport(value: unknown): value is CompilationReport {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const report = value as Record<string, unknown>;
-  return report.reportVersion === 2 &&
+  return report.reportVersion === COMPILATION_REPORT_VERSION &&
     typeof report.runId === "string" &&
     typeof report.workspaceRoot === "string" &&
     isCompilationTarget(report.target) &&
+    !!report.requestedScope && typeof report.requestedScope === "object" &&
+    !!report.selection && typeof report.selection === "object" &&
     Array.isArray(report.componentNames) &&
     report.componentNames.every((item) => typeof item === "string") &&
     ["red", "yellow", "green"].includes(String(report.status)) &&

@@ -263,3 +263,11 @@ move with their owning directories.
 Update affected imports after a placement-only move, run
 `sigil check`, and use `graph` or `context` when relationships matter. Any
 semantic-unit change requires written-file validation and design compilation.
+
+A boundary can outgrow itself as coverage is added. Propose splitting one when
+its contracts serve areas that change for independent reasons, when a reader
+must load the whole boundary to review one area, or when compiling the smallest
+covering boundary routinely pulls in unrelated work. Treat that as the module
+structure decision in `references/greenfield-design.md`, applied to an existing
+boundary: propose the areas, their directories, and their declared-member
+status, and confirm the split before moving anything.

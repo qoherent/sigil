@@ -104,7 +104,7 @@ export async function run(): Promise<void> {
   try {
     const argumentsPath = path.join(fakeCompilerDirectory, "arguments.json");
     const report = {
-      reportVersion: 2,
+      reportVersion: 3,
       status: "yellow",
       componentNames: ["Auth"],
       diagnostics: [{

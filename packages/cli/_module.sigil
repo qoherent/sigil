@@ -562,6 +562,9 @@ expand SigilCli {
       SigilPiCompilerAdapter while each adapter remains an independently versioned
       package.
 
+      Each configured model of one provider registers under its own evaluator
+      identity so separately configured models participate as distinct evaluators.
+
       --output delegates format-selected compilation export to SigilCompiler,
       requires a destination outside the selected workspace, and does not emit or
       return a completed report when validation or atomic export fails.

@@ -101,9 +101,8 @@ expand SigilAgentCapabilityContract {
       persistent adapter were rejected because the former is false and the latter
       prevents explicitly selected persistent evaluators.
 
-      Consequences: Codex and Pi request ephemeral state and OpenCode requests
-      persistent state; each remains subject to exact capability matching and
-      documented trust limitations.
+      Consequences: An adapter requests the state persistence it can honor; each
+      remains subject to exact capability matching and documented trust limitations.
 
       Revisit when: OpenCode exposes an enforceable ephemeral execution mode or
       another supported adapter changes its persistence option.
@@ -142,9 +141,9 @@ expand SigilAgentCapabilityContract {
       include provider-observed progress metadata in its one validated terminal
       result without changing canonical observability equality.
 
-      A Codex or Pi evaluator declaring ephemeral persistence receives an ephemeral
-      request, while an OpenCode evaluator declaring persistent state receives a
-      persistent request without weakening the other capability dimensions.
+      An evaluator declaring ephemeral persistence receives an ephemeral request,
+      while one declaring persistent state receives a persistent request without
+      weakening the other capability dimensions.
     }
   }
 }

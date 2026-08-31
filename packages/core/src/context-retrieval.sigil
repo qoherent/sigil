@@ -14,6 +14,27 @@ component SigilContextRetrieval {
   }
 
   interface {
+    EvidenceBudget {
+      An optional maxEvidenceBytes bounds how much evidence text one retrieval
+      returns, counted as encoded UTF-8 bytes.
+
+      Evidence is kept in its existing deterministic order, which places the selected
+      contract before dependencies, importers, cycle members, and module context, so
+      the closest evidence is kept and the furthest is withheld. Optional selection
+      stops at the first unit that does not fit rather than packing later smaller
+      units ahead of closer evidence.
+
+      The selected contract and its expansions are always kept, whatever the budget.
+
+      A withheld unit is summarized rather than itemized: the result reports the
+      budget, the included and withheld byte totals, the withheld count, and the
+      withheld counts by evidence kind.
+
+      Inclusion reasons are reported only for evidence the result still contains.
+
+      Omitting the budget returns the complete closure unchanged.
+    }
+
     PurposeRetrievalRequest {
       retrieve(resolvedWorkspace, target, purpose, glossaryEvidence,
       implementationEvidence) returns one PurposeRetrievalResult
@@ -612,6 +633,19 @@ expand SigilContextRetrieval {
   }
 
   constraints {
+    EvidenceBudget {
+      A budget changes how much evidence is returned, never which relationships the
+      closure selected; relation exclusions remain reported separately.
+
+      A withheld unit is never silently dropped: the budget report states that
+      evidence was withheld and of which kinds.
+
+      An absent budget returns the complete closure. A negative, fractional, or
+      non-finite budget is rejected rather than reinterpreted, because silently
+      treating an unusable bound as unbounded returns the whole closure to a
+      caller that asked for a limit.
+    }
+
     DeterministicRetrieval {
       SigilContextRetrieval consumes immutable SigilSemanticModel resolution,
       SigilGraphBuilder relationships, optional SigilGlossaryEngine evidence, and

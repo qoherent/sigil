@@ -7,14 +7,11 @@ selected file is imported by a nearer module index. No daemon is available.
 
 Expected skill behavior:
 
-1. Derive a directory from every affected semantic unit's source-file parent,
-   including expand-only or declarationless files. Resolve the importing module
-   index whose closure covers every affected unit by the lexically smallest
-   greatest-to-least vector of normalized relative-path segment counts. Break exact
-   vector ties by normalized repository-relative path. If none covers the boundary,
-   select the component with the greatest affected-closure coverage, then the same
-   vector across its declarations and matching expands, then normalized source path
-   and exact-case component name; compile the workspace when no component covers it.
+1. Name the scope that changed as a selector and let the compiler resolve the
+   boundary. Pass `--directory` for several files in one folder, `--file` or
+   `--file --position` for one file or form, and `--component` for one contract.
+   Do not derive the covering module index or component with graph or retrieval
+   commands, and do not treat the selector as the final target.
 2. Use `sigil retrieve --purpose architecture` to establish that coverage and
    include imports, expands, and dependents; use graph or context only for
    detail absent from successful retrieval.

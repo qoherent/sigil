@@ -15,26 +15,39 @@ expands, and consumers. Correct retrieval diagnostics before proceeding. Use
 `sigil graph` or `sigil context` only for a required relationship or detail
 absent from a successful retrieval.
 
-Select one compile target in this order:
+Name the scope that changed and let the compiler resolve the boundary.
 
-1. derive one affected directory from every affected semantic unit's source-file
-   parent, including expand-only or declarationless files; for each candidate,
-   count normalized relative-path segments from every affected directory to its
-   directory, sort counts greatest to least, and choose the lexically smallest
-   vector; select the eligible importing `_module.sigil` with the best vector,
-   resolving equal vectors by normalized repository-relative module-index path,
-   then select it with `--file <module-index>`;
-2. if no such module index exists, the exact-case component whose retrieval
-   closure covers the greatest number of affected changed units, matching
-   expands, and direct imports or consumers; resolve equal coverage with the same
-   distance vector against every candidate declaration and matching expand directory,
-   then by normalized repository-relative source path and exact-case component name;
-3. if no component covers the affected boundary, compile the selected workspace
-   without `--component` rather than choosing an arbitrary partial target.
+The compiler owns compilation-boundary selection. Every selector is an
+affected-scope seed rather than a final target: `--component <name>`,
+`--file <path>`, `--file <path> --position <line:column>`, and
+`--directory <path>` all identify affected evidence, and the compiler selects
+the boundary whose closure covers it.
 
-Break a coverage tie by choosing the target nearest to the edited declaration.
-Record the target and any affected units outside its closure; do not claim a
-partial target evaluates an uncovered unit.
+Pass the scope you actually changed:
+
+| What changed | Selector |
+| --- | --- |
+| One component's contract | `--component <exact-case name>` |
+| One Sigil file | `--file <path>` |
+| A specific form in a file | `--file <path> --position <line:column>` |
+| Several files in one folder | `--directory <path>` |
+| Work spanning unrelated areas | no selector; compile the workspace |
+
+Read the boundary the compiler chose from the report rather than deriving it
+yourself. `requestedScope` is what you asked for, `target` is what was
+compiled, and `selection` records the strategy, the affected and covered
+semantic units, any uncovered evidence, and the deciding tie-break. Report both
+when they differ, and treat a `workspace-fallback` strategy and its reason as
+the compiler telling you no narrower boundary covered the work.
+
+Do not reimplement selection with graph or retrieval commands, and do not treat
+a selected component as the final target. Use `--exact-target` only for a
+deliberately narrow run, where preserving the exact selector matters more than
+covering the affected boundary.
+
+An unresolvable selector fails the invocation with a stable diagnostic instead
+of silently compiling the workspace; correct the name or path rather than
+retrying a wider target.
 
 ## Compile-And-Resolve Loop
 

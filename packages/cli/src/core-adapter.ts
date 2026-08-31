@@ -26,6 +26,7 @@ import {
   ownedImplementationTargetsFor as coreOwnedImplementationTargetsFor,
   ownershipDiagnosticsFor as coreOwnershipDiagnosticsFor,
   parseSigilDocument,
+  type PurposeRetrievalOptions,
   type PurposeRetrievalResult,
   type PurposeRetrievalTarget,
   type ResolvedConceptNamespace,
@@ -380,6 +381,7 @@ export class CoreAdapter {
     target: PurposeRetrievalTarget,
     purpose: RetrievalPurpose,
     implementationEvidence: ImplementationEvidenceInput | null,
+    options?: PurposeRetrievalOptions,
   ): Promise<PurposeRetrievalResult> {
     return retrievePurposeContext(
       resolved,
@@ -387,6 +389,7 @@ export class CoreAdapter {
       purpose,
       resolved.glossary,
       implementationEvidence,
+      options,
     );
   }
   // @sigil uses packages/core/src/projections.sigil::SigilProjections::ExpansionProjection interface,logic,cases

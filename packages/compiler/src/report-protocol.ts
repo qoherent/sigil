@@ -75,7 +75,8 @@ export function validateCompilationReportWire(
   if (!record(value)) return false;
   return value.reportVersion === COMPILATION_REPORT_VERSION &&
     nonempty(value.runId) && nonempty(value.workspaceRoot) &&
-    validTarget(value.target) && stringArray(value.componentNames) &&
+    validTarget(value.target) && validScope(value.requestedScope) &&
+    validSelection(value.selection) && stringArray(value.componentNames) &&
     ["red", "yellow", "green"].includes(String(value.status)) &&
     date(value.startedAt) && date(value.completedAt) &&
     nonempty(value.sourceFingerprint) && validProfile(value.profile) &&
@@ -190,4 +191,30 @@ function nonnegativeInteger(value: unknown): boolean {
 
 function date(value: unknown): boolean {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function validScope(value: unknown): boolean {
+  if (!record(value)) return false;
+  if (value.kind === "workspace") return true;
+  if (value.kind === "component") return nonempty(value.componentName);
+  if (value.kind === "file") return nonempty(value.filePath);
+  if (value.kind === "directory") return nonempty(value.directoryPath);
+  if (value.kind === "location") {
+    return nonempty(value.filePath) && typeof value.line === "number" &&
+      typeof value.column === "number";
+  }
+  return false;
+}
+
+function validSelection(value: unknown): boolean {
+  if (!record(value)) return false;
+  return [
+    "exact-target",
+    "nearest-covering-module-index",
+    "covering-component",
+    "workspace-fallback",
+  ].includes(String(value.strategy)) &&
+    stringArray(value.affectedSemanticUnits) &&
+    stringArray(value.coveredSemanticUnits) &&
+    stringArray(value.uncoveredSemanticUnits);
 }

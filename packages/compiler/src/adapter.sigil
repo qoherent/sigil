@@ -5,8 +5,8 @@
 
 component SigilAgentAdapter {
   goal {
-    Map one provider-neutral evaluation request to one already selected Codex,
-    Claude, OpenCode, or Pi implementation without owning adapter registration.
+    Map one provider-neutral evaluation request to one already selected adapter
+    implementation without owning adapter registration.
 
     Translate provider framing, result locations, telemetry, and command
     observations into AgentEvaluationResult without accepting or rewriting

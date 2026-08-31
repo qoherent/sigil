@@ -13,4 +13,5 @@ export * from "./projections.ts";
 export * from "./path.ts";
 export * from "./graph.ts";
 export * from "./resolver.ts";
+export * from "./compilation-boundary.ts";
 export * from "./context-retrieval.ts";

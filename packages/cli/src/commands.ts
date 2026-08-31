@@ -186,6 +186,7 @@ export async function runCommand(
       target,
       request.purpose,
       implementationEvidence,
+      { maxEvidenceBytes: request.maxEvidenceBytes },
     );
     return { command: "retrieve", ...result };
   }

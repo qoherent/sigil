@@ -94,11 +94,11 @@ only for an explicitly requested exceptional diagnostic investigation.
    `references/external-guidance-evidence.md`. Treat `sigil check` as
    structural validation, not design approval.
 5. Follow `references/design-compilation-review.md` for the written design
-   compile loop and compiler-owned readiness and architecture evidence. Compile
-   the nearest module index that covers the affected Sigil when one exists;
-   otherwise select the component whose retrieval closure covers the most
-   affected semantic units and their direct relationships. Do not cancel or
-   replace that compile while it is running.
+   compile loop and compiler-owned readiness and architecture evidence. Name
+   the scope that changed with `--component`, `--file`, `--position`, or
+   `--directory`; the compiler resolves the covering boundary and reports the
+   requested scope, the resolved target, and why. Do not derive the boundary
+   yourself, and do not cancel or replace that compile while it is running.
 6. Use `references/design-conversation.md` for DesignIntake findings and explicit
    design, review, or improvement work. Ask one primary decision at a time unless
    the user requests a grouped review.

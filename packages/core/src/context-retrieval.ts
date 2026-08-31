@@ -16,6 +16,7 @@ import type {
   InclusionReason,
   PurposeRetrievalResult,
   PurposeRetrievalTarget,
+  RetrievalBudgetReport,
   RetrievalEdge,
   RetrievalNode,
   RetrievalNodeKind,
@@ -262,7 +263,9 @@ export async function projectRetrieval(
   }
   const compare = (left: string, right: string) =>
     left < right ? -1 : left > right ? 1 : 0;
-  const components = [...entries.values()].map(({ concepts, ...entry }) => ({
+  const components = [...entries.values()].map((
+    { concepts: _concepts, ...entry },
+  ) => ({
     ...entry,
     links: entry.links.sort((left: any, right: any) =>
       compare(left.relation, right.relation) ||
@@ -288,6 +291,17 @@ export async function projectRetrieval(
   return { ...base, fingerprint: `sha256:${await sha256Canonical(base)}` };
 }
 
+/**
+ * A retrieval closure is bounded by relationship rules, not by size, so a broad
+ * boundary still returns everything one hop away. `maxEvidenceBytes` keeps the
+ * closest evidence and reports what was withheld instead of truncating
+ * silently.
+ */
+export interface PurposeRetrievalOptions {
+  /** A finite, non-negative byte budget. Omit for unbounded retrieval. */
+  readonly maxEvidenceBytes?: number;
+}
+
 /*
  * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalRequest interface
  * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval logic,constraints,cases
@@ -298,6 +312,7 @@ export async function retrievePurposeContext(
   purpose: RetrievalPurpose,
   glossaryEvidence: GlossaryProjection | null = resolved.glossary,
   implementationEvidence: ImplementationEvidenceInput | null = null,
+  options: PurposeRetrievalOptions = {},
 ): Promise<PurposeRetrievalResult> {
   const requestedPath = target.path;
   const acceptedPath = validateRelativePath(requestedPath);
@@ -936,7 +951,26 @@ export async function retrievePurposeContext(
     evidence,
     diagnostics,
     unavailableImplementation,
+    assertEvidenceBudget(options.maxEvidenceBytes),
   );
+}
+
+/**
+ * A negative or non-finite budget would silently withhold every optional unit,
+ * or fail later inside canonical JSON, so it is rejected at the boundary.
+ */
+function assertEvidenceBudget(value: number | undefined): number | undefined {
+  if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+    throw new TypeError(
+      "maxEvidenceBytes must be a non-negative integer when provided.",
+    );
+  }
+  return value;
+}
+
+/** The budget is a byte budget, so text is measured as encoded UTF-8. */
+function utf8Length(text: string): number {
+  return new TextEncoder().encode(text).length;
 }
 
 function addContractEvidence(
@@ -1092,6 +1126,7 @@ async function materialize(
   evidenceDrafts: EvidenceDraft[],
   diagnostics: readonly SigilDiagnostic[],
   incomplete: boolean,
+  maxEvidenceBytes?: number,
 ): Promise<PurposeRetrievalResult> {
   const nodeEntries = await Promise.all(
     [...nodeDrafts].map(async ([key, draft]) =>
@@ -1221,11 +1256,60 @@ async function materialize(
     nodeEntries.map(([, node]) => node),
     edgeEntries.map(([, edge]) => edge),
   );
+  // Evidence is already ordered selected-first, then dependency, importer,
+  // cycle member, and module context, so spending the budget in order keeps
+  // the closest evidence. The selected contract is never dropped: a boundary
+  // returned without its own contract would be useless.
+  const budgeted: typeof evidence = [];
+  let budget: RetrievalBudgetReport | undefined;
+  if (maxEvidenceBytes === undefined) {
+    budgeted.push(...evidence);
+  } else {
+    const withheld = new Map<EvidenceKind, number>();
+    let spent = 0;
+    let withheldBytes = 0;
+    // The first optional unit that does not fit ends optional selection.
+    // Continuing would admit later, less relevant evidence over the closer
+    // evidence just withheld.
+    let exhausted = false;
+    for (const unit of evidence) {
+      const required = unit.kind === "selected-contract" ||
+        unit.kind === "selected-expansion";
+      const size = utf8Length(unit.text);
+      if (required || (!exhausted && spent + size <= maxEvidenceBytes)) {
+        budgeted.push(unit);
+        spent += size;
+        continue;
+      }
+      exhausted = true;
+      withheldBytes += size;
+      withheld.set(unit.kind, (withheld.get(unit.kind) ?? 0) + 1);
+    }
+    budget = {
+      maxEvidenceBytes,
+      includedBytes: spent,
+      withheldCount: evidence.length - budgeted.length,
+      withheldBytes,
+      withheldByKind: [...withheld]
+        .sort((left, right) =>
+          right[1] - left[1] || left[0].localeCompare(right[0])
+        )
+        .map(([kind, count]) => ({ kind, count })),
+    };
+  }
+  // A reason explains why an included unit was selected, so a reason for
+  // withheld evidence is noise rather than explanation.
+  const keptIdentities = new Set(budgeted.map((unit) => unit.identity));
+  const budgetedReasons = maxEvidenceBytes === undefined
+    ? uniqueReasons
+    : uniqueReasons.filter((reason) =>
+      keptIdentities.has(reason.selectedIdentity)
+    );
   const collision = hasIdentityCollision([
     ...nodeEntries.map(([, item]) => item),
     ...edgeEntries.map(([, item]) => item),
-    ...evidence,
-    ...uniqueReasons,
+    ...budgeted,
+    ...budgetedReasons,
     ...exclusions,
   ]);
   if (collision) {
@@ -1246,11 +1330,12 @@ async function materialize(
       nodes: nodeEntries.map(([, node]) => node),
       edges: edgeEntries.map(([, edge]) => edge),
     },
-    evidence,
-    inclusionReasons: uniqueReasons,
+    evidence: budgeted,
+    inclusionReasons: budgetedReasons,
     exclusions,
+    ...(budget ? { budget } : {}),
     context: {
-      sections: evidence.map((unit) => ({
+      sections: budgeted.map((unit) => ({
         kind: unit.kind,
         text: unit.text,
         evidenceIdentity: unit.identity,

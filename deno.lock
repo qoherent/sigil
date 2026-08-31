@@ -51,6 +51,11 @@
           "jsr:@std/assert@1"
         ]
       },
+      "packages/compiler-adapter-codex": {
+        "dependencies": [
+          "jsr:@std/assert@1"
+        ]
+      },
       "packages/compiler-adapter-opencode": {
         "dependencies": [
           "jsr:@std/assert@1"

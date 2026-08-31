@@ -1,0 +1,341 @@
+component SigilCompilationBoundary {
+  goal {
+    Resolve a user-selected compilation seed into the compilation boundary that
+    completely covers the affected semantic scope, so pointing at changed work
+    yields a safe target instead of assuming the selector is the right unit.
+
+    Keep boundary selection deterministic and explainable from loaded workspace
+    facts alone, so every host reaches the same target for the same workspace.
+  }
+
+  interface {
+    BoundarySelection {
+      selectCompilationBoundary(resolvedWorkspace, seed, options) returns the
+      requested scope, the resolved target, and the selection evidence that relates
+      them.
+
+      seed is exactly workspace, component, file, location, or directory; each
+      identifies affected semantic evidence rather than a final target.
+
+      the resolved target is exactly workspace, file, or component.
+
+      options.exactTarget preserves the seed as the final target and skips inference.
+
+      selection reports the strategy, the affected, covered, and uncovered semantic
+      units, the deciding tie-break when one applied, and a reason when no boundary
+      was inferred.
+
+      strategy is exactly exact-target, nearest-covering-module-index,
+      covering-component, or workspace-fallback.
+
+      diagnostics reports an invalid or unresolvable seed; a caller refuses the run
+      rather than treating the reported workspace target as a real choice.
+    }
+
+    SeedValidation {
+      A seed is validated against the loaded workspace before any scope is derived.
+
+      An empty selector, an absolute path, and a path containing a parent segment are
+      invalid.
+
+      A component name that matches no loaded component, a file that is not a loaded
+      source, and a directory with no loaded source beneath it are unresolvable.
+
+      An invalid or unresolvable seed yields an error diagnostic and no inferred
+      boundary.
+    }
+
+    AffectedScope {
+      A seed resolves to the set of affected component identities and affected source
+      files.
+
+      A component seed contributes that component and its matching expand files; an
+      ambiguous name without a declaration path contributes every component that
+      carries it.
+
+      A file seed contributes the file plus every component declared in it and every
+      component whose matching expand lives in it.
+
+      A location seed contributes the innermost component or expand enclosing that
+      line, and otherwise falls back to its file.
+
+      A directory seed contributes every loaded file beneath the normalized
+      workspace-relative path, including expand-only and declarationless files, plus
+      the components those files belong to.
+    }
+
+    BoundaryClosure {
+      A candidate covers the affected scope only when its closure contains every
+      affected component identity and every affected file.
+
+      A module-index candidate closes transitively over the components it imports,
+      because a module index assembles a namespace.
+
+      A component candidate closes over its own declaration, matching expands, direct
+      imports, and direct importers.
+    }
+
+    ProximityRanking {
+      Candidates are ordered by the segment distance from every affected directory to
+      the candidate directory.
+
+      Each candidate yields one distance vector sorted greatest-to-least, and the
+      lexicographically smallest vector wins.
+
+      Equal vectors are separated by normalized repository-relative path, then by
+      exact-case component name.
+    }
+  }
+}
+
+expand SigilCompilationBoundary {
+  logic {
+    BoundarySelection {
+      Return the workspace immediately for a workspace seed, because it is already
+      the widest boundary.
+
+      Return the seed unchanged when an exact target is requested, and record that
+      inference was skipped. Reject an exact request over a directory, because a
+      directory is not itself a compilable target.
+
+      Prefer a covering module index; otherwise prefer a covering component;
+      otherwise fall back to the workspace.
+    }
+
+    AffectedScope {
+      Normalize every path to a workspace-relative path before comparison, so
+      selection does not depend on how the caller spelled the seed.
+
+      Collect components and files into sets, so a repeated contribution cannot
+      change the result.
+    }
+
+    BoundaryClosure {
+      Traverse a module-index candidate breadth-first over imported components and
+      stop at each already visited identity, so an import cycle terminates.
+
+      Absorb each reached component's declaration path and matching expand files into
+      the closure.
+    }
+
+    ProximityRanking {
+      Derive the affected directory list from the affected files, sort it, and
+      compute one distance vector per candidate.
+
+      Report the rule that separated the winner from the closest rival rather than
+      the last comparison performed while sorting.
+    }
+
+    WorkspaceFallback {
+      Fall back to the workspace when the seed resolves to no loaded semantic unit,
+      and when no candidate covers the complete affected scope.
+
+      Record the reason for the fallback in the selection evidence.
+    }
+
+    SeedValidation {
+      Validate the seed before deriving any affected scope, so an unresolvable
+      selector never reaches candidate ranking.
+
+      Report the offending path or name on the diagnostic so a host can correct the
+      invocation.
+    }
+  }
+
+  constraints {
+    BoundarySelection {
+      Selection uses only loaded configured-workspace facts and the resolved import
+      and expand graph.
+
+      Selection performs no filesystem discovery and does not depend on discovery
+      order, evaluator behavior, package manifests, or agent judgment.
+
+      The resolved target either covers the complete affected scope or is the
+      workspace; a partial component target is never selected silently.
+
+      The requested scope and the resolved target remain distinct values in the
+      result, so a host can always show what it asked for beside what will be
+      compiled.
+    }
+
+    AffectedScope {
+      A directory seed selects loaded files only; an unloaded or excluded path
+      contributes nothing.
+
+      A trailing separator on a directory seed does not change its meaning.
+    }
+
+    SeedValidation {
+      A reported workspace target alongside an error diagnostic is not a selection;
+      compiling it would silently widen an invocation the caller got wrong.
+
+      Validation depends only on the loaded workspace, so the same selector is valid
+      or invalid identically across hosts.
+    }
+
+    BoundaryClosure {
+      Coverage is exact set containment; a candidate that reaches most of the
+      affected scope does not cover it.
+    }
+
+    ProximityRanking {
+      Ranking is total and deterministic, so equal inputs always produce the same
+      winner regardless of candidate order.
+    }
+  }
+
+  decisions {
+    SeedsRatherThanExactTargets {
+      Decision: Treat component, file, location, and directory selectors as
+      affected-scope seeds and infer the final compilation boundary from the graph,
+      with an explicit exact-target opt-out.
+
+      Scope: Governs normal compilation target resolution for every host; excludes
+      evaluator behavior, profile selection, and report rendering.
+
+      Assumptions: A selector marks where work happened, which is not reliably the
+      unit that owns the full contract and its relationships.
+
+      Trade-offs: A selected component may compile a wider boundary than the caller
+      named, so the result must always explain which boundary was chosen and why.
+
+      Design issues addressed: Selecting a leaf component proves nothing about
+      whether that component is the right validation unit, so every host previously
+      had to reimplement the same selection policy in prompts or scripts.
+
+      Discarded alternatives: Leaving the policy in host instructions was rejected
+      because it cannot be tested, versioned, or shared across hosts. Inferring
+      silently without an opt-out was rejected because a deliberately narrow run is a
+      legitimate need.
+
+      Consequences: A user or agent can point at what changed and receive the same
+      explainable boundary from every host.
+
+      Revisit when: Selection needs evidence the resolved graph does not carry.
+    }
+
+    ModuleIndexPreference {
+      Decision: Prefer the nearest covering module index over any covering component.
+
+      Scope: Governs candidate ordering between the two candidate classes; excludes
+      ranking within a class.
+
+      Design issues addressed: A module index is the intentional boundary summary for
+      its directory, so it is the boundary a reviewer expects when one covers the
+      work.
+
+      Trade-offs: A module index closure is wider than a single component, so a
+      narrow change can compile a broader boundary.
+
+      Consequences: Escalating from a leaf component to its closest covering module
+      index is the normal outcome rather than an exception.
+    }
+
+    CompleteCoverageOrWorkspace {
+      Decision: Select a candidate only when it completely covers the affected scope,
+      and otherwise compile the workspace.
+
+      Scope: Governs the fallback rule; excludes how the affected scope itself is
+      derived.
+
+      Design issues addressed: A partial boundary silently omits affected semantic
+      units from validation, which is worse than compiling more.
+
+      Discarded alternatives: Selecting the best partial candidate was rejected
+      because it hides uncovered evidence behind a plausible result.
+
+      Consequences: An unrelated multi-directory selection resolves to the workspace
+      and reports why.
+    }
+
+    RejectUnresolvableSeeds {
+      Decision: Validate the seed against the loaded workspace first and report an
+      error diagnostic, rather than letting an unresolvable selector fall through to
+      workspace compilation.
+
+      Scope: Governs selector validation; excludes the workspace fallback used when a
+      valid seed has no covering boundary.
+
+      Design issues addressed: A mistyped component name or an excluded path would
+      otherwise resolve to an empty affected scope and compile the entire workspace,
+      which is both expensive and silently not what was asked for.
+
+      Discarded alternatives: Treating an unresolvable selector as an empty scope was
+      rejected because the widest possible action is the worst default for an
+      invocation error.
+
+      Consequences: A host distinguishes a deliberate workspace compilation from a
+      rejected invocation, and can surface the offending name or path.
+    }
+
+    GraphDerivedClosure {
+      Decision: Compute the coverage closure from the resolved import and expand
+      graph rather than by invoking purpose retrieval per candidate.
+
+      Scope: Governs closure construction inside boundary selection; excludes the
+      retrieval results supplied to evaluators.
+
+      Assumptions: The resolved graph already carries the import, importer, and
+      expand relationships that retrieval derives its closure from.
+
+      Trade-offs: Closure construction is duplicated logic that must stay aligned
+      with retrieval as relationships evolve.
+
+      Design issues addressed: Ranking many candidates through an asynchronous
+      retrieval call would make selection slow and would couple a pure ordering
+      decision to retrieval's evidence-shaping concerns.
+
+      Consequences: Selection stays synchronous, side-effect free, and callable from
+      a language server without awaiting retrieval.
+
+      Revisit when: Retrieval exposes a reusable synchronous closure projection.
+    }
+  }
+
+  cases {
+    BoundarySelection {
+      A leaf component whose closest module index covers its expands and direct
+      relationships resolves to that module index.
+
+      A component with no covering module index resolves to itself when it is the
+      smallest complete boundary.
+
+      An exact-target request over the same component preserves the component as the
+      final target.
+
+      An exact-target request over a directory is rejected rather than widened to
+      the workspace.
+    }
+
+    AffectedScope {
+      A location inside an expand resolves through the parent component and can then
+      select a broader covering boundary.
+
+      A directory holding several related contracts resolves to one deterministic
+      boundary.
+
+      Two components sharing a name are contributed together when no declaration path
+      disambiguates them.
+    }
+
+    ProximityRanking {
+      Two module indexes that cover the same scope are separated by distance vector,
+      and an exact distance tie is separated by module-index path.
+    }
+
+    WorkspaceFallback {
+      A directory holding unrelated contracts with no common covering boundary
+      compiles the workspace and reports the reason.
+    }
+
+    SeedValidation {
+      A misspelled component name is rejected rather than silently compiling the
+      whole workspace.
+
+      A directory outside the workspace root and an empty selector are rejected as
+      invalid paths.
+
+      An excluded or unloaded file is rejected as unresolvable.
+    }
+  }
+}

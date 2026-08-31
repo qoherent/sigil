@@ -87,6 +87,14 @@ GreenfieldWorkflow {
       Resolve material product, contract, ownership, lifecycle, architecture, risk,
       and verification decisions through DesignConversation.
 
+      Decide whether the project is one bounded area or several before drafting
+      components, deriving areas from deployment units, technology boundaries,
+      independent reasons to change, shared ownership, and reviewability rather than
+      from a fixed list.
+
+      Name each area's directory, module index, and declared-member status, and
+      confirm that structure as its own decision before writing any contract.
+
       Establish the smallest coherent component boundary and draft goal and interface
       before operational detail.
 
@@ -149,6 +157,12 @@ WorkflowSelection {
 GreenfieldWorkflow {
       Major product, architecture, persistence, authorization, deployment, and
       lifecycle decisions are not invented silently.
+
+      A module structure is proposed and confirmed before contracts are written,
+      because relocating a boundary later moves files and every import naming them.
+
+      A small project remains one boundary until a second area has its own reason to
+      change.
 
       Implementation does not begin until ReviewGate for implementation is ready for
       the validated Sigil and exact implementation scope.

@@ -68,9 +68,9 @@ expand SigilAgentAdapter {
     }
 
     ProviderMapping {
-      Codex, Claude, OpenCode, and Pi are the complete provider identity set.
-      Provider-specific commands, events, result locations, and telemetry remain
-      private adapter details.
+      A provider identity is an opaque nonempty identifier declared by its adapter
+      package. Provider-specific commands, events, result locations, and telemetry
+      remain private adapter details.
 
       Initial request overflow rejects as operational-limit before invocation.
       Provider framing overflow rejects as operational-limit and triggers
@@ -97,12 +97,12 @@ expand SigilAgentAdapter {
       semantics or registry behavior.
     }
 
-    ClosedProviderIdentitySet {
-      Decision: Recognize exactly Codex, Claude, OpenCode, and Pi provider identities
-      while permitting compiler hosts to register their implementations.
+    OpaqueProviderIdentitySet {
+      Decision: Treat a provider identity as an opaque identifier owned by its
+      adapter package and register implementations supplied by the compiler host.
 
-      Scope: Governs registry and evaluator provider identity; excludes additional
-      providers without a compiler contract change.
+      Scope: Governs registry and evaluator provider identity; excludes adapter
+      implementation trust and provider protocol mapping.
 
       Trade-offs: The semantic namespace stays predictable while adding a provider
       requires an intentional contract update.
@@ -215,10 +215,9 @@ expand SigilAgentAdapter {
       Duplicate, missing, malformed, or trailing terminal framing rejects as
       final-result-protocol and returns no result.
 
-      For Codex, schema-valid agent messages inside one open turn are nonterminal
-      checkpoints; the latest checkpoint becomes the turn's candidate only when
-      turn.completed arrives. A second completed turn candidate or any framing after
-      the completed terminal boundary rejects as final-result-protocol.
+      An adapter may treat provider framing inside one open turn as nonterminal
+      checkpoints and settle a candidate only at its provider's completion boundary.
+      Framing after that boundary rejects as final-result-protocol.
 
       An oversized final result waits for provider and declared result-input
       settlement, then rejects as final-result-protocol without returning a partial

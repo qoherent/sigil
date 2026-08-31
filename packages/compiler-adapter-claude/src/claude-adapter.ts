@@ -11,6 +11,7 @@ import {
   coordinateAdapterExecution,
   createAdapterSubprocessHandle,
   evaluationPrompt,
+  FINDINGS_SCHEMA,
   normalizeObservability,
   parseFindingsObject,
   runAdapterSubprocess,
@@ -25,46 +26,6 @@ export type ClaudeCommandRunner = (
 ) => Promise<AdapterSubprocessResult>;
 
 const defaultRunner: ClaudeCommandRunner = runAdapterSubprocess;
-
-const FINDINGS_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["findings"],
-  properties: {
-    findings: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: [
-          "code",
-          "severity",
-          "message",
-          "filePath",
-          "line",
-          "column",
-          "evidence",
-          "impact",
-          "correction",
-        ],
-        properties: {
-          code: { type: "string" },
-          severity: {
-            type: "string",
-            enum: ["error", "warning", "optimization", "information"],
-          },
-          message: { type: "string" },
-          filePath: { type: ["string", "null"] },
-          line: { type: ["integer", "null"], minimum: 1 },
-          column: { type: ["integer", "null"], minimum: 1 },
-          evidence: { type: "string" },
-          impact: { type: "string" },
-          correction: { type: "string" },
-        },
-      },
-    },
-  },
-} as const;
 
 export class ClaudeAdapter implements AgentAdapter {
   readonly provider = "claude" as const;

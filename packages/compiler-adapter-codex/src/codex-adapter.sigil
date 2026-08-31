@@ -1,0 +1,111 @@
+@packages/compiler import { SigilAgentAdapter, SigilAgentAdapterExecutionCoordinator, SigilAgentAdapterSubprocess, SigilAgentEvaluationRequest }
+
+component SigilCodexCompilerAdapter {
+  goal {
+    Execute provider-neutral compiler evaluation through the Codex CLI and return
+    one validated result under an ephemeral, read-only inspection policy.
+  }
+
+  interface {
+    CodexAdapter {
+      evaluate(SigilAgentEvaluationRequest) implements SigilAgentAdapter for provider
+      codex with implementation identity builtin.codex-cli and the exact adapter
+      package version
+
+      provider-specific declarations match capabilities schemaVersion 1 with
+      read-only workspace access, no agent-tool network, no approval escalation, and
+      ephemeral state persistence.
+
+      Observability declares no progress, final usage, unavailable cost, and
+      post-settlement-only token budget enforcement with unavailable cost
+      enforcement.
+    }
+  }
+}
+
+expand SigilCodexCompilerAdapter {
+  logic {
+    CodexAdapter {
+      Consume the provider-neutral request validation and capability-match result
+      before invocation. Write the findings schema to a temporary file, then invoke
+      the Codex CLI with that schema, a never approval policy, disabled web search,
+      the optional selected model, and the prompt on standard input.
+
+      The prompt carries evaluationPrompt output unchanged. That provider-neutral
+      envelope preserves stage, target identity, purpose, selected retrieval
+      evidence, evaluator guidance, command policy, findings schema, and result
+      instructions; capability, budget, and snapshot fields remain control metadata.
+
+      Supply Codex execution and cleanup hooks to
+      SigilAgentAdapterExecutionCoordinator and use SigilAgentAdapterSubprocess for
+      the private process lifecycle. Parse the line-delimited event stream and
+      require exactly one completed turn carrying a findings JSON object.
+
+      Preserve standard-error content on a process failure so an invocation failure
+      explains itself.
+    }
+  }
+
+  constraints {
+    CodexExecutionBoundary {
+      Schema-valid agent messages inside one open turn are nonterminal checkpoints.
+      The latest checkpoint becomes that turn's candidate result only when
+      turn.completed arrives.
+
+      A second completed turn candidate, or any framing after the completed terminal
+      boundary, rejects as final-result-protocol.
+
+      An event line exceeding the provider frame limit, an event line that is not
+      valid JSON, a stream without a final agent message, and a terminal result
+      exceeding the final-result limit each reject as final-result-protocol.
+
+      The temporary schema file is removed after invocation, and a schema file that
+      was not created rejects before the provider starts.
+    }
+  }
+
+  decisions {
+    CheckpointedTurnTerminal {
+      Decision: Treat schema-valid agent messages as nonterminal checkpoints and
+      settle the terminal result only on turn.completed.
+
+      Scope: Governs Codex event-stream parsing; excludes request validation and
+      subprocess cleanup.
+
+      Design issues addressed: A Codex turn can emit several schema-valid messages
+      before it completes, so accepting the first would settle on a partial result.
+
+      Consequences: The last checkpoint of the completed turn is authoritative, and
+      framing after that boundary is a protocol failure rather than a later result.
+    }
+
+    SchemaFileHandoff {
+      Decision: Pass the findings schema to the Codex CLI through a temporary file
+      rather than inline argument content.
+
+      Scope: Governs Codex invocation; excludes the schema's shape, which the
+      provider-neutral request owns.
+
+      Trade-offs: The adapter owns a temporary file lifecycle, including removal
+      after a failed invocation.
+
+      Consequences: Schema size does not enter the command line, and a missing schema
+      file fails before the provider starts.
+    }
+  }
+
+  cases {
+    CodexAdapter {
+      An ephemeral request invokes the Codex CLI once and accepts the completed
+      turn's last checkpoint after process and output settlement.
+
+      A persistent request mismatches before invocation.
+
+      A stream with no final agent message, a non-JSON event line, an oversized event
+      line, and framing after the completed boundary are final-result-protocol.
+
+      Timeout, cancellation, or process failure follows bounded subprocess cleanup
+      and preserves standard-error content.
+    }
+  }
+}

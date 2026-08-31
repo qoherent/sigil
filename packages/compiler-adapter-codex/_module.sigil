@@ -1,0 +1,23 @@
+@packages/compiler-adapter-codex/src/codex-adapter.sigil import { SigilCodexCompilerAdapter }
+
+component SigilCodexCompilerAdapterPackage {
+  goal {
+    Package the Codex CLI compiler adapter independently and supply it to the Sigil
+    CLI bundle without entering the provider-neutral compiler package.
+  }
+
+  interface {
+    CodexAdapterPackage {
+      SigilCodexCompilerAdapter is the public adapter contract.
+    }
+  }
+}
+
+expand SigilCodexCompilerAdapterPackage {
+  constraints {
+    PackageBoundary {
+      The package depends on compiler contracts. The compiler does not depend on this
+      package; the CLI owns registration and release assembly.
+    }
+  }
+}

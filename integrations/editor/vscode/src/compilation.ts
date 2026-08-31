@@ -66,10 +66,15 @@ export interface StageReport {
 }
 
 export interface CompilationReport {
-  readonly reportVersion: 2;
+  readonly reportVersion: 3;
   readonly runId?: string;
   readonly workspaceRoot?: string;
+  /** The boundary that was compiled; may be wider than what was selected. */
   readonly target?: unknown;
+  /** The selector the caller supplied, before boundary inference. */
+  readonly requestedScope?: unknown;
+  /** How `target` was derived from `requestedScope`. */
+  readonly selection?: unknown;
   readonly status: "red" | "yellow" | "green";
   readonly componentNames: readonly string[];
   readonly startedAt?: string;
@@ -289,7 +294,7 @@ export function diagnosticDisplayRange(
 function isCompilationReport(value: unknown): value is CompilationReport {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const report = value as Record<string, unknown>;
-  return report.reportVersion === 2 &&
+  return report.reportVersion === 3 &&
     ["red", "yellow", "green"].includes(String(report.status)) &&
     Array.isArray(report.componentNames) && Array.isArray(report.diagnostics) &&
     report.componentNames.every((item) => typeof item === "string") &&

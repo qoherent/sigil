@@ -31,6 +31,60 @@
 
 ## Unreleased
 
+- Extract the Codex CLI adapter into `@qoherent/sigil-compiler-adapter-codex`,
+  registered from the CLI like its sibling adapter packages. The compiler is now
+  provider-neutral: it constructs no provider implementation, and an evaluator
+  provider is an opaque identifier owned by its adapter package rather than one
+  of four hardcoded names. A provider naming no registered adapter is reported
+  when registration resolves rather than when configuration parses.
+- Export the findings schema and shared adapter execution helpers from the
+  compiler as the one contract every adapter satisfies, replacing byte-identical
+  copies in provider packages.
+
+- Stop rejecting a compilation because its evaluator request carries a complete
+  retrieval result. The declared initial-request limit is enforced where the
+  request reaches its adapter, so exceeding it leaves that evaluator incomplete
+  instead of failing the run, matching a retrieval policy that declares no
+  budget in version 1.
+- Remove `evaluateCompilation` and `CompilationEvaluationRunner`, a
+  session-facing pass-through left with no consumer after the session boundary
+  was removed, and record one-shot compilation as the evaluation pipeline's
+  implementation owner.
+
+- Make compilation-boundary selection a compiler behavior. `--component`,
+  `--file`, `--position`, and the new `--directory` are affected-scope seeds
+  rather than final targets: the compiler resolves the nearest module index
+  whose closure covers the affected scope, otherwise the nearest covering
+  component, otherwise the workspace. `--exact-target` preserves a deliberately
+  narrow selection.
+- Reject an unresolvable or invalid selector with a stable invocation diagnostic
+  instead of silently compiling the whole workspace.
+- Advance `CompilationReport` to `reportVersion` 3, adding `requestedScope` and
+  `selection` beside the existing `target`, so an exported report explains which
+  boundary was compiled, why, what it covered, and any uncovered evidence
+  without re-running graph analysis. `target` keeps its name and meaning as the
+  boundary that ran, so a consumer reading it needs no field migration.
+- Remove the duplicated target-selection policy from the coding-agent skill;
+  hosts now name the scope that changed and read the resolved boundary from the
+  report.
+
+- Add an optional evidence budget to purpose retrieval and
+  `sigil retrieve --max-evidence-bytes`. A retrieval closure is bounded by
+  relationship rules rather than size, so a broad boundary returned everything
+  one hop away regardless of how much a consumer could use.
+- Keep the closest evidence within the budget, always retain the selected
+  contract, and report what was withheld as a summary of counts and bytes by
+  evidence kind rather than one record per withheld unit.
+- Report inclusion reasons only for evidence the result still contains, so a
+  reason cannot outlive the evidence it explains.
+
+- Make the coding-agent skill decide a project's module structure before
+  drafting contracts, deriving bounded areas from deployment units, technology
+  boundaries, independent reasons to change, shared ownership, and
+  reviewability. A small project stays one boundary, and an outgrown boundary is
+  proposed for splitting rather than accumulating every declaration at the
+  workspace root.
+
 - Advance the Sigil Language and configuration contract to 0.8.0 with one
   optional component section, `scope`, recording what a component deliberately
   does not cover. `Excluded:` is a settled boundary; `Deferred:` is uncovered
@@ -51,13 +105,12 @@
   script region uses its code comment syntax and resolves an adjacent
   entrypoint, an embedded style region uses stylesheet comments, and remaining
   template markup uses HTML comments. A script region with no following
-  definition, such as `<script setup>`, binds its annotation to the file
-  instead of reporting a detached annotation, and the comment-form rule applies
-  only to regions offering both a line and a multiline form.
+  definition, such as `<script setup>`, binds its annotation to the file instead
+  of reporting a detached annotation, and the comment-form rule applies only to
+  regions offering both a line and a multiline form.
 - Scan a markup source with the same per-region split as a single-file
   component, so an ownership annotation inside an embedded `<script>` or
-  `<style>` block resolves instead of being silently dropped with no
-  diagnostic.
+  `<style>` block resolves instead of being silently dropped with no diagnostic.
 - Accept the Go-template families `.tmpl` and `.gohtml` as implementation
   sources, and recognize the `{{/* ... */}}` comment form alongside the HTML
   one. A template comment is stripped server-side, so it carries an annotation
@@ -99,10 +152,10 @@
   discarded alternatives, consequences, and revisit conditions.
 - Preserve contextual imported-concept identity without exposing private
   decision rationale or making decisions transitively binding.
-- Advance the Sigil Language and configuration contract to 0.5.0 and core,
-  CLI, LSP, and VS Code extension to 0.6.0.
-- Advance the Sigil skill to 0.6.2 with decision-rationale coverage,
-  correction conversations, and semantic-readiness gates.
+- Advance the Sigil Language and configuration contract to 0.5.0 and core, CLI,
+  LSP, and VS Code extension to 0.6.0.
+- Advance the Sigil skill to 0.6.2 with decision-rationale coverage, correction
+  conversations, and semantic-readiness gates.
 
 ## 0.5.1 - 2026-07-23
 

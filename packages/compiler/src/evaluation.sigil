@@ -21,15 +21,22 @@ component SigilCompilationEvaluation {
     CompilationEventWriterProtocol, AgentAdapter, EvaluationSkillPackage, and
     report trace schemas through their owning public contracts without owning
     terminal settlement.
+
+    This contract owns evaluation semantics and evaluation-context construction,
+    not a callable evaluation entrypoint.
   }
 
   interface {
     CompilationEvaluation {
-      evaluate(workspaceAccess, target, effectiveProfile, requestedStage,
-      CompilationEventWriter, cancellationSignal?) emits only nonterminal progress
-      through that already-bound writer and returns CompilationEvaluationResult,
-      rejects cancellation with COMPILER_CANCELLED, or rejects a host or protocol
-      failure with COMPILER_FAILED
+      Evaluation runs over a workspace access, target, effective profile, requested
+      stage, and already-bound CompilationEventWriter, emits only nonterminal
+      progress through that writer, and yields CompilationEvaluationResult.
+
+      Cancellation rejects with COMPILER_CANCELLED and a host or protocol failure
+      rejects with COMPILER_FAILED.
+
+      Its implementation owner is SigilOneShotCompilation, which runs the pipeline
+      inline; no separate evaluation entrypoint exists.
 
       SigilWorkspaceLoader supplies deterministic workspace discovery and loading
       semantics, CompilationProfile supplies stages and capabilities, and
@@ -203,6 +210,11 @@ expand SigilCompilationEvaluation {
       Effective profiles declare elapsed-time and model-usage budgets plus initial
       request and output-retention limits. They do not truncate retrieval policy
       version 1 or bound later workspace reads by initial request size.
+
+      The declared initial-request limit is enforced where the request reaches its
+      adapter, so exceeding it leaves that evaluator incomplete instead of failing
+      the run. No compiler-side gate rejects a request for carrying a complete
+      retrieval result.
     }
 
     AgentWorkspaceInspection {
@@ -263,6 +275,54 @@ expand SigilCompilationEvaluation {
   }
 
   decisions {
+    EvaluationOwnedByOneShotCompilation {
+      Decision: Keep the evaluation pipeline inline in one-shot compilation and let
+      this contract own evaluation semantics and evaluation-context construction
+      rather than a separate callable evaluation entrypoint.
+
+      Scope: Governs where pipeline execution is implemented; excludes terminal
+      settlement, which remains with the caller.
+
+      Assumptions: One-shot compilation is the only pipeline consumer.
+
+      Trade-offs: One-shot compilation stays a large unit, and a future second
+      consumer must extract the pipeline before reusing it.
+
+      Design issues addressed: A session-facing pass-through was retained after the
+      session boundary was removed, leaving an exported entrypoint with no consumer
+      and a contract that described an owner the code did not have.
+
+      Discarded alternatives: Extracting a standalone evaluation entrypoint was
+      rejected as a reusable unit for one caller, moving the hot path for no behavior
+      change. Deleting this contract was rejected because its semantics are real and
+      referenced by the compiler and adapter contracts.
+
+      Consequences: Pipeline code in one-shot compilation carries ownership
+      annotations to this contract, so the implementation site is explicit.
+
+      Revisit when: A second consumer needs the pipeline without terminal settlement.
+    }
+
+    InitialRequestLimitEnforcedAtTheAdapter {
+      Decision: Enforce the declared initial-request limit where the request reaches
+      its adapter and remove the compiler-side gate over the complete
+      retrieval-bearing request.
+
+      Scope: Governs initial-request size handling; excludes elapsed-time,
+      model-usage, and output-retention limits.
+
+      Design issues addressed: A compiler-side character gate over the whole request
+      failed the entire run for a correct but large retrieval result, contradicting a
+      retrieval policy that declares no budget in version 1.
+
+      Discarded alternatives: Measuring the request without its retrieval payload was
+      rejected because the remaining content is already bounded, leaving a gate that
+      never fires.
+
+      Consequences: An oversized request leaves one evaluator incomplete and prevents
+      green, instead of rejecting the compilation.
+    }
+
     DeterministicFoundationGating {
       Decision: Treat one deterministic error diagnostic as a failed foundation and
       skip every dependent evaluation stage.
@@ -378,13 +438,16 @@ expand SigilCompilationEvaluation {
       diagnostic, marks deterministic-foundation failed, skips semantic-readiness and
       other dependent stages, and completes with a red report.
 
-      A configured Codex evaluator receives no request for that structurally invalid
+      A configured evaluator receives no request for that structurally invalid
       compilation, so invalid evaluator output cannot replace the source diagnostic.
     }
 
     EvaluationContext {
       Two evaluators for the same component, stage purpose, source fingerprint, and
       retrieval fingerprint receive byte-identical selected graph and context.
+
+      A request carrying a complete retrieval result is sent to its adapter; only the
+      adapter's initial-request limit can leave that evaluator incomplete.
 
       Current-code-compatibility receives owned implementation evidence selected by
       implementation purpose; an unannotated caller is absent unless an explicit

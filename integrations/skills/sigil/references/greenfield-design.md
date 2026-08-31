@@ -13,10 +13,11 @@ normal design activity, not merely a response to an unclear prompt.
 
 1. Frame the design conversation
 2. Explore questions and choices
-3. Establish boundaries and contracts
-4. Review and synthesize scoped Sigil edits
-5. Write and validate the scoped Sigil
-6. Limits and examples
+3. Decide the module structure
+4. Establish boundaries and contracts
+5. Review and synthesize scoped Sigil edits
+6. Write and validate the scoped Sigil
+7. Limits and examples
 
 ## 1. Frame The Design Conversation
 
@@ -64,7 +65,41 @@ contract. Carry confirmed decisions, provisional assumptions, and intentionally
 deferred non-blocking decisions into the conversation synthesis. Do not invent a
 Sigil line for a deferred decision.
 
-## 3. Establish Boundaries And Contracts
+## 3. Decide The Module Structure
+
+Decide whether the project is one boundary or several before drafting
+components. A project that keeps every declaration at its root grows one
+ever-larger compilation context, so an agent working on one area carries
+unrelated context and the project gets harder to compile, review, and extend.
+
+Propose separate bounded areas when any of these hold:
+
+- distinct deployment or runtime units, such as a service, a client, and
+  infrastructure;
+- distinct technology or language boundaries owning their own build;
+- areas that change for independent reasons or are owned by different people;
+- a shared library several areas depend on but none owns;
+- an area a reader would expect to review without loading the rest.
+
+Common areas are backend, frontend, infrastructure, data and storage, and
+shared libraries, but derive them from the conversation rather than applying
+that list. Do not split a small project: one boundary is correct until a second
+area has its own reason to change.
+
+For each proposed area, name its directory, its `_module.sigil` boundary
+summary, and whether it belongs in `workspace.members`. A declared member is a
+reviewable boundary with its own summary; an internal `_module.sigil` outside a
+declared member is only a directory index.
+
+Present the proposed structure before writing any contract, as a table of area,
+directory, responsibility, and declared-member status. Confirm it with the user
+as its own decision, because moving a boundary later means moving files and
+updating every import that names them.
+
+A module index is also the unit a compile can target, so the structure chosen
+here determines how narrowly work in one area can later be validated.
+
+## 4. Establish Boundaries And Contracts
 
 Choose the smallest coherent component boundary supported by the conversation.
 Model stable responsibilities rather than mechanically mirroring anticipated
@@ -115,7 +150,7 @@ implementation-specific expands, and the coverage map in the same scoped write.
 Otherwise complete implementation design after the higher-level contract is
 validated and use a separate Sigil review cycle.
 
-## 4. Review And Synthesize Scoped Sigil
+## 5. Review And Synthesize Scoped Sigil
 
 Apply `references/standards-review.md` before asking for final approval. Verify
 the currency and applicability of evidence packets created during design
@@ -139,6 +174,11 @@ Then present:
 
 Summarize the agreed goal, users or callers, boundaries, major choices,
 tradeoffs accepted, and deliberately deferred questions.
+
+### Proposed Module Structure
+
+State the agreed areas, their directories, and which are declared members, or
+state that the project is a single boundary and why.
 
 ### Proposed Boundaries And Ownership
 
@@ -166,7 +206,7 @@ choices, and any uncertainty that blocks implementation.
 Report the target workspace root, changed paths, exact scope, semantic change
 set, and evidence. The user reviews the written files before implementation.
 
-## 5. Validate Written Sigil
+## 6. Validate Written Sigil
 
 After writing the scoped Sigil:
 
@@ -195,7 +235,7 @@ coverage or an intentional omit decision.
 If implementation reveals a missing material decision, return to conversation,
 update and validate the written Sigil before resuming implementation review.
 
-## 6. Limits And Examples
+## 7. Limits And Examples
 
 Do not ask questions merely to appear thorough. Each question or choice should
 materially improve product intent, public behavior, ownership, lifecycle,
