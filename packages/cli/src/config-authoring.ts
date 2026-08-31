@@ -2,7 +2,7 @@ import type {
   AgentProvider,
   CompileConfiguration,
 } from "@qoherent/sigil-compiler";
-import { CodexAdapter } from "@qoherent/sigil-compiler";
+import { CodexAdapter } from "@qoherent/sigil-compiler-adapter-codex";
 import { OpenCodeAdapter } from "@qoherent/sigil-compiler-adapter-opencode";
 import { PiAdapter } from "@qoherent/sigil-compiler-adapter-pi";
 import { ClaudeAdapter } from "@qoherent/sigil-compiler-adapter-claude";

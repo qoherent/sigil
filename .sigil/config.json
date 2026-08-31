@@ -29,7 +29,7 @@
   },
   "tools": {
     "agent": {
-      "profile": "codex"
+      "profile": "standard"
     },
     "compile": {
       "defaultProfile": "standard",
@@ -47,19 +47,27 @@
       },
       "profiles": {
         "standard": {
-          "main": ["codex"]
+          "main": [
+            "codex"
+          ]
         },
         "claude": {
           "extends": "standard",
-          "main": ["claude"]
+          "main": [
+            "claude"
+          ]
         },
         "pi": {
           "extends": "standard",
-          "main": ["pi"]
+          "main": [
+            "pi"
+          ]
         },
         "opencode": {
           "extends": "standard",
-          "main": ["opencode"]
+          "main": [
+            "opencode"
+          ]
         }
       },
       "evaluators": {
