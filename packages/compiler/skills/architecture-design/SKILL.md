@@ -21,6 +21,10 @@ Evaluate:
 - ModuleIndexFile scope and namespace-assembly responsibility;
 - reuse of semantically matching imported public components and concepts.
 
+Read each component's declared `scope` before reporting a decomposition or
+ownership gap. An area declared excluded or deferred is an intentional boundary,
+so absence of a contract for it is not a finding.
+
 Treat graph edges as evidence rather than findings. Report only a concrete
 ownership, dependency, coupling, decomposition, interface, namespace, or
 change-locality consequence. Do not assign numeric modularity scores or report

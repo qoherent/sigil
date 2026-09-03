@@ -1,5 +1,5 @@
 {
-  "sigilVersion": "0.7.0",
+  "sigilVersion": "0.8.0",
   "workspace": {
     "name": "sigil",
     "members": [
@@ -47,19 +47,27 @@
       },
       "profiles": {
         "standard": {
-          "main": ["codex"]
+          "main": [
+            "codex"
+          ]
         },
         "claude": {
           "extends": "standard",
-          "main": ["claude"]
+          "main": [
+            "claude"
+          ]
         },
         "pi": {
           "extends": "standard",
-          "main": ["pi"]
+          "main": [
+            "pi"
+          ]
         },
         "opencode": {
           "extends": "standard",
-          "main": ["opencode"]
+          "main": [
+            "opencode"
+          ]
         }
       },
       "evaluators": {

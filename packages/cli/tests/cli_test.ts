@@ -66,6 +66,10 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
       role: "selected",
       goal: [{ text: "Use *safe* Markdown.", path: "feature.sigil" }],
       interface: [],
+      scope: [{
+        text: "Excluded: Billing belongs to the finance service.",
+        path: "feature.sigil",
+      }],
       state: [],
       logic: [],
       constraints: [],
@@ -86,6 +90,7 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
       role: "module-context",
       goal: [{ text: "Assemble the workspace.", path: "_module.sigil" }],
       interface: [],
+      scope: [],
       state: [],
       logic: [],
       constraints: [],
@@ -104,6 +109,7 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
         items: [{ text: "run()", path: "dep.sigil" }],
         ownership: [],
       }],
+      scope: [],
       state: [],
       logic: [],
       constraints: [],
@@ -129,6 +135,12 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
   assert(markdown.includes("## Module Context"));
   assert(markdown.includes("### Workspace"));
   assert(markdown.includes("- **component** — A coherent system part."));
+  // Declared scope is public, so a reader of the rendering sees it.
+  assert(markdown.includes("### Scope"), markdown);
+  assert(
+    markdown.includes("- Excluded: Billing belongs to the finance service."),
+    markdown,
+  );
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::CompilationFacade logic,cases
@@ -139,7 +151,7 @@ Deno.test("CLI bundle registers the standalone OpenCode adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "opencode-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {
@@ -185,7 +197,7 @@ Deno.test("CLI bundle registers the standalone Pi adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "pi-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {
@@ -231,7 +243,7 @@ Deno.test("CLI bundle registers the standalone Claude adapter", async () => {
     await Deno.writeTextFile(
       `${root}/.sigil/config.json`,
       JSON.stringify({
-        sigilVersion: "0.7.0",
+        sigilVersion: "0.8.0",
         workspace: { name: "claude-bundle", members: [] },
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {

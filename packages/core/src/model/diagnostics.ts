@@ -4,6 +4,7 @@ export type { SigilDiagnosticSeverity, SourceRange } from "./language.ts";
 export type SigilDiagnosticCode =
   | "SIGIL_PARSE_STRUCTURE"
   | "SIGIL_UNKNOWN_SECTION"
+  | "SIGIL_SECTION_NOT_ALLOWED"
   | "SIGIL_MISSING_GOAL"
   | "SIGIL_MISSING_INTERFACE"
   | "SIGIL_MODULE_WITHOUT_COMPONENT"

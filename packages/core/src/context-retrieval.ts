@@ -127,6 +127,7 @@ interface ProjectionEntry {
   role: RetrievalProjectionComponent["role"];
   goal: RetrievalProjectionItem[];
   interface: ProjectionConceptDraft[];
+  scope: RetrievalProjectionItem[];
   state: RetrievalProjectionItem[];
   logic: RetrievalProjectionItem[];
   constraints: RetrievalProjectionItem[];
@@ -240,6 +241,7 @@ export async function projectRetrieval(
       role: nextRole,
       goal: [],
       interface: [],
+      scope: [],
       state: [],
       logic: [],
       constraints: [],
@@ -256,7 +258,8 @@ export async function projectRetrieval(
     if (
       entry.role !== "selected" && entry.role !== "module-context" &&
       item.sectionName !== "goal" &&
-      item.sectionName !== "interface"
+      item.sectionName !== "interface" &&
+      item.sectionName !== "scope"
     ) continue;
     const value: RetrievalProjectionItem = {
       text: item.text,
@@ -270,13 +273,17 @@ export async function projectRetrieval(
       concept.items.push(value);
       entry.concepts.set(key, concept);
     } else if (
-      ["goal", "state", "logic", "constraints", "decisions", "cases"].includes(
-        String(item.sectionName),
-      )
+      ["goal", "scope", "state", "logic", "constraints", "decisions", "cases"]
+        .includes(
+          String(item.sectionName),
+        )
     ) {
       switch (item.sectionName) {
         case "goal":
           entry.goal.push(value);
+          break;
+        case "scope":
+          entry.scope.push(value);
           break;
         case "state":
           entry.state.push(value);
@@ -548,7 +555,7 @@ export async function retrievePurposeContext(
       "select-target",
       seedKey,
       [],
-      ["goal", "interface"],
+      ["goal", "interface", "scope"],
     );
     for (const expansion of seed.expansions.expands) {
       const path = relativePath(resolved.workspace.root, expansion.filePath);
@@ -625,7 +632,7 @@ export async function retrievePurposeContext(
           "select-direct-dependency",
           seedKey,
           [edgeKey],
-          ["goal", "interface"],
+          ["goal", "interface", "scope"],
         );
         for (const expansion of dependency.expansions.expands) {
           addDeclarationEvidence(
@@ -696,7 +703,7 @@ export async function retrievePurposeContext(
             "select-direct-importer",
             seedKey,
             [edgeKey],
-            ["goal", "interface"],
+            ["goal", "interface", "scope"],
           );
         }
       }
@@ -797,7 +804,7 @@ export async function retrievePurposeContext(
           "select-cycle-member",
           anchorKey,
           [edgeKey],
-          ["goal", "interface"],
+          ["goal", "interface", "scope"],
         );
         addDeclarationEvidence(
           evidence,
@@ -838,7 +845,7 @@ export async function retrievePurposeContext(
         "select-module-index",
         componentKey(seeds[0]),
         [edgeKey],
-        ["goal", "interface", "constraints", "decisions"],
+        ["goal", "interface", "scope", "constraints", "decisions"],
       );
       if (role === "seed") {
         for (
@@ -886,7 +893,7 @@ export async function retrievePurposeContext(
             "select-public-concept-origin",
             componentKey(component),
             [conceptEdge],
-            ["goal", "interface"],
+            ["goal", "interface", "scope"],
           );
           void providerKey;
         }

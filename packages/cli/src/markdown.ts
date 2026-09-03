@@ -32,6 +32,7 @@ export function renderRetrieveMarkdown(
     );
     appendSelectedSection(lines, "Goal", component.goal);
     appendSelectedInterface(lines, component.interface);
+    appendSelectedSection(lines, "Scope", component.scope);
     appendSelectedSection(lines, "State", component.state);
     appendSelectedSection(lines, "Logic", component.logic);
     appendSelectedSection(lines, "Constraints", component.constraints);
@@ -152,6 +153,7 @@ function appendRelatedGroup(
     );
     appendRelatedLabeled(lines, "Goal", component.goal);
     appendRelatedInterface(lines, component.interface);
+    appendRelatedLabeled(lines, "Scope", component.scope);
     if (includeSummary) {
       appendRelatedLabeled(lines, "Constraints", component.constraints);
       appendRelatedLabeled(lines, "Decisions", component.decisions);

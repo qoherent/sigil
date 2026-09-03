@@ -4,6 +4,7 @@ export type SigilFormKind = "component" | "expand";
 export type SigilSectionName =
   | "goal"
   | "interface"
+  | "scope"
   | "state"
   | "logic"
   | "constraints"
@@ -22,7 +23,7 @@ export interface SourceRange {
   readonly end: SourceLocation;
 }
 
-export const SIGIL_VERSION = "0.7.0";
+export const SIGIL_VERSION = "0.8.0";
 export const SIGIL_CORE_VERSION = metadata.version;
 export const SIGIL_CONFIG_PATH = ".sigil/config.json" as const;
 export const SIGIL_LOCAL_CONFIG_PATH = ".sigil/local.json" as const;

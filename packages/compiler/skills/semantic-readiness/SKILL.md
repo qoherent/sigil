@@ -24,6 +24,12 @@ Evaluate:
 - coherence between the selected component, its expansions, dependencies, and
   dependency decisions.
 
+A `scope` entry is a stated boundary, not a missing contract. Do not report a
+gap for an area the component declares as excluded or deferred; report one only
+for an area that is neither covered nor declared. An `Excluded:` area is
+settled. A `Deferred:` area is acknowledged uncovered work and does not by
+itself prevent readiness for the areas that are covered.
+
 Treat selected Sigil as the desired contract. Implementation evidence may
 clarify a repository capability or expose a possible missing decision, but do
 not report a finding solely because current implementation differs, is missing,

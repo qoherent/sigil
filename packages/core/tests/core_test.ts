@@ -37,7 +37,7 @@ import { buildSigilGraph } from "../src/graph.ts";
  */
 Deno.test("separates the core artifact and language contract versions", () => {
   assertEquals(SIGIL_CORE_VERSION, "0.7.1");
-  assertEquals(SIGIL_VERSION, "0.7.0");
+  assertEquals(SIGIL_VERSION, "0.8.0");
 });
 
 /*
@@ -3997,4 +3997,166 @@ ${extra}}
     }
     assertEquals(rejected, true);
   }
+});
+
+/*
+ * @sigil tests packages/core/src/parser.sigil::SigilParser::SemanticUnit constraints,cases
+ * @sigil tests packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalResult interface
+ */
+Deno.test("declared scope parses and reaches retrieval as public evidence", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "project.sigil": `component Project {
+  goal {
+    Own the ingest slice of the platform.
+  }
+
+  interface {
+    Ingest {
+      Accept and store incoming recordings.
+    }
+  }
+
+  scope {
+    Billing {
+      Excluded: Payment capture belongs to the finance service.
+    }
+
+    Reporting {
+      Deferred: Usage reporting is not modelled yet.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertEquals(
+    resolved.diagnostics.filter((item) => item.severity === "error").length,
+    0,
+  );
+
+  const project = resolved.components.find((item) => item.name === "Project")!;
+  const scope = project.declaration.sections.find((item) =>
+    item.name === "scope"
+  );
+  assert(scope, "component should carry a scope section");
+  assertEquals(
+    scope.units.map((unit) => unit.conceptIdentifier).join(","),
+    "Billing,Reporting",
+  );
+
+  // Both kinds are distinguishable by their leading label.
+  const text = scope.units.map((unit) => unit.prose).join(" ");
+  assert(text.includes("Excluded:"));
+  assert(text.includes("Deferred:"));
+
+  // Scope is public boundary information, so retrieval must carry it to
+  // evaluators; otherwise a declared exclusion cannot suppress a gap finding.
+  const retrieval = await retrievePurposeContext(
+    resolved,
+    { kind: "component", componentName: "Project", path: "project.sigil" },
+    "semantic",
+  );
+  const rendered = JSON.stringify(retrieval);
+  assert(
+    rendered.includes("Payment capture belongs to the finance service"),
+    "retrieval should carry the declared exclusion",
+  );
+  assert(
+    rendered.includes("Usage reporting is not modelled yet"),
+    "retrieval should carry the declared deferral",
+  );
+});
+
+// @sigil tests spec/language.sigil::SigilLanguage::SectionSemantics constraints,cases
+Deno.test("scope is a component section and an expand cannot declare one", async () => {
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "project.sigil": `component Project {
+  goal {
+    Own the ingest slice.
+  }
+
+  interface {
+    Ingest {
+      Accept incoming recordings.
+    }
+  }
+}
+
+expand Project {
+  scope {
+    Reporting {
+      Deferred: Usage reporting is not modelled yet.
+    }
+  }
+
+  logic {
+    Ingest {
+      Validate, then store.
+    }
+  }
+}
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertHasCode(resolved.diagnostics, "SIGIL_SECTION_NOT_ALLOWED");
+  // The misplaced section reports once rather than derailing the rest of the
+  // declaration, so the legitimate expansion still resolves.
+  assertEquals(
+    resolved.diagnostics.filter((item) => item.severity === "error").length,
+    1,
+  );
+  // The legitimate expansion still resolves; only the misplaced section is lost.
+  const expansion = collectedExpansionFor(resolved, "Project");
+  assert(expansion, "the expand should still resolve");
+  assertEquals(expansion.expands.length, 1);
+  assertEquals(
+    expansion.expands[0].declaration.sections.map((item) => item.name).join(
+      ",",
+    ),
+    "logic",
+  );
+});
+
+// @sigil tests spec/language.sigil::SigilLanguage::SectionSemantics constraints,cases
+Deno.test("recovery does not restore a scope section rejected in an expand", async () => {
+  // The scope section is never closed, so parsing ends inside it and the
+  // end-of-input recovery path decides what the expansion keeps.
+  const fs = new InMemorySigilFileSystem({
+    ".sigil/config.json": configSource(),
+    "project.sigil": `component Project {
+  goal {
+    Own the ingest slice.
+  }
+
+  interface {
+    Ingest {
+      Accept incoming recordings.
+    }
+  }
+}
+
+expand Project {
+  scope {
+    Reporting {
+      Deferred: Usage reporting is not modelled yet.
+`,
+  });
+  const resolved = resolveSigilWorkspace(
+    await loadSigilWorkspace(fs, { startPath: "." }),
+  );
+  assertHasCode(resolved.diagnostics, "SIGIL_SECTION_NOT_ALLOWED");
+  const expansion = collectedExpansionFor(resolved, "Project");
+  assert(expansion, "the partial expand should still resolve");
+  assertEquals(
+    expansion.expands[0].declaration.sections.map((item) => item.name).join(
+      ",",
+    ),
+    "",
+  );
 });

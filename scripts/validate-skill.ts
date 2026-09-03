@@ -435,7 +435,7 @@ for (
   const [key, expected] of Object.entries({
     cliVersion: "^0.7.0",
     coreVersion: "^0.7.0",
-    sigilVersion: "0.7.0",
+    sigilVersion: "0.8.0",
   })
 ) {
   if (compatibility[key] !== expected) {

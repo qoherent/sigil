@@ -20,9 +20,18 @@ import {
 } from "./model/language.ts";
 import { isModuleFile } from "./path.ts";
 
+/**
+ * A component states its own boundary, so an expansion cannot declare what the
+ * component does not cover. `interface` is deliberately excluded here: reusing
+ * an imported identifier in a matching expand's `interface` re-exposes that
+ * identity downstream, which the language specifies.
+ */
+const COMPONENT_ONLY_SECTIONS = new Set<SigilSectionName>(["scope"]);
+
 const SECTION_NAMES = new Set<SigilSectionName>([
   "goal",
   "interface",
+  "scope",
   "state",
   "logic",
   "constraints",
@@ -99,6 +108,7 @@ export function parseSigilDocument(
     return { document, diagnostics: [unsupported] };
   }
 
+  const disallowedSections = new Set<string>();
   let form: FormDraft | undefined;
   let section: SectionDraft | undefined;
   let concept: ConceptDraft | undefined;
@@ -206,8 +216,12 @@ export function parseSigilDocument(
         !concept && trimmed === "}" && section.freeformBraceDepth === 0 &&
         !paragraph
       ) {
-        reportUngroupedInterfaceRegion(section, filePath, diagnostics);
-        form.sections.push(finishSection(section, lineNumber, line.length));
+        if (disallowedSections.has(section.name)) {
+          disallowedSections.delete(section.name);
+        } else {
+          reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+          form.sections.push(finishSection(section, lineNumber, line.length));
+        }
         section = undefined;
         blankBeforeCurrent = false;
         continue;
@@ -272,6 +286,19 @@ export function parseSigilDocument(
       if (sectionMatch) {
         const sectionName = sectionMatch[1];
         if (SECTION_NAMES.has(sectionName as SigilSectionName)) {
+          if (
+            form.kind === "expand" &&
+            COMPONENT_ONLY_SECTIONS.has(sectionName as SigilSectionName)
+          ) {
+            // Read the body anyway, so one misplaced section reports once
+            // instead of derailing the rest of the file.
+            disallowedSections.add(sectionName);
+            diagnostics.push(diagnostic(
+              "SIGIL_SECTION_NOT_ALLOWED",
+              `Section "${sectionName}" belongs to a component and cannot appear in expand ${form.name}.`,
+              { filePath, range: lineRange(lineNumber, line) },
+            ));
+          }
           section = {
             name: sectionName as SigilSectionName,
             startLine: lineNumber,
@@ -356,10 +383,16 @@ export function parseSigilDocument(
       `Unclosed section ${section.name}.`,
       { filePath, range: singlePointRange(section.startLine) },
     ));
-    form.sections.push(
-      finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
-    );
-    reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+    // Recovery keeps a partial declaration usable, but a section rejected
+    // for its declaration form stays rejected: a consumer reading the
+    // recovered expansion would otherwise see the boundary the diagnostic
+    // denied.
+    if (!disallowedSections.has(section.name)) {
+      form.sections.push(
+        finishSection(section, lines.length, lines.at(-1)?.length ?? 1),
+      );
+      reportUngroupedInterfaceRegion(section, filePath, diagnostics);
+    }
   }
   if (form) {
     diagnostics.push(diagnostic(
