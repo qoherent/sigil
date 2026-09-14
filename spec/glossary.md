@@ -11,7 +11,7 @@ normative contract governs and this glossary must be corrected.
 
 Primary authorities are:
 
-- [Sigil Language Specification](sigil-language.md) for language and source
+- [Sigil Language Reference](sigil-reference.md) for language and source
   semantics;
 - [Sigil workspace configuration](sigil-config.md) for workspace discovery and
   configuration;
@@ -34,7 +34,7 @@ approved or implemented contract.
   synonyms.
 - Do not use `component` as a synonym for a source file, class, package, or
   visual element.
-- Do not use `expand` to mean inheritance, override, replacement, or export.
+- `expand` is a legacy form; current contracts belong directly to components.
 - Do not use `valid`, `ready`, and `approved` as synonyms; they represent
   separate gates.
 - State whether a future concept is `proposed`, `accepted`, `implemented`, or
@@ -53,8 +53,9 @@ project, or the platform; qualify it when ambiguity is possible.
 ### Sigil Language
 
 The versioned contract governing `.sigil` syntax, structure, sections, imports,
-workspace interpretation, and meaning. The current supported version is
-`0.7.0`.
+workspace interpretation, and meaning. Current tools support `0.7.0`; the
+[Tag language revision](sigil-reference.md) targets `0.8.0`. The definitions below
+use the Tag model where it differs from the historical 0.7 behavior.
 
 ### Sigil source
 
@@ -67,24 +68,24 @@ A file whose name ends in `.sigil` and whose contents are Sigil source.
 ### Sigil document
 
 The parsed model of one Sigil source file, including imports, components,
-expands, sections, Facets, source ranges, and diagnostics.
+sections, Facets, source ranges, and diagnostics.
 
 ### Top-level form
 
-An `import`, `component`, or `expand` declaration appearing outside every other
+A Tag import or `component` declaration appearing outside every other
 form in a Sigil document.
 
 ### Declaration
 
-A top-level form that introduces an import, component, or expand into a Sigil
+A top-level form that introduces a Tag import or component into a Sigil
 document.
 
 ### Import
 
-A declaration that names components required from another Sigil source. An
-import makes the named public component contracts and public concept
-identifiers available to the importing source; it does not expose private
-expansion detail and is not a re-export.
+A declaration selecting component-owned Tags from a component in an explicit source:
+`@folder/file.sigil from Component import { tag1, tag two }`. It preserves the
+selected Tags' originating identity and uses the provider's full component
+design as context. Only selected names become accessible to the consumer.
 
 ### Import path
 
@@ -98,13 +99,15 @@ imports.
 
 ### Directory import
 
-An import path without a `.sigil` filename. It resolves to the selected
-`_module.sigil` in the target workspace directory.
+The deprecated 0.7 shorthand that selected `_module.sigil` from a directory.
+The Tag revision requires an explicit `.sigil` file and does not provide a
+directory namespace import.
 
 ### Imported name
 
-A case-sensitive component name listed inside an import declaration's braces.
-It must match a component declared in the resolved target document.
+A selected Tag name inside a tag import's braces. Names are separated
+by commas and may contain spaces. The component after `from` identifies their
+provider and is not itself an imported name.
 
 ### Component
 
@@ -115,24 +118,25 @@ view, or reusable UI surface.
 
 ### Component declaration
 
-The `component Name` form that defines one component's public contract through
-required `goal` and `interface` sections.
+The `component Name` form that owns all seven contract roles. Goal and
+Interface are required; State, Logic, Constraints, Decisions, and Cases
+are optional sections in the same declaration.
 
 ### Component name
 
-The case-sensitive identifier following `component` or `expand`. A component
-name identifies a contract across its declaration and every matching expand.
+The case-sensitive identifier following `component`. Each component has one
+declaration and its name must be unique in the configured workspace.
 
 ### Public contract
 
-The public purpose and observable interactions promised by a component's
-`goal` and `interface`. `Public` is relative to the component's dependents and
-does not necessarily mean externally available outside the application.
+A legacy language term for Goal and Interface. The current language assigns
+no public/private category to its contracts or Tags. A system's public API
+and access restrictions are implementation design decisions.
 
 ### Dependent
 
 A user, caller, component, tool, or other system part that relies on a
-component's public contract.
+component's design.
 
 ### Caller
 
@@ -140,44 +144,44 @@ A dependent that invokes an operation or API-shaped interface.
 
 ### Goal
 
-The required public component section describing why the component exists, the
+The required component section describing why the component exists, the
 responsibility it owns, and its intended outcome.
 
 ### Interface
 
-The required public component section containing only the operations, data,
+The required component section containing only the operations, data,
 events, results, errors, and observable promises available to dependents.
 
 ### Expand
 
-A top-level form that adds operational detail to a matching component. An
-expand does not override, replace, inherit from, or change the component's
-public contract.
+A removed top-level form from 0.7 and earlier 0.8 drafts. Its operational
+contributions now belong directly to the owning component declaration. See
+[component consolidation](migrating-to-0.8.md#consolidate-expands-into-their-components).
 
 ### Expansion
 
-The parsed or resolved representation of one `expand Name` declaration.
+The legacy parsed or resolved representation of an `expand` declaration.
+The current language places its contracts directly in a component.
 
 ### Collected expansion
 
-The complete set of all `expand Name` declarations matching one component.
-Matching expands are cumulative; none shadows another.
+The legacy aggregation of matching expands. Migration consolidates those
+contributions into one component without discarding Facets.
 
 ### Implementation-specific expand
 
-An expand colocated with implementation that records operational rationale
-owned by an existing component without introducing a separate dependent-facing
-contract.
+A legacy expand placed beside implementation. It has no current language form;
+a component may describe implementation spread across multiple files.
 
 ### State
 
-An optional expand section describing meaningful runtime or domain
+An optional component section describing meaningful runtime or domain
 configurations, modes, and conditions that exist or change during execution.
 It does not mean storage layout unless that layout is itself a domain decision.
 
 ### Logic
 
-An optional expand section describing behavior, flows, algorithms,
+An optional component section describing behavior, flows, algorithms,
 transformations, decisions, and lifecycle transitions.
 
 ### Constraint
@@ -187,7 +191,7 @@ dependency rule, or technology choice that a valid implementation must obey.
 
 ### Constraints
 
-The optional expand section containing constraints.
+The optional component section containing constraints.
 
 ### Decision rationale
 
@@ -197,7 +201,7 @@ were discarded, and when it should be revisited.
 
 ### Decisions
 
-The optional free-form expand section containing decision rationale. Binding
+The optional free-form component section containing decision rationale. Binding
 outcomes remain in `constraints`.
 
 ### Decision scope
@@ -213,13 +217,14 @@ scenario, or outcome.
 
 ### Cases
 
-The optional expand section containing cases.
+The optional component section containing cases.
 
 ### Section
 
-A named block inside a component or expand. Component sections are `goal` and
-`interface`; expand sections are `state`, `logic`, `constraints`, `decisions`,
-and `cases`.
+A named contract block inside a component: `goal`, `interface`, `state`,
+`logic`, `constraints`, `decisions`, or `cases`.
+Each section may occur at most once per component. Goal and Interface are
+required and must each contain at least one direct or grouped Facet.
 
 ### Section body
 
@@ -227,51 +232,97 @@ The free-form content enclosed by a section's braces.
 
 ### Free-form content
 
-Text that the structural parser preserves without assigning additional grammar
-inside the section. It may contain prose, Markdown, signatures, pseudocode,
-tables, or brace-safe ASCII layouts.
+Expressive authored content such as prose, signatures, pseudocode, tables,
+and ASCII layouts. Ordinary prose must retain its meaning and exact Tag references when physical lines
+are joined with spaces. Notation whose syntax or meaning depends on line breaks
+or indentation, including tables and ASCII layouts, must use an attached fenced
+payload. Outer forms, Concept Tag grouping, inline `*Tag*` introductions, and
+Inline Links have Sigil syntax; a fenced payload retains its embedded notation.
+Sigil has no comment syntax; comment-like prose remains authored content.
 
 ### Facet
 
 One blank-line-delimited prose paragraph inside a section body, preserved with
 its owner, section, file, source range, original physical lines, optional
-concept identifier, and directly attached fenced content.
+Concept Tag grouping, inline Tag introductions and references, Inline Links,
+and directly attached fenced content. A Facet may concern several Tags and
+reference several documents.
+
+### Embedded Facet
+
+Introducing prose and an attached fenced payload forming one Facet. Introducing
+prose follows normal Tag declaration and reference rules outside complete Inline
+Links; only the fenced payload is excluded from Tag scanning. Attaching a payload
+does not change Tag recognition in unchanged introducing prose. An enclosing
+Concept Tag heading can group the Facet under a local Tag. The fenced content
+retains its meaning and contract role in its own notation.
 
 ### Concept identifier
 
-A concise, reusable name for one semantic concept or a related group of
-Facets. It matches `[A-Za-z][A-Za-z0-9_-]*`; PascalCase without hyphens
-or underscores is the preferred style.
+The historical name for a Concept block's heading. In the Tag revision this
+role is a **Concept Tag**, with the existing bare heading syntax retained.
+The old parser's identifier fields are implementation migration details.
+
+### Tag
+
+A case-sensitive reusable name introduced inline as `*tag content*` or through a Concept Tag
+heading. Inline delimiters touch the name: `*tag*` introduces a Tag, while
+`* tag *` does not. Outside each asterisk, whitespace, a physical line boundary,
+a comma, or a period is required; backticks and parentheses do not qualify. Fenced payloads and complete Inline Links are excluded
+from Tag scanning; Embedded Facet introductions follow normal Tag rules. Later prose references omit asterisks and choose the longest
+complete matching name when references overlap. Tag names
+may contain multiple words. Their spelling is exact, with no whitespace or
+Unicode normalization. Inline backticks provide no protection from Tag scanning.
+Definitions and references keep the whole name on one
+physical line. Hyphens and dots join word segments: order is not a reference
+inside pre-order or order.status. Tags retain component ownership and source evidence.
+Each exact name permits at most one inline definition per component;
+repeated inline definitions are errors. Bare prose and grouping headings reuse
+the local Tag without adding inline definitions.
+
+### Concept Tag
+
+A Tag used to group Facets through the unchanged `Search { ... }` syntax.
+A heading always introduces or reuses a Tag local to its component. Imported Tags are used only in Facet prose.
+It needs no asterisks, including on first use. A local inline Tag may later be
+used as a heading, and a heading Tag may also be referenced inline.
 
 ### Concept block
 
-A flat, nonempty block headed by a concept identifier inside a section. Its
-header groups its Facets but is not itself a Facet.
+A flat, nonempty grouping block headed by a Concept Tag inside a contract.
+The header introduces or reuses its local Tag and groups Facets but is not itself
+a Facet. Blocks cannot nest.
 
 ### Concept namespace
 
-The flat, case-insensitively unique set of local concepts and accessible
-imported public concepts for one component and all matching expands. Imported
-concepts use bare identifiers; Sigil has no dotted concept notation, aliases,
-or local shadowing.
+The legacy term for accessible Concept identities. The Tag model preserves
+local and imported identity scope without namespace imports: all contracts in
+a component share local Tags, while explicit tag imports expose selected
+provider identities to an importing source. Same-spelled Tags in different
+components retain distinct owners. Importing them into one source is ambiguous;
+importing the same identity twice is also an error. Local/import name collisions
+are errors. Source order cannot select an owner or discard duplicates.
 
 ### Public concept
 
-A concept with at least one occurrence in `interface`. Imports expose public
-concept identity and public occurrences to dependents.
+A legacy visibility category based on Interface declarations. The current
+language permits imports of component-owned Tags introduced in any contract.
+Public access in the implemented system is an implementation design decision.
 
 ### Private concept
 
-A concept occurring only in `state`, `logic`, `constraints`, `decisions`, or
-`cases`.
-Dependents do not receive it through imports.
+A legacy visibility category for Concepts outside Interface. The current
+language has no private Tag category; implementation access restrictions can
+be described as Constraints without preventing a Tag import.
 
 ### Contextual concept reuse
 
-Use of an accessible imported concept identifier in a consumer component. The
-originating identity is preserved, consumer lines remain contextual to the
-consumer, and interface reuse re-exposes that identity downstream without
-flowing consumer context back to the provider.
+Reuse of an accessible imported Tag in consumer Facet prose, including Embedded
+Facet introductions, outside Inline Links and fenced payloads. Grouping headings
+remain local.
+The originating identity is preserved and consumer contributions retain their
+owner and contract role. Reuse does not re-export the Tag, transfer ownership,
+or flow consumer obligations back into the provider.
 
 ### Source location
 
@@ -299,11 +350,24 @@ intended implementation or review without material invention. It includes goal
 clarity, interface completeness, observable cases, cross-Sigil coherence,
 modularity, and applicable external guidance. It is not a parser result.
 
+### Inline Link
+
+A reference written in Markdown inline-link form, `[label](destination)`, with
+an optional title. It belongs to its containing Facet and may reference local
+Markdown, an API design, an OpenAPI document, an image, Figma, or other design
+material. Relative paths resolve from the `.sigil` source directory; absolute
+URLs identify external resources. The surrounding prose and contract explain
+how the linked content applies. Inline Links do not import Tags or declare
+components. Labels, destinations, titles, and referenced content retain their
+own syntax and do not declare or reference Sigil Tags. Fenced payloads do not
+create Sigil Inline Links.
+
 ### Visual reference
 
-An image, screenshot, ASCII wireframe, or external design link included as
-free-form interface content. Sigil defines no special visual-reference keyword
-or authority syntax.
+An image, screenshot, ASCII wireframe, or linked design included in a Facet.
+External designs, including Figma, use the general Inline Link syntax. A
+Facet's prose states the visual's intended role; there is no special Figma
+keyword or separate visual-authority syntax.
 
 ## Workspace And Project Model
 
@@ -387,18 +451,17 @@ member root.
 
 ### `_module.sigil`
 
-The explicit directory-import index. It may appear in any included directory
-and must declare at least one local component. It makes its local components and
-independently resolved imported component names available through
-directory-import shorthand without changing component visibility. The legacy
-`#module.sigil` basename is an ordinary source requiring an explicit file
-import.
+An ordinary source filename in the Tag revision, often retained for a project
+summary component. It no longer assembles or exposes a directory-import surface.
+Import a summary's Tags through the explicit `_module.sigil` file and
+its declared component. In historical 0.7 tooling this filename is the reserved
+directory index.
 
 ### Directory-import surface
 
-The converged component names exposed through a directory's `_module.sigil`
-from local declarations and independently resolved imports after names with
-multiple declaration identities are excluded.
+The historical 0.7 component-name surface assembled by `_module.sigil`.
+It is removed from the Tag revision; explicit imports select component-owned Tags from
+the source declaring their owning component.
 
 ### Descriptive Sigil filename
 
@@ -488,7 +551,10 @@ workspace, making name-based references ambiguous.
 ### Import cycle
 
 A dependency path in which following file imports returns to a previously
-visited file.
+visited file. Tag import cycles are allowed: declarations and selections resolve
+collectively, and traversal tracks visited sources and identities. A cycle does
+not merge identities, change visibility, or establish requirement satisfaction.
+Invalid selections within a cycle retain their own resolution errors.
 
 ### Graph
 
@@ -676,7 +742,7 @@ implies approval.
 ### Implementation coverage
 
 The degree to which every material implementation concern has an intentional
-component, expand, or omit decision with a clear owner and location.
+component-owned contract contribution or omit decision with a clear owner and location.
 
 ### Implementation coverage map
 
@@ -690,8 +756,7 @@ behavior and rationale are local, obvious, and safely reconstructable.
 
 ### Colocation
 
-Placing an approved component or implementation-specific expand as near as
-practical to the implementation it owns or explains.
+Placing an approved component declaration as near as practical to the implementation it owns or explains.
 
 ### Placement-only change
 
@@ -1182,7 +1247,7 @@ An anchor whose target can no longer be located.
 | --- | --- |
 | `.sigil/config.json` | Mandatory workspace configuration and workspace-boundary authority. |
 | `.sigil/glossary.json` | Optional reviewed workspace and bounded-context terminology authority. |
-| `_module.sigil` | Explicit directory-import index allowed in any included directory. |
+| `_module.sigil` | Ordinary summary source in the Tag revision; reserved directory index in historical 0.7 tooling. |
 | `.sigil/anchors.json` | Proposed committed sidecar for accepted anchors. |
 | `.sigil/runs/` | Proposed directory for immutable receipt review runs. |
 | `.sigil/latest.json` | Proposed pointer to the latest completed receipt run. |

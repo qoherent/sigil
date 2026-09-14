@@ -31,6 +31,81 @@
 
 ## Unreleased
 
+- Split 0.8 documentation into an example-led [language guide](spec/sigil-language.md),
+  a [normative reference](spec/sigil-reference.md), and [EBNF grammar](spec/sigil.ebnf).
+  Add progressive authoring, uncertainty, revision, and domain examples; define
+  diagnostic stages, recovery, and conformance expectations. Compiler support
+  remains pending.
+- Define exact single-line Tag names without whitespace or Unicode normalization.
+  Hyphens and dots join word segments for references. Inline definitions require
+  whitespace, line boundaries, commas, or periods outside their asterisks;
+  inline backticks have no special protection. Require full-line block layout,
+  allow multiline import lists with an optional trailing comma, and attach one
+  fenced payload per introduction. Its closing fence ends the Embedded Facet.
+  These author-selected rules supersede the earlier 0.8 draft's normalized,
+  wrappable names and underspecified outer asterisk boundaries.
+
+- Reject duplicate inline Tag definitions within a component and duplicate Tag
+  imports within a source in the 0.8.0 specification. Repeated grouping headings
+  and bare prose references remain valid reuse. Compiler support remains pending.
+
+- Clarify 0.8.0 validity: reject repeated contract sections, require nonempty
+  Goal and Interface, keep Tag names case-sensitive, and reject unused imports.
+  Sigil has no comment syntax. Require notation with significant line breaks
+  or indentation to use an attached fenced payload, and correct specification
+  examples to preserve ASCII layout and respect the prose-width limit.
+  These are specification changes; compiler support remains pending.
+
+- Require inline Tag delimiters to touch the name (`*tag*`), replacing optional
+  padding in the earlier 0.8.0 draft. Resolve overlapping prose references by
+  longest complete name. Preserve Tag declarations and references in Embedded
+  Facet introductions, including imported references that count as use. Exclude
+  fenced payloads, complete Inline Links (including labels), and linked content
+  from Tag scanning. Attaching a payload preserves Tag recognition in unchanged
+  introducing prose. These are specification changes; compiler support remains
+  pending.
+
+- Remove `expand` and language-level public/private distinctions from the
+  0.8.0 specification. Place all seven contracts directly in components and
+  allow imports of Tags introduced in any contract. Interpret imported Tags
+  against the provider's complete component design while preserving ownership
+  and selected-name scope. Runtime access remains an implementation design
+  decision. This supersedes the earlier draft's Interface-only exports and
+  import-free expand binding; implementation remains pending.
+
+- Allow Tag import cycles in the 0.8.0 language specification, with collective
+  resolution, terminating import traversal, and preserved ownership and
+  visibility. Circular references alone do not satisfy requirements. Compiler
+  support remains pending.
+
+- Remove the behavior-algebra reference and proposed comparison machinery from
+  the language specification. Mark the behavior algebra as an unaccepted idea
+  and distinguish its recommendations from accepted language requirements.
+- Specify Markdown-style Inline Links as general Facet content references for
+  Markdown documents, API designs, schemas, images, and Figma. Define relative
+  paths from the `.sigil` source, optional titles, preserved fragments, and
+  linked-material interpretation without Tag imports or new Facet boundaries.
+  Include link parsing, source ranges, and formatting in the 0.8 tooling
+  migration; existing tooling is not claimed to implement this content model.
+- Define the Sigil Language 0.8.0 specification with inline `*tag*`
+  introductions, optional whitespace inside the asterisks, and bare reuse.
+  Concept Tags keep the existing grouping-block syntax without asterisks.
+- Replace whole-component and directory namespace imports in the language with
+  `@file.sigil from Component import { tag1, tag two }`, selecting public Tags
+  introduced in Interface. Unmarked Interface prose no longer implicitly
+  declares exported identifiers.
+- Define cross-file expand binding by unique component name in the configured
+  workspace, without a component import, and accept Tag-use references in all
+  seven contracts.
+- Consolidate the former root `language.md` into
+  [the language reference](spec/sigil-reference.md), preserving its governing
+  semantics except where the 0.8.0 Tag revision explicitly changes them.
+- Make the specification a standalone description of 0.8.0. Move historical
+  comparisons, tooling status, repository migration work, and the rejected
+  anchor proposal into the [migration guide](spec/migrating-to-0.8.md).
+  Parser, resolver, formatter, editor, and compiler support for 0.8.0 remains
+  pending; these entries record language and documentation changes.
+
 - Extract the Codex CLI adapter into `@qoherent/sigil-compiler-adapter-codex`,
   registered from the CLI like its sibling adapter packages. The compiler is now
   provider-neutral: it constructs no provider implementation, and an evaluator

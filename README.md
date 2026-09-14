@@ -52,6 +52,16 @@ VS Code extension releases are currently available as manually installable
 publishing remains deferred.
 
 
+The [language guide](spec/sigil-language.md) teaches the upcoming 0.8.0 language;
+the [normative reference](spec/sigil-reference.md) and [EBNF grammar](spec/sigil.ebnf)
+define its rules:
+inline `*Tags*`, unchanged Concept Tag grouping syntax, and explicit imports
+such as `@search/records.sigil from RecordSearch import { query, search results }`.
+All seven contracts belong directly to components; `expand` and language-level
+public/private distinctions are removed. Tags introduced in any contract may
+be imported. The installed tooling and walkthrough below still target 0.7.0; see the
+[Tag migration guide](spec/migrating-to-0.8.md).
+
 ## Seven Words
 
 Sigil's authored language revolves around seven contract kinds:
@@ -182,7 +192,7 @@ expand SearchPublication {
 }
 ```
 
-Read [more about the syntax here.](language.md)
+Read [more about the syntax here.](spec/sigil-language.md)
 
 ## What Just Changed
 
@@ -577,7 +587,7 @@ The problem statement that lead us to Sigil is captured in [PROBLEM.md](PROBLEM.
 | Setting up a repository properly | [Setting Up A Project](docs/setting-up-a-project.md)                                    |
 | Code exists, contracts do not    | [Setting Up A Project](docs/setting-up-a-project.md#adopting-into-an-existing-codebase) |
 | Designing something new          | [Greenfield Design](integrations/skills/sigil/references/greenfield-design.md)          |
-| Writing Sigil, need the syntax   | [Language Specification](spec/sigil-language.md)                                        |
+| Writing Sigil, need the syntax   | [Language Guide](spec/sigil-language.md)                                        |
 | Tuning `.sigil/config.json`      | [Config Reference](spec/sigil-config.md)                                                |
 | Upgrading an existing workspace  | [Compatibility](COMPATIBILITY.md), then the `spec/migrating-to-*.md` for your target    |
 | Changing Sigil itself            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                      |
@@ -764,7 +774,9 @@ is a concise agent-facing guide. The
 [standards review](integrations/skills/sigil/references/standards-review.md) and
 [brownfield adoption](integrations/skills/sigil/references/brownfield-adoption.md)
 references define the corresponding host-side workflows. The canonical language
-specification remains [spec/sigil-language.md](spec/sigil-language.md).
+specification is [spec/sigil-reference.md](spec/sigil-reference.md), with the
+[EBNF grammar](spec/sigil.ebnf). The [language guide](spec/sigil-language.md)
+provides authoring explanations and examples.
 
 ## Current Status
 

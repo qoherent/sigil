@@ -25,10 +25,8 @@ component Slotted {
 
         exposes confirmed bookings, canceled bookings, and booking conflicts
     }
-}
 
-expand Slotted {
-    state {
+        state {
         room can be draft, available, unavailable, or archived
 
         booking can be requested, confirmed, or canceled

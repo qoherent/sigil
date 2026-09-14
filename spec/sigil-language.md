@@ -1,879 +1,972 @@
-# Sigil Language Specification
+# Sigil Language Guide
 
-**Sigil version:** 0.7.0
-**Status:** Accepted
-**Released:** 2026-08-04
+**Language version:** 0.8.0, unreleased; compiler support is pending.
 
-Sigil is a lightweight, rationale-oriented modeling language for software systems.
-It records what a system part is, why it exists, how it interacts with its surroundings, and which decisions should guide implementation.
+This guide teaches humans and coding agents how to read, write, and revise
+Sigil. The [Language Reference](sigil-reference.md) and its
+[EBNF grammar](sigil.ebnf) define the language. This guide explains their use;
+its examples and authoring advice do not introduce additional language rules.
 
-Sigil is intentionally readable by humans and coding agents.
-The language favors durable understanding over strict syntax.
+The repository's installed tools and checked-in `.sigil` contracts still use
+0.7. Do not change a workspace version or claim that these examples pass the
+current compiler. See [Migrating to 0.8](migrating-to-0.8.md).
 
-## 1. Purpose
+## Contents
 
-Sigil captures component-level rationale before, during, and after implementation.
-It is designed to preserve the understanding that can otherwise disappear during long agent-assisted coding sessions.
-The goal is not only to describe what code should do, but to keep reasons, boundaries, and review context durable enough for humans to stay accountable for the system.
+1. [Write a small component](#1-write-a-small-component)
+2. [Develop a design from a requirement](#2-develop-a-design-from-a-requirement)
+3. [Choose the right contract](#3-choose-the-right-contract)
+4. [Choose component and Facet boundaries](#4-choose-component-and-facet-boundaries)
+5. [Introduce Tags when identity helps](#5-introduce-tags-when-identity-helps)
+6. [Group related Facets](#6-group-related-facets)
+7. [Connect components with imports](#7-connect-components-with-imports)
+8. [Use diagrams, code, and linked material](#8-use-diagrams-code-and-linked-material)
+9. [Keep uncertainty visible](#9-keep-uncertainty-visible)
+10. [Revise an existing design](#10-revise-an-existing-design)
+11. [Review before implementation](#11-review-before-implementation)
+12. [Examples in other domains](#12-examples-in-other-domains)
+13. [Workspace and authoring reminders](#13-workspace-and-authoring-reminders)
 
-A Sigil component can describe:
+## 1. Write a small component
 
-- a product module;
-- a service boundary;
-- a domain concept;
-- a library abstraction;
-- an API object;
-- a state machine;
-- a screen, view, or reusable user-interface surface;
-- an architecture boundary;
-- any other coherent unit whose intent should survive code generation.
+Sigil records what a part of a system does, the rules it follows, and the reasons
+behind its design. A **component** owns a responsibility. Its **contracts**
+organize the different kinds of statements about that responsibility.
 
-Sigil is not limited to business application features.
-It can describe programming abstractions, user-facing modules, infrastructure boundaries, workflows, policies, or internal architecture.
+Start with the two required contracts: `goal` and `interface`.
 
-## 2. Source Files
-
-Sigil source files use the `.sigil` extension.
-
-The directory-index filename is `_module.sigil`.
-It may appear in any directory where the file itself is selected by the
-workspace configuration and defines the component names that resolve through
-directory-import shorthand for that directory.
-It does not grant or restrict component visibility.
-Every `_module.sigil` must declare at least one local component; an imports-only
-index is invalid.
-The legacy `#module.sigil` filename is an ordinary Sigil source and is selected
-only by an explicit file import.
-
-A strict JSON `.sigil/config.json` is required at the workspace root.
-It selects the Sigil version and defines workspace file discovery. The config
-contract is defined in [sigil-config.md](sigil-config.md).
-
-Sigil files are plain text.
-The outer structure is restricted, but section bodies are free-form text.
-
-Sigil files should live as near as practical to the code they describe.
-The default placement is beside the corresponding module, feature, abstraction, or implementation files.
-
-When the public `component` must live in a root, shared, or contract-oriented Sigil file, colocated `expand Name` blocks may still live beside the code they explain.
-Because expands are collective, nearby expands can add implementation-specific rationale without moving the main component contract.
-
-Every component declaration is public and may be imported through its explicit
-`.sigil` source path whether or not a module index names it. A module index only
-selects the names available through a directory import. It may declare
-components itself and may name components through direct imports. Sigil has no
-export or re-export form.
-
-At configured workspace boundaries, the Brownfield workflow maintains ordinary
-project-summary components in the workspace-root and declared-member
-`_module.sigil` files. Those summaries use normal component and expand semantics;
-they have no special parser or resolver status. Internal directories may use
-`_module.sigil` as an index without a project summary, but the index still
-declares at least one local component.
-
-### Module indexes
-
-A directory import resolves to `_module.sigil` in the target directory. Its
-directory-import surface consists of:
-
-- components declared directly in that `_module.sigil`;
-- component names successfully resolved by direct imports in that file.
-
-An imports-only `_module.sigil` produces
-`SIGIL_MODULE_WITHOUT_COMPONENT` while retaining independently resolved names
-in its partial directory-import surface.
-
-Other files beneath the directory, unnamed dependencies of indexed components,
-and components imported only by those indexed files are not added implicitly.
-They remain public through explicit file imports. Explicit chains of module
-indexes converge to a least fixed point, including through cycles. Contributions
-of the same declaration identity deduplicate. A name contributed by distinct
-declarations is absent from the exposed surface while unaffected names remain
-available.
-
-### Workspace and project vocabulary
-
-A **Sigil workspace** is the tooling boundary controlled by one
-`.sigil/config.json`. The **workspace root** is the directory containing that file.
-
-A **project** is a coherent app, service, library, package, or other system
-represented by an ordinary summary component at a configured workspace
-boundary. The workspace root is the **root project** location.
-
-A **workspace member** is an additional project explicitly declared by
-`workspace.members`. Its declared directory is its **member root**. A workspace
-with one or more members is a **monorepo workspace**.
-
-An **independent workspace** is an excluded nested directory containing its own
-`.sigil/config.json`. It is not a workspace member of its parent.
-
-## 3. Top-Level Forms
-
-Sigil currently defines three top-level forms:
+**Complete source — `search/panel.sigil`, first version:**
 
 ```sigil
-@packages/cli import { SigilCli }
-@sub/folder/auth.sigil import { Auth }
-
-component Name {
+component SearchPanel {
   goal {
-    why this component exists
+    Help a user find records by their search text.
   }
 
   interface {
-    PublicBehavior {
-      how this component interacts with the outside world
-    }
+    Accept search text and display matching records.
+
+    Show an empty result message when no records match.
   }
 }
+```
 
-expand Name {
+`goal` explains why this component exists. `interface` describes what it offers
+its user. Each blank-line-separated paragraph is a **Facet**: one authored
+contribution that can be discussed and reviewed. This component has three Facets.
+Wrapping a paragraph over several physical lines does not add Facets.
+
+You do not need Tags, grouping blocks, imports, or all seven contracts to begin.
+Goal and Interface must each contain content. The other contracts are optional;
+add them when the design has something useful to say in their roles.
+
+Examples in this guide describe hypothetical designs. They are not requirements
+for your project. Blocks labeled **complete source** can stand alone in a
+workspace with the indicated dependencies. **Fragments** need the stated
+surrounding structure. **Invalid examples** illustrate mistakes. Successive
+versions of the running example replace the earlier version; do not concatenate
+them into duplicate component declarations.
+
+## 2. Develop a design from a requirement
+
+Continue the SearchPanel example with this requirement:
+
+> Users can replace or cancel a search. A late response must not undo either
+> action. A failed search displays an error and allows another attempt.
+
+First identify what the requirement establishes: replacement, cancellation,
+late-response handling, and failure feedback. It does not establish a database,
+transport library, timeout, or automatic retry policy.
+
+For this example, the author chooses four lifecycle states and records why
+only the active request may publish. Those are explicit design choices made
+while developing the requirement.
+
+**Complete source — replacement for `search/panel.sigil`:**
+
+```sigil
+component SearchPanel {
+  goal {
+    Help a user find records by their search text.
+  }
+
+  interface {
+    Accept search text and display matching records.
+
+    Show an empty result message when no records match.
+
+    Let the user replace or cancel an active search.
+
+    Show a search error when a request fails and allow another attempt.
+  }
+
   state {
-    RuntimeState {
-      meaningful configurations that persist or change during execution
-    }
+    The search is idle, loading, ready, or failed.
+
+    At most one request is the active request.
   }
 
   logic {
-    behavior, flows, algorithms, transformations, decision paths, and lifecycle transitions
+    Submitting search text starts loading and replaces the active request.
+
+    A successful active request enters ready and displays its results.
+
+    A failed active request enters failed and displays a search error.
+
+    Cancelling clears the active request and returns the search to idle.
   }
 
   constraints {
-    rules, policies, invariants, and decisions the implementation must obey
+    Only the active request may publish results or an error.
   }
 
   decisions {
-    PersistenceChoice {
-      Decision: Use PostgreSQL.
+    Keep the active request authoritative because responses can arrive out
+    of submission order, including after cancellation.
+  }
 
-      Scope: Governs payment persistence and transaction handling.
+  cases {
+    A successful search with no matches shows the empty result message.
+
+    A request fails; the user sees an error and can submit another search.
+
+    A response arrives after cancellation; it does not change the display.
+
+    An older response arrives after a newer result; the newer result remains.
+  }
+}
+```
+
+Each addition has a purpose. State names the configurations. Logic describes
+changes between them. Constraints gives the rule those changes must respect.
+Decisions explains the choice. Cases makes difficult event orderings reviewable.
+
+This example uses all seven contracts because the requirement benefits from
+all seven. It is not a template that every component must fill out. Nor does
+it settle every search-product question: whether old results remain visible
+while a new request loads would need a separate decision if it matters to the
+current implementation task.
+
+A practical authoring sequence is:
+
+1. State the responsibility and its boundary.
+2. Describe the interactions required by the task.
+3. Add relevant state, behavior, and binding rules.
+4. Record important reasons and unresolved choices.
+5. Check the design against a normal case and its material failure cases.
+6. Introduce names and grouping where they make these contributions easier to use.
+
+For an agent, the task and available evidence bound this work. Do not silently
+turn a plausible implementation preference into an authored requirement.
+
+## 3. Choose the right contract
+
+Use this table while deciding where a contribution belongs:
+
+| Contract | Question it answers | Search example |
+| --- | --- | --- |
+| `goal` | Why does this responsibility exist? | Help users find records. |
+| `interface` | What interaction or observable promise is offered? | Users can cancel a search. |
+| `state` | What data, modes, or conditions matter? | A search is idle, loading, ready, or failed. |
+| `logic` | What happens, and in what order? | Cancelling clears the active request. |
+| `constraints` | What must remain true or is forbidden? | Only the active request may publish. |
+| `decisions` | Why was a course chosen? | Late responses must not undo a newer action. |
+| `cases` | What happens in a particular situation? | A response after cancellation leaves the display unchanged. |
+
+### Related statements can have different roles
+
+Cancellation belongs in several contracts because each contribution answers a
+different question. You do not need to repeat the same sentence seven times.
+An Interface promise describes what a caller can rely on; Logic explains the
+behavior that delivers it; a Constraint can restrict all relevant paths.
+
+State can describe runtime or domain data without prescribing storage. A schema
+belongs there when its shape carries domain meaning. A selected persistence
+technology belongs in Constraints, with its rationale in Decisions.
+
+For a UI, put visible regions and user actions in Interface, changing modes in
+State, interaction behavior in Logic, binding accessibility or responsive rules
+in Constraints, and observable scenarios in Cases.
+
+### Separate a binding choice from its reason
+
+**Fragment — two sections inside one component:**
+
+```sigil
+constraints {
+  ResultAuthority {
+    Only the active request may publish results.
+  }
+}
+
+decisions {
+  ResultAuthority {
+    Keep the active request authoritative because completion order can differ
+    from submission order.
+
+    Allowing every response to publish was rejected because an older response
+    could replace newer results.
+  }
+}
+```
+
+ResultAuthority is a grouping name used in both contracts. The first Facet
+states a rule. The others explain it. A rejected alternative is not a requested
+feature. A rationale paragraph alone should not be the only place a binding
+technology or architecture choice is recorded.
+
+### Write Cases that expose a decision
+
+Weak: "Cancellation works correctly."
+
+Better: "A response arrives after cancellation; it does not change the display."
+
+The second gives a situation and an observation a reviewer can assess. Useful
+Cases include empty data, invalid input, cancellation, partial failure, retry,
+and inconvenient event ordering, when relevant to the component.
+
+Say whether an outcome is required or merely permitted. One concrete example
+does not automatically establish a rule for every input.
+
+A Case can be meaningful before tests exist. Later, distinguish whether a test
+covers its situation, whether the assertions agree, whether production behavior
+satisfies it, and whether the test was actually executed. A matching test name
+or a mocked helper does not answer all of those questions.
+
+## 4. Choose component and Facet boundaries
+
+A component can describe an API, screen, policy, library, data model, workflow,
+service, or architectural boundary. It need not correspond to one implementation
+file, class, or process.
+
+Keep SearchPanel and payment settlement separate: they serve different
+responsibilities and change for different reasons. Keep SearchPanel's
+cancellation behavior with SearchPanel: it explains the same responsibility.
+Do not create a new component just because a paragraph is long.
+
+Each component has one declaration with a workspace-unique name. All its
+contracts belong there. Splitting a declaration across files with `expand` is
+not part of 0.8. File placement is an organizational choice, but moving a source
+requires updating its import paths and relative content links.
+
+### Give independently reviewable ideas separate Facets
+
+**Fragment — two Facets in a Constraints section:**
+
+```sigil
+constraints {
+  A cancelled request cannot publish results.
+
+  Search text is retained when a request fails.
+}
+```
+
+These rules can be reviewed and changed independently. Conversely, keep related
+clauses together when splitting them would obscure the contribution:
+
+**Fragment — one Facet:**
+
+```sigil
+logic {
+  When the active request fails, enter the failed state and display its error.
+}
+```
+
+Keep a block's opening brace on its header line and its closing brace on its
+own line. Inline expressions such as `Return { enabled: true }.` can remain prose.
+
+Grouping headers are not Facets. Blank lines separate Facets; legal physical wrapping
+within a paragraph does not. Review paragraph splits and merges as changes to
+authored units even when the individual sentences are unchanged.
+
+## 5. Introduce Tags when identity helps
+
+A **Tag** gives a design concept a reusable identity owned by its component.
+Introduce it inline with adjacent asterisks, then use its name without them.
+
+**Fragment — an alternative Interface for a search component:**
+
+```sigil
+interface {
+  A *query* contains search text and filters.
+
+  The *search results* contain matching records in display order.
+
+  Accept a query and display search results.
+}
+```
+
+The first two Facets introduce names. The third refers to those identities.
+Multiword names are allowed. Names are case-sensitive: Query and query differ.
+Names are exact: repeated spaces, tabs, and Unicode spelling differences are
+not normalized. For example, `search results` and `search  results` differ.
+Keep each complete Tag name on one physical line in definitions and references.
+Wrap surrounding prose without splitting the name.
+
+Use a Tag when naming the same concept across contributions or components
+clarifies the design. Leave a one-off explanation untagged when an identity adds
+nothing. The word "example" does not need a Tag just because a paragraph presents
+an example.
+
+### Define once; reuse afterward
+
+**Invalid fragment — two inline definitions in one component:**
+
+```text
+interface {
+  A *query* contains search text.
+}
+
+logic {
+  Reject a *query* with no searchable text.
+}
+```
+
+**Corrected Logic fragment:**
+
+```sigil
+logic {
+  Reject a query with no searchable text.
+}
+```
+
+The second occurrence reuses query. It does not redefine it. This remains true
+when the occurrences are in different contracts of the same component.
+
+### Read the actual reference, not just its typography
+
+Known names in eligible prose become references without extra markup. Unknown
+words remain ordinary prose; a typo does not necessarily produce an error.
+A Tag named order is not referenced inside pre-order or order.status.
+
+When search, results, and search results are accessible, "Display search results"
+references the longest name, search results. Adding a longer name can therefore
+change references in existing prose. Review affected wording when vocabulary
+changes; do not rely only on whether the source remains valid.
+
+Asterisks are Tag syntax in prose, not Markdown emphasis. Write `*query*` for a
+definition; `* query *` does not introduce it. Fenced payloads and complete
+Inline Links do not introduce or reference Tags. A definition also needs whitespace, a line
+boundary, a comma, or a period outside each asterisk. Thus `a *query*.` defines
+query, but `` `*query*` `` does not: backticks are not allowed outer boundaries.
+Inline backticks have no special effect in `.sigil` prose; an already accessible
+name can still be referenced within them. Use a fenced payload when literal
+notation must stay outside Tag scanning. See the
+[reference's Tag rules](sigil-reference.md#tags-and-references) for exact matching.
+
+## 6. Group related Facets
+
+A **Concept Tag** is a local Tag used as a grouping heading. It connects related
+Facets while keeping each Facet's contract role.
+
+**Fragment — two sections inside one component:**
+
+```sigil
+interface {
+  search lifecycle {
+    Start a search from the caller's query.
+
+    Cancel the active search.
+  }
+}
+
+logic {
+  search lifecycle {
+    Cancelling prevents the active request from publishing results.
+  }
+}
+```
+
+Headings use bare names, including the first occurrence. Repeated headings reuse
+one local identity. They are not duplicate inline definitions. You may also
+use an inline-defined local Tag as a heading.
+
+**Complete source — inline definition and grouping reuse:**
+
+```sigil
+component Session {
+  goal {
+    Manage one authenticated session.
+  }
+
+  interface {
+    The *session lifecycle* starts when credentials are accepted.
+
+    session lifecycle {
+      Signing out ends the session.
+
+      Expiry requires new credentials.
+    }
+  }
+}
+```
+
+The Interface contains three Facets. The header is not a fourth. Direct and
+grouped Facets can coexist. Groups are flat and nonempty; do not nest them.
+
+Use grouping for a recurring concern with several contributions. Keep a lone
+Facet direct when a heading would only repeat its first words. Sharing a heading
+connects contributions but does not make different actions or resources the
+same thing.
+
+## 7. Connect components with imports
+
+Imports select Tags from their owning component in an explicit source file.
+Introduce a Tag locally when your component owns it; import it when your design
+needs to refer to the provider's identity.
+
+**Complete two-source example — both files belong to one configured workspace.**
+
+**Provider — `search/service.sigil`:**
+
+```sigil
+component SearchService {
+  goal {
+    Find records matching a caller's request.
+  }
+
+  interface {
+    A *query* contains search text and filters.
+
+    The *search results* contain matching records in display order.
+
+    *submit* accepts a query and produces search results.
+  }
+}
+```
+
+**Consumer — `screens/search.sigil`:**
+
+```sigil
+@search/service.sigil from SearchService import { query, search results, submit }
+
+component SearchScreen {
+  goal {
+    Let the user find and inspect records.
+  }
+
+  interface {
+    Accept a query and display search results.
+  }
+
+  logic {
+    Pass the user's query to submit and display the returned search results.
+  }
+}
+```
+
+Long selections can use multiple lines and an optional trailing comma:
+
+**Alternative import statement — replaces the one above:**
+
+```sigil
+@search/service.sigil from SearchService import {
+  query,
+  search results,
+  submit,
+}
+```
+
+Each name stays on one physical line. The import selects three Tags.
+`from SearchService` identifies their owner; it
+is not a component namespace import. The Logic Facet explicitly describes the
+invocation. Importing or mentioning a Tag alone would not establish that call.
+
+SearchService owns the Tags. SearchScreen owns its Facets and the behavior they
+describe. A consumer's requirements do not rewrite its provider upstream.
+
+### Import only names you use
+
+Every selected Tag needs a prose reference in the importing source. References
+in any contract count, including Goal and Decisions. A name appearing only in
+a link label or fenced payload does not count. Repeated imports of the same
+Tag are errors, including across separate import statements.
+
+Only selected names become accessible. To interpret one imported Tag, however,
+read it in the provider's complete component design, including relevant untagged
+Facets. Selective naming does not mean that all other provider context can be
+ignored. A provider's imports are not automatically imported into the consumer.
+
+### Keep imported names out of local grouping headings
+
+If Search is imported, use a local heading such as SearchPresentation and refer
+to Search in its prose. A heading named Search would create or reuse a local
+Tag and collide with the import. A heading never adopts the provider's identity.
+
+Two providers can own different Tags named status, but importing both into one
+source is ambiguous. There are no aliases or qualified Tag references in 0.8.
+Choose distinct provider vocabulary where appropriate; do not pretend renaming
+an unrelated local heading resolves two colliding imports.
+
+Imports are file-scoped. If several components share a source, its imports are
+accessible in each and can collide with any component's local vocabulary.
+
+### Tags from State are also importable
+
+**Complete two-source example — independent of the search examples above.**
+
+**Provider — `jobs/worker.sigil`:**
+
+```sigil
+component JobWorker {
+  goal {
+    Process a submitted job.
+  }
+
+  interface {
+    Accept a job and report whether work is active.
+  }
+
+  state {
+    The worker is *Idle* or *Running*.
+  }
+}
+```
+
+**Consumer — `screens/job-status.sigil`:**
+
+```sigil
+@jobs/worker.sigil from JobWorker import { Running }
+
+component JobStatus {
+  goal {
+    Explain whether the user's job is being processed.
+  }
+
+  interface {
+    Show an activity indicator while the worker reports Running.
+  }
+}
+```
+
+Tags in any contract can be imported. Importability does not grant runtime
+access to private data or override an access restriction. The design still
+needs an interaction that supplies the information; here the worker offers it.
+
+A component with no Tags is valid but has no Tags to import. Imports describe
+vocabulary dependencies; they are not a complete inventory of runtime calls or
+architectural relationships. Express those relationships in the contracts.
+
+## 8. Use diagrams, code, and linked material
+
+Choose a representation that makes the contribution easier to understand.
+Ordinary paragraphs work well for concise statements. Put notation that depends
+on line breaks or indentation in a fenced payload directly after its introduction.
+The introduction and payload form one **Embedded Facet**. Each introduction
+attaches one payload. Its closing fence ends the Facet; any following prose
+starts a new one. Give a second payload its own introduction.
+
+### A lifecycle diagram
+
+**Complete source — `delivery.sigil`:**
+
+````sigil
+component Delivery {
+  goal {
+    Deliver a submitted message and report its outcome.
+  }
+
+  interface {
+    Accept a message and expose pending, delivered, or failed status.
+  }
+
+  logic {
+    A submitted message follows this lifecycle:
+    ```mermaid
+    stateDiagram-v2
+      [*] --> Pending
+      Pending --> Delivered: accepted by destination
+      Pending --> Failed: delivery rejected
+    ```
+  }
+}
+````
+
+The diagram contributes Logic. Its labels do not create Sigil Tags. If an
+imported Tag connects the diagram to another component, mention that Tag in the
+introducing prose. Attaching a fence preserves Tag recognition in that prose.
+
+### A value shape or a layout
+
+**Fragment — a shape in Interface:**
+
+````sigil
+interface {
+  A search response has this shape:
+  ```json
+  {
+    "records": [],
+    "nextCursor": null
+  }
+  ```
+}
+````
+
+Explain separately whether the JSON is an illustrative value or an exhaustive
+shape when that distinction matters. A language label does not settle its role.
+
+**Fragment — a layout in Interface:**
+
+````sigil
+interface {
+  Place date navigation above the room calendar:
+  ```text
+  +------------------------------------------+
+  | Previous | July 2026 | Next               |
+  +------------------------------------------+
+  | Room     | Confirmed bookings            |
+  +------------------------------------------+
+  ```
+}
+````
+
+Keep the opening fence adjacent to its introduction. A blank line between them
+would detach it. Markdown lists, tables, multiline code, pseudocode, and ASCII
+sketches also need fenced payloads when their layout carries meaning.
+
+### Link to material with an explicit role
+
+An **Inline Link** uses `[label](destination)` in a Facet. Local relative paths
+resolve from the source file's directory, unlike imports, which start at the
+workspace root. Query strings and fragments select material within the target.
+
+**Fragments — require the referenced artifacts; placeholder URLs are illustrative:**
+
+```sigil
+interface {
+  Follow the layout in
+  [Calendar design](https://www.figma.com/design/EXAMPLE/Calendar?node-id=1-2).
+}
+
+constraints {
+  Requests must satisfy
+  [request schema](./openapi.yaml#/components/schemas/Request).
+}
+
+decisions {
+  The [design rationale](./search-design.md#alternatives) explains why the
+  selected layout groups navigation above the calendar.
+}
+```
+
+"Must satisfy" adopts a requirement; "explains why" provides rationale. State
+which aspects of a design image are binding and which are suggestions. A link
+label, filename, or Figma URL cannot make that choice for you. Markdown image
+syntax can also present an image within prose.
+
+A complete link, including its label, is outside Tag scanning. Write the Tag
+reference in surrounding prose when you need both relationships:
+
+**Fragment — request shape is defined outside the link:**
+
+```sigil
+interface {
+  The *request shape* follows [API design](./api-design.md#request).
+}
+```
+
+Read required linked material before relying on it. If the target or fragment
+is unavailable, report the gap; do not invent its contents. A source can parse
+successfully while its interpretation remains incomplete.
+
+Manage versions of external requirements deliberately. The language does not
+pin linked documents or automatically reevaluate them when they change.
+Conflicting adopted requirements need an explicit resolution. A fence is not
+execution, and embedded code is not automatically evidence of production behavior.
+
+## 9. Keep uncertainty visible
+
+Suppose the requirement says "search supports retries" but does not specify
+whether retry is manual or automatic. That gap can materially change behavior.
+Do not quietly choose a retry count and place it in Constraints.
+
+**Complete source — a deliberately incomplete design under discussion:**
+
+```sigil
+component RetriableSearch {
+  goal {
+    Let a user recover from a failed search.
+  }
+
+  interface {
+    Permit another attempt after a failed search.
+  }
+
+  decisions {
+    Open question: Should retries require a user action or happen automatically?
+
+    Proposal: Require an explicit user action to avoid unexpected requests.
+    This choice has not been accepted.
+
+    Assumption to verify: Repeating a search has no external side effects.
+  }
+}
+```
+
+These labels are ordinary prose, not new keywords, status fields, or comments.
+The wording makes the unresolved choice explicit. The proposal and assumption
+are not established requirements. The example is structurally complete but
+not ready for implementation of retry behavior.
+
+Once the author accepts a choice, update the affected Interface, Logic,
+Constraints, and Cases as needed, then record the durable rationale in
+Decisions. Remove or resolve obsolete questions rather than leaving contradictory
+instructions scattered through the component.
+
+An agent should identify the smallest question that blocks the requested work,
+continue independent work, and preserve the answer in the appropriate contract.
+A human reviewer should check that inferred preferences have not become binding
+rules without a design decision.
+
+## 10. Revise an existing design
+
+Start by reading the owning component, its existing vocabulary, and the imported
+or linked material relevant to the change. Reuse existing Tags rather than
+introducing the same name again.
+
+For the running SearchPanel, suppose the user adds this requirement:
+
+> Keep the search text after a failed request so the user can correct it.
+
+**Before — existing Logic Facet:**
+
+```text
+A failed active request enters failed and displays a search error.
+```
+
+**After — replacement Logic Facet:**
+
+```text
+A failed active request enters failed, displays a search error, and retains
+its search text for correction.
+```
+
+**Additional Case Facet:**
+
+```text
+A search fails; the user corrects the retained search text and submits again.
+```
+
+This edit changes the existing Logic section and adds a Facet to the existing
+Cases section. It does not create a second `logic` or `cases` section. The
+active-request authority rule and its reason still apply.
+
+Review related contracts for agreement. Add a separate Constraint if retention
+must hold across a broader set of failure paths; do not duplicate the same
+statement everywhere merely to fill sections.
+
+When editing vocabulary or moving content:
+
+- Keep one inline definition per Tag name in a component.
+- Check longer names for changed reference matches in existing prose.
+- Check imports for duplicates, unused selections, and local/name collisions.
+- Preserve Facet ownership and distinguish consumer requirements from provider behavior.
+- Update imports when a provider source moves; rebase relative links when a Facet moves.
+- Keep diagrams, adopted schemas, and Cases consistent with the revised behavior.
+- Preserve meaningful paragraph boundaries and rationale still relevant to the choice.
+
+## 11. Review before implementation
+
+A useful review asks whether a reader can explain what to build and identify
+what remains undecided. Syntactic validity alone does not establish that.
+
+| Review question | What to look for |
+| --- | --- |
+| Is the responsibility bounded? | One understandable purpose and clear interactions with adjacent components. |
+| Is the requested behavior concrete? | Relevant inputs, outcomes, transitions, and material failure handling. |
+| Are the roles clear? | Binding rules, reasons, examples, and proposals remain distinguishable. |
+| Is the vocabulary intentional? | Useful Tags, one inline definition each, correct ownership and imports. |
+| Are the examples informative? | Cases expose real choices instead of saying only that a feature works. |
+| Is required context available? | Relevant provider design and adopted linked material have been read. |
+| Is uncertainty visible? | Unresolved choices that could change implementation are called out. |
+| Can the change be assessed? | Related contracts, links, and Cases agree with the revised requirement. |
+
+Stop when the design is reviewable at the task's scope. Optional sections may
+remain absent. Record material open questions instead of manufacturing detail
+to make the document look finished.
+
+For agent-assisted work, distinguish authored intent, inferred conclusions,
+implementation observations, and executed checks in the review report. Do not
+claim compiler validation with a tool that does not support the source version.
+
+## 12. Examples in other domains
+
+Each example below is a complete independent source. The chosen policies belong
+to that example and should not be copied into unrelated projects as defaults.
+
+### A small library abstraction
+
+```sigil
+component BoundedQueue {
+  goal {
+    Buffer work while bounding the number of pending items.
+  }
+
+  interface {
+    Accept an item when space is available and report full otherwise.
+
+    Remove the oldest pending item, or report empty.
+  }
+
+  state {
+    Pending items have insertion order and a fixed positive capacity.
+  }
+
+  constraints {
+    The number of pending items never exceeds capacity.
+  }
+
+  cases {
+    An insertion into a full queue reports full and preserves pending items.
+
+    Removing twice after inserting A then B returns A then B.
+  }
+}
+```
+
+This design needs no Tags or grouping. Capacity and ordering can be discussed
+clearly without introducing extra identities. It also leaves implementation
+choices such as arrays versus linked storage open.
+
+### A domain data model
+
+```sigil
+component ReservationWindow {
+  goal {
+    Describe the time interval occupied by a reservation.
+  }
+
+  interface {
+    Accept a start instant and an end instant.
+
+    Report whether an instant falls within the reservation.
+  }
+
+  state {
+    The window stores its start and end as absolute instants.
+  }
+
+  logic {
+    An instant is within the window when it is at or after the start and
+    strictly before the end.
+  }
+
+  constraints {
+    The end must be later than the start.
+  }
+
+  cases {
+    The start instant is within the window; the end instant is outside it.
+  }
+}
+```
+
+State describes meaningful domain data. It does not prescribe a database table.
+The Case makes the boundary convention observable.
+
+### A policy with a binding decision and rationale
+
+```sigil
+component AuditRetention {
+  goal {
+    Bound how long completed audit records remain available.
+  }
+
+  interface {
+    Evaluate whether a completed audit record is eligible for deletion.
+  }
+
+  constraints {
+    RetentionPeriod {
+      Keep completed audit records for at least 30 days after completion.
+    }
+  }
+
+  decisions {
+    RetentionPeriod {
+      Decision: Use a 30-day minimum for this example's audit history.
+
+      Scope: Completed audit records only; active records are excluded.
+
+      Trade-offs: Longer history would cost more storage.
+
+      Discarded alternatives: Immediate deletion was rejected because recent
+      incidents need investigation.
+
+      Revisit when: Investigation needs require a longer history.
     }
   }
 
   cases {
-    externally observable examples, acceptance criteria, and edge cases
+    A record completed 29 days ago is not eligible for deletion.
   }
 }
 ```
 
-`import` makes named components from another Sigil file available to the current file.
-`component` defines the public goal and interface of a system part.
-`expand` adds deeper operational detail for an existing component.
+The labels are optional authoring conventions. A short decision can stay
+unlabeled. Useful additional labels include `Assumptions:`,
+`Design issues addressed:`, and `Consequences:`. Keep each paragraph focused on
+one contribution. Explain important exclusions without listing every dependent.
 
-## 4. Imports
-
-An `import` declares that the current Sigil file depends on named components
-from another Sigil source. It makes their public goals, interfaces, and public
-concept identifiers available to the importer. Matching expands remain private
-to the provider unless that provider is itself selected for review or
-implementation.
-
-Import syntax:
+### An architectural boundary
 
 ```sigil
-@path import { Name }
-@path import { Name, OtherName }
-```
-
-Import paths begin with `@`.
-The `@` prefix resolves from the Sigil workspace root.
-
-Tools discover the workspace by walking upward from the current file or command target and selecting the nearest ancestor `.sigil/config.json` whose root is excluded by every higher configured workspace.
-An explicit root must contain `.sigil/config.json` directly.
-Missing configs and configs nested inside included paths are errors. Configs inside excluded subtrees define independent workspaces, and tools do not fall back to `_module.sigil` discovery.
-
-A directory import resolves to `_module.sigil` in the target directory.
-
-```sigil
-@packages/cli import { SigilCli }
-```
-
-Given this file layout:
-
-```text
-packages/cli/_module.sigil
-packages/cli/deno.json
-```
-
-`@packages/cli import { SigilCli }` resolves through its `_module.sigil`.
-The directory does not need to be declared in `workspace.members`; the target
-module index only needs to be included in the selected workspace.
-
-A file import resolves to the exact `.sigil` file.
-
-```sigil
-@sub/folder/auth.sigil import { Auth }
-```
-
-`@sub/folder/auth.sigil import { Auth }` resolves through `sub/folder/auth.sigil`.
-
-Importing `Name` from an explicit file resolves a component declared in that
-file. Importing it from a directory resolves the name through the target module
-index. In both cases it makes only the public component contract and its public
-concept identifiers available to the importer.
-
-Imported names are case-sensitive and should match the spelling of the component declaration.
-
-Imports are explicit dependency edges between Sigil files.
-They do not copy text into the importing file.
-They make the referenced public component contract available for interpretation,
-review, and implementation context. Private expansion detail is available only
-when the provider is explicitly selected.
-
-An imported name must resolve to a `component Name` in the explicit source or
-the directory index's local declarations and direct imports.
-An import that resolves only to `expand Name` without `component Name` is unresolved.
-
-Import paths are normalized lexically from the workspace root. Backslashes become
-slashes, repeated slashes and `.` segments collapse, and an internal `..` removes
-one preceding segment. A leading or excess `..` is outside-workspace traversal and
-remains unresolved. A normalized path ending in `.sigil` selects that exact file;
-other paths select the directory's `_module.sigil`.
-
-Component names are unique across the workspace. When the same exact name is
-declared more than once, every declaration is retained and diagnosed, but that
-name binds no import, matching expand, or concept context. Each imported name in
-an import list is resolved and checked for use independently, including repeated
-entries.
-
-Missing paths are diagnosed in source and import-declaration order before missing
-names. Import cycles are then discovered depth first in source-discovery and
-import-edge order. Every edge returning to an active source produces one
-`SIGIL_IMPORT_CYCLE` diagnostic over the closing import declaration while resolved
-edges, names, and declarations outside the cycle remain available.
-
-## 5. Components
-
-A `component` is the reusable public description of a system part.
-It should be understandable without reading implementation details.
-
-Its public `goal` describes why the component exists, the responsibility it
-owns, and its intended outcome. Its public `interface` contains only the
-operations, data, events, results, errors, and observable promises available to
-dependents.
-
-A `component` must contain:
-
-- `goal`
-- `interface`
-
-The conventional section order is:
-
-```text
-goal
-interface
-```
-
-The order is a readability convention.
-It has no semantic effect.
-
-Keep a `component` focused on the public contract.
-Put state, behavior, constraints, decision rationale, examples, and
-architecture rules in `expand`.
-
-Imports declare dependencies between components; do not repeat imported
-dependencies in `interface`.
-
-Other components see only the public `component` description and its public
-concept information. They do not see private expansion details through an
-import.
-
-## 6. Expands
-
-An `expand` adds collective operational detail to a component without changing
-or overriding its public contract.
-It is where authors record state, behavior, rules, decision rationale, edge
-cases, and examples that would otherwise be lost during implementation.
-
-An `expand Name` should normally refer to a matching `component Name`.
-
-An `expand` may contain:
-
-- `state`
-- `logic`
-- `constraints`
-- `decisions`
-- `cases`
-
-The conventional section order is:
-
-```text
-state
-logic
-constraints
-decisions
-cases
-```
-
-The order is a readability convention.
-It has no semantic effect.
-
-Multiple `expand Name` blocks for the same component are collective.
-When a component is referenced with its expanded detail, all matching `expand Name` blocks contribute to the expanded component.
-
-An `expand` does not select, override, or shadow another `expand` with the same name.
-Separate expands may live in different files when authors want to add detail from another feature, layer, implementation concern, environment, or audience.
-
-If collected expands contradict each other, the contradiction is a specification issue that must be resolved by the author or reviewer.
-
-## 7. Sections
-
-### `goal`
-
-`goal` publicly explains why the component exists.
-
-It should describe the responsibility, user or system need, and reason this component is separate from others.
-
-### `interface`
-
-`interface` contains only what dependents can use or observe from the public
-contract.
-
-It may include:
-
-- inputs and data;
-- outputs and results;
-- public operations;
-- events;
-- errors;
-- observable promises other components rely on.
-
-Dependencies belong in imports, not `interface`. Implementation-hiding rules
-and forbidden internal access belong in `constraints` unless they define an
-externally observable promise.
-
-For API-like components, `interface` may contain constructors, methods, functions, return values, static helpers, and other public signatures.
-
-For UI components, `interface` may describe visible regions, content, user actions, navigation, feedback, and other externally observable behavior.
-It may use natural language, ASCII wireframes, Markdown image references to repository assets, or links to external designs such as Figma files.
-These representations remain ordinary free-form section content; Sigil defines no visual-reference keywords, authority fields, or special Figma or image syntax.
-When different interpretations of a visual could materially change implementation, authors should explain its intended role in their own natural language.
-
-Keep changing UI states in `state`, interaction and transition behavior in `logic`, required responsive or accessibility decisions in `constraints`, and observable UI scenarios in `cases`.
-
-For example:
-
-```sigil
-component BookingCalendarView {
+component ApplicationPersistence {
   goal {
-    Help renters understand room availability and existing bookings for a selected date range.
+    Keep domain operations independent of database integration details.
   }
 
   interface {
-    CalendarNavigation {
-      Shows date navigation above a calendar of rooms and bookings.
-
-      Lets the user move to the previous or next date range.
-
-      +------------------------------------------+
-      | Previous | July 2026 | Next              |
-      +------------------------------------------+
-      | Room     | Confirmed bookings            |
-      +------------------------------------------+
-
-      Image reference: ![Calendar layout](./booking-calendar-view.svg)
-
-      The image suggests visual grouping; the written interface defines required behavior.
-
-      A project may instead link a design such as https://www.figma.com/design/<file-key>/<file-name>?node-id=<node-id>
-    }
-  }
-}
-```
-
-### `state`
-
-`state` describes meaningful runtime or domain data, configurations, modes, and
-conditions that exist or change during execution.
-
-It is not storage layout.
-Database schema belongs in `state` only when the schema itself carries domain meaning.
-
-### `logic`
-
-`logic` describes how the component works.
-
-It may include:
-
-- flows;
-- algorithms;
-- transformations;
-- decision paths;
-- lifecycle transitions.
-
-For state-machine-like components, `logic` should describe transitions and what happens when public operations are called in each state.
-
-### `constraints`
-
-`constraints` describes rules, policies, and invariants that must remain true
-across valid executions or implementations.
-
-Use `constraints` for binding decisions such as:
-
-- architecture style;
-- module boundaries;
-- ownership;
-- dependency direction;
-- stack choices;
-- persistence rules;
-- integration limits;
-- technology decisions.
-
-Large architecture explanations may live in a separate document.
-When they define enforceable rules, summarize those rules in `constraints`.
-
-### `decisions`
-
-`decisions` is an optional expand section containing durable rationale for a
-chosen course. It may describe context, scope, assumptions, trade-offs, design
-issues addressed, discarded alternatives, consequences, and revisit
-conditions.
-
-The section body remains free-form. The language does not require Concept
-blocks, labeled fields, or a complete rationale schema. Ungrouped Facets are
-valid without grouping diagnostics in every contract, including Interface.
-
-When present, decision scope states the boundary where a chosen course applies
-and its important exclusions without attempting to enumerate every current
-dependent.
-
-A binding outcome remains in `constraints`; `decisions` explains why that
-outcome was selected. When both concern one semantic idea, authors may reuse
-the same concept identity across the sections.
-
-Imports expose public concept identities, not a provider's private decision
-rationale. A consumer may reuse an accessible public concept in its own
-`decisions` section, but that occurrence remains contextual to the consumer and
-does not make either decision transitively binding.
-
-Decision rationale should summarize durable conclusions rather than prompts,
-raw session transcripts, or hidden reasoning.
-
-### `cases`
-
-`cases` describes representative externally observable situations.
-
-It may include:
-
-- acceptance criteria;
-- examples;
-- edge cases;
-- externally visible failure behavior;
-- regression scenarios.
-
-Prefer cases that can be observed by users, callers, tests, or adjacent components.
-
-## 8. Concept Identifiers
-
-A concept identifier gives one semantic idea, or a related group of semantic
-lines, a stable and reusable name within a component contract.
-
-Concept block syntax is:
-
-```sigil
-interface {
-  SessionLifecycle {
-    open(credentials) returns Session.
-
-    close(sessionId).
-  }
-}
-```
-
-`SessionLifecycle` identifies the concept described by the Facets in
-the block. A block may represent a single concept with many uses throughout the
-contract or group several lines that are reused together.
-
-Concept identifiers:
-
-- match `[A-Za-z][A-Za-z0-9_-]*`;
-- contain no spaces;
-- are case-sensitive when referenced;
-- must be unique case-insensitively throughout the accessible namespace;
-- should use concise, unambiguous PascalCase without hyphens or underscores.
-
-The PascalCase convention is an informational formatting recommendation, not a
-validity requirement. An overly long name is often evidence that the concept
-has not yet been grouped or named clearly.
-
-Concept blocks are flat and nonempty. They cannot nest. A component and every
-matching `expand` share one flat concept namespace. Repeated blocks with the
-same identifier are collective: they add occurrences in their original
-sections and source locations and do not override one another.
-
-Concept identifiers are optional grouping across contracts, useful for
-distinguishing several concepts within a component. Facets can appear directly
-under any contract, and ungrouped Facets can freely mix with Concept blocks.
-A component describing one concept normally needs no repeated Concept heading.
-Ungrouped Interface content is not an authoring gap and produces no grouping
-warning. Do not introduce an identifier merely to wrap a contract's Facets.
-
-A concept is public when it occurs in `interface`. A concept that occurs only in
-`state`, `logic`, `constraints`, `decisions`, or `cases` is private. Imports
-expose public concepts only; they never expose private concept occurrences or
-collected expansion details.
-
-Imported public concepts enter the consumer's namespace as bare identifiers.
-Sigil deliberately provides no dotted notation, aliases, or local shadowing.
-Reusing an imported identifier keeps the concept's originating identity only
-when the identifier is reused in a matching `expand`. Reusing it in that
-expand's `interface` re-exposes the same identity to downstream importers. A
-same-named concept declared directly on the importing `component` remains a
-distinct local identity and is therefore ambiguous with the imported identity;
-Sigil provides neither qualification nor shadowing. Consumer occurrences never
-flow backward into the provider.
-
-Known identifiers used as whole words inside semantic content resolve as
-concept references for highlighting and navigation. Unknown words remain
-ordinary free-form content and do not produce unresolved-reference diagnostics.
-Concept identifiers do not define anchor syntax or anchor behavior.
-
-Concept diagnostics include:
-
-- `SIGIL_INVALID_CONCEPT_IDENTIFIER` for invalid identifier syntax;
-- `SIGIL_EMPTY_CONCEPT_BLOCK` for an empty block;
-- `SIGIL_NESTED_CONCEPT_BLOCK` for a nested block;
-- `SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER` for case-insensitive namespace collisions;
-- `SIGIL_CONCEPT_IDENTIFIER_STYLE` as an informational formatting suggestion.
-
-## 9. Facets
-
-Inside each section, each blank-line-delimited prose paragraph is one semantic
-unit. Adjacent physical prose lines belong to the same Facet and
-normalize to one space between their content. Rewrapping those physical lines
-does not change semantic identity.
-
-A concept-block header identifies and groups Facets but is not itself a
-Facet. Each paragraph inside the block records the concept identifier.
-
-A Facet is a:
-
-- source unit;
-- interpretation unit;
-- diff unit;
-- review unit;
-- possible anchor target.
-
-Blank lines are allowed for readability.
-Blank lines terminate Facets and do not create Facets.
-
-Separate distinct prose-level semantic ideas with blank lines in every section.
-Prefer one distinct idea per Facet. Avoid burying multiple decisions in
-a paragraph when those decisions may need separate review, diffing, or source
-mapping.
-
-Section bodies may use clear free-form notation, including:
-
-- concise English;
-- Markdown;
-- pseudocode;
-- API signatures;
-- math;
-- arrows;
-- host-language-like syntax;
-- domain notation;
-- ASCII sketches.
-
-The notation should remain coherent inside a project. Multiline code,
-configuration, data, diagrams, or other content that must preserve physical
-layout belongs in an attached fenced content:
-
-````sigil
-Configuration is represented by this JSON:
-```json
-{
-  "enabled": true
-}
-```
-````
-
-Three or more backticks open a fenced content. The opener may be followed by one
-optional type matching `[A-Za-z][A-Za-z0-9_+.-]*`. The closing fence contains
-at least as many backticks as the opener and no other content.
-
-The opening fence must directly follow its introducing prose with no blank line.
-The prose and attached fenced content form one Facet. Literal bodies
-preserve blank lines, braces, apparent Sigil syntax, and relative indentation.
-They do not create component, concept, import, glossary, ownership, or other
-semantic references.
-
-Ordinary prose is limited to 79 content characters per physical line. Leading
-indentation does not count. Structural lines, fence delimiters, and literal
-bodies are excluded. Canonical wrapping occurs only at whitespace boundaries.
-An indivisible prose token longer than 79 content characters is unformattable.
-
-## 10. Validity Rules
-
-A valid Sigil source file may contain one or more top-level forms.
-
-An `import` must specify a path and one or more names.
-
-An import path without a `.sigil` filename resolves to `_module.sigil` inside
-the target directory when that file is selected by workspace configuration.
-
-An import path with a `.sigil` filename resolves to that exact file.
-
-The legacy `#module.sigil` basename has no directory-index behavior and may be
-selected only through such an explicit file import.
-
-Import paths resolve from the Sigil workspace root.
-
-The Sigil workspace root is the directory containing the nearest applicable `.sigil/config.json`.
-Missing or unexcluded nested configs are invalid, and an explicit root must contain its config directly.
-
-An imported name must resolve to a matching `component Name`.
-
-Each resolved imported name must also have at least one qualifying use in the
-source that declares it. The following count independently for each name:
-
-- an exact-case component-name reference in `interface`, `state`, `logic`,
-  `constraints`, or `cases`;
-- an exact-case reference to one of the imported component's public concepts in
-  those sections;
-- a local `expand` of the imported component;
-- a local `expand` of the imported component.
-
-Mentions in `goal`, `decisions`, literal bodies, comments, annotations, other
-source files, differently cased words, or identifier substrings do not count.
-Each resolved unused name produces `SIGIL_UNUSED_IMPORT`, including direct imports
-declared by `_module.sigil`. Unresolved or
-ambiguous names do not also produce that diagnostic.
-
-A `_module.sigil` must declare at least one local component.
-
-A `component` must contain `goal` and `interface`.
-
-An `expand` may contain `state`, `logic`, `constraints`, `decisions`, and
-`cases`.
-
-An `expand Name` should normally have a matching `component Name`.
-
-Section names are fixed.
-
-Section bodies are free-form text.
-
-Concept blocks must use a valid identifier, contain at least one Facet,
-remain unnested, and be unambiguous across the component's accessible namespace.
-
-The conventional section order is recommended but not semantically required.
-
-Implementation details should not appear in a `component` unless they are part of the public contract.
-
-Implementation-hiding rules and forbidden internal access belong in
-`constraints` unless they define an externally observable promise.
-
-Architecture, stack, ownership, and dependency decisions belong in `constraints`.
-
-Meaningful runtime or domain data, configurations, lifecycle states, modes, and
-conditions belong in `state`.
-
-Behavior, transitions, algorithms, transformations, and decision paths belong
-in `logic`.
-
-Rules, policies, invariants, architecture decisions, and technology choices
-belong in `constraints`.
-
-Examples, acceptance criteria, and externally observable edge cases belong in `cases`.
-
-## 11. Recommended Style
-
-Write concise, reviewable Facets.
-
-Keep each blank-line-delimited paragraph focused on one idea.
-
-Use blank lines between distinct prose-level ideas without changing meaning.
-
-Use `sigil fmt [path]` to canonically wrap selected valid Sigil prose.
-`sigil fmt [path] --check` reports noncanonical sources without writing.
-
-Name components after the concept other parts of the system depend on.
-
-Name reusable concepts with concise, unambiguous PascalCase identifiers.
-
-Keep public contracts small enough to understand without reading the expand.
-
-Move internal rationale out of `component` and into `expand`.
-
-Prefer concrete states, transitions, inputs, outputs, and observable promises over vague descriptions.
-
-When a decision is binding, place it in `constraints`.
-
-When durable rationale matters, explain the selected decision in `decisions`
-without removing its binding outcome from `constraints`.
-
-When a decision is unresolved, record it as an open question instead of hiding it in ambiguous prose.
-
-Place Sigil files near the corresponding code by default.
-
-If the main `component` cannot live near the code, prefer placing an `expand` for that component near the code.
-
-## 12. Examples
-
-Import from a module directory:
-
-```sigil
-@sub/folder import { ComponentName }
-```
-
-Import from a specific file:
-
-```sigil
-@sub/folder/auth.sigil import { Auth }
-```
-
-Programming abstraction:
-
-```sigil
-component Promise {
-  goal {
-    Represent a value that may resolve now, later, or fail.
-
-    Let callers chain reactions without knowing when the value arrives.
+    Provide repository operations for reading and saving domain records.
   }
 
-  interface {
-    Construction {
-      new Promise<T>(executor)
-
-      Promise.resolve(value)
-
-      Promise.reject(reason)
-
-      Promise.try(handler)
-    }
-
-    Chaining {
-      then(onResolved, onRejected?) returns Promise
-
-      catch(onRejected) returns Promise
-    }
-  }
-}
-
-expand Promise {
-  state {
-    Settlement {
-      Pending
-
-      Resolved(value)
-
-      Rejected(reason)
-    }
-  }
-
-  logic {
-    Construction {
-      A new Promise starts Pending and runs executor with resolve and reject.
-
-      Resolving with a PromiseLike value adopts its eventual result.
-
-      Rejecting with a PromiseLike value does not unwrap it.
-    }
-
-    Chaining {
-      then returns an after Promise immediately.
-
-      If then or catch is called while Pending, hold the reaction until settlement.
-    }
-  }
-}
-```
-
-Stack as a constraint:
-
-```sigil
-expand Slotted {
   constraints {
-    Stack is Next.js, Neon Postgres, and Drizzle ORM.
+    Domain operations access persisted records through repository interfaces.
 
-    The system ships as a single Next.js app.
-
-    Database access goes through Drizzle.
-  }
-}
-```
-
-Decision rationale:
-
-```sigil
-expand Payments {
-  constraints {
-    PersistenceChoice {
-      Payment records are stored in PostgreSQL.
-    }
+    Database client types do not appear in domain operation signatures.
   }
 
   decisions {
-    PersistenceChoice {
-      Decision: Use PostgreSQL for payment records.
+    Keep database integration behind repositories so domain rules can be
+    exercised without database access.
+  }
 
-      Scope: Governs payment persistence and transaction handling. Analytics storage is excluded.
-
-      Assumptions: Managed PostgreSQL is available.
-
-      Trade-offs: Strong consistency is preferred over simpler local persistence.
-
-      Design issues addressed: Prevents conflicting writes and ambiguous recovery.
-
-      Discarded alternatives: SQLite was rejected because multi-writer operation is required.
-
-      Consequences: Persistence changes must preserve transaction boundaries.
-
-      Revisit when: Deployment or concurrency requirements change.
-    }
+  cases {
+    A domain rule test supplies an in-memory repository and requires no
+    database connection.
   }
 }
 ```
 
-Architecture rules as constraints:
+A component can describe an architectural responsibility spanning many files.
+The constraint expresses a dependency boundary. It does not identify production
+files that satisfy it or establish that a test has been executed.
 
-```sigil
-constraints {
-  Architecture style is a modular monolith with layered, domain-oriented modules.
+## 13. Workspace and authoring reminders
 
-  Modules communicate through explicit contracts, not direct access to another module's database tables or private logic.
+Sigil sources use `.sigil`. Place them near the code they describe where practical.
+A strict JSON `.sigil/config.json` selects the workspace version and included
+sources; see [workspace configuration](sigil-config.md). Additional projects
+can be declared as workspace members. Excluded nested workspaces remain
+independent. Read the reference for exact discovery and boundary rules.
 
-  Domain logic should be testable with zero mocks and zero I/O.
-}
-```
+`_module.sigil` is an ordinary filename in 0.8. It can hold a project summary,
+but it does not re-export components or provide directory-import shorthand.
+Import Tags from the explicit file declaring their owner.
 
-Larger examples live in:
+| While writing | Remember |
+| --- | --- |
+| Starting a component | Goal and Interface need content; other contracts are optional. |
+| Adding detail | Edit the existing section; repeated sections are invalid. |
+| Naming a concept | Introduce `*name*` once; use bare names afterward. |
+| Grouping | Bare local headings can repeat; groups are flat and nonempty. |
+| Importing | Select used Tags from the owner; no aliases, wildcards, or re-exports. |
+| Writing prose | Blank lines separate Facets; wrap prose to 79 content characters. |
+| Adding notation | Attach a fence directly to introducing prose. |
+| Adding context | State a link's role and read required targets. |
+| Leaving a question | Use explicit prose; Sigil has no comment syntax. |
+| Checking work | Use tooling that supports the source version and report actual checks. |
 
-- `examples/promise/promise.sigil`
-- `examples/slotted/_module.sigil`
-- `examples/slotted/auth.sigil`
-- `examples/slotted/user-profile.sigil`
-
-## 13. Historical Platform Proposal: Anchors
-
-Anchors are a rejected historical platform proposal for connecting Sigil
-Facets to implementation evidence.
-
-An anchor would not change the meaning of a Sigil line.
-It would record traceability between specification intent and implementation evidence.
-
-The historical storage proposal used a committed workspace sidecar
-`.sigil/anchors.json`, not inline syntax in `.sigil` files.
-Generated AST indexes remain disposable.
-The proposal would have allowed tools to map a component, section, or semantic
-line to related files, symbols, tests, migrations, or generated code.
-
-Source AST nodes would have provided structural evidence and recovery signals
-without becoming permanent identities. The design was rejected because those
-relationships create a second maintenance lifecycle without proving that
-implementation conforms to Sigil.
-
-The rejected anchor design was consolidated with the now-rejected generated
-Receipts, readiness, evidence, and review-record design in
-[ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
-No active version 0.5 contract authorizes this capability.
-
-## 14. Unresolved Language Questions
-
-Should dependencies on collected `expand` details be explicit in Sigil, or should expands remain review and implementation context only?
-
-How strict should future parsing and validation become while preserving authoring speed?
-
-How should conflicts between collected expands be represented, detected, and resolved?
-
-Should imports support aliases, re-exports, or wildcard imports beyond the implemented cycle diagnostics?
+For exact rules, error conditions, and parser behavior, use the
+[Language Reference](sigil-reference.md). For changes from the previous language,
+use the [migration guide](migrating-to-0.8.md).

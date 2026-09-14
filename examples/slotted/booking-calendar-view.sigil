@@ -34,10 +34,8 @@ component BookingCalendarView {
         The image provides layout guidance while the written interface defines required
         behavior.
     }
-}
 
-expand BookingCalendarView {
-    state {
+        state {
         loading while calendar data is requested
 
         empty when no rooms are available in the selected range

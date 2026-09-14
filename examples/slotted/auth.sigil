@@ -1,4 +1,4 @@
-@user-profile.sigil import { UserProfile }
+@user-profile.sigil from UserProfile import { UserProfile }
 
 component User {
     goal {
@@ -44,9 +44,7 @@ component Auth {
 
         exposes permission check: can book rooms
     }
-}
 
-expand Auth {
     state {
         anonymous user has no active session
 
@@ -90,3 +88,4 @@ expand Auth {
         An anonymous user cannot create bookings or manage rooms.
     }
 }
+

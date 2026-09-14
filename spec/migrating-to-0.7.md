@@ -1,5 +1,9 @@
 # Migrating Sigil 0.6 to 0.7
 
+This is historical guidance for the implemented 0.7 transition. The
+[Tag revision](sigil-reference.md) supersedes its import and Concept identity
+rules; use the [0.8 migration guide](migrating-to-0.8.md) for that revision.
+
 Sigil 0.7 tightens parsing and relationship resolution. Update
 `.sigil/config.json` from `0.6.0` to `0.7.0` only after reviewing these changes.
 

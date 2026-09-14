@@ -193,7 +193,7 @@ orchestration stay outside the toolchain.
 
 | Directory                     | Owns                                                                                                                   | Notes                                                                                                                                                                  |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spec/`                       | The language, configuration, workflow, glossary, and platform-architecture specifications, plus [ADRs](spec/decisions) | The canonical definition is [`spec/sigil-language.md`](spec/sigil-language.md). [`spec/language.sigil`](spec/language.sigil) owns the single language-version literal. |
+| `spec/`                       | The language, configuration, workflow, glossary, and platform-architecture specifications, plus [ADRs](spec/decisions) | The normative definition is [`spec/sigil-reference.md`](spec/sigil-reference.md) with [`spec/sigil.ebnf`](spec/sigil.ebnf); [`spec/sigil-language.md`](spec/sigil-language.md) is the authoring guide. [`spec/language.sigil`](spec/language.sigil) owns the implemented language-version literal. |
 | `packages/core/`              | Parsing, configuration, workspace discovery, resolution, graphs, projections, glossary matching, diagnostics           | Pure and deterministic. No semantic judgment, no network, no interactive behavior.                                                                                     |
 | `packages/cli/`               | The `sigil` command: authored inspection, structural Design export and skill installation | Uses core language APIs; never invokes sigilc or models. Also owns skill installation. |
 | `packages/sigilc/` | Native scope, source identity, prepared inputs, disposable worlds, catalogs and fixed semantic gates | Rust; no model runtime or language-specific Implementation adapter. |
@@ -231,7 +231,7 @@ annotations across the source tree, so it can exit 1 while `check` exits 0 —
 useful, and worth reading rather than ignoring. Exit codes are `0` clean, `1`
 error diagnostics, `2` bad arguments, `3` host failure.
 
-Placement rules, from [`spec/sigil-language.md`](spec/sigil-language.md) and the
+Placement rules, from [`spec/sigil-reference.md`](spec/sigil-reference.md) and the
 skill's
 [authoring conventions](integrations/skills/sigil/references/authoring-conventions.md):
 

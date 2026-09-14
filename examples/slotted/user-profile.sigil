@@ -7,7 +7,7 @@ component UserProfile {
     }
 
     interface {
-        UserProfile has this public TypeScript shape:
+        *UserProfile* has this public TypeScript shape:
         ```typescript
         type UserProfile = {
             userId: UserId
@@ -30,10 +30,8 @@ component UserProfile {
 
         exposes public profile summary to booking and room views
     }
-}
 
-expand UserProfile {
-    state {
+        state {
         profile can be incomplete or complete
 
         profile belongs to exactly one UserId

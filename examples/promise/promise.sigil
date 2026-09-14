@@ -19,10 +19,7 @@ component Promise {
     Promise.try(handler)
   }
 
-}
-
-expand Promise {
-  state {
+    state {
     Pending
 
     Resolved(value)
@@ -60,4 +57,5 @@ expand Promise {
 
     Rejecting with a PromiseLike value does not unwrap it.
   }
+
 }
