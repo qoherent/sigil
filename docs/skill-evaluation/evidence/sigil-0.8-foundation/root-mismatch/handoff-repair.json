@@ -1,0 +1,253 @@
+{
+  "detected_by": "host verification",
+  "defect": "Initial handoff authority bundle omitted three of the five language-manifest outputs and other installed skill entrypoint/metadata files.",
+  "initial_outcome_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/outcome.initial.json",
+  "correction": "Copied complete available installed sigil-evaluate and sigil-understand directories, excluding evals fixtures; updated authority-mapping.json and README.md.",
+  "files_copied": 17,
+  "manifest_outputs": [
+    {
+      "output": "sigil-reference.md",
+      "expected_sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+      "actual_sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+      "verified": true
+    },
+    {
+      "output": "sigil.ebnf",
+      "expected_sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+      "actual_sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+      "verified": true
+    },
+    {
+      "output": "sigil-language.md",
+      "expected_sha256": "3fc24e8dc56fc84d5a15efa646e6a4c93893b5f0b93ac8a37888a5460057beec",
+      "actual_sha256": "3fc24e8dc56fc84d5a15efa646e6a4c93893b5f0b93ac8a37888a5460057beec",
+      "verified": true
+    },
+    {
+      "output": "sigil-config.md",
+      "expected_sha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7",
+      "actual_sha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7",
+      "verified": true
+    },
+    {
+      "output": "sigil-config.schema.json",
+      "expected_sha256": "0dd88a5a7a091f63bbb463c8d247f77f45ff8365a0d2a96afc1f425ab0f1e168",
+      "actual_sha256": "0dd88a5a7a091f63bbb463c8d247f77f45ff8365a0d2a96afc1f425ab0f1e168",
+      "verified": true
+    }
+  ],
+  "local_markdown_references": [
+    {
+      "source": "sigil-evaluate/SKILL.md",
+      "line": 13,
+      "target": "references/design-review.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/SKILL.md",
+      "line": 14,
+      "target": "../sigil-understand/references/understanding.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/SKILL.md",
+      "line": 15,
+      "target": "../sigil-understand/references/language/sigil-reference.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/SKILL.md",
+      "line": 16,
+      "target": "../sigil-understand/references/language/sigil.ebnf",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/SKILL.md",
+      "line": 21,
+      "target": "references/review-contract.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/references/design-review.md",
+      "line": 10,
+      "target": "../../sigil-understand/references/understanding.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/references/design-review.md",
+      "line": 19,
+      "target": "review-contract.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-evaluate/references/design-review.md",
+      "line": 57,
+      "target": "review-contract.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 13,
+      "target": "references/understanding.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 14,
+      "target": "references/language/sigil-reference.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 15,
+      "target": "references/language/sigil.ebnf",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 17,
+      "target": "references/language/sigil-language.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 19,
+      "target": "references/language/sigil-config.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 20,
+      "target": "references/language/sigil-config.schema.json",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/SKILL.md",
+      "line": 38,
+      "target": "references/language/manifest.json",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-config.md",
+      "line": 65,
+      "target": "sigil-config.schema.json",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 6,
+      "target": "sigil-reference.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 7,
+      "target": "sigil.ebnf",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 355,
+      "target": "sigil-reference.md#tags-and-references",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 949,
+      "target": "sigil-config.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 971,
+      "target": "sigil-reference.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 7,
+      "target": "sigil-language.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 8,
+      "target": "sigil.ebnf",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 549,
+      "target": "sigil-config.md",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 550,
+      "target": "sigil-config.schema.json",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 910,
+      "target": "sigil-language.md#7-connect-components-with-imports",
+      "exists": true
+    },
+    {
+      "source": "sigil-understand/references/understanding.md",
+      "line": 33,
+      "target": "language/sigil-reference.md#tags-and-references",
+      "exists": true
+    }
+  ],
+  "illustrative_link_syntax_excluded_from_reference_checks": [
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 629,
+      "target": "destination"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 643,
+      "target": "./openapi.yaml#/components/schemas/Request"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 647,
+      "target": "./search-design.md#alternatives"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-language.md",
+      "line": 664,
+      "target": "./api-design.md#request"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 393,
+      "target": "destination"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 398,
+      "target": "destination"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 901,
+      "target": "./api.md"
+    },
+    {
+      "source": "sigil-understand/references/language/sigil-reference.md",
+      "line": 902,
+      "target": "./layout.svg"
+    }
+  ],
+  "all_manifest_outputs_verified": true,
+  "all_required_local_sibling_references_verified": true,
+  "outcome_semantically_unchanged": true,
+  "outcome_bytes_unchanged": true,
+  "evaluation_performed": false,
+  "independent_review_status": "incomplete; no current independent coverage",
+  "source_edits": false,
+  "handoff_request_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/request.json"
+}

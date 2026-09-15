@@ -1,0 +1,58 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "files": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new/search-panel.sigil"
+    ],
+    "components": [
+      "SearchPanel"
+    ],
+    "purpose": "Design-only independent assessment of compact draft against supplied intent and Sigil 0.8.0 authority."
+  },
+  "established_intent": [
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new/intent.md",
+      "anchor": "lines 1-2",
+      "commitments": "SearchPanel helps users find matching records. It displays matching records for the current search. Only the active request may publish new results."
+    }
+  ],
+  "unresolved_questions": [],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new/round-1/captures",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new/search-panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new/round-1/captures/search-panel.sigil",
+      "sha256": "286b5c8365c53bcdf0af92bc69b8155288b9dc188114cdc9aecc111b49f85c26"
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new/intent.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new/round-1/captures/intent.md",
+      "sha256": "7483ff38150e6a3a3d522111754bbb515ee66ece926a6c535933c53f92fec9ec"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+    "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+      "sigilVersion": "0.8.0"
+    }
+  },
+  "read_only": {
+    "instructions": "Read only; do not edit sources or write reports or any files. No network or compiler. Return full report in final response. Read request, captures, workspace and installed sibling skill entrypoints/references only; do not read eval fixtures. Use exact captured request as sole project evidence authority.",
+    "host_restrictions": "Read-only and read-root limits are instructions only; host filesystem is unrestricted. Fresh evaluator is spawned with fork_turns=none.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-new",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ],
+    "excluded_paths": [
+      "all eval fixtures including skills/*/evals"
+    ]
+  }
+}

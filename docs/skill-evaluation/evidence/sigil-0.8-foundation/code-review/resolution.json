@@ -1,0 +1,24 @@
+{
+  "review_run_id": "20260915-143140-7366e361",
+  "review_status": "complete",
+  "finding_1": {
+    "status": "applied",
+    "commit": "e6c22fc",
+    "change": "Required report source_root, exact delegated request equality, incomplete/handoff for missing or unequal root despite matching file hashes.",
+    "application": "Inline single-finding shortcut; relevant file region already in caller context. No fix batches required.",
+    "verification": [
+      "Missing-root writer explicitly rejects top-level omission",
+      "Mismatched-root writer explicitly rejects unequal root",
+      "Both observations also detect older review-contract digest; not isolated single-error cases",
+      "Offline foundation validation passes",
+      "Six foundation regressions pass",
+      "Relocated release package and existing native smoke pass"
+    ]
+  },
+  "rejected_candidates": "Four external candidates rejected with reasons in synthesized-findings.json; no justified required concern deferred.",
+  "remaining_required_findings": [],
+  "limits": [
+    "Three pre-existing full CLI failures and five pre-existing format failures persist",
+    "Draft-only concurrent mutation is additional unexecuted coverage; provider-only alternative observed"
+  ]
+}

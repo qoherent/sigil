@@ -1,0 +1,99 @@
+{
+  "status": "complete",
+  "draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/panel.sigil",
+    "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+  },
+  "provider": {
+    "role": "context",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/service.sigil",
+    "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+  },
+  "design_files_modified": false,
+  "prior_report_fresh": false,
+  "current_review_fresh": true,
+  "independent_agent": "/root/observe_writer_freshness/fresh_evaluator",
+  "request": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/request.json",
+  "capture_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture",
+  "raw_report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/report.raw.json",
+  "validation": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/validation.json",
+  "dispositions": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/dispositions.json",
+  "remaining_findings": [],
+  "unresolved_questions": [],
+  "review_scope": {
+    "components": [
+      {
+        "component": "SearchPanel",
+        "source": "search/panel.sigil",
+        "assessed_commitments": [
+          {
+            "anchor": "goal:5",
+            "assessment": "SearchPanel owns helping the user find records using the provider-owned query vocabulary."
+          },
+          {
+            "anchor": "interface:8",
+            "assessment": "SearchPanel owns displaying search results for the current search."
+          },
+          {
+            "anchor": "constraints:11",
+            "assessment": "Only the active request may publish search results. This excludes superseded-request publication without requiring additional response-order cases or a prescribed cancellation mechanism."
+          },
+          {
+            "anchor": "decisions:14",
+            "assessment": "Cancellation is explicitly an implementation possibility, not a binding architecture choice."
+          }
+        ]
+      },
+      {
+        "component": "SearchService",
+        "source": "search/service.sigil",
+        "assessed_commitments": [
+          {
+            "anchor": "goal:3",
+            "assessment": "SearchService finds records matching supplied text."
+          },
+          {
+            "anchor": "interface:6",
+            "assessment": "SearchService owns query and search results, accepts search text, and returns matching records ranked newest first. This provider commitment is compatible with the panel's display and publication commitments."
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "anchor": "search/panel.sigil:1",
+        "assessment": "Resolved @search/service.sigil from the supplied original source root, then mapped the original provider path to its captured input. SearchService declares both selected Tags."
+      },
+      {
+        "anchors": [
+          "search/panel.sigil:5",
+          "search/panel.sigil:8",
+          "search/panel.sigil:11"
+        ],
+        "assessment": "Both selected Tags have eligible exact bare references. The panel introduces no conflicting local identities. SearchService retains Tag ownership; SearchPanel retains ownership of its own Facets."
+      },
+      {
+        "assessment": "The import selects vocabulary. It does not independently establish a runtime call, transfer the provider's responsibility, or prescribe transport or request-management architecture."
+      }
+    ],
+    "compact_intent": "The captured contracts are sufficient for the requested design scope. No evidenced contradiction, consequential missing obligation, unresolved final owner, or material simplification warrants a finding.",
+    "linked_context": "Neither captured Sigil source contains an Inline Link requiring additional context.",
+    "additional_project_inputs": [],
+    "omitted_scope": [
+      "Implementation behavior, implementation conformance, and tests.",
+      "Workspace-wide discovery and configuration validation.",
+      "Product policy beyond the captured authored commitments.",
+      "Freshness of mutable original sources after this capture."
+    ]
+  },
+  "limitations": [
+    "This is an independent advisory design review of the exact verified captured bytes; it is not human approval or a claim of saturated coherence.",
+    "No compiler or implementation validation was performed. Static reading of the selected sources does not establish workspace-wide language conformance.",
+    "Read-only and return-only restrictions were instruction-based; filesystem tools were unrestricted. No files were created or edited, and no compiler, network, evaluation fixtures, other evidence, or user-input tools were used.",
+    "Original files were not read. Before claiming coverage of current sources or applying a correction, the caller must verify all draft, provider, intent, and authority identities together with the source root and original-to-captured mapping."
+  ],
+  "freshness_note": "Caller verified current original source bytes, captured intent, authority digests, and original resolution mapping after report completion."
+}

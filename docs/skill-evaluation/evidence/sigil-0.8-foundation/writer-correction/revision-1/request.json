@@ -1,0 +1,64 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "selected_files": [
+      "search/panel.sigil"
+    ],
+    "components": [
+      "SearchPanel"
+    ],
+    "purpose": "Design-only review of the selected SearchPanel contributions and their consistency with adopted intent."
+  },
+  "established_intent": [
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B/intent.md",
+      "anchor": "lines 1-3",
+      "commitment": "Only the active request may publish results. Cancelling a request immediately makes it inactive. Preserve this invariant when revising the draft."
+    }
+  ],
+  "unresolved_questions": [],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/capture",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B/search/panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/capture/search/panel.sigil",
+      "sha256": "bf73a848db30dd4d5fce61acb0085e17bd7f9eed9e965107052d73d0d8cf9042"
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B/intent.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/capture/intent.md",
+      "sha256": "efcce47949dd79ea89e935fe82b16212057bab4584e50e41c2774a098681235f"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    }
+  },
+  "read_only": {
+    "instructions": "Do not write or modify any files, including evidence or reports. Return your report in your final response. Do not use network or compiler. Use only this captured request as evidence authority, its captured inputs, relevant uncaptured context in the original workspace if needed, and the installed skill entrypoints/references. Do not inspect other evidence, repository files, or evaluation fixtures. Verify all hashes before assessing.",
+    "host_restrictions": "Read-only is instructions only; host tools technically permit writing. Fresh agent has no inherited conversation.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/capture",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ],
+    "additional_allowed_read_files": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/request.json"
+    ]
+  },
+  "original_resolution_mapping": {
+    "root_relative_imports": "Resolve against source_root, then map originals to captures.",
+    "local_inline_links": "Resolve from original linking source directory, then map originals to captures.",
+    "accessible_uncaptured_context": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B"
+  }
+}

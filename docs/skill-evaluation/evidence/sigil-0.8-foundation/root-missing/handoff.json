@@ -1,0 +1,85 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "files": [
+      "search/panel.sigil"
+    ],
+    "components": [
+      "SearchPanel"
+    ],
+    "provider_context": [
+      "search/service.sigil"
+    ],
+    "purpose": "Design-only review of responsibility, Tag ownership and use, publication/display behavior, provider relationships, and sufficiency of compact intent."
+  },
+  "established_intent": [
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+      "anchors": [
+        "goal:5",
+        "interface:8",
+        "constraints:11",
+        "decisions:14"
+      ]
+    },
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+      "anchors": [
+        "goal:3",
+        "interface:6"
+      ]
+    },
+    {
+      "input": "conversation://root/observe_writer_freshness/task-intent",
+      "anchors": [
+        "entire input"
+      ]
+    }
+  ],
+  "unresolved_questions": [],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+    },
+    {
+      "role": "context",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation://root/observe_writer_freshness/task-intent",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/intent.txt",
+      "sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+    "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    },
+    "review_contract": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+      "sha256": "6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961"
+    }
+  },
+  "read_only": {
+    "instruction": "Fresh independent read-only, return-only design evaluation using the installed evaluator entrypoint and this request as sole evidence authority. Read captures and installed skill references. Resolve root-relative imports against source_root, then map original targets to captures. Do not edit or create files, invoke compiler/network, read evaluation fixtures, sibling evidence or provenance, or use inherited conversation. Return all required report fields including top-level source_root equal to request source_root. Verify exact bytes and authority before assessing; report actual restrictions and omissions.",
+    "host_restrictions": "Current observation forbids native delegation by instruction even though delegation tools are physically present. Filesystem restrictions are also instruction-level; tools are unrestricted. No evaluator has been dispatched for this handoff. Receiving host must record its actual restrictions.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ],
+    "request_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff.json"
+  }
+}

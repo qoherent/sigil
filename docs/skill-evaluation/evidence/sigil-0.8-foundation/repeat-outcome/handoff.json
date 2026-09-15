@@ -1,0 +1,55 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "files": [
+      "search/panel.sigil"
+    ],
+    "components": [
+      "SearchPanel"
+    ],
+    "purpose": "Design-only review of compactness and preservation of adopted publication and display-continuity commitments."
+  },
+  "established_intent": [
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/intent.md",
+      "anchor": "lines 1-3",
+      "commitment": "Only the active request may publish new results. Starting a new request preserves the already displayed results until its replacement is ready. Both commitments must survive simplification."
+    }
+  ],
+  "unresolved_questions": [],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/search/panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/search/panel.sigil",
+      "sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1"
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/intent.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/intent.md",
+      "sha256": "af8e7bd342a451ee698ebe73248a61b46d9e7f3d7accdc597c856169bd4591ee"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    }
+  },
+  "read_only": {
+    "instructions": "Use the evaluator skill and captured request as sole design evidence. Verify exact hashes, inspect the captured design and intent, and return all fields required by sigil-design-review/v1. Do not edit design sources or captures. Resolve imports from source_root and links from their original linking location using the input mapping. Read only selected inputs and installed skill entrypoints/references. Do not use compiler or network.",
+    "actual_host_restrictions": "Native delegation is disabled for this replay run. No evaluator has been launched. Filesystem access is unrestricted technically; scope and read-only limits are instruction-enforced. A receiving host must supply a fresh independent evaluator and describe its actual restrictions.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ]
+  }
+}

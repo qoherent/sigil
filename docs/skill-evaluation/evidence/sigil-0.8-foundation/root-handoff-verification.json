@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "case": "missing",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+    },
+    {
+      "case": "missing",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+    },
+    {
+      "case": "missing",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+    },
+    {
+      "case": "missing",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+    },
+    {
+      "case": "missing",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/intent.txt",
+      "sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e"
+    },
+    {
+      "case": "mismatch",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+    },
+    {
+      "case": "mismatch",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/capture/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+    },
+    {
+      "case": "mismatch",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+    },
+    {
+      "case": "mismatch",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/capture/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31"
+    },
+    {
+      "case": "mismatch",
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/capture/intent.txt",
+      "sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e"
+    }
+  ]
+}

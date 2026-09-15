@@ -1,0 +1,87 @@
+[
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/SKILL.md",
+    "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/VERSION",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/VERSION",
+    "sha256": "e9dd8507f4bf0c6f42458e41aea833ad0bd3f6127272335eee9bf4d58541ed67"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/agents/openai.yaml",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/agents/openai.yaml",
+    "sha256": "55997915400b03e5fc9d25e2892fee8d37ac530a7226a088860688a1a5bf358c"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/compatibility.json",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/compatibility.json",
+    "sha256": "260f5cc75728879ee7e234586cac3e389459a0acfdad44eda194c3a64769f850"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/design-review.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/references/design-review.md",
+    "sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-evaluate/references/review-contract.md",
+    "sha256": "6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/SKILL.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/SKILL.md",
+    "sha256": "b777f36bb56daacb5a1c487cf2524f646290759d85428cb408cb52926506699c"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/VERSION",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/VERSION",
+    "sha256": "e9dd8507f4bf0c6f42458e41aea833ad0bd3f6127272335eee9bf4d58541ed67"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/agents/openai.yaml",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/agents/openai.yaml",
+    "sha256": "775cc732b8dedb95fa45495076e3ccf9b76e568427a59a4a20009f99eefd2892"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/compatibility.json",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/compatibility.json",
+    "sha256": "4e9be5bb6eb972beea0bce26814321d214b6f5e16a438c7554d75cf2ae6fe89b"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/manifest.json",
+    "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-config.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/sigil-config.md",
+    "sha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-config.schema.json",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/sigil-config.schema.json",
+    "sha256": "0dd88a5a7a091f63bbb463c8d247f77f45ff8365a0d2a96afc1f425ab0f1e168"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-language.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/sigil-language.md",
+    "sha256": "3fc24e8dc56fc84d5a15efa646e6a4c93893b5f0b93ac8a37888a5460057beec"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-reference.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/sigil-reference.md",
+    "sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil.ebnf",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/language/sigil.ebnf",
+    "sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2"
+  },
+  {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/understanding.md",
+    "packaged_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/skills/sigil-understand/references/understanding.md",
+    "sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c"
+  }
+]

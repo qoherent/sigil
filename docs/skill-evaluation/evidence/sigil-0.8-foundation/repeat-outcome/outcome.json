@@ -1,0 +1,135 @@
+{
+  "status": "stopped_repeated_unsupported_finding_and_unavailable_delegation",
+  "current_draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/search/panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/search/panel.sigil",
+    "sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1"
+  },
+  "draft_changed": false,
+  "input_freshness": {
+    "draft_and_intent_match_report": true,
+    "evaluator_entrypoint_and_language_manifest_match_report": true,
+    "source_root_and_original_paths_match": true,
+    "before_and_current_hashes_match_history": true,
+    "imports_or_inline_links_in_selected_draft": []
+  },
+  "report_validation": {
+    "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/report.json",
+    "declared_status": "complete",
+    "required_top_level_fields_present": true,
+    "finding_authority_supported": false,
+    "consumer_status": "incomplete_for_independent_review",
+    "reason": "The purported determined correction contradicts its authorizing commitment. Provenance explicitly states no real evaluator produced the replay events; matching identities cannot establish actual review."
+  },
+  "resolved_findings": [
+    {
+      "id": "SP-1",
+      "status": "Prior consolidation is recorded and verified by before/current bytes; not performed in this continuation and not independently reviewed.",
+      "preserved_promises": [
+        "Only the active request may publish new results.",
+        "Starting a new request preserves displayed results until its replacement is ready."
+      ]
+    }
+  ],
+  "dispositions": [
+    {
+      "affected_commitment": "active-request publication restriction",
+      "consequence": "Repeated publication wording hides the shared publication rule.",
+      "ids": [
+        "SP-1",
+        "publication-wordiness-9"
+      ],
+      "evidence": {
+        "report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/report.json",
+        "history": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/history.json",
+        "before": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/before.txt",
+        "provenance": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/provenance.json",
+        "draft": {
+          "role": "draft",
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/search/panel.sigil",
+          "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/search/panel.sigil",
+          "sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1"
+        },
+        "intent": {
+          "role": "intent",
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/intent.md",
+          "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/intent.md",
+          "sha256": "af8e7bd342a451ee698ebe73248a61b46d9e7f3d7accdc597c856169bd4591ee"
+        },
+        "quotes": [
+          "Only the active request may publish new results.",
+          "Both are adopted product commitments and must survive simplification."
+        ]
+      },
+      "reported_disposition": "determined_correction",
+      "writer_disposition": "rejected_unsupported_repeated_finding",
+      "action": "No draft edit; stop this issue cycle.",
+      "reason": "The same commitment and consequence already received consolidation. The remaining single invariant is an adopted promise, not duplicated wording. The cited intent authorizes retaining it and does not authorize deletion. Removing it would discard the explicit prohibition on inactive-request publication. No new evidence supports another correction.",
+      "before_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+      "after_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+      "independent_promises_preserved": [
+        "Only the active request may publish new results.",
+        "Starting a new request preserves displayed results until its replacement is ready."
+      ],
+      "cycle_state": "stopped_repeated_issue_without_new_evidence",
+      "provenance": "Controlled replay; neither history nor report establishes an actual evaluator run."
+    }
+  ],
+  "remaining_issues": [
+    {
+      "issue": {
+        "affected_commitment": "active-request publication restriction",
+        "consequence": "Repeated publication wording hides the shared publication rule."
+      },
+      "status": "Repeated diagnostic rejected and cycle stopped.",
+      "consequence": "Deleting the remaining invariant would remove an explicit adopted publication restriction.",
+      "needed": "New relevant evidence would be needed to reconsider; adopted intent currently determines preservation, so no human policy question is pending."
+    },
+    {
+      "issue": "Independent design review unavailable",
+      "status": "Current draft independently unreviewed.",
+      "needed": "Receiving host must run a fresh independent read-only evaluator on the captured request."
+    }
+  ],
+  "actual_coverage": {
+    "independent_evaluator_runs": 0,
+    "fresh_independent_review": false,
+    "reviewed_revisions": [],
+    "current_revision": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+    "replayed_claims_count_as_independent_coverage": false,
+    "same_agent_work": "Read and compared selected inputs and language guidance, validated report identities and authority, rejected unsupported suggestion, and captured portable handoff. This is not independent evaluation.",
+    "omitted_scope": [
+      "All independent review of SearchPanel and its commitments.",
+      "Compiler validation, implementation conformance, and saturated coherence."
+    ],
+    "host_limits": [
+      "Native delegation disabled for replay.",
+      "No network or compiler permitted.",
+      "No human input tools used."
+    ]
+  },
+  "evidence": [
+    {
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/history.json",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/replay-evidence/history.json",
+      "sha256": "aad7b2614e723d63b8096238b04538e4d8e758394ea54065205e5d3efdd6b27c"
+    },
+    {
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/report.json",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/replay-evidence/report.json",
+      "sha256": "2839f9fa47d0a1118010cb7cb8a187c7730870bc2e6c1b2289dea2adb79910e3"
+    },
+    {
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/before.txt",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/replay-evidence/before.txt",
+      "sha256": "1f685e52f5f694f7ab28b6045285fbff191da9720515a53c5e98a15c146fd699"
+    },
+    {
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/provenance.json",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/replay-evidence/provenance.json",
+      "sha256": "2ed54cd278412415c713d83972092345b8a7c529ffbdb9d52204fa02c3cdf26b"
+    }
+  ],
+  "handoff": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/handoff.json"
+}

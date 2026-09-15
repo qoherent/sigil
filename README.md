@@ -678,9 +678,29 @@ and a repository image reference.
 `Slotted` is only an example project used to test the language. It is not the
 purpose of this repository.
 
-## Coding-Agent Skill
+## Coding-Agent Skills
 
-The portable skill lives in
+The bundle provides three independent Sigil 0.8 design entry points:
+
+| Skill | Use it to |
+| --- | --- |
+| [sigil-understand](integrations/skills/sigil-understand/SKILL.md) | Explain intent, contract roles, Tag ownership, and relevant context. |
+| [sigil-evaluate](integrations/skills/sigil-evaluate/SKILL.md) | Review design read-only for consequential problems and useful simplification. |
+| [sigil-write](integrations/skills/sigil-write/SKILL.md) | Write compact contracts and apply supported corrections through independent delegated review. |
+
+All three start at artifact version 0.1.0 and share the bundled 0.8.0 normative
+reference and grammar. Install the complete catalog with `sigil skill install`
+(or `--project`); writer and evaluator require their sibling reference files.
+They work from source without a compiler. The writer preserves unresolved human
+choices, rechecks review freshness, and provides an independently unreviewed draft
+and portable handoff if delegation cannot complete. Static package checks and
+[observed agent evaluations](docs/skill-evaluation/sigil-0.8-foundation.md) provide
+separate evidence; neither establishes 0.8 compiler support or code conformance.
+
+### Legacy Sigil 0.7 native workflow
+
+The existing `sigil` skill remains at its own artifact version, with its existing
+compiler compatibility metadata. Its 0.7 workflow lives in
 [integrations/skills/sigil/SKILL.md](integrations/skills/sigil/SKILL.md), with
 host adapters supplied separately.
 

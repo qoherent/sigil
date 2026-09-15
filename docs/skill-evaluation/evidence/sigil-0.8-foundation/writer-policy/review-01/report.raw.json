@@ -1,0 +1,147 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": {
+    "files": ["archive/export.sigil"],
+    "components": ["ExportArchive"],
+    "purpose": "Design-only independent review of compactness, consistency and preservation of adopted intent.",
+    "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B",
+    "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures"
+  },
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/archive/export.sigil",
+      "sha256": "f3fa2968535120e191d19d4c45e966cb112f9df950a8e68d8723f6d823367fe9",
+      "hash_verified": true
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/intent.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/intent.md",
+      "sha256": "e866c53c57b4d812bab63c031e5bef3c870b3479a20afeee8f559891992fbed9",
+      "hash_verified": true
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation:/root/observe_writer_policy/initial-task",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/conversation-intent.txt",
+      "sha256": "3a405981b49676392f5f4d0323d290ee967efb3b7471c37d1aa0435e50756135",
+      "hash_verified": true
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+      "hash_verified": true
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+      "hash_verified": true,
+      "sigil_version": "0.8.0",
+      "upstream_revision": "28ff9851a50032c2f6be9140c48a23d9d8f8a9c8"
+    },
+    "references_read": [
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/design-review.md",
+        "sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+        "sha256": "75644d94e30fe530dba483dc99b927ec24e010bfefca8d76ac07aefe10313a21"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/understanding.md",
+        "sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-reference.md",
+        "sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+        "relevant_sections": [
+          "component.declaration",
+          "contract.structure",
+          "contract.role",
+          "facet.boundary",
+          "interpretation.owner",
+          "interpretation.evidence",
+          "Interpretation diagnostics"
+        ]
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil.ebnf",
+        "sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "EA-01",
+      "location": {
+        "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+        "lines": "11-14",
+        "component": "ExportArchive",
+        "contracts": ["constraints", "decisions"]
+      },
+      "evidence": [
+        {
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+          "sha256": "f3fa2968535120e191d19d4c45e966cb112f9df950a8e68d8723f6d823367fe9",
+          "anchor": "constraints, line 11",
+          "quote": "Delete expired exports automatically."
+        },
+        {
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+          "sha256": "f3fa2968535120e191d19d4c45e966cb112f9df950a8e68d8723f6d823367fe9",
+          "anchor": "decisions, line 14",
+          "quote": "The product owner has not yet chosen the retention duration."
+        },
+        {
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/intent.md",
+          "sha256": "e866c53c57b4d812bab63c031e5bef3c870b3479a20afeee8f559891992fbed9",
+          "anchor": "lines 3-5",
+          "quote": "Expired exports must be deleted automatically, but the product owner\nhas not decided when an export expires. The retention duration matters to what\nusers can recover and is not an implementation choice."
+        }
+      ],
+      "consequence": "Different expiry times permit different periods of later download and trigger automatic deletion at different times. The supplied intent explicitly reserves this consequential policy to the product owner, so implementation cannot choose a duration while claiming to realize an adopted retention policy.",
+      "priority": "medium",
+      "priority_justification": "A material product decision remains open and controls when users lose access to retained exports; the draft accurately exposes the uncertainty and contains no conflicting adopted duration.",
+      "suggestion": "Have the product owner decide when a completed export expires. Until that decision exists, preserve the explicit unresolved retention duration and report it in the final outcome. Once chosen, record the expiry rule as a binding contract while preserving authorized download, preservation on download, and automatic deletion of expired exports.",
+      "disposition": "design_choice",
+      "authorizing_commitment": null
+    }
+  ],
+  "coverage": {
+    "components": ["ExportArchive"],
+    "commitments_assessed": [
+      "Completed exports remain available for later download while retained.",
+      "Authorized users can download retained exports.",
+      "Downloading preserves the retained export for later downloads.",
+      "Unauthorized users may not download exports.",
+      "Expired exports must be deleted automatically.",
+      "Retention duration remains an explicit product-owner decision."
+    ],
+    "relationships_assessed": [
+      "The offered download interaction and authorization prohibition are compatible and preserve distinct positive and restrictive promises.",
+      "Preservation on download is compatible with automatic deletion upon expiry: downloading does not itself delete the export.",
+      "ExportArchive owns all selected contracts; the captured source contains no imports or Inline Links requiring additional provider context.",
+      "Every substantive commitment in captured intent.md is retained by the draft."
+    ],
+    "compactness": "The draft is compact. No material commitment-preserving simplification is warranted; deleting either the download-preservation promise or the authorization prohibition would lose an independent obligation.",
+    "consistency": "No incompatible adopted promises were found. The unresolved expiry policy is a human design choice and does not make the completed design-only assessment incomplete.",
+    "identity_verification": "All three captured input digests and the requested evaluator and language-pack manifest digests match the bytes read.",
+    "omitted_scope": [
+      "Implementation behavior and conformance.",
+      "Workspace-wide component uniqueness beyond the selected captured source.",
+      "Selection of an expiry policy on the product owner's behalf."
+    ]
+  },
+  "limitations": [
+    "Review applies to the exact captured bytes and original-to-capture mappings reported above; current workspace freshness was not asserted.",
+    "No compiler or network was used. Static design interpretation does not establish compiler acceptance, execution results, implementation conformance, or saturated coherence.",
+    "Read-only restriction was enforced by instructions only, not host sandboxing. No files were written or modified.",
+    "The product owner has not chosen when completed exports expire; the review identifies this decision without supplying policy."
+  ]
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "attempt": 1,
+    "task_name": "review_export",
+    "fork_turns": "none",
+    "result": "collab spawn failed: agent thread limit reached",
+    "actual_handle": null
+  },
+  {
+    "attempt": 2,
+    "task_name": "review_export",
+    "fork_turns": "none",
+    "result": "collab spawn failed: agent thread limit reached",
+    "actual_handle": null
+  },
+  {
+    "attempt": 3,
+    "task_name": "review_export",
+    "fork_turns": "none",
+    "result": "spawned",
+    "actual_handle": "/root/observe_writer_retrieval/review_export"
+  }
+]

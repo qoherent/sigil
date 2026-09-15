@@ -1,0 +1,14 @@
+[
+  {
+    "issue": "Retention expiry conflicts with adopted thirty-day policy",
+    "evidence": "Original ExportArchive constraints specifies seven days; policy/retention.md requires thirty days from completion with automatic deletion and no reset after downloads.",
+    "disposition": "determined correction by writer before review",
+    "action": "Replace contradictory seven-day sentence and consolidate policy constraint into thirty-day retention, automatic expiry deletion, and no download reset.",
+    "preserved": [
+      "Completed export availability",
+      "Authorized retained-export downloads",
+      "Adopted policy link and constraint role"
+    ],
+    "revision": "r1"
+  }
+]

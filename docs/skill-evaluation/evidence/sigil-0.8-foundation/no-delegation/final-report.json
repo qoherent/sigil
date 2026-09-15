@@ -1,0 +1,39 @@
+{
+  "outcome": "draft_created_independently_unreviewed",
+  "draft": {
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-F/search-panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/no-delegation/captures/workspace/search-panel.sigil",
+    "sha256": "b54e73bb2abc89020542ee72549354d535ce6b5ef03682b0fd907f9b94f815ea",
+    "role": "draft"
+  },
+  "review_request": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/no-delegation/review-request.json",
+  "resolved_findings": [],
+  "rejected_suggestions": [],
+  "remaining_findings": null,
+  "findings_note": "No independent report exists; remaining findings are unknown, not an empty findings assessment.",
+  "independent_review_coverage": {
+    "completed_runs": 0,
+    "assessed_inputs": [],
+    "reviewed_components": [],
+    "omitted_scope": [
+      "All SearchPanel design review"
+    ],
+    "freshness": "No independent assessment exists for this revision."
+  },
+  "blocker": "Task instruction disables delegation, network, and other model execution. Physical tool absence is not claimed.",
+  "compiler_validation": "Not run; not required for this design workflow.",
+  "implementation_conformance": "Not assessed.",
+  "unresolved_questions": [],
+  "history": [
+    {
+      "revision": "b54e73bb2abc89020542ee72549354d535ce6b5ef03682b0fd907f9b94f815ea",
+      "action": "Initial compact draft authored from intent. No review findings received or applied."
+    }
+  ],
+  "artifacts": [
+    "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-F/search-panel.sigil",
+    "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/no-delegation/review-request.json",
+    "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/no-delegation/evaluator-instructions.md",
+    "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/no-delegation/captures"
+  ]
+}

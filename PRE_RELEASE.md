@@ -2,7 +2,7 @@
 
 Sigil remains a pre-production 0.x toolchain. The language frontend, native
 compiler, skill, LSP and editor have independent versions owned by their manifests.
-The skill's [compatibility metadata](integrations/skills/sigil/compatibility.json)
+The legacy skill's [compatibility metadata](integrations/skills/sigil/compatibility.json)
 declares supported language, CLI, core and sigilc combinations.
 
 Current architecture:
@@ -31,3 +31,18 @@ retirement gate is tracked operationally while the temporary loop documents are
 present; the durable workflow is the repository-owned Sigil skill and native
 command guide. A pre-release milestone does not waive it. Publishing or
 deploying requires separate authorization.
+
+## Sigil 0.8 design skills
+
+`sigil-understand`, `sigil-evaluate`, and `sigil-write` are separate 0.1.0 skill
+artifacts for source-based 0.8 design work. They ship together with their bundled
+language authority and declared sibling dependencies. They do not advance the
+root workspace, frontend, compiler, or existing artifact versions.
+
+`test:skill` validates this foundation offline; `test:skill:native` retains the
+legacy compiled workflow checks. Behavioral acceptance also needs observed fresh
+agent runs, recorded in [the foundation evidence report](docs/skill-evaluation/sigil-0.8-foundation.md).
+The evaluator stays advisory and read-only. Writer automation is supported only
+where the host supplies independent delegation; otherwise its output includes
+an unreviewed draft and portable handoff. Model review does not prove compiler
+conformance, implementation alignment, or saturated coherence.

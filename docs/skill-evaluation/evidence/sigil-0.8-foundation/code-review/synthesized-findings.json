@@ -1,0 +1,178 @@
+{
+  "run_id": "20260915-143140-7366e361",
+  "status": "complete",
+  "findings": [
+    {
+      "#": 1,
+      "autofix_class": "gated_auto",
+      "confidence": 100,
+      "evidence": [
+        "integrations/skills/sigil-evaluate/references/review-contract.md:73-74 -- Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.",
+        "integrations/skills/sigil-evaluate/references/review-contract.md:111-118 -- Before applying any correction or claiming coverage of the current draft, the caller checks **all** current draft, intent, provider, and linked context bytes against `assessed_inputs`, as well as authority identity. Include context the evaluator retrieved beyond the original request. Verify original-to-capture mapping and source root as well: a relocation that changes resolution can change meaning even when individual file bytes are unchanged. Missing or changed input makes coverage stale; capture a fresh set and request a new assessment before using its findings to edit. Do not rely on the draft digest alone."
+      ],
+      "file": "integrations/skills/sigil-evaluate/references/review-contract.md",
+      "first_evidence": "integrations/skills/sigil-evaluate/references/review-contract.md:73-74 -- Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.",
+      "independent_reviewers": [
+        "api-contract"
+      ],
+      "line": 73,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": true,
+      "reviewers": [
+        "api-contract"
+      ],
+      "severity": "P1",
+      "suggested_fix": "Make `source_root` a required report field (and require it to exactly echo the request); state that a missing or unequal value makes the report incomplete. Keep `assessed_inputs` as the required original-to-captured mapping and add a contract test for a report that otherwise has matching hashes but omits or changes `source_root`.",
+      "title": "Report omits required resolution identity",
+      "why_it_matters": "A writer cannot verify that the evaluator used the request's source root when a conforming report may omit it. Identical captured bytes can resolve root-relative imports differently after relocation, so the writer can accept or act on coverage for a different design meaning. The contract already makes source-root equality a freshness requirement; require the report to echo it so the caller can enforce that requirement.",
+      "source_detail_keys": [
+        "[\"api-contract\", \"integrations/skills/sigil-evaluate/references/review-contract.md\", \"73\", \"report omits required resolution identity\"]"
+      ]
+    }
+  ],
+  "pre_existing_findings": [],
+  "actionable_findings": [
+    {
+      "#": 1,
+      "autofix_class": "gated_auto",
+      "confidence": 100,
+      "evidence": [
+        "integrations/skills/sigil-evaluate/references/review-contract.md:73-74 -- Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.",
+        "integrations/skills/sigil-evaluate/references/review-contract.md:111-118 -- Before applying any correction or claiming coverage of the current draft, the caller checks **all** current draft, intent, provider, and linked context bytes against `assessed_inputs`, as well as authority identity. Include context the evaluator retrieved beyond the original request. Verify original-to-capture mapping and source root as well: a relocation that changes resolution can change meaning even when individual file bytes are unchanged. Missing or changed input makes coverage stale; capture a fresh set and request a new assessment before using its findings to edit. Do not rely on the draft digest alone."
+      ],
+      "file": "integrations/skills/sigil-evaluate/references/review-contract.md",
+      "first_evidence": "integrations/skills/sigil-evaluate/references/review-contract.md:73-74 -- Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.",
+      "independent_reviewers": [
+        "api-contract"
+      ],
+      "line": 73,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": true,
+      "reviewers": [
+        "api-contract"
+      ],
+      "severity": "P1",
+      "suggested_fix": "Make `source_root` a required report field (and require it to exactly echo the request); state that a missing or unequal value makes the report incomplete. Keep `assessed_inputs` as the required original-to-captured mapping and add a contract test for a report that otherwise has matching hashes but omits or changes `source_root`.",
+      "title": "Report omits required resolution identity",
+      "why_it_matters": "A writer cannot verify that the evaluator used the request's source root when a conforming report may omit it. Identical captured bytes can resolve root-relative imports differently after relocation, so the writer can accept or act on coverage for a different design meaning. The contract already makes source-root equality a freshness requirement; require the report to echo it so the caller can enforce that requirement.",
+      "source_detail_keys": [
+        "[\"api-contract\", \"integrations/skills/sigil-evaluate/references/review-contract.md\", \"73\", \"report omits required resolution identity\"]"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "The full packages/cli test suite currently has three failures outside this review's changed scope (config parsing, graph edges, and raw design export), so it cannot provide a clean whole-suite regression signal for this change."
+  ],
+  "testing_gaps": [
+    "The observed freshness run covers provider-only mutation. The draft-only variant in integrations/skills/sigil-write/evals/writing-loop-fixture.md:186-189 remains unobserved: change the draft while review is pending, then verify fresh independent assessment preserves the new display-continuity promise before any edit. This is additional coverage beyond the exercised plan U3 test 4 alternative (draft or provider), not an unaddressed plan requirement."
+  ],
+  "triage_groups": [],
+  "suppressed_findings": [],
+  "suppressed_by_confidence": {},
+  "malformed_findings": 0,
+  "malformed_returns": 0,
+  "first_evidence_backfilled": 1,
+  "quote_the_line_demoted": 0,
+  "mode_aware_demotions": 0,
+  "rejected_candidates": [
+    {
+      "title": "Local spec links pinned to URLs without existence check",
+      "reason": "No currently broken rewritten target or violated validation promise was established. The bundled optional migration target exists at the recorded commit (git cat-file -e succeeded); sigil-understand/SKILL.md:38-41 explicitly separates optional background links from offline authority. Adding validation for a hypothetical future typo is extra hardening, not an admitted defect."
+    },
+    {
+      "title": "Sync silently reuses stale revision pin after source edits",
+      "reason": "The claim that upstreamRevision identifies bundled source bytes conflicts with sigil-understand/SKILL.md:38-41, which defines it as the optional-background-link revision and records source/output digests separately. sync-skill-language.ts:256 explicitly documents pin reuse; skill-foundation_test.ts:107-118 deliberately verifies it. Current target exists at the pin; no failed outcome established."
+    },
+    {
+      "title": "Foundation integrity check never runs on a user's install",
+      "reason": "The alleged silent new-install cascade is not established: installer.ts:334 sorts the catalog, so understand precedes write, and errors from the copy/install loop propagate before success. A post-manifest validator would not run after the interruption alleged. Recovery after interrupted unmanaged copies is unchanged installer behavior; no current completed broken installation is shown."
+    },
+    {
+      "title": "Foundation sigilVersion is a literal with nothing to check it against",
+      "reason": "Current normative reference line 3 and grammar line 1 both declare 0.8.0, matching metadata. The implemented 0.7/tooling separation is explicit in the plan and understand/SKILL.md:28-31. The claim requires a hypothetical future language release without updating its packaging and supplies no current mismatch."
+    }
+  ],
+  "rejected_advisory_claims": [
+    {
+      "claim": "Pinned URL availability after force-push/private visibility",
+      "reason": "No evidenced repository visibility or history failure; optional background access is already explicitly nonessential."
+    },
+    {
+      "claim": "Code span masking across blank lines",
+      "reason": "Peer states no current triggering source; no consequential missed documentary link established."
+    },
+    {
+      "claim": "Finder .DS_Store fails exact-content gate",
+      "reason": "Rejecting undeclared pack entries is intentional integrity validation; no intended supported content or current failure shown."
+    },
+    {
+      "claim": "YAML/Sigil links not checked by foundation validator",
+      "reason": "Inspected all three YAML adapters: no document links exist. Current required documentary references are Markdown; no hidden broken reference established."
+    },
+    {
+      "claim": "Temporary captures have no automatic cleanup",
+      "reason": "Host-neutral contract delegates execution/storage lifetime to host, preserves handoffs deliberately, and adds no persistent service; no evidenced material accumulation or privacy failure."
+    },
+    {
+      "claim": "Successive distinct evidence gaps permit continued review",
+      "reason": "writing-loop.md:102-113 explicitly continues while accessible evidence advances the design, matching R16. No nonprogress cycle established."
+    },
+    {
+      "claim": "Relocated symlink-install test absent",
+      "reason": "Installer algorithm is unchanged; copy relocation is the documented portable artifact path. No new symlink relocation contract established."
+    },
+    {
+      "claim": "Only Codex destination validated",
+      "reason": "Destination directory choice uses unchanged generic installer; no changed Claude-specific failure path established."
+    },
+    {
+      "claim": "Interrupted install/reinstall test absent",
+      "reason": "Same unsupported or unchanged install cascade as rejected peer primary, not recycled as coverage gap."
+    },
+    {
+      "claim": "Pinned background target existence test absent",
+      "reason": "Same optional future-hardening concern as rejected peer primary, not recycled as coverage gap."
+    }
+  ],
+  "peer": {
+    "selected": true,
+    "target": "claude",
+    "route": "claude",
+    "preference_source": "default",
+    "outcome": "folded",
+    "artifact": "/tmp/compound-engineering-501/ce-code-review/20260915-143140-7366e361/adversarial-claude.json",
+    "coverage": "Cross-model adversarial review completed via claude; model_requested claude-opus-5, effort_requested high, model_actual claude-opus-5, effort_actual unverified, receipt_supported true, independence_verified true. Scoped scratch tree excluded unrelated work; verified result collected and job directory deleted."
+  },
+  "fold_in_outcome": "folded",
+  "coverage_notes": [
+    "Full review of 106 task-owned paths including staged U5 docs and evidence.",
+    "No applicable project standards, learnings corpus or declared packs.",
+    "All five local reviewers completed; testing artifact leading plus repaired from valid terminal return, original preserved.",
+    "Targeted foundation/install/native/release/check/lint checks reported pass; whole CLI and fmt retain documented baseline failures.",
+    "Scope helper included excluded eqval files for large/full floor only; actual reviewer diff is task-scoped.",
+    "Cross-model adversarial review completed via claude; model_requested claude-opus-5, effort_requested high, model_actual claude-opus-5, effort_actual unverified, receipt_supported true, independence_verified true. Scoped scratch tree excluded unrelated work; verified result collected and job directory deleted.",
+    "Mechanics: 1 first_evidence backfilled; 0 quote-the-line demotions; 0 malformed findings or returns; 0 confidence suppressions; 0 mode-aware soft-bucket demotions.",
+    "Admission rejected four peer candidates after source inspection; rejected claims were not recycled into residual risks or testing gaps. No semantic duplicates, direct-dependency reclassifications, or settled-decision preference suppressions.",
+    "One primary finding requires validation. Validator shortcut-skipped: 0; no surviving finding has both an ordinary reviewer and an independently verified cross-model corroborator.",
+    "Plan U3 test 4 permits draft or provider mutation; provider-only freshness evidence addresses that requirement. Draft-only mutation remains an additional fixture coverage suggestion."
+  ],
+  "agent_native": {
+    "path": "/tmp/compound-engineering-501/ce-code-review/20260915-143140-7366e361/agent-native.md",
+    "gaps": [],
+    "summary": "All three foundation capabilities are separately agent-accessible; no gaps reported."
+  },
+  "learnings": [],
+  "deployment_notes": [],
+  "plan_notes": [
+    "No additional unaddressed R1-R16 or U1-U5 obligations identified from reviewer evidence and inspected plan/source. The report/source-root candidate concerns the R15 protocol implementation and awaits independent validation."
+  ],
+  "validator_selection": {
+    "selected_numbers": [
+      1
+    ],
+    "shortcut_skipped": 0,
+    "shortcut_evidence_basis": "No surviving ordinary-plus-independent-peer corroboration."
+  }
+}

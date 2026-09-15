@@ -1,0 +1,74 @@
+{
+  "status": "complete",
+  "draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/archive/export.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/archive/export.sigil",
+    "sha256": "1969c2e10b4673dadb2c5423bb21baa5803e8f65e3ae52f0e99af4229777ab8f"
+  },
+  "resolved_findings": [
+    "Corrected seven-day expiry to adopted thirty-day retention from completion; preserved automatic deletion, expiry unaffected by downloads, authorized downloads, ownership, and policy link."
+  ],
+  "rejected_suggestions": [],
+  "remaining_findings": [],
+  "unresolved_questions": [],
+  "review_handle": "/root/observe_writer_retrieval/review_export",
+  "review_fork_turns": "none",
+  "review_status": "complete",
+  "coverage": {
+    "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C",
+    "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures",
+    "components": [
+      "ExportArchive"
+    ],
+    "commitments_assessed": [
+      "Goal, line 3: completed exports remain available for later download within the retention constraint.",
+      "Interface, line 6: an authorized user can download a retained export.",
+      "Constraints, lines 9-11: the adopted policy binds ExportArchive to thirty days of retention measured from completion, followed by automatic deletion.",
+      "Constraints, line 11: downloading does not reset expiry."
+    ],
+    "relationships_assessed": [
+      {
+        "source": "archive/export.sigil:9",
+        "raw_link": "[retention policy](../policy/retention.md)",
+        "resolved_original_target": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/policy/retention.md",
+        "mapped_capture": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/policy/retention.md",
+        "assessment": "Resolved from the original archive directory. The explicitly adopted target's lines 1-2 agree with all three retention obligations in the draft."
+      },
+      {
+        "scope": "ExportArchive ownership and compactness",
+        "assessment": "ExportArchive owns its goal, download interface, and retention constraints. No competing owner or incompatible promise appears in the assessed evidence. The compact design preserves each independent policy obligation without requiring additional optional contracts or implementation details."
+      }
+    ],
+    "additional_project_context_used": [],
+    "unresolved_questions": [],
+    "omitted_scope": [
+      "Implementation behavior and conformance",
+      "Workspace-wide compiler validation",
+      "Unselected components"
+    ]
+  },
+  "freshness": {
+    "report_contract_valid": true,
+    "all_current_input_hashes_match": true,
+    "authority_identity_and_manifest_outputs_match": true,
+    "original_source_root_and_link_mapping_match": true,
+    "current_independent_coverage": "complete for requested design-only ExportArchive scope",
+    "report_sha256": "aedb2fac7db70b148dab56afa7211cdf7ad823c19b03fabccb0aef0579c8d207",
+    "validation_note": "Initial mapping assertion used Path.resolve(), which expands macOS /var to /private/var; corrected check uses lexical original mapping. File bytes and requested mappings all match."
+  },
+  "limitations": [
+    "Compiler and network were unavailable; this report makes no compiler-validation claim.",
+    "Read-only restrictions were enforced by instructions only; host filesystem tools were unrestricted. No files were created, modified, or deleted.",
+    "The assessment is bound to the verified captured bytes and original-location mapping. Current workspace freshness must be checked before reusing this report.",
+    "This independent design-only assessment does not establish production behavior, implementation conformance, or saturated coherence."
+  ],
+  "evidence_paths": {
+    "request": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/request.json",
+    "raw_report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/report.raw.json",
+    "validation": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/validation.json",
+    "captures": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures",
+    "dispositions": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/dispositions.json",
+    "delegation_attempts": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/delegation-attempts.json"
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": {
+    "files": [
+      "search/panel.sigil"
+    ],
+    "components": [
+      "SearchPanel"
+    ],
+    "provider_context": [
+      "search/service.sigil"
+    ],
+    "purpose": "Design-only review of responsibility, Tag ownership and use, publication/display behavior, provider relationships, and sufficiency of compact intent.",
+    "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+    "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture"
+  },
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/panel.sigil",
+      "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc",
+      "digest_verified": true
+    },
+    {
+      "role": "context",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/service.sigil",
+      "sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31",
+      "digest_verified": true
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation://root/observe_writer_freshness/task-intent",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/intent.txt",
+      "sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e",
+      "digest_verified": true
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+      "digest_verified": true
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+      "digest_verified": true,
+      "sigil_version": "0.8.0",
+      "upstream_revision": "28ff9851a50032c2f6be9140c48a23d9d8f8a9c8"
+    },
+    "references_read": [
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/design-review.md",
+        "sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+        "sha256": "75644d94e30fe530dba483dc99b927ec24e010bfefca8d76ac07aefe10313a21"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/understanding.md",
+        "sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-reference.md",
+        "sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+        "matches_manifest_output": true,
+        "relevant_sections": [
+          "component.declaration",
+          "contract.structure",
+          "contract.role",
+          "facet.boundary",
+          "tag.group",
+          "facet.link",
+          "tag.definition",
+          "tag.identity",
+          "tag.match",
+          "tag.region",
+          "import.resolve",
+          "import.use",
+          "interpretation.owner",
+          "interpretation.evidence"
+        ]
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil.ebnf",
+        "sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+        "matches_manifest_output": true
+      }
+    ]
+  },
+  "findings": [],
+  "coverage": {
+    "components": [
+      {
+        "component": "SearchPanel",
+        "source": "search/panel.sigil",
+        "assessed_commitments": [
+          {
+            "anchor": "goal:5",
+            "assessment": "SearchPanel owns helping the user find records using the provider-owned query vocabulary."
+          },
+          {
+            "anchor": "interface:8",
+            "assessment": "SearchPanel owns displaying search results for the current search."
+          },
+          {
+            "anchor": "constraints:11",
+            "assessment": "Only the active request may publish search results. This excludes superseded-request publication without requiring additional response-order cases or a prescribed cancellation mechanism."
+          },
+          {
+            "anchor": "decisions:14",
+            "assessment": "Cancellation is explicitly an implementation possibility, not a binding architecture choice."
+          }
+        ]
+      },
+      {
+        "component": "SearchService",
+        "source": "search/service.sigil",
+        "assessed_commitments": [
+          {
+            "anchor": "goal:3",
+            "assessment": "SearchService finds records matching supplied text."
+          },
+          {
+            "anchor": "interface:6",
+            "assessment": "SearchService owns query and search results, accepts search text, and returns matching records ranked newest first. This provider commitment is compatible with the panel's display and publication commitments."
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "anchor": "search/panel.sigil:1",
+        "assessment": "Resolved @search/service.sigil from the supplied original source root, then mapped the original provider path to its captured input. SearchService declares both selected Tags."
+      },
+      {
+        "anchors": [
+          "search/panel.sigil:5",
+          "search/panel.sigil:8",
+          "search/panel.sigil:11"
+        ],
+        "assessment": "Both selected Tags have eligible exact bare references. The panel introduces no conflicting local identities. SearchService retains Tag ownership; SearchPanel retains ownership of its own Facets."
+      },
+      {
+        "assessment": "The import selects vocabulary. It does not independently establish a runtime call, transfer the provider's responsibility, or prescribe transport or request-management architecture."
+      }
+    ],
+    "compact_intent": "The captured contracts are sufficient for the requested design scope. No evidenced contradiction, consequential missing obligation, unresolved final owner, or material simplification warrants a finding.",
+    "linked_context": "Neither captured Sigil source contains an Inline Link requiring additional context.",
+    "additional_project_inputs": [],
+    "omitted_scope": [
+      "Implementation behavior, implementation conformance, and tests.",
+      "Workspace-wide discovery and configuration validation.",
+      "Product policy beyond the captured authored commitments.",
+      "Freshness of mutable original sources after this capture."
+    ]
+  },
+  "limitations": [
+    "This is an independent advisory design review of the exact verified captured bytes; it is not human approval or a claim of saturated coherence.",
+    "No compiler or implementation validation was performed. Static reading of the selected sources does not establish workspace-wide language conformance.",
+    "Read-only and return-only restrictions were instruction-based; filesystem tools were unrestricted. No files were created or edited, and no compiler, network, evaluation fixtures, other evidence, or user-input tools were used.",
+    "Original files were not read. Before claiming coverage of current sources or applying a correction, the caller must verify all draft, provider, intent, and authority identities together with the source root and original-to-captured mapping."
+  ],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/another-workspace"
+}

@@ -1,0 +1,26 @@
+{
+  "reviewer": "api-contract",
+  "findings": [
+    {
+      "title": "Report omits required resolution identity",
+      "severity": "P1",
+      "file": "integrations/skills/sigil-evaluate/references/review-contract.md",
+      "line": 73,
+      "why_it_matters": "A writer cannot verify that the evaluator used the request's source root when a conforming report may omit it. Identical captured bytes can resolve root-relative imports differently after relocation, so the writer can accept or act on coverage for a different design meaning. The contract already makes source-root equality a freshness requirement; require the report to echo it so the caller can enforce that requirement.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Make `source_root` a required report field (and require it to exactly echo the request); state that a missing or unequal value makes the report incomplete. Keep `assessed_inputs` as the required original-to-captured mapping and add a contract test for a report that otherwise has matching hashes but omits or changes `source_root`.",
+      "confidence": 100,
+      "evidence": [
+        "integrations/skills/sigil-evaluate/references/review-contract.md:73-74 -- Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.",
+        "integrations/skills/sigil-evaluate/references/review-contract.md:111-118 -- Before applying any correction or claiming coverage of the current draft, the caller checks **all** current draft, intent, provider, and linked context bytes against `assessed_inputs`, as well as authority identity. Include context the evaluator retrieved beyond the original request. Verify original-to-capture mapping and source root as well: a relocation that changes resolution can change meaning even when individual file bytes are unchanged. Missing or changed input makes coverage stale; capture a fresh set and request a new assessment before using its findings to edit. Do not rely on the draft digest alone."
+      ],
+      "pre_existing": false
+    }
+  ],
+  "residual_risks": [],
+  "testing_gaps": [
+    "The foundation checks validate skill packaging and links but do not exercise a contract-valid report with omitted or mismatched source_root against writer freshness handling."
+  ]
+}

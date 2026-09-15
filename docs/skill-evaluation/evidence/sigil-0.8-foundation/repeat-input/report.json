@@ -1,0 +1,55 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": {
+    "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E",
+    "purpose": "Review SearchPanel compactness while preserving adopted commitments"
+  },
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/search/panel.sigil",
+      "captured_path": null,
+      "capture_mode": "in_place",
+      "sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1"
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/intent.md",
+      "captured_path": null,
+      "capture_mode": "in_place",
+      "sha256": "af8e7bd342a451ee698ebe73248a61b46d9e7f3d7accdc597c856169bd4591ee"
+    }
+  ],
+  "authority": {
+    "evaluator_entrypoint": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    }
+  },
+  "findings": [
+    {
+      "id": "publication-wordiness-9",
+      "location": "search/panel.sigil:10 SearchPanel.constraints",
+      "evidence": {
+        "input_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+        "quote": "Only the active request may publish new results."
+      },
+      "consequence": "Repeated publication wording hides the shared publication rule.",
+      "priority": "low",
+      "suggestion": "Delete the remaining active-request publication constraint.",
+      "disposition": "determined_correction",
+      "authorizing_commitment": "intent.md:1, Only the active request may publish new results."
+    }
+  ],
+  "coverage": [
+    "Current SearchPanel and both adopted commitments"
+  ],
+  "limitations": [
+    "Read-only by instruction; no compiler."
+  ]
+}

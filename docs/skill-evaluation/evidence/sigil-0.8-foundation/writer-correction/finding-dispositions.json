@@ -1,0 +1,25 @@
+[
+  {
+    "issue_key": "Cancelled completion after replacement may publish obsolete results despite immediate inactivity",
+    "finding": "SP-1",
+    "input_revision": "initial-capture",
+    "disposition": "determined_correction",
+    "evidence": [
+      "intent.md:1-3",
+      "search/panel.sigil:9-10",
+      "search/panel.sigil:13-14"
+    ],
+    "action": "Changed cancelled request case outcome from may publish to must not publish.",
+    "authority_check": "Adopted intent expressly forbids inactive-request publication; cancellation immediately removes activity.",
+    "preserved_promises": [
+      "Current search results goal",
+      "Matching records for active request interface",
+      "Only-active publication invariant",
+      "Immediate inactivity upon cancellation",
+      "Completion after replacement scenario"
+    ],
+    "resulting_draft_sha256": "bf73a848db30dd4d5fce61acb0085e17bd7f9eed9e965107052d73d0d8cf9042",
+    "resolution": "Resolved; fresh complete independent review reports no findings.",
+    "review_evidence": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/report.raw.json"
+  }
+]

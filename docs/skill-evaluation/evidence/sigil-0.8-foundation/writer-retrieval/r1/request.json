@@ -1,0 +1,63 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "files": [
+      "archive/export.sigil"
+    ],
+    "components": [
+      "ExportArchive"
+    ],
+    "purpose": "Design-only review against adopted retention policy, contract consistency, ownership, and commitment-preserving compactness."
+  },
+  "established_intent": [
+    {
+      "input": "conversation:writer-retrieval-task",
+      "anchor": "Complete captured task intent"
+    },
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/policy/retention.md",
+      "anchor": "Lines 1-2: adopted export retention policy"
+    }
+  ],
+  "unresolved_questions": [],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/archive/export.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/archive/export.sigil",
+      "sha256": "1969c2e10b4673dadb2c5423bb21baa5803e8f65e3ae52f0e99af4229777ab8f"
+    },
+    {
+      "role": "context",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/policy/retention.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/policy/retention.md",
+      "sha256": "792f961dda3f232406ab4e95cc1b85a3be063b724109fc7b17b1f40c9adeec30"
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation:writer-retrieval-task",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/intent.txt",
+      "sha256": "86f86f758e81184631c37e8d405ad67174b45cf9280839044bdb2957c03c40e5"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+    "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    }
+  },
+  "read_only": {
+    "instructions": "Do not create, modify, or delete any files. Return report in final response only. Read captures and installed skill entrypoints/references. Relevant uncaptured project context may only be read within source_root. Do not read eval fixtures or any other workspace.",
+    "host_restrictions": "Read-only enforced by instructions only; host filesystem tools are unrestricted. Compiler and network unavailable.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ]
+  }
+}

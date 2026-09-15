@@ -1,0 +1,32 @@
+{
+  "outcome": "Complete: adopted publication invariant preserved; contradiction corrected and current independent design-only review has no findings.",
+  "draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-B/search/panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/capture/search/panel.sigil",
+    "sha256": "bf73a848db30dd4d5fce61acb0085e17bd7f9eed9e965107052d73d0d8cf9042"
+  },
+  "resolved_findings": [
+    "SP-1"
+  ],
+  "rejected_findings": [],
+  "remaining_findings": [],
+  "review_status": "complete",
+  "current_review_fresh": true,
+  "delegated_agent": "/root/observe_writer_correction/fresh_review",
+  "request": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/request.json",
+  "dispatch": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/dispatch.json",
+  "raw_report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/report.raw.json",
+  "verification": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/verification.json",
+  "finding_dispositions": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/finding-dispositions.json",
+  "limitations": [
+    "Assessment is bound to the verified captured bytes and the request's original-to-captured mapping; current original workspace bytes were not inspected.",
+    "Read-only restrictions were instructions only; the host technically permitted writes. No files were written or modified.",
+    "No network, compiler, implementation inspection, or execution tests were used. This completed design-only assessment does not establish compiler validation, implementation conformance, or saturated coherence."
+  ],
+  "omitted_scope": [
+    "Implementation behavior and conformance",
+    "Workspace-wide discovery and validation",
+    "Components outside the selected SearchPanel contribution"
+  ]
+}

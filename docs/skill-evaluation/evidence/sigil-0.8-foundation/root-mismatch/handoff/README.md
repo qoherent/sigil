@@ -1,0 +1,7 @@
+# SearchPanel fresh independent review handoff
+
+Run the bundled sigil-evaluate/SKILL.md in a fresh separate read-only evaluator using request.json as its sole evidence envelope. The captured draft, provider and intent bytes and shared authority are retained here with exact SHA-256 identities. This handoff is not a review. Do not use a same-agent pass as independent review.
+
+Preserve request.source_root as the original logical workspace root. Resolve @search/service.sigil under that root, then use the original-to-captured input mapping. If transferring this directory, update physical captured_root, captured_path, evaluator entrypoint/manifest paths and allowed read roots consistently; preserve source_root, original_path, captured bytes and digests. authority-mapping.json records original and packaged authority identities. The complete available evaluator and understanding skills are bundled, including metadata and all five language-manifest outputs; evaluation fixtures are excluded. No workspace-wide/compiler validation is requested.
+
+The receiving host must disclose its actual read-only, tool and conversation-inheritance restrictions. The preparation host prohibits native delegation by instruction although tools are present. No fresh review has run. Return the full revision-bound report with source_root matching the request exactly. The writer must check all current input, authority and resolution identities before claiming coverage or applying findings.
