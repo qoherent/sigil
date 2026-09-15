@@ -64,6 +64,15 @@ Deno.test("source locations select the original scalar position with a half-open
     line: at.line,
     column: at.column,
   });
+  const exact = selectCompilationBoundary(r, {
+    kind: "location",
+    filePath: "two.sigil",
+    line: at.line,
+    column: at.column,
+  }, { exactTarget: true });
+  assertEquals(exact.diagnostics, []);
+  assertEquals(exact.resolvedTarget, { kind: "file", filePath: "two.sigil" });
+  assertEquals(exact.selection.strategy, "exact-target");
   assertEquals(
     result.selection.affectedSemanticUnits.filter((x) =>
       x.startsWith("component:")

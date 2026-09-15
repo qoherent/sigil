@@ -1,3 +1,6 @@
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+@packages/sigilc/sources.sigil from SigilSourceIdentity import { SourceSelection, SemanticInputs }
+
 component SigilComparisonScope {
   goal {
     Focus native Design and Implementation comparison on explicit source membership
@@ -7,8 +10,8 @@ component SigilComparisonScope {
   interface {
     ScopeInput {
       Accept a versioned scope containing ordered workspace-relative Design root
-      paths and the existing language-neutral Implementation selection. Design roots
-      name authored Sigil files in the validated frontend bundle. Reject unknown
+      paths and Implementation SourceSelection. Design roots name authored Sigil
+      files in the validated ResolvedDesignInput bundle. Reject unknown
       fields, duplicate roots, missing roots, paths outside the workspace, and
       accidental empty selection. Intentional emptiness is explicit for each side and
       visible in the result. Without an explicit scope, retain full frontend Design
@@ -51,8 +54,9 @@ component SigilComparisonScope {
       resolved scope for freshness inspection, preparation, ingestion, Design
       compilation, catalog export and Implementation comparison. Require per-source
       operations to target a member of their selected side. Report deterministic
-      requested and effective membership and its fingerprint alongside current input
-      identities and the ordinary native named states. Keep excluded cached objects
+      requested and effective membership and its fingerprint alongside current
+      SemanticInputs identities and the ordinary native named states. Keep
+      excluded cached objects
       reusable. Distinguish outside-scope objects from deleted sources; neither
       contributes assertions to the selected world.
     }

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { nativeLocationRange } from "./coordinates.ts";
+import { publishCompilationDiagnostics } from "./diagnostic-projection.ts";
 import path from "node:path";
 import * as vscode from "vscode";
 import {
@@ -494,51 +494,30 @@ async function projectCompilationReport(
   target: string,
   isCurrent: () => boolean,
 ): Promise<void> {
-  const byUri = new Map<string, vscode.Diagnostic[]>();
-  const snapshots = new Map<
-    string,
-    { bytes: Uint8Array; document: vscode.TextDocument; version: number }
-  >();
-  for (const group of diagnosticGroups(report)) {
-    for (const item of group.items) {
-      for (const location of item.locations) {
-        const uri = vscode.Uri.joinPath(root, location.source);
-        let range = new vscode.Range(0, 0, 0, 0);
-        if (location.range || location.implementation_range) {
-          let snapshot = snapshots.get(uri.toString());
-          if (!snapshot) {
-            const bytes = await readFile(uri.fsPath);
-            const document = await vscode.workspace.openTextDocument(uri);
-            snapshot = { bytes, document, version: document.version };
-            snapshots.set(uri.toString(), snapshot);
-          }
-          const { bytes, document } = snapshot;
-          if (document.isDirty) {
-            throw new Error(
-              `Stale source: ${location.source}; save and compile again.`,
-            );
-          }
-          const mapped = nativeLocationRange(
-            location,
-            bytes,
-            document.getText(),
-          );
-          if (mapped) {
-            range = new vscode.Range(
-              mapped.start.line,
-              mapped.start.character,
-              mapped.end.line,
-              mapped.end.character,
-            );
-          }
-        }
+  await publishCompilationDiagnostics(report, {
+    async loadSource(source) {
+      const uri = vscode.Uri.joinPath(root, source);
+      const bytes = await readFile(uri.fsPath);
+      const document = await vscode.workspace.openTextDocument(uri);
+      return { bytes, document };
+    },
+    isCurrent,
+    publish(projected) {
+      const byUri = new Map<string, vscode.Diagnostic[]>();
+      for (const { source, range, finding: item } of projected) {
+        const uri = vscode.Uri.joinPath(root, source);
         const severity = item.severity === "error"
           ? vscode.DiagnosticSeverity.Error
           : item.severity === "warning"
           ? vscode.DiagnosticSeverity.Warning
           : vscode.DiagnosticSeverity.Information;
         const diagnostic = new vscode.Diagnostic(
-          range,
+          new vscode.Range(
+            range.start.line,
+            range.start.character,
+            range.end.line,
+            range.end.character,
+          ),
           `[${item.side}] ${item.message}`,
           severity,
         );
@@ -547,39 +526,29 @@ async function projectCompilationReport(
         const key = uri.toString();
         byUri.set(key, [...(byUri.get(key) ?? []), diagnostic]);
       }
-    }
-  }
-  if (!isCurrent()) return;
-  if (
-    [...snapshots.values()].some(({ document, version }) =>
-      document.isDirty || document.version !== version
-    )
-  ) {
-    throw new Error(
-      "Source changed during diagnostic projection; compile again.",
-    );
-  }
-  collection.set(
-    [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),
-  );
-  const state = nativeState(report);
-  const icon = state === "Coherent" || state === "Closed"
-    ? "$(pass-filled)"
-    : state === "Loose" || state === "Converged"
-    ? "$(warning)"
-    : state
-    ? "$(error)"
-    : "$(circle-slash)";
-  status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${
-    state ?? "unavailable"
-  }`;
-  const omitted = diagnosticGroups(report).reduce(
-    (n, group) => n + group.omitted,
-    0,
-  );
-  status.tooltip = `${target}\n${
-    state ?? ("reason" in report ? report.reason : "Unavailable")
-  }\n${omitted} omitted findings. Native scope and witnesses are in Sigil output.`;
+      collection.set(
+        [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),
+      );
+      const state = nativeState(report);
+      const icon = state === "Coherent" || state === "Closed"
+        ? "$(pass-filled)"
+        : state === "Loose" || state === "Converged"
+        ? "$(warning)"
+        : state
+        ? "$(error)"
+        : "$(circle-slash)";
+      status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${
+        state ?? "unavailable"
+      }`;
+      const omitted = diagnosticGroups(report).reduce(
+        (n, group) => n + group.omitted,
+        0,
+      );
+      status.tooltip = `${target}\n${
+        state ?? ("reason" in report ? report.reason : "Unavailable")
+      }\n${omitted} omitted findings. Native scope and witnesses are in Sigil output.`;
+    },
+  });
 }
 
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::DocumentPreview interface,state,logic,constraints,cases

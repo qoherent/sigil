@@ -66,7 +66,7 @@ export interface CompilationBoundaryResult {
 }
 
 export interface CompilationBoundaryOptions {
-  /** Preserve the selector as the final target and skip boundary inference. */
+  /** Skip inference; locations select their file and directories are rejected. */
   readonly exactTarget?: boolean;
 }
 

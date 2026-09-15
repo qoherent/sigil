@@ -1,3 +1,7 @@
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+@packages/sigilc/turtle.sigil from SigilTurtleInput import { FixedOntology }
+@packages/sigilc/catalog.sigil from SigilEntityCatalog import { FrozenIdentity }
+
 component SigilSourceIdentity {
   goal {
     Capture language-neutral source identity with snapdir walking and BLAKE3.
@@ -5,15 +9,17 @@ component SigilSourceIdentity {
 
   interface {
     SemanticInputs {
-      Bind Implementation to only its captured path and exact bytes, fixed ontology
-      and projection format, and frozen identity-catalog fingerprint. Selection and
+      Bind Implementation to only its captured path and exact bytes, FixedOntology
+      and projection format, and the FrozenIdentity catalog fingerprint.
+      Selection and
       neighboring source changes do not invalidate that object. Design additionally
       binds the conservative transitive resolved import closure and required
       structural owners, frontend schema, language version, artifact version, and all
       structural relation arrays, and applicable config and glossary bytes including
       absence. Cycles terminate with a visited set. Unresolved imports conservatively
       bind the entire selected Design set. Recheck frontend source and context bytes
-      against the filesystem before accepting that bundle as a current snapshot.
+      from ResolvedDesignInput against the filesystem before accepting the bundle as
+      a current snapshot.
       Capture membership separately from the reusable per-source key. No production
       metadata enters either key.
     }

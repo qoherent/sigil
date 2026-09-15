@@ -12,7 +12,8 @@
       "LICENSE",
       "architecture.md",
       "spec.md",
-      "src/**/*.ts"
+      "src/**/*.ts",
+      "src/data/UNICODE-LICENSE.txt"
     ],
     "exclude": [
       "tests/"

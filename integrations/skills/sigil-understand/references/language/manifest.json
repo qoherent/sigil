@@ -8,26 +8,26 @@
     {
       "source": "spec/sigil-reference.md",
       "output": "sigil-reference.md",
-      "sourceSha256": "c57b3ecaa3c219465b6ef4bc64a55259749015a9d258d388698e36d66ab02921",
-      "outputSha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e"
+      "sourceSha256": "274b3cab4d99e733e6ad7b47720fd07b236c5a68a44ed4c92c9b1b2fe4fb07ba",
+      "outputSha256": "6e816aacacbd40d781166227bd8cbbe10d2d05416bbbc151cefdbc4d5054783e"
     },
     {
       "source": "spec/sigil.ebnf",
       "output": "sigil.ebnf",
-      "sourceSha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
-      "outputSha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2"
+      "sourceSha256": "9677dae11e1cb6a906cb0ccc592fbbb0c28c505b6e1050d9988c260256995e49",
+      "outputSha256": "9677dae11e1cb6a906cb0ccc592fbbb0c28c505b6e1050d9988c260256995e49"
     },
     {
       "source": "spec/sigil-language.md",
       "output": "sigil-language.md",
-      "sourceSha256": "97b08b782f17df3870e66fe7699363368c86a19ae933014aa6367709a9964a10",
-      "outputSha256": "3fc24e8dc56fc84d5a15efa646e6a4c93893b5f0b93ac8a37888a5460057beec"
+      "sourceSha256": "a4b9480b5eaa0e4bd500a9d2cd4a5fc223f19a17df606baf4c6f8f2d1ac0f438",
+      "outputSha256": "dd993d3f89533876ed73e614bf2fd4732d4544255b75c8d9eaefd4cd99467d04"
     },
     {
       "source": "spec/sigil-config.md",
       "output": "sigil-config.md",
-      "sourceSha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7",
-      "outputSha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7"
+      "sourceSha256": "6601b135f0628e13127294f6a945cf576244fa07bf869399dc8e3d34d8e64433",
+      "outputSha256": "6601b135f0628e13127294f6a945cf576244fa07bf869399dc8e3d34d8e64433"
     },
     {
       "source": "spec/sigil-config.schema.json",

@@ -1,5 +1,11 @@
 # Sigil Workflow (legacy authoring reference)
 
+> Historical 0.7 planning context. For current 0.8 authoring and implementation,
+> use the [language guide](sigil-language.md), [reference](sigil-reference.md),
+> [migration guide](migrating-to-0.8.md) and colocated component contracts.
+> Legacy expand, visibility and directory-index descriptions below are not
+> current language rules.
+
 > This document describes the pre-semantic-world authoring workflow and is
 > retained for compatibility and history. It is not the current compile or
 > verification procedure. For active work, follow the repository-owned Sigil

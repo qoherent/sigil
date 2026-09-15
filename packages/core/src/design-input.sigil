@@ -1,3 +1,6 @@
+@packages/core/src/workspace.sigil from SigilWorkspaceLoader import { WorkspaceLoading }
+@packages/core/src/resolver.sigil from SigilResolver import { RelationshipResolution }
+
 component SigilDesignInput {
   goal {
     Preserve resolved authored language structure at the TypeScript to sigilc
@@ -6,7 +9,8 @@ component SigilDesignInput {
 
   interface {
     ResolvedDesignInput {
-      Load the workspace through its parser and resolver. Return frontend schema 2
+      Load the workspace through WorkspaceLoading and apply RelationshipResolution.
+      Return frontend schema 2
       with explicit languageVersion 0.8.0 separate from the frontend artifact
       version, exact source/context buffers, diagnostics, components, Facets, Tag
       introductions and grouping occurrences, explicit import selections, bare

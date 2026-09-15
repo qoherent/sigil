@@ -335,6 +335,31 @@ export function parseSigilDocument(
       complete: Boolean(closing),
     };
   };
+  const linkProtectsHeader = (lineIndex: number): boolean => {
+    const line = lines[lineIndex];
+    if (!line.content.includes("[")) return false;
+    // The candidate line can contain a link opener, but later structural lines
+    // delimit prose before inline recognition (lexical.region). Do not complete
+    // an earlier paragraph's unfinished link across this attempted header.
+    let end = lineIndex + 1;
+    while (end < lines.length) {
+      const content = trim(rawLine(lines[end]));
+      if (
+        !content || content === "}" || /^`{3,}/.test(content) ||
+        content.endsWith("{")
+      ) break;
+      end++;
+    }
+    const brace = source.byteOffsetAtUtf16(
+      line.utf16Start + line.content.lastIndexOf("{"),
+    )!;
+    return scanInlineContent(filePath, source, {
+      start: line.start,
+      end: lines[end - 1].end,
+    }).links.some((link) =>
+      link.range.start <= brace && brace < link.range.end
+    );
+  };
   while (index < lines.length) {
     const line = lines[index];
     const content = trim(rawLine(line));
@@ -392,11 +417,19 @@ export function parseSigilDocument(
       index++;
       continue;
     }
+    if (
+      frame && frame.kind !== "component" && content.endsWith("{") &&
+      linkProtectsHeader(index)
+    ) {
+      paragraph.push(line);
+      afterBlank = false;
+      index++;
+      continue;
+    }
     const componentOpen =
       /^component[ \t]+([A-Za-z][A-Za-z0-9_]*)[ \t]*\{[ \t]*$/.exec(content);
-    if (componentOpen) {
+    if (!frame && componentOpen) {
       flush();
-      while (stack.length) close(line.start, line.start, false);
       const range = { start: line.start, end: line.end };
       const node: ComponentDraft = {
         kind: "component",

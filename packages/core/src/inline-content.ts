@@ -123,7 +123,7 @@ function linkTail(text: string, open: number): LinkTail | undefined {
       if (text[at] === "\0" || (opener === "(" && text[at] === "(")) {
         return undefined;
       }
-      if (/^(?:\r\n|\r|\n)[ \t]*(?:\r\n|\r|\n)/.test(text.slice(at))) {
+      if (/^(?:\r\n|\r(?!\n)|\n)[ \t]*(?:\r\n|\r|\n)/.test(text.slice(at))) {
         return undefined;
       }
       at += escaped(text, at) ? 2 : 1;

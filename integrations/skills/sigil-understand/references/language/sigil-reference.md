@@ -1,6 +1,6 @@
 # Sigil Language Reference
 
-**Language version:** 0.8.0. **Status:** Unreleased specification; implementation pending.
+**Language version:** 0.8.0. **Status:** Implemented in this checkout; publication separate.
 
 This is the normative definition of Sigil's source model, syntax, ownership,
 name resolution, interpretation boundaries, validity, and required diagnostics.
@@ -11,9 +11,9 @@ this document supplies lexical algorithms and contextual conditions. A conflict
 between them is a specification defect, not permission to choose either result.
 Guide examples and style advice do not add requirements.
 
-The current parser, resolver, formatter, editor integration, and `.sigil`
-contracts still target 0.7.0. This document does not release 0.8 tooling or change
-an implemented version constant. See [Migrating to 0.8](https://github.com/farhoud/sigil/blob/28ff9851a50032c2f6be9140c48a23d9d8f8a9c8/spec/migrating-to-0.8.md).
+The current parser, resolver, formatter, editor integration and active `.sigil`
+contracts target 0.8.0. Historical 0.7 skill sources remain excluded. This document
+does not publish a release. See [Migrating to 0.8](https://github.com/farhoud/sigil/blob/28ff9851a50032c2f6be9140c48a23d9d8f8a9c8/spec/migrating-to-0.8.md).
 
 ## Contents
 

@@ -123,7 +123,7 @@ export async function discoverSigilWorkspace(
 /*
  * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::WorkspaceLoading interface,logic,cases
  * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::GlossaryInterpretationLoading interface
- * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::GlossaryInterpretation logic,constraints,cases
+ * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::GlossaryInterpretationLoading logic,constraints,cases
  */
 export async function loadSigilWorkspace(
   fs: SigilFileSystem,

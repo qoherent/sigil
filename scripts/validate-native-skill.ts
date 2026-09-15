@@ -26,11 +26,16 @@ equal(Object.keys(compatibility).sort(), [
   "sigilVersion",
   "sigilcVersion",
 ]);
-const cli = JSON.parse(await Deno.readTextFile("packages/cli/deno.json"));
-const core = JSON.parse(await Deno.readTextFile("packages/core/deno.json"));
-const config = JSON.parse(await Deno.readTextFile(".sigil/config.json"));
-const cargo = await Deno.readTextFile("packages/sigilc/Cargo.toml");
-const nativeVersion = cargo.match(/^version = "([^"]+)"/m)![1];
+equal(compatibility, {
+  cliVersion: "^0.8.0",
+  coreVersion: "^0.7.0",
+  sigilVersion: "0.7.0",
+  sigilcVersion: "^0.1.0",
+});
+const config = {
+  sigilVersion: compatibility.sigilVersion,
+  files: { include: ["**/*.sigil"], exclude: [".sigil/tmp/**"] },
+};
 function inRange(actual: string, range: string): boolean {
   assert(/^\^\d+\.\d+\.\d+$/.test(range), `Invalid stable range: ${range}`);
   assert(/^\d+\.\d+\.\d+(\+[^-]+)?$/.test(actual));
@@ -46,13 +51,6 @@ function inRange(actual: string, range: string): boolean {
   };
   return compare(current, floor) >= 0 && compare(current, upper) < 0;
 }
-assert(inRange(cli.version, compatibility.cliVersion), "CLI compatibility");
-assert(inRange(core.version, compatibility.coreVersion), "Core compatibility");
-assert(
-  inRange(nativeVersion, compatibility.sigilcVersion),
-  "Native compatibility",
-);
-equal(config.sigilVersion, compatibility.sigilVersion);
 for (const path of files.filter((p) => /\.(md|sigil|yaml)$/.test(p))) {
   const source = await Deno.readTextFile(path);
   assert(
@@ -82,14 +80,39 @@ assert(files.some((path) => path.endsWith("references/sigil-format.md")));
 // Run the actual documented commands with fixture paths substituted, without a
 // shell. Fixed empty Turtle exercises freshness and yellow/unavailable states;
 // it does not stand in for independent reconstruction of this repository.
-const suffix = Deno.build.os === "windows" ? ".exe" : "";
-const language = resolve(
-  Deno.env.get("SIGIL_TEST_LANGUAGE") ?? `build/sigil${suffix}`,
+const legacyLanguage = Deno.env.get("SIGIL_LEGACY_LANGUAGE");
+const legacyNative = Deno.env.get("SIGIL_LEGACY_COMPILER");
+if (!legacyLanguage && !legacyNative) {
+  console.log(
+    `Validated retained legacy skill ${version}: static metadata and references only; runtime not run.`,
+  );
+  Deno.exit(0);
+}
+assert(
+  legacyLanguage && legacyNative,
+  "Supply both SIGIL_LEGACY_LANGUAGE and SIGIL_LEGACY_COMPILER for optional 0.7 runtime validation.",
 );
-const native = resolve(
-  Deno.env.get("SIGIL_TEST_COMPILER") ??
-    `packages/sigilc/target/debug/sigilc${suffix}`,
-);
+const language = resolve(legacyLanguage), native = resolve(legacyNative);
+for (
+  const [tool, range] of [[language, compatibility.cliVersion], [
+    native,
+    compatibility.sigilcVersion,
+  ]]
+) {
+  const result = await new Deno.Command(tool, {
+    args: ["--version"],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  const actual = new TextDecoder().decode(result.stdout).trim().replace(
+    /^sigilc /,
+    "",
+  );
+  assert(
+    result.success && inRange(actual, range),
+    `Incompatible legacy executable: ${tool}`,
+  );
+}
 const scratch = await Deno.makeTempDir({ prefix: "sigil skill examples 空 " });
 try {
   const workspace = join(scratch, "workspace");

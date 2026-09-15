@@ -25,13 +25,13 @@ export interface CommandHandlerOptions {
 
 /**
  * @sigil implements packages/cli/_module.sigil::SigilCli::SkillCatalogCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillCatalog logic,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillCatalog logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillInstallation logic,constraints,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInitialization interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::SourceFormattingCommand interface
  * @sigil implements packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
  */

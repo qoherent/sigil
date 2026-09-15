@@ -118,9 +118,10 @@ interface NodeDraft {
 export interface PurposeRetrievalOptions {
   readonly maxEvidenceBytes?: number;
 }
-
-// @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalRequest interface
-// @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval logic,constraints,cases
+/*
+ * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalRequest interface
+ * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval logic,constraints,cases
+ */
 export async function retrievePurposeContext(
   resolved: ResolvedSigilWorkspace,
   target: PurposeRetrievalTarget,

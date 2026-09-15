@@ -66,20 +66,25 @@ Deno.test("formatting preserves exact multiword Tags and never creates reference
 });
 
 Deno.test("import-dependent formatting requires the exact captured provider context", () => {
-  const source = "@p.sigil from P import { search results }\n" +
-    component("prefix ".repeat(10) + "search results follow.");
   const provider =
     "component P {\ngoal {\nOwn a responsibility.\n}\ninterface {\nA *search results* has meaning.\n}\n}";
-  assertEquals(format(source).formattedSource, undefined);
-  const context = resolve({ "c.sigil": source, "p.sigil": provider });
-  const result = format(source, context);
-  assert(result.formattedSource);
-  assertEquals(
-    resolve({ "c.sigil": result.formattedSource, "p.sigil": provider })
-      .components.find((c) => c.name === "C")!.references.map((r) => r.name),
-    ["search results"],
-  );
-  assertEquals(format(source + "\n", context).formattedSource, undefined);
+  for (const prefix of ["", "prefix ".repeat(10)]) {
+    const source = "@p.sigil from P import { search results }\n" +
+      component(prefix + "search results follow.");
+    assertEquals(format(source).formattedSource, undefined);
+    const context = resolve({ "c.sigil": source, "p.sigil": provider });
+    const result = format(source, context);
+    assert(result.formattedSource);
+    assertEquals(result.changed, prefix.length > 0);
+    assertEquals(
+      resolve({ "c.sigil": result.formattedSource, "p.sigil": provider })
+        .components.find((c) => c.name === "C")!.references.map((r) => r.name),
+      ["search results"],
+    );
+    assertEquals(format(source + "\n", context).formattedSource, undefined);
+    const missingProvider = resolve({ "c.sigil": source });
+    assertEquals(format(source, missingProvider).formattedSource, undefined);
+  }
 });
 
 Deno.test("unformattable recognized multiword references suppress ordinary width errors", () => {

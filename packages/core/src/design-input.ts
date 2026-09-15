@@ -132,9 +132,10 @@ export interface DesignInputResult {
   readonly diagnostics: readonly SigilDiagnostic[];
   readonly bundle: DesignInput | null;
 }
-
-// @sigil implements packages/core/src/design-input.sigil::SigilDesignInput::ResolvedDesignInput interface
-// @sigil implements packages/core/src/design-input.sigil::SigilDesignInput::SourceFidelity constraints
+/*
+ * @sigil implements packages/core/src/design-input.sigil::SigilDesignInput::ResolvedDesignInput interface
+ * @sigil implements packages/core/src/design-input.sigil::SigilDesignInput::SourceFidelity constraints
+ */
 export async function loadDesignInput(
   fs: SigilFileSystem,
   options: WorkspaceLoadOptions,
@@ -178,16 +179,39 @@ export async function loadDesignInput(
     };
   }
   const provenance = new SourceProvenance(workspace.root);
-  const path = (value: string) => {
+  const transportPath = (value: string): string | undefined => {
     const result = relativePath(workspace.root, value);
     if (
       result === "." || result.startsWith("/") ||
       result.split("/").includes("..") || /^[A-Za-z]:/.test(result)
-    ) {
+    ) return undefined;
+    return result;
+  };
+  const path = (value: string) => {
+    const result = transportPath(value);
+    if (result === undefined) {
       throw new Error(`Frontend input outside workspace: ${value}`);
     }
     return result;
   };
+  if (
+    !workspace.config &&
+    resolved.diagnostics.some((diagnostic) =>
+      [
+        diagnostic.filePath,
+        ...diagnostic.related.map((item) => item.filePath),
+      ]
+        .some((filePath) =>
+          filePath !== undefined && transportPath(filePath) === undefined
+        )
+    )
+  ) {
+    return {
+      root: workspace.root,
+      bundle: null,
+      diagnostics: resolved.diagnostics,
+    };
+  }
   const componentIds = new Map(
     resolved.components.map((
       c,

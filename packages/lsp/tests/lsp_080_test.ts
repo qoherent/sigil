@@ -284,6 +284,23 @@ class MutableFileSystem extends InMemorySigilFileSystem {
     return captured;
   }
 }
+
+class RecoveringFileSystem extends MutableFileSystem {
+  failNext = false;
+  failReads = false;
+  reloads = 0;
+  override listFiles(root: string): Promise<readonly string[]> {
+    this.reloads++;
+    return super.listFiles(root);
+  }
+  override async readSourceFile(path: string): Promise<string | Uint8Array> {
+    if ((this.failNext || this.failReads) && path === providerPath) {
+      this.failNext = false;
+      throw new Error("transient provider read failure");
+    }
+    return await super.readSourceFile(path);
+  }
+}
 async function mutableServer(fs: MutableFileSystem) {
   const server = new SigilLanguageServer({ fs, currentDirectory: root });
   await server.handle({
@@ -306,6 +323,30 @@ Deno.test("0.8 requests use captured sources until a watched provider change", a
     params: { changes: [{ uri: pathToFileUri(providerPath), type: 2 }] },
   });
   assertEquals(await lookup(server, "definition", consumer, name, 1), null);
+});
+Deno.test("0.8 request during a healthy reload does not start another reload", async () => {
+  const fs = new RecoveringFileSystem(), server = await mutableServer(fs);
+  fs.delayNext = true;
+  const pending = server.handle({
+    jsonrpc: "2.0",
+    method: "workspace/didChangeWatchedFiles",
+    params: { changes: [{ uri: pathToFileUri(providerPath), type: 2 }] },
+  });
+  await fs.entered.promise;
+  const reloads = fs.reloads;
+  const blocked = await server.handle({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "textDocument/definition",
+    params: {
+      textDocument: { uri: pathToFileUri(consumerPath) },
+      position: position(consumer, name, 1),
+    },
+  });
+  assert(blocked.some((m) => "error" in m && m.error.code === -32801));
+  assertEquals(fs.reloads, reloads);
+  fs.released.resolve();
+  await pending;
 });
 Deno.test("0.8 late reloads cannot replace newer overlay diagnostics or occurrences", async () => {
   const fs = new MutableFileSystem(),
@@ -338,6 +379,77 @@ Deno.test("0.8 late reloads cannot replace newer overlay diagnostics or occurren
   fs.released.resolve();
   assertEquals(await old, []);
   assert(await lookup(server, "definition", consumer, name, 1));
+});
+Deno.test("0.8 failed reload clears diagnostics and one shared request reload recovers", async () => {
+  const fs = new RecoveringFileSystem(), server = await mutableServer(fs);
+  fs.providerText = provider.replaceAll(name, "changed results");
+  await server.handle({
+    jsonrpc: "2.0",
+    method: "workspace/didChangeWatchedFiles",
+    params: { changes: [{ uri: pathToFileUri(providerPath), type: 2 }] },
+  });
+  fs.providerText = provider;
+  fs.failNext = true;
+  const failed = await server.handle({
+    jsonrpc: "2.0",
+    method: "workspace/didChangeWatchedFiles",
+    params: { changes: [{ uri: pathToFileUri(providerPath), type: 2 }] },
+  });
+  assert(
+    failed.some((message) =>
+      "method" in message && message.method === "window/showMessage" &&
+      JSON.stringify(message.params).includes("transient provider read failure")
+    ),
+  );
+  assert(
+    failed.some((message) =>
+      "method" in message &&
+      message.method === "textDocument/publishDiagnostics" &&
+      JSON.stringify(message.params).includes('"diagnostics":[]')
+    ),
+  );
+
+  const reloads = fs.reloads;
+  fs.delayNext = true;
+  fs.entered = Promise.withResolvers<void>();
+  fs.released = Promise.withResolvers<void>();
+  const first = lookup(server, "definition", consumer, name, 1);
+  const second = lookup(server, "definition", consumer, name, 1);
+  await fs.entered.promise;
+  assertEquals(fs.reloads, reloads + 1);
+  fs.released.resolve();
+  assert(await first);
+  assert(await second);
+
+  fs.failNext = true;
+  await server.handle({
+    jsonrpc: "2.0",
+    method: "workspace/didChangeWatchedFiles",
+    params: { changes: [{ uri: pathToFileUri(providerPath), type: 2 }] },
+  });
+  fs.failReads = true;
+  const beforePersistentRetry = fs.reloads;
+  const rejected = await server.handle({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "textDocument/definition",
+    params: {
+      textDocument: { uri: pathToFileUri(consumerPath) },
+      position: position(consumer, name, 1),
+    },
+  });
+  assert(JSON.stringify(rejected).includes("transient provider read failure"));
+  assertEquals(fs.reloads, beforePersistentRetry + 1);
+  await server.handle({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "textDocument/definition",
+    params: {
+      textDocument: { uri: pathToFileUri(consumerPath) },
+      position: position(consumer, name, 1),
+    },
+  });
+  assertEquals(fs.reloads, beforePersistentRetry + 1);
 });
 Deno.test("0.8 earliest grouping is the destination without an inline definition across CR sources", async () => {
   const fs = new MutableFileSystem();

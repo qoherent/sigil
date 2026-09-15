@@ -1,3 +1,6 @@
+@packages/sigilc/turtle.sigil from SigilTurtleInput import { AssertionValidation }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+
 component SigilWorldClosure {
   goal {
     Enrich one asserted world with finite compiler-owned egglog laws.
@@ -17,7 +20,8 @@ component SigilWorldClosure {
     }
 
     DesignObligations {
-      Derive required interpretation from the frontend's physical unit inventory. A
+      Derive required interpretation from the ResolvedDesignInput physical
+      inventory. A
       complete structured proposition can interpret a unit; a model assertion
       claiming completeness cannot. Keep Design interpretation obligations separate
       from requirements on code. Inspect missing fulfillment after closure. Return
@@ -34,8 +38,9 @@ component SigilWorldClosure {
     }
 
     IsolatedClosure {
-      Each saturation creates a fresh EGraph containing only that world's validated
-      assertions. Derive dependency reachability, delegated capabilities, structured
+      Each saturation creates a fresh EGraph containing only that world's assertions
+      accepted through AssertionValidation. Derive dependency reachability,
+      delegated capabilities, structured
       propositions, contradictions, minimum distance and maximum risk. Return sorted
       fixed tables with bounded rule and source witnesses.
     }

@@ -1,3 +1,9 @@
+@packages/sigilc/eqval.sigil from SigilWorldClosure import { IsolatedClosure, IndependentComparison, DesignObligations }
+@packages/sigilc/catalog.sigil from SigilEntityCatalog import { FrozenIdentity, ImplementationIdentity }
+@packages/sigilc/turtle.sigil from SigilTurtleInput import { RestrictedAssertions, FixedOntology }
+@packages/sigilc/sources.sigil from SigilSourceIdentity import { SemanticInputs, SourceSelection }
+@packages/sigilc/scope.sigil from SigilComparisonScope import { ScopedComparison, DesignMembership }
+
 component SigilProjectionStore {
   goal {
     Publish disposable source-bound assertions without accepting stale or
@@ -14,12 +20,13 @@ component SigilProjectionStore {
     }
 
     ImplementationCommands {
-      Prepare exactly one copied source file, fixed ontology and identity-only
+      Prepare exactly one copied source file, FixedOntology and identity-only
       catalog for the external semanticizer. Keep its binding with the caller.
       Require current non-Disjoint Design and validate all catalog references before
       ingesting Implementation. Accept an explicit source selection for stale
-      inspection and comparison. Compile each world independently, then compare
-      Design obligations with Implementation closure in the fixed matcher. Completed
+      inspection and comparison under ScopedComparison. Compile each world through
+      IsolatedClosure, then compare DesignObligations with Implementation closure
+      through IndependentComparison. Completed
       Closed is green and Converged is yellow with warnings; both exit zero. Drift is
       red and exits one. Apply this mapping to compile implementation and compare.
       Missing current Design catalog leaves comparison unavailable, exits three, and
@@ -27,9 +34,11 @@ component SigilProjectionStore {
     }
 
     CurrentImplementation {
-      Select arbitrary-language source files and assemble only fresh indexed
+      Use SourceSelection for arbitrary-language source files and assemble
+      fresh indexed
       assertions against the current frozen Design catalog. Validate resource
-      identity again on reading and enforce aggregate assertion limits before
+      identity through ImplementationIdentity again on reading and enforce aggregate
+      assertion limits before
       closure. Keep the catalog out of Implementation evidence. Saturate in an
       independent EGraph and identify the captured selection, catalog and assertion
       contents. Missing sources and completed empty facts remain distinct. Explicit
@@ -55,13 +64,15 @@ component SigilProjectionStore {
       only structural type and label facts plus required unit inventory from the
       frontend. Missing projections leave Design Loose unless fresh facts already
       establish Disjoint. Frontend errors produce no completed verdict. Validate the
-      complete identity set before freezing a current catalog. Reports identify
+      complete identity set before freezing a current catalog through FrozenIdentity.
+      Reports identify
       captured inputs, projection contents and compiled eqval. Prepare Design context
-      only from its bound source and dependency closure.
+      only from its bound source and DesignMembership dependency closure.
     }
 
     ProjectionPublication {
-      Capture the expected per-source generation before reconstruction. Under one OS
+      Bind source inputs under SemanticInputs and capture the expected per-source
+      generation before reconstruction. Under one OS
       file lock, compare the prepared binding and generation with current inputs and
       recheck source and Design dependency bytes. Publish bounded data-only
       assertions by temporary-file replacement, then atomically replace the index
@@ -85,7 +96,8 @@ component SigilProjectionStore {
     IndexedAssembly {
       Mirror normalized source paths with their original extensions plus egg. Load
       only index-selected assertions with matching complete input bindings and
-      checksums. Parse them as restricted data. Missing, stale, corrupt, deleted and
+      checksums. Parse them through RestrictedAssertions as data. Missing, stale,
+      corrupt, deleted and
       unindexed objects contribute no current facts. Bound index and assertion bytes
       separately. Refuse path traversal, symlinked artifact paths and malformed index
       metadata. A busy writer lock is an operational failure, never a semantic

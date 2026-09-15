@@ -225,10 +225,12 @@ fn source_findings(result: &mut Diagnostics, side: &'static str, sources: &[Sour
         });
     }
 }
-
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::NativeFindings interface,constraints
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Attribution interface,cases
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Bounds interface,cases
+/*
+ *
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::NativeFindings interface,constraints
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Attribution interface,cases
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Bounds interface,cases
+ */
 pub fn design(
     input: &DesignInput,
     world: &DesignWorld,
@@ -312,10 +314,12 @@ pub fn design(
     }
     result
 }
-
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::NativeFindings interface,constraints
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Attribution interface,cases
-// @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Bounds interface,cases
+/*
+ *
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::NativeFindings interface,constraints
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Attribution interface,cases
+ * @sigil implements packages/sigilc/report.sigil::SigilGateDiagnostics::Bounds interface,cases
+ */
 pub fn implementation(
     input: &DesignInput,
     design: &DesignReport,

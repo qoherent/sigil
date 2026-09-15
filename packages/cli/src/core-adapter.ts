@@ -222,16 +222,18 @@ export class CoreAdapter {
     if (
       prepared.every((item) => item.formatted.formattedSource !== undefined)
     ) {
-      const replacements = new Map(prepared.map((item) => {
-        const source = item.formatted.formattedSource!;
-        return [item.file.path, {
-          path: item.file.path,
-          source,
-          document: parseSigilDocument(item.file.path, source, {
-            sigilVersion: workspace.config!.sigilVersion,
-          }).document,
-        }];
-      }));
+      const replacements = new Map(
+        prepared.filter((item) => item.formatted.changed).map((item) => {
+          const source = item.formatted.formattedSource!;
+          return [item.file.path, {
+            path: item.file.path,
+            source,
+            document: parseSigilDocument(item.file.path, source, {
+              sigilVersion: workspace.config!.sigilVersion,
+            }).document,
+          }];
+        }),
+      );
       const files = workspace.files.map((file) =>
         replacements.get(file.path) ?? file
       );
@@ -373,7 +375,7 @@ export class CoreAdapter {
       sectionName,
     );
   }
-  // @sigil implements packages/cli/_module.sigil::SigilCli::OwnershipDiagnostics interface,logic,cases
+  // @sigil implements packages/cli/_module.sigil::SigilCli::CliOwnershipDiagnostics interface,logic,cases
   ownershipDiagnosticsFor(
     resolved: ResolvedSigilWorkspace,
     implementationSources: readonly ImplementationSource[],
@@ -478,7 +480,7 @@ export class CoreAdapter {
   }
   /*
    * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
-   * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+   * @sigil implements packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
    */
   glossaryContextForFiles(
     projection: GlossaryProjection,

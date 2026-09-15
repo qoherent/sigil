@@ -1,4 +1,4 @@
-(* Sigil 0.8.0 — normative grammar; implementation pending.
+(* Sigil 0.8.0 — normative grammar; implemented, publication separate.
    Companion: sigil-reference.md. Authoring: sigil-language.md.
 
    Notation: = definition; , concatenation; | alternatives; [...] optional;

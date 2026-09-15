@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -47,3 +47,8 @@ await Promise.all([
     sourcemap: false,
   }),
 ]);
+
+await copyFile(
+  path.join(repository, "packages/core/src/data/UNICODE-LICENSE.txt"),
+  path.join(directory, "dist/UNICODE-LICENSE.txt"),
+);

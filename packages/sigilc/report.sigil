@@ -1,3 +1,7 @@
+@packages/sigilc/eqval.sigil from SigilWorldClosure import { DesignObligations, IndependentComparison }
+@packages/sigilc/sources.sigil from SigilSourceIdentity import { SemanticInputs }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+
 component SigilGateDiagnostics {
   goal {
     Explain native gate results to terminal and editor consumers without making a
@@ -20,9 +24,11 @@ component SigilGateDiagnostics {
     }
     NativeFindings {
       Attach versioned presentation diagnostics to Design compilation and
-      Implementation comparison. Preserve named states, input identities and
+      Implementation comparison from DesignObligations and IndependentComparison.
+      Preserve named states, input identities and
       subcommand-specific exits. Findings describe existing eqval violations,
-      unresolved obligations, source freshness and retained frontend diagnostics.
+      unresolved obligations, SemanticInputs freshness and ResolvedDesignInput
+      diagnostics.
       Unavailable comparison keeps Implementation unset and explains the missing
       prerequisite; it is never rendered as Drift or a successful comparison.
     }

@@ -1,3 +1,4 @@
+import { validateNativeProtocol } from "./validate-native-protocol.ts";
 import { join, resolve } from "node:path";
 import { validateFoundation } from "./validate-skill.ts";
 import {
@@ -85,171 +86,30 @@ try {
     "sigil-understand",
     "sigil-write",
   ]);
+  assertEquals(
+    catalog.catalog.find((s: { name: string }) => s.name === "sigil")
+      .compatibility.languageCompatible,
+    false,
+  );
   await run(language, ["skill", "install", "--project", "--agent", "codex"]);
   await validateFoundation(join(scratch, ".agents/skills"));
   const compilerVersion = (await run(compiler, ["--version"])).trim();
   assert(/^sigilc \d+\.\d+\.\d+$/.test(compilerVersion));
   await run(language, ["check", fixture, "--format", "json"]);
-  const frontendPath = join(scratch, "frontend.json");
-  const exportText = await run(language, [
-    "export",
-    "design",
+  const protocol = await validateNativeProtocol({
+    language,
+    compiler,
     fixture,
-    "--root",
-    fixture,
-  ]);
-  await Deno.writeTextFile(frontendPath, exportText);
-  const frontend = JSON.parse(exportText);
-  const scopePath = join(scratch, "scope.json");
-  await Deno.writeTextFile(
-    scopePath,
-    JSON.stringify({
-      version: 1,
-      design: { paths: ["main.sigil"] },
-      implementation: { paths: ["main.any"] },
-    }),
-  );
-  const native = async (args: string[], code = 0) => {
-    return JSON.parse(
-      await run(compiler, [
-        ...args,
-        "--root",
-        fixture,
-        "--frontend",
-        frontendPath,
-        "--scope",
-        scopePath,
-      ], code),
-    );
-  };
-  assertEquals((await native(["scope"])).scope.design.focus_order, [
-    "main.sigil",
-  ]);
-  assertEquals((await native(["compile", "design"])).world.state, "Loose");
-  assertEquals((await native(["compare"], 3)).comparison, null);
-  await native(["stale", "design"], 1);
-  const turtle = join(scratch, "facts.ttl");
-  const publish = async (side: string, text: string, label: string) => {
-    const source = side === "design" ? "main.sigil" : "main.any";
-    const bindingDir = join(scratch, label);
-    const prepared = await native([
-      "prepare",
-      side,
-      "--source",
-      source,
-      "--out",
-      bindingDir,
-    ]);
-    if (side === "implementation") assertEquals(prepared.inputs.length, 3);
-    await Deno.writeTextFile(turtle, text);
-    await native([
-      "ingest",
-      side,
-      "--source",
-      source,
-      "--binding",
-      join(bindingDir, "binding.json"),
-      "--turtle",
-      turtle,
-    ]);
-  };
-  const prefix = "@prefix s: <https://sigil.dev/ontology/1#> .\n";
-  const entity = `<${
-    frontend.entities.find((e: { label: string }) =>
-      e.label === "ReleaseFixture"
-    ).id
-  }>`;
-  // Fixed Turtle tests the shipped native protocol. This is not a model or a
-  // claim about this repository's independent semantic reconstruction.
-  const negative = frontend.units.map((unit: { id: string }) =>
-    `<${unit.id}> s:from ${entity}; s:relation "uses"; s:target ${entity}; s:expected false .`
-  ).join("\n");
-  const positive = frontend.units.map((unit: { id: string }) =>
-    `<${unit.id}> s:from ${entity}; s:relation "provides"; s:target ${entity}; s:expected true .`
-  ).join("\n");
-  await publish(
-    "design",
-    prefix + positive + `\n${entity} s:provides ${entity} .`,
-    "positive design binding",
-  );
-  await publish(
-    "implementation",
-    prefix + `${entity} s:provides ${entity} .`,
-    "closed implementation binding",
-  );
-  const closed = await native(["compile", "implementation"]);
-  assertEquals(
-    closed.comparison.implementation,
-    "Closed",
-    JSON.stringify(closed.diagnostics),
-  );
-  await publish("design", prefix + negative, "design binding");
-  await native(["stale", "design"]);
-  assertEquals((await native(["compile", "design"])).world.state, "Coherent");
-  assertEquals((await native(["entities"])).status, "authoritative");
-  assertEquals(
-    (await native(["compare"])).comparison.implementation,
-    "Converged",
-  );
-  await publish(
-    "implementation",
-    prefix + `${entity} s:uses ${entity} .`,
-    "implementation binding",
-  );
-  assertEquals(
-    (await native(["compile", "implementation"], 1)).comparison.implementation,
-    "Drift",
-  );
-  await publish(
-    "design",
-    prefix + `${entity} s:uses ${entity}; s:excludes ${entity} .`,
-    "contradiction binding",
-  );
-  assertEquals(
-    (await native(["compile", "design"], 1)).world.state,
-    "Disjoint",
-  );
-  await publish("design", prefix + negative, "restored design binding");
-  const staleBinding = join(scratch, "stale binding");
-  await native([
-    "prepare",
-    "implementation",
-    "--source",
-    "main.any",
-    "--out",
-    staleBinding,
-  ]);
-  await Deno.writeTextFile(
-    join(fixture, "main.any"),
-    "changed after preparation\n",
-  );
-  await Deno.writeTextFile(turtle, prefix + `${entity} s:uses ${entity} .`);
-  await run(compiler, [
-    "ingest",
-    "implementation",
-    "--source",
-    "main.any",
-    "--binding",
-    join(staleBinding, "binding.json"),
-    "--turtle",
-    turtle,
-    "--root",
-    fixture,
-    "--frontend",
-    frontendPath,
-    "--scope",
-    scopePath,
-  ], 3);
+    scratch,
+    run,
+  });
   console.log(
     JSON.stringify({
       version,
       compilerVersion,
       relocated: true,
       hostTools: false,
-      design: ["Loose", "Coherent", "Disjoint"],
-      implementation: ["Closed", "Converged", "Drift"],
-      unavailable: 3,
-      staleIngest: 3,
+      ...protocol,
     }),
   );
 } finally {

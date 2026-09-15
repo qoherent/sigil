@@ -1,3 +1,5 @@
+@packages/core/src/graph.sigil from SigilGraphBuilder import { GraphData }
+
 component SigilCompilationBoundary {
   goal {
     Resolve a user-selected compilation seed into the compilation boundary that
@@ -19,7 +21,9 @@ component SigilCompilationBoundary {
 
       the resolved target is exactly workspace, file, or component.
 
-      options.exactTarget preserves the seed as the final target and skips inference.
+      options.exactTarget skips boundary inference. It preserves workspace, file,
+      and component seeds as targets, resolves a location seed to its containing
+      file, and rejects a directory seed.
 
       selection reports the strategy, the affected, covered, and uncovered semantic
       units, the deciding tie-break when one applied, and a reason when no boundary
@@ -90,9 +94,9 @@ component SigilCompilationBoundary {
       Return the workspace immediately for a workspace seed, because it is already
       the widest boundary.
 
-      Return the seed unchanged when an exact target is requested, and record that
-      inference was skipped. Reject an exact request over a directory, because a
-      directory is not itself a compilable target.
+      For an exact target request, preserve a workspace, file, or component seed;
+      select the containing file for a location seed. Record that inference was
+      skipped. Reject a directory seed because it is not a compilable target.
 
       Prefer a covering component; otherwise fall back to the workspace.
     }
@@ -138,8 +142,8 @@ component SigilCompilationBoundary {
 
   constraints {
     BoundarySelection {
-      Selection uses only loaded configured-workspace facts and the resolved
-      Tag-selection and consumer-use graph.
+      Selection uses only loaded configured-workspace facts and GraphData carrying
+      the resolved Tag-selection and consumer-use graph.
 
       Selection performs no filesystem discovery and does not depend on discovery
       order, evaluator behavior, package manifests, or agent judgment.
@@ -279,6 +283,9 @@ component SigilCompilationBoundary {
 
       An exact-target request over the same component preserves the component as the
       final target.
+
+      An exact-target request at a location inside a component selects its file
+      without inferring a broader boundary.
 
       An exact-target request over a directory is rejected rather than widened to the
       workspace.

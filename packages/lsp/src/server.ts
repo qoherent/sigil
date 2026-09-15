@@ -50,6 +50,7 @@ const ERROR_INVALID_PARAMS = -32602;
 const ERROR_INTERNAL = -32603;
 const ERROR_SERVER_NOT_INITIALIZED = -32002;
 const ERROR_REQUEST_CANCELLED = -32800;
+const RELOAD_RETRY_DELAY_MS = 1_000;
 const OWNERSHIP_WATCH_REQUEST_ID = "sigil/ownership-watch/request";
 const OWNERSHIP_WATCH_REGISTRATION_ID = "sigil/ownership-watch";
 
@@ -95,6 +96,9 @@ export class SigilLanguageServer {
   #sources: SourceSnapshots = new Map();
   #generation = 0;
   #resolvedGeneration = 0;
+  #recovery?: Promise<boolean>;
+  #loadFailure?: unknown;
+  #reloadRetryAfter = 0;
   #ownershipConfig?: string;
   #ownershipSourceIndex?: OwnershipSourceIndex;
   #ownershipSourceRoot?: string;
@@ -163,13 +167,25 @@ export class SigilLanguageServer {
         "Server is shutting down.",
       );
     }
-    const generation = this.#generation;
-    if (
-      request.method !== "initialize" && request.method !== "shutdown" &&
-      this.#resolvedGeneration !== generation
-    ) {
-      return failure(request.id, -32801, "Workspace content changed.");
+    const usesWorkspace = request.method !== "initialize" &&
+      request.method !== "shutdown";
+    if (usesWorkspace && this.#resolvedGeneration !== this.#generation) {
+      if (!this.#recovery && this.#loadFailure === undefined) {
+        return failure(request.id, -32801, "Workspace content changed.");
+      }
+      try {
+        if (!await this.#recover()) {
+          return failure(request.id, -32801, "Workspace content changed.");
+        }
+      } catch (error) {
+        return failure(
+          request.id,
+          ERROR_INTERNAL,
+          `Unable to load workspace: ${errorMessage(error)}`,
+        );
+      }
     }
+    const generation = this.#generation;
     try {
       let result: unknown;
       switch (request.method) {
@@ -203,10 +219,7 @@ export class SigilLanguageServer {
           );
       }
       if (this.#cancelled.delete(request.id)) return cancelled(request.id);
-      if (
-        request.method !== "initialize" && request.method !== "shutdown" &&
-        generation !== this.#generation
-      ) {
+      if (usesWorkspace && generation !== this.#generation) {
         return failure(request.id, -32801, "Workspace content changed.");
       }
       return { jsonrpc: "2.0", id: request.id, result };
@@ -268,8 +281,10 @@ export class SigilLanguageServer {
         default:
           return [];
       }
-    } catch {
-      return [];
+    } catch (error) {
+      return this.#loadFailure === error
+        ? this.#loadFailureNotifications(error)
+        : [];
     }
   }
 
@@ -410,12 +425,22 @@ export class SigilLanguageServer {
     );
   }
 
-  async #reload(): Promise<boolean> {
+  async #reload(recovery = false): Promise<boolean> {
     const generation = ++this.#generation;
+    if (!recovery) this.#loadFailure = undefined;
     const fs = this.#fs.snapshot();
     const workspace = await loadSigilWorkspace(fs, {
       startPath: this.#workspaceStart,
       currentDirectory: this.#currentDirectory,
+    }).catch((error) => {
+      if (generation === this.#generation) {
+        this.#loadFailure = error;
+        this.#reloadRetryAfter = recovery
+          ? Date.now() + RELOAD_RETRY_DELAY_MS
+          : 0;
+        this.#clearResolvedWorkspace();
+      }
+      throw error;
     });
     if (generation !== this.#generation) return false;
     this.#resolved = resolveSigilWorkspace(workspace);
@@ -427,8 +452,43 @@ export class SigilLanguageServer {
       )
       : fs.sources;
     this.#resolvedGeneration = generation;
+    this.#loadFailure = undefined;
+    this.#reloadRetryAfter = 0;
     this.#rebuildOwnershipProjectionCache();
     return true;
+  }
+
+  #recover(): Promise<boolean> {
+    if (!this.#recovery) {
+      if (Date.now() < this.#reloadRetryAfter) {
+        return Promise.reject(this.#loadFailure);
+      }
+      const shared = this.#reload(true).finally(() => {
+        if (this.#recovery === shared) this.#recovery = undefined;
+      });
+      this.#recovery = shared;
+    }
+    return this.#recovery;
+  }
+
+  #clearResolvedWorkspace(): void {
+    this.#resolved = undefined;
+    this.#sources = new Map();
+    this.#rebuildOwnershipProjectionCache();
+  }
+
+  #loadFailureNotifications(error: unknown): readonly JsonRpcOutgoing[] {
+    return [
+      ...this.#diagnosticNotifications(),
+      {
+        jsonrpc: "2.0",
+        method: "window/showMessage",
+        params: {
+          type: 1,
+          message: `Unable to load Sigil workspace: ${errorMessage(error)}`,
+        },
+      },
+    ];
   }
 
   #rebuildOwnershipProjectionCache(): void {
@@ -531,6 +591,10 @@ export class SigilLanguageServer {
 }
 
 class InvalidParamsError extends Error {}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function failure(
   id: JsonRpcId | null,

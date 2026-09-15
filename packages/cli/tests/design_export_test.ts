@@ -140,6 +140,46 @@ Deno.test("host discovery preserves nested configs while excluding generated Sig
   }
 });
 
+Deno.test("child workspace export reports nested parent evidence as a language error", async () => {
+  const parent = await Deno.makeTempDir({
+    dir: "/tmp",
+    prefix: "sigil-nested-export-",
+  });
+  const child = `${parent}/child`;
+  const config = JSON.stringify({
+    sigilVersion: SIGIL_VERSION,
+    workspace: { name: "nested", members: [] },
+    files: { include: ["**/*.sigil"], exclude: [] },
+  });
+  try {
+    await Deno.mkdir(`${parent}/.sigil`);
+    await Deno.mkdir(`${child}/.sigil`, { recursive: true });
+    await Deno.writeTextFile(`${parent}/.sigil/config.json`, config);
+    await Deno.writeTextFile(`${child}/.sigil/config.json`, config);
+    const result = await runCli(["export", "design", "."], {
+      core: new CoreAdapter({ currentDirectory: child }),
+    });
+    assertEquals(result.exitCode, 1);
+    assertEquals(result.stdout, "");
+    const output = JSON.parse(result.stderr);
+    assertEquals(
+      output.diagnostics.map((item: { code: string }) => item.code),
+      [
+        "SIGIL_NESTED_CONFIG",
+      ],
+    );
+    assertEquals(output.diagnostics[0].filePath, `${child}/.sigil/config.json`);
+    assertEquals(
+      output.diagnostics[0].related.map((item: { filePath: string }) =>
+        item.filePath
+      ),
+      [`${parent}/.sigil/config.json`],
+    );
+  } finally {
+    await Deno.remove(parent, { recursive: true });
+  }
+});
+
 Deno.test("invalid UTF-8 exports no transport and parse retains encoding diagnostics", async () => {
   const { root } = await workspace();
   try {

@@ -18,7 +18,7 @@ import {
 } from "../src/mod.ts";
 import { isEmbeddedFacet } from "../src/model/source.ts";
 Deno.test("separates the core artifact and language contract versions", () => {
-  assertEquals(SIGIL_CORE_VERSION, "0.7.1");
+  assertEquals(SIGIL_CORE_VERSION, "0.8.0");
   assertEquals(SIGIL_VERSION, "0.8.0");
 });
 

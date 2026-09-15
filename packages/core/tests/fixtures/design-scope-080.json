@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "languageVersion": "0.8.0",
-  "frontendVersion": "0.7.1",
+  "frontendVersion": "0.8.0",
   "sources": [
     {
       "path": "a.sigil",

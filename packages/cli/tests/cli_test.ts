@@ -149,7 +149,7 @@ Deno.test("check resolves config from a nested working directory", async () => {
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::OwnershipDiagnostics interface,logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliOwnershipDiagnostics interface,logic,cases
  */
 Deno.test("check reports ownership diagnostics from implementation sources", async () => {
   const root = await makeWorkspace("ownership-check");
@@ -174,7 +174,7 @@ Deno.test("check reports ownership diagnostics from implementation sources", asy
   }
 });
 
-// @sigil tests packages/cli/_module.sigil::SigilCli::OwnershipDiagnostics cases
+// @sigil tests packages/cli/_module.sigil::SigilCli::CliOwnershipDiagnostics cases
 Deno.test("check skips ownership diagnostics from config-excluded sources", async () => {
   const root = await makeWorkspace("excluded-ownership-check");
   try {
@@ -616,7 +616,7 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  */
 Deno.test("glossary reports reviewed terms, contexts, and occurrences", async () => {
   const root = await makeWorkspace("glossary");
@@ -693,7 +693,7 @@ Deno.test("glossary reports reviewed terms, contexts, and occurrences", async ()
 });
 
 /*
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::ExitStatus constraints,cases
  */
 Deno.test("glossary is absent without error and invalid data exits 1", async () => {
@@ -1355,7 +1355,7 @@ Deno.test("context rejects removed expands and retains valid independent compone
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  */
 Deno.test("context includes glossary evidence only from selected and provider files", async () => {
   const root = await providerWorkspace();
@@ -1569,7 +1569,7 @@ Deno.test("version flag reports CLI information", async () => {
 });
 
 /*
- * @sigil tests packages/cli/_module.sigil::SigilCli::SkillInstallation logic,constraints,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
  * @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
  */

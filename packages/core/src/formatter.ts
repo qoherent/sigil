@@ -147,6 +147,9 @@ export function formatSigilDocument(
     }
   }
   const formattedSource = rendered.join("");
+  if (formattedSource === source) {
+    return { formattedSource, changed: false, diagnostics: before.diagnostics };
+  }
   const parsed = parseSigilDocument(document.filePath, formattedSource, {
     sigilVersion: SIGIL_VERSION,
   });

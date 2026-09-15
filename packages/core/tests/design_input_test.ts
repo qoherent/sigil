@@ -63,6 +63,28 @@ Deno.test("Design capture is deterministic and nested context belongs to the sel
   assertEquals(first.bundle, second.bundle);
   assertEquals(second.bundle!.context.length, 3);
 });
+Deno.test("Design capture preserves outside-root nested workspace diagnostics without exporting a bundle", async () => {
+  const config = designFixtureFiles[".sigil/config.json"];
+  const result = await loadDesignInput(
+    new InMemorySigilFileSystem({
+      "/workspace/.sigil/config.json": config,
+      "/workspace/child/.sigil/config.json": config,
+      "/workspace/child/main.sigil": designFixtureFiles["consumer.sigil"],
+    }),
+    { startPath: "/workspace/child" },
+  );
+  assertEquals(result.bundle, null);
+  assertEquals(result.diagnostics.map((item) => item.code), [
+    "SIGIL_NESTED_CONFIG",
+  ]);
+  assertEquals(
+    result.diagnostics[0].filePath,
+    "/workspace/child/.sigil/config.json",
+  );
+  assertEquals(result.diagnostics[0].related.map((item) => item.filePath), [
+    "/workspace/.sigil/config.json",
+  ]);
+});
 Deno.test("Design capture rejects malformed bytes without exporting replacement text", async () => {
   for (const path of ["base.sigil", ".sigil/config.json"]) {
     const result = await loadDesignInput(

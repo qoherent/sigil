@@ -14,6 +14,118 @@ Deno.test("component name ranges select the name even when it repeats the keywor
   assertEquals(result.document.components[0].nameRange, { start: 10, end: 19 });
 });
 
+Deno.test("component-like grouping Tags retain their contract and component owner", () => {
+  const result = parse(component("component Search {\nOffer this concern.\n}"));
+  assertEquals(result.diagnostics, []);
+  assertEquals(result.document.components.map((c) => c.name), ["Example"]);
+  const owner = result.document.components[0];
+  const contract = owner.sections[1];
+  assertEquals(contract.groups.map((g) => g.name), ["component Search"]);
+  assertEquals(contract.units[0].componentId, owner.id);
+  assertEquals(contract.units[0].groupingId, contract.groups[0].id);
+  assertEquals(contract.units[0].sectionName, "interface");
+  assertEquals(
+    result.document.source?.slice(contract.groups[0].nameRange),
+    "component Search",
+  );
+
+  const nested = parse(component("Outer {\ncomponent Search {\nOffer.\n}\n}"));
+  assertEquals(nested.document.components.map((c) => c.name), ["Example"]);
+  assertEquals(nested.diagnostics.map((d) => d.code), [
+    "SIGIL_NESTED_TAG_GROUP",
+  ]);
+});
+
+Deno.test("wrapped complete links protect their opening line's trailing brace", () => {
+  for (const ending of ["\n", "\r\n", "\r"]) {
+    for (
+      const raw of [
+        '[manual](./policy.md "title {\ncontinued")',
+        "[manual {\ncontinued](./policy.md)",
+        "![manual {\ncontinued](./policy.md)",
+      ]
+    ) {
+      const linkText = raw.replaceAll("\n", ending);
+      const text = component(`Before.\n\nRead é😀 ${raw}.\n\nAfter.`)
+        .replaceAll("\n", ending);
+      const result = parse(new TextEncoder().encode(text));
+      assertEquals(result.diagnostics, []);
+      assertEquals(result.document.components.length, 1);
+      const owner = result.document.components[0];
+      const contract = owner.sections[1];
+      assertEquals(contract.groups, []);
+      assertEquals(contract.units.length, 3);
+      const facet = contract.units[1];
+      assertEquals(facet.componentId, owner.id);
+      assertEquals(facet.sectionName, "interface");
+      assertEquals(facet.groupingId, undefined);
+      assertEquals(facet.links.length, 1);
+      assertEquals(facet.links[0].raw, linkText);
+      assertEquals(facet.links[0].destination, "./policy.md");
+      assertEquals(
+        result.document.source?.slice(facet.links[0].range),
+        linkText,
+      );
+      assertEquals(
+        result.document.source?.slice(facet.links[0].destinationRange),
+        "./policy.md",
+      );
+    }
+  }
+});
+
+Deno.test("incomplete links and later structural lines do not hide group boundaries", () => {
+  for (
+    const body of [
+      'Read [manual](./policy.md "title {\nNever closed.',
+      'Read [manual](./policy.md "title {\nGroup {\ncontinued").\n}',
+      'Read [manual](./policy.md "title {\n\ncontinued").',
+      'Read [manual](./policy.md "title {\n```\ncontinued").\n```',
+      'Read [manual](./policy.md "title {\n}\ncontinued").',
+    ]
+  ) {
+    for (const ending of ["\n", "\r\n", "\r"]) {
+      const result = parse(component(body).replaceAll("\n", ending));
+      assertEquals(result.document.components.length, 1);
+      const contract = result.document.components[0].sections[1];
+      assertEquals(contract.units.flatMap((f) => f.links), []);
+      assert(contract.groups.length > 0);
+    }
+  }
+  const result = parse(
+    component("Read [unfinished\nGroup {\ncontinued](./policy.md).\n}"),
+  );
+  assertEquals(result.diagnostics, []);
+  const contract = result.document.components[0].sections[1];
+  assertEquals(contract.groups.map((g) => g.name), ["Group"]);
+  assertEquals(contract.units.flatMap((f) => f.links), []);
+});
+
+Deno.test("link lookahead preserves unprotected trailing braces and later components", () => {
+  const grouping = parse(component("[manual](./policy.md) {\nOffer.\n}"));
+  assertEquals(grouping.diagnostics, []);
+  assertEquals(
+    grouping.document.components[0].sections[1].groups.map((g) => g.name),
+    ["[manual](./policy.md)"],
+  );
+
+  const result = parse(
+    component("Read [unfinished") +
+      component("continued](./policy.md).").replace("Example", "Other"),
+  );
+  assertEquals(result.diagnostics, []);
+  assertEquals(result.document.components.map((c) => c.name), [
+    "Example",
+    "Other",
+  ]);
+  assertEquals(
+    result.document.components.flatMap((c) =>
+      c.sections.flatMap((s) => s.units.flatMap((f) => f.links))
+    ),
+    [],
+  );
+});
+
 // @sigil tests packages/core/src/parser.sigil::SigilParser::SourceDocumentParsing interface
 Deno.test("C01: parses minimal 0.8 source with byte ranges and optional final newline", () => {
   for (const ending of ["\n", "\r\n", "\r"]) {

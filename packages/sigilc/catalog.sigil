@@ -1,3 +1,6 @@
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+@packages/sigilc/eqval.sigil from SigilWorldClosure import { DesignObligations }
+
 component SigilEntityCatalog {
   goal {
     Share canonical semantic identities without exposing Design relationships to
@@ -6,7 +9,7 @@ component SigilEntityCatalog {
 
   interface {
     SourceOwnership {
-      Reserve frontend Component and Tag identities and physical authored unit
+      Reserve ResolvedDesignInput Component, Tag and physical authored unit
       identities. A Design source may repeat its own unchanged declarations. Other
       sources reference those identities without redeclaring them. New domain
       entities use urn:sigil:entity followed by the encoded physical source path and
@@ -19,7 +22,8 @@ component SigilEntityCatalog {
     }
 
     FrozenIdentity {
-      Freeze only current non-Disjoint Design. Sort canonical identity, type, label
+      Freeze only current non-Disjoint Design from DesignObligations. Sort canonical
+      identity, type, label
       and exact component-owned Tag names and originating identities, and hash only
       that content. Keep the current Design fingerprint and provisional or
       authoritative status outside the identity fingerprint. Exclude relationships,
