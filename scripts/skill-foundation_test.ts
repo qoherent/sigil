@@ -158,9 +158,9 @@ Deno.test("installed language pack rejects corrupt metadata and undeclared conte
   });
 });
 
-Deno.test("installed understanding skill has a self-contained reference graph", async () => {
+Deno.test("installed understanding and evaluator skills retain their shared reference graph", async () => {
   const directory = await Deno.makeTempDir({
-    prefix: "sigil installed understanding ",
+    prefix: "sigil installed foundation ",
   });
   async function copy(source: string, target: string): Promise<void> {
     await Deno.mkdir(target, { recursive: true });
@@ -201,9 +201,38 @@ Deno.test("installed understanding skill has a self-contained reference graph", 
     }
   }
   try {
-    await copy(join(root, "integrations/skills/sigil-understand"), directory);
+    for (const name of ["sigil-understand", "sigil-evaluate"]) {
+      await copy(
+        join(root, "integrations/skills", name),
+        join(directory, name),
+      );
+      equal(
+        (await Deno.readTextFile(join(directory, name, "VERSION"))).trim(),
+        "0.1.0",
+      );
+      const compatibility = JSON.parse(
+        await Deno.readTextFile(join(directory, name, "compatibility.json")),
+      );
+      equal(compatibility.sigilVersion, "0.8.0");
+      equal(
+        compatibility.requiredSkills,
+        name === "sigil-evaluate" ? ["sigil-understand"] : [],
+      );
+      for (const dependency of compatibility.requiredSkills) {
+        assert(
+          (await Deno.stat(join(directory, dependency, "SKILL.md"))).isFile,
+        );
+      }
+    }
     await check(directory);
-    await validateBundledLanguagePack(join(directory, "references/language"));
+    await validateBundledLanguagePack(
+      join(directory, "sigil-understand/references/language"),
+    );
+    await Deno.remove(join(directory, "sigil-understand"), { recursive: true });
+    await rejects(
+      () => check(join(directory, "sigil-evaluate")),
+      Deno.errors.NotFound,
+    );
   } finally {
     await Deno.remove(directory, { recursive: true });
   }
