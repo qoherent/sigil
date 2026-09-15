@@ -1,8 +1,13 @@
 import type { SigilDiagnostic } from "./diagnostics.ts";
-import type { SourceLocation, SourceRange } from "./language.ts";
+import type {
+  ImplementationLocation,
+  ImplementationRange,
+} from "./language.ts";
+import type { Facet } from "./source.ts";
+import type { TagIdentity } from "./identity.ts";
 import type { ResolvedComponent, ResolvedTag } from "./resolution.ts";
 export type { SigilDiagnostic } from "./diagnostics.ts";
-export type { SourceRange } from "./language.ts";
+export type { ImplementationRange } from "./language.ts";
 export type {
   ResolvedComponent,
   ResolvedSigilWorkspace,
@@ -41,14 +46,18 @@ export interface OwnedImplementationTarget {
   readonly filePath: string;
   readonly sections: readonly ImplementationSection[];
   readonly symbolIdentity?: string;
-  readonly location?: SourceLocation;
-  readonly annotationRange: SourceRange;
+  readonly location?: ImplementationLocation;
+  readonly annotationRange: ImplementationRange;
+  readonly tagName?: string;
+  readonly tagIdentity?: TagIdentity;
+  readonly facetIds: readonly string[];
 }
 
 export interface OwnedImplementationProjection {
   readonly owningComponent: ResolvedComponent;
   readonly tag?: ResolvedTag;
   readonly sectionName?: ImplementationSection;
+  readonly facets: readonly Facet[];
   readonly targets: readonly OwnedImplementationTarget[];
   readonly diagnostics: readonly SigilDiagnostic[];
 }

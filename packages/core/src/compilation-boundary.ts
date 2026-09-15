@@ -1,5 +1,5 @@
-import { dirname, isModuleFile, normalizePath, relativePath } from "./path.ts";
-import { diagnostic } from "./diagnostics.ts";
+import { dirname, normalizePath, relativePath } from "./path.ts";
+import { compareScalarText, diagnostic } from "./diagnostics.ts";
 import type { SigilDiagnostic } from "./model/diagnostics.ts";
 import type {
   ResolvedComponent,
@@ -37,13 +37,11 @@ export type ResolvedCompilationTarget =
 
 export type CompilationBoundaryStrategy =
   | "exact-target"
-  | "nearest-covering-module-index"
   | "covering-component"
   | "workspace-fallback";
 
 export type CompilationBoundaryTieBreak =
   | "distance-vector"
-  | "module-index-path"
   | "source-path"
   | "component-name";
 
@@ -84,8 +82,10 @@ interface BoundaryClosure {
 
 // A set member is the semantic-unit string itself, so nothing has to be
 // parsed back out of a delimited key.
-const componentUnit = (name: string, declarationPath: string) =>
-  `component:${name}@${declarationPath}`;
+const componentUnit = (component: ResolvedComponent, declarationPath: string) =>
+  `component:${component.name}@${declarationPath}${
+    component.identity ? "" : `#${component.declaration.range.start}`
+  }`;
 
 const fileUnit = (filePath: string) => `file:${filePath}`;
 
@@ -167,30 +167,20 @@ export function selectCompilationBoundary(
     );
   }
 
-  // A module index is the intentional boundary summary for its directory, so
-  // it outranks any covering component.
-  for (
-    const [strategy, moduleIndex] of [
-      ["nearest-covering-module-index", true],
-      ["covering-component", false],
-    ] as const
-  ) {
-    const candidates = resolved.components.filter((candidate) =>
-      isModuleFile(candidate.filePath) === moduleIndex &&
-      covers(closureFor(resolved, candidate, moduleIndex), scope)
-    );
-    if (candidates.length === 0) continue;
+  const candidates = resolved.components.filter((candidate) =>
+    candidate.identity && covers(closureFor(resolved, candidate), scope)
+  );
+  if (candidates.length) {
     const best = rankByProximity(resolved, candidates, scope);
-    const path = workspacePath(resolved, best.candidate.filePath);
     return {
       requestedScope: seed,
-      resolvedTarget: moduleIndex ? { kind: "file", filePath: path } : {
+      resolvedTarget: {
         kind: "component",
         name: best.candidate.name,
-        declarationPath: path,
+        declarationPath: workspacePath(resolved, best.candidate.filePath),
       },
       selection: {
-        strategy,
+        strategy: "covering-component",
         affectedSemanticUnits: affectedUnits,
         coveredSemanticUnits: affectedUnits,
         uncoveredSemanticUnits: [],
@@ -203,7 +193,7 @@ export function selectCompilationBoundary(
   return workspaceFallback(
     seed,
     affectedUnits,
-    "No module index or component closure covers the complete affected scope.",
+    "No component closure covers the complete affected scope.",
   );
 }
 
@@ -237,11 +227,8 @@ function affectedScopeFor(
 
   const addComponent = (component: ResolvedComponent) => {
     const declarationPath = workspacePath(resolved, component.filePath);
-    components.add(componentUnit(component.name, declarationPath));
+    components.add(componentUnit(component, declarationPath));
     files.add(fileUnit(declarationPath));
-    for (const expansion of component.expansions.expands) {
-      files.add(fileUnit(workspacePath(resolved, expansion.filePath)));
-    }
   };
 
   const addOwnersOfFile = (filePath: string) => {
@@ -249,10 +236,7 @@ function affectedScopeFor(
     for (const component of resolved.components) {
       const ownsDeclaration =
         workspacePath(resolved, component.filePath) === filePath;
-      const ownsExpansion = component.expansions.expands.some((expansion) =>
-        workspacePath(resolved, expansion.filePath) === filePath
-      );
-      if (ownsDeclaration || ownsExpansion) addComponent(component);
+      if (ownsDeclaration) addComponent(component);
     }
   };
 
@@ -283,7 +267,7 @@ function affectedScopeFor(
   } else if (seed.kind === "directory") {
     const directory = normalizePath(seed.directoryPath).replace(/\/+$/, "");
     // Every loaded file under the directory participates, including an
-    // expand-only or declarationless file that owns no component of its own.
+    // declarationless file that owns no component of its own.
     for (const file of resolved.workspace.files) {
       const filePath = workspacePath(resolved, file.path);
       if (!withinDirectory(filePath, directory)) continue;
@@ -300,69 +284,33 @@ function enclosingComponent(
   line: number,
   column: number,
 ): ResolvedComponent | undefined {
-  let best: ResolvedComponent | undefined;
-  let bestStart = -1;
-  for (const component of resolved.components) {
-    const ranges: ResolvedComponent["declaration"]["range"][] = [];
-    if (workspacePath(resolved, component.filePath) === filePath) {
-      ranges.push(component.declaration.range);
-    }
-    for (const expansion of component.expansions.expands) {
-      if (workspacePath(resolved, expansion.filePath) !== filePath) continue;
-      ranges.push(expansion.declaration.range);
-    }
-    for (const range of ranges) {
-      if (!containsPosition(range, line, column)) continue;
-      // Prefer the innermost enclosing form when ranges nest.
-      if (range.start.line > bestStart) {
-        bestStart = range.start.line;
-        best = component;
-      }
-    }
-  }
-  return best;
+  const file = resolved.workspace.files.find((f) =>
+    workspacePath(resolved, f.path) === filePath
+  );
+  const offset = file?.document.source?.byteOffsetAtLocation({ line, column });
+  if (offset === undefined) return undefined;
+  return resolved.components.find((c) =>
+    workspacePath(resolved, c.filePath) === filePath &&
+    c.declaration.range.start <= offset && offset < c.declaration.range.end
+  );
 }
 
 // @sigil implements packages/core/src/compilation-boundary.sigil::SigilCompilationBoundary::BoundaryClosure interface,logic,constraints
 function closureFor(
   resolved: ResolvedSigilWorkspace,
   candidate: ResolvedComponent,
-  transitive: boolean,
 ): BoundaryClosure {
-  const components = new Set<string>();
-  const files = new Set<string>();
-  const visited = new Set<string>();
-  const queue: ResolvedComponent[] = [candidate];
-
-  const absorb = (component: ResolvedComponent) => {
-    const declarationPath = workspacePath(resolved, component.filePath);
-    components.add(componentUnit(component.name, declarationPath));
-    files.add(fileUnit(declarationPath));
-    for (const expansion of component.expansions.expands) {
-      files.add(fileUnit(workspacePath(resolved, expansion.filePath)));
-    }
-  };
-
-  while (queue.length > 0) {
-    const current = queue.shift() as ResolvedComponent;
-    const key = componentUnit(
-      current.name,
-      workspacePath(resolved, current.filePath),
-    );
-    if (visited.has(key)) continue;
-    visited.add(key);
-    absorb(current);
-
-    if (transitive) {
-      // A module index assembles a namespace, so its boundary reaches every
-      // component it imports, however deeply nested.
-      for (const next of importedComponents(resolved, current)) {
-        queue.push(next);
-      }
-      continue;
-    }
-    for (const next of importedComponents(resolved, current)) absorb(next);
-    for (const next of importers(resolved, current)) absorb(next);
+  const components = new Set<string>(), files = new Set<string>();
+  for (
+    const component of [
+      candidate,
+      ...importedComponents(resolved, candidate),
+      ...importers(resolved, candidate),
+    ]
+  ) {
+    const path = workspacePath(resolved, component.filePath);
+    components.add(componentUnit(component, path));
+    files.add(fileUnit(path));
   }
   return { components, files };
 }
@@ -371,54 +319,24 @@ function importedComponents(
   resolved: ResolvedSigilWorkspace,
   component: ResolvedComponent,
 ): ResolvedComponent[] {
-  const ownedFiles = new Set<string>([
-    workspacePath(resolved, component.filePath),
-    ...component.expansions.expands.map((expansion) =>
-      workspacePath(resolved, expansion.filePath)
-    ),
-  ]);
-  const results: ResolvedComponent[] = [];
-  for (const edge of resolved.graph.importedComponentEdges) {
-    if (!ownedFiles.has(workspacePath(resolved, edge.sourceFile))) continue;
-    if (
-      edge.sourceComponents.length > 0 &&
-      !edge.sourceComponents.some((identity) =>
-        identity.componentName === component.name &&
-        workspacePath(resolved, identity.declarationPath) ===
-          workspacePath(resolved, component.filePath)
-      )
-    ) continue;
-    for (const target of resolved.components) {
-      if (
-        target.name === edge.componentName &&
-        workspacePath(resolved, target.filePath) ===
-          workspacePath(resolved, edge.targetFile)
-      ) results.push(target);
-    }
-  }
-  return results;
+  const providerIds = new Set(
+    resolved.graph.importedTagEdges.filter((e) =>
+      e.sourceFile === component.filePath
+    ).map((e) => e.providerComponentId),
+  );
+  return resolved.components.filter((c) => providerIds.has(c.id));
 }
 
 function importers(
   resolved: ResolvedSigilWorkspace,
   component: ResolvedComponent,
 ): ResolvedComponent[] {
-  const declarationPath = workspacePath(resolved, component.filePath);
-  const results: ResolvedComponent[] = [];
-  for (const edge of resolved.graph.importedComponentEdges) {
-    if (edge.componentName !== component.name) continue;
-    if (workspacePath(resolved, edge.targetFile) !== declarationPath) continue;
-    for (const identity of edge.sourceComponents) {
-      for (const source of resolved.components) {
-        if (
-          source.name === identity.componentName &&
-          workspacePath(resolved, source.filePath) ===
-            workspacePath(resolved, identity.declarationPath)
-        ) results.push(source);
-      }
-    }
-  }
-  return results;
+  const consumerIds = new Set(
+    resolved.graph.importedTagEdges.filter((e) =>
+      e.providerComponentId === component.id
+    ).flatMap((e) => e.uses.map((u) => u.componentId)),
+  );
+  return resolved.components.filter((c) => consumerIds.has(c.id));
 }
 
 function covers(closure: BoundaryClosure, scope: AffectedScope): boolean {
@@ -461,8 +379,8 @@ function rankByProximity(
 
   scored.sort((left, right) =>
     compareVectors(left.vector, right.vector) ||
-    left.path.localeCompare(right.path) ||
-    left.candidate.name.localeCompare(right.candidate.name)
+    compareScalarText(left.path, right.path) ||
+    compareScalarText(left.candidate.name, right.candidate.name)
   );
 
   // Report the rule that actually separated the winner from its closest rival,
@@ -474,7 +392,6 @@ function rankByProximity(
     tieBreak: runnerUp === undefined ? undefined : decidingRule(
       compareVectors(winner.vector, runnerUp.vector) !== 0,
       winner.path !== runnerUp.path,
-      winner.path,
     ),
   };
 }
@@ -568,11 +485,10 @@ function workspacePath(
 function decidingRule(
   vectorsDiffer: boolean,
   pathsDiffer: boolean,
-  winningPath: string,
 ): CompilationBoundaryTieBreak {
   if (vectorsDiffer) return "distance-vector";
   if (pathsDiffer) {
-    return isModuleFile(winningPath) ? "module-index-path" : "source-path";
+    return "source-path";
   }
   return "component-name";
 }
@@ -612,11 +528,13 @@ function seedDiagnostics(
         workspacePath(resolved, component.filePath) ===
           normalizePath(seed.declarationPath))
     );
-    if (matches.length === 0) {
+    if (matches.length !== 1 || !matches[0].identity) {
       return [
         notFound(
           seed.declarationPath ?? "",
-          `No loaded component is named ${JSON.stringify(seed.componentName)}${
+          `No unambiguous loaded component is named ${
+            JSON.stringify(seed.componentName)
+          }${
             seed.declarationPath
               ? ` in ${normalizePath(seed.declarationPath)}`
               : ""
@@ -671,20 +589,8 @@ function seedDiagnostics(
 
 /** Reject absolute paths and any path that escapes the workspace root. */
 function isWorkspaceRelative(path: string): boolean {
-  if (path.trim() === "") return false;
-  const normalized = normalizePath(path);
-  if (normalized.startsWith("/")) return false;
-  if (/^[A-Za-z]:/.test(normalized)) return false;
-  return !normalized.split("/").includes("..");
-}
-
-function containsPosition(
-  range: ResolvedComponent["declaration"]["range"],
-  line: number,
-  column: number,
-): boolean {
-  if (line < range.start.line || line > range.end.line) return false;
-  if (line === range.start.line && column < range.start.column) return false;
-  if (line === range.end.line && column > range.end.column) return false;
-  return true;
+  if (!path.trim() || path.includes("\0") || /^[\\/]|^[A-Za-z]:/.test(path)) {
+    return false;
+  }
+  return !path.replaceAll("\\", "/").split("/").includes("..");
 }

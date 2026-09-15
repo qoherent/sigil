@@ -1,3 +1,4 @@
+import { proseWidthDiagnostics } from "./prose-width.ts";
 import {
   compareScalarText,
   diagnostic,
@@ -112,7 +113,9 @@ function introductions(
 export function resolveSigilRelationships(
   workspace: SigilWorkspace,
 ): SigilResolution {
-  const diagnostics: SigilDiagnostic[] = [...workspace.diagnostics];
+  const diagnostics: SigilDiagnostic[] = workspace.diagnostics.filter((d) =>
+    d.code !== "SIGIL_LINE_TOO_LONG" && d.code !== "SIGIL_UNFORMATTABLE_LINE"
+  );
   const conflict = (
     code: SigilDiagnosticCode,
     message: string,
@@ -405,6 +408,18 @@ export function resolveSigilRelationships(
         );
       }
     }
+  }
+  for (const file of files) {
+    if (!file.document.source) continue;
+    const local = componentsByFile.get(file.path) ?? [];
+    diagnostics.push(
+      ...proseWidthDiagnostics(
+        file.path,
+        file.document.source,
+        local.flatMap((c) => c.declaration.sections.flatMap((s) => s.units)),
+        local.flatMap((c) => c.references),
+      ),
+    );
   }
   return {
     workspace,

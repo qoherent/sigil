@@ -1,3 +1,4 @@
+import { proseWidthDiagnostics } from "./prose-width.ts";
 import { diagnostic, orderDiagnostics } from "./diagnostics.ts";
 import {
   isSourceWhitespace,
@@ -627,52 +628,12 @@ export function parseSigilDocument(
       stack.at(-1)!.suppressUnclosed ?? false,
     );
   }
-  for (const component of components) {
-    for (const section of component.sections) {
-      for (const facet of section.units) {
-        const firstLine =
-          (source.locationAtByte(facet.proseRange.start)?.line ?? 1) - 1;
-        const lastLine = source.locationAtByte(facet.proseRange.end)?.line ??
-          lines.length;
-        for (const line of lines.slice(firstLine, lastLine)) {
-          if (
-            line.start < facet.proseRange.start ||
-            line.start >= facet.proseRange.end
-          ) {
-            continue;
-          }
-          let content = line.content.replace(/^[ \t]+/, "");
-          const destinations = facet.links.map((l) => l.destinationRange)
-            .filter((r) => r.start < line.contentEnd && r.end > line.start)
-            .sort((a, b) => b.start - a.start);
-          for (const r of destinations) {
-            const a = source.utf16OffsetAtByte(Math.max(r.start, line.start))! -
-              line.utf16Start;
-            const b =
-              source.utf16OffsetAtByte(Math.min(r.end, line.contentEnd))! -
-              line.utf16Start;
-            const indent = line.content.length -
-              line.content.replace(/^[ \t]+/, "").length;
-            content = content.slice(0, Math.max(0, a - indent)) +
-              content.slice(Math.max(0, b - indent));
-          }
-          if ([...content].length <= 79) continue;
-          const tooLong = content.split(/[ \t]+/).some((t) =>
-            [...t].length > 79
-          ) || facet.definitions.some((d) =>
-            d.range.start >= line.start && d.range.end <= line.contentEnd &&
-            [...d.raw].length > 79
-          );
-          error(
-            tooLong ? "SIGIL_UNFORMATTABLE_LINE" : "SIGIL_LINE_TOO_LONG",
-            tooLong
-              ? "An indivisible prose token exceeds 79 content characters."
-              : "Prose exceeds 79 content characters on a physical line.",
-            { start: line.start, end: line.contentEnd },
-          );
-        }
-      }
-    }
-  }
+  diagnostics.push(
+    ...proseWidthDiagnostics(
+      filePath,
+      source,
+      components.flatMap((c) => c.sections.flatMap((s) => s.units)),
+    ),
+  );
   return finish();
 }

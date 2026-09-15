@@ -86,7 +86,11 @@ function diagnosticStage(code: SigilDiagnosticCode): DiagnosticStage {
   if (/^SIGIL_(CONFIG|NESTED_CONFIG|UNSUPPORTED_VERSION)/.test(code)) {
     return "workspace";
   }
-  if (/^SIGIL_(IMPLEMENTATION|RETRIEVAL|BOUNDARY|GLOSSARY)/.test(code)) {
+  if (
+    /^SIGIL_(IMPLEMENTATION|RETRIEVAL|BOUNDARY|GLOSSARY|FORMAT_CONTEXT)/.test(
+      code,
+    )
+  ) {
     return "host";
   }
   if (
