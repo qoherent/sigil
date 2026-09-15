@@ -1,0 +1,39 @@
+{
+  "formatVersion": 1,
+  "sigilVersion": "0.8.0",
+  "upstreamRepository": "https://github.com/farhoud/sigil",
+  "upstreamRevision": "28ff9851a50032c2f6be9140c48a23d9d8f8a9c8",
+  "transformation": "documentary-background-links-v1",
+  "sources": [
+    {
+      "source": "spec/sigil-reference.md",
+      "output": "sigil-reference.md",
+      "sourceSha256": "c57b3ecaa3c219465b6ef4bc64a55259749015a9d258d388698e36d66ab02921",
+      "outputSha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e"
+    },
+    {
+      "source": "spec/sigil.ebnf",
+      "output": "sigil.ebnf",
+      "sourceSha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+      "outputSha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2"
+    },
+    {
+      "source": "spec/sigil-language.md",
+      "output": "sigil-language.md",
+      "sourceSha256": "97b08b782f17df3870e66fe7699363368c86a19ae933014aa6367709a9964a10",
+      "outputSha256": "3fc24e8dc56fc84d5a15efa646e6a4c93893b5f0b93ac8a37888a5460057beec"
+    },
+    {
+      "source": "spec/sigil-config.md",
+      "output": "sigil-config.md",
+      "sourceSha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7",
+      "outputSha256": "68ff1e1ed034bb3d280eac4a82329b6653211c682fab6172acce56caf347f7e7"
+    },
+    {
+      "source": "spec/sigil-config.schema.json",
+      "output": "sigil-config.schema.json",
+      "sourceSha256": "0dd88a5a7a091f63bbb463c8d247f77f45ff8365a0d2a96afc1f425ab0f1e168",
+      "outputSha256": "0dd88a5a7a091f63bbb463c8d247f77f45ff8365a0d2a96afc1f425ab0f1e168"
+    }
+  ]
+}

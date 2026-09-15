@@ -1,0 +1,145 @@
+{
+  "status": "independently_unreviewed_handoff_required",
+  "current_draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture/search/panel.sigil",
+    "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+  },
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+  "draft_changed": false,
+  "adopted_intent_preserved": [
+    "SearchPanel helps the user find records with provider-owned query.",
+    "SearchPanel displays search results for the current search.",
+    "Only the active request may publish search results.",
+    "Cancellation remains an implementation possibility, not a selected design.",
+    "SearchService owns query and search results and returns matching records ranked newest first."
+  ],
+  "report_validation": {
+    "reported_status": "complete",
+    "effective_status": "incomplete",
+    "missing_required_fields": [
+      "source_root"
+    ],
+    "nested_scope_source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+    "nested_value_is_not_substitute": true,
+    "scope_fields_match": true,
+    "input_checks": [
+      {
+        "role": "draft",
+        "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+        "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/panel.sigil",
+        "requested_sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc",
+        "captured_sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc",
+        "current_sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc",
+        "report_identity_matches_request": true
+      },
+      {
+        "role": "context",
+        "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+        "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/search/service.sigil",
+        "requested_sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31",
+        "captured_sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31",
+        "current_sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31",
+        "report_identity_matches_request": true
+      },
+      {
+        "role": "intent",
+        "original_path": "conversation://root/observe_writer_freshness/task-intent",
+        "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/capture/intent.txt",
+        "requested_sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e",
+        "captured_sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e",
+        "current_sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e",
+        "report_identity_matches_request": true
+      }
+    ],
+    "authority_checks": [
+      {
+        "kind": "evaluator_skill",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+        "current_sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+        "matches_request_and_report": true
+      },
+      {
+        "kind": "language_pack_manifest",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+        "current_sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+        "matches_request_and_report": true
+      },
+      {
+        "kind": "reference",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/design-review.md",
+        "current_sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358",
+        "matches_report": true
+      },
+      {
+        "kind": "reference",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+        "current_sha256": "6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961",
+        "matches_report": false
+      },
+      {
+        "kind": "reference",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/understanding.md",
+        "current_sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c",
+        "matches_report": true
+      },
+      {
+        "kind": "reference",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-reference.md",
+        "current_sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+        "matches_report": true
+      },
+      {
+        "kind": "reference",
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil.ebnf",
+        "current_sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+        "matches_report": true
+      }
+    ],
+    "original_to_capture_mapping": "Verified selected originals map to captured search/panel.sigil and search/service.sigil; virtual intent remains the request-identified immutable capture. @search/service.sigil maps under the request source_root to the provider original. This caller check cannot establish or repair the missing evaluator top-level resolution-root identity.",
+    "reference_freshness": "Review-contract reference identity differs; all other checked report references match."
+  },
+  "coverage": {
+    "current_usable_independent_coverage": false,
+    "fresh_independent_evaluator_runs": 0,
+    "supplied_report_claims": [
+      "SearchPanel Goal, Interface, Constraints and Decisions",
+      "SearchService Goal and Interface as provider context",
+      "Import selection, exact Tag use, ownership and publication/display relationships"
+    ],
+    "acceptance": "Retained as supplied report evidence only; no valid current independent coverage can be claimed.",
+    "omissions": [
+      "Implementation behavior, implementation conformance, and tests.",
+      "Workspace-wide discovery and configuration validation.",
+      "Product policy beyond the captured authored commitments.",
+      "Freshness of mutable original sources after this capture."
+    ],
+    "host_limits": [
+      "Native delegation is prohibited by task instruction; tools are physically present.",
+      "Read/write boundaries are instruction-only.",
+      "No compiler or network used.",
+      "No same-agent assessment counted as independent review."
+    ]
+  },
+  "dispositions": {
+    "resolved_findings": [],
+    "rejected_suggestions": [],
+    "remaining_design_findings": [],
+    "reported_findings": [],
+    "actions": [
+      "Preserved exact draft and provider; no corrections were authorized from the incomplete report.",
+      "Recaptured current draft, provider and immutable intent with exact byte digests.",
+      "Prepared complete request envelope for a fresh independent evaluator."
+    ],
+    "remaining_protocol_issue": "Missing required top-level report source_root and changed installed review-contract reference identity; empty reported findings do not establish clean coverage."
+  },
+  "unresolved_human_questions": [],
+  "exact_limitation": "The supplied delegated report lacks required top-level source_root. Its nested scope.source_root and prose resolution statement do not satisfy the required field. The installed review contract explicitly makes this report incomplete and unusable for current coverage or automatic corrections. Draft, provider, immutable intent, evaluator entrypoint and language-pack manifest identities match, but the installed review-contract.md digest also differs from the report reference identity (reported 75644d94e30fe530dba483dc99b927ec24e010bfefca8d76ac07aefe10313a21; current 6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961). A fresh independent retry is required; this observation explicitly disables native delegation at instruction level despite physically present tools.",
+  "handoff": {
+    "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff.json",
+    "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-missing/handoff-capture",
+    "is_completed_review": false,
+    "resume": "Receiving host with authorized delegation should launch a fresh read-only evaluator with handoff.json and exact captures, validate the returned report including source_root and all identities, and verify current input/authority freshness before claiming coverage or applying corrections."
+  }
+}

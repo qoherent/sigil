@@ -1,0 +1,11 @@
+{
+  "tool": "collaboration.spawn_agent",
+  "arguments": {
+    "task_name": "review_archive",
+    "fork_turns": "none",
+    "message": "Use $sigil-evaluate at /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md. Read the complete captured request at /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/request.json and evaluate precisely that scope using its mappings, captured evidence and installed sibling language authority. The captured request is sole task evidence authority. Return the full revision-bound report as JSON in your final answer. Read-only restriction is instructions only: do not write or modify any files. No compiler/network, no eval fixture access. Read only request, declared capture roots, writer-B workspace if needed, and installed skill entrypoints/references."
+  },
+  "result": {
+    "task_name": "/root/observe_writer_policy/review_archive"
+  }
+}

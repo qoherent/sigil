@@ -1,0 +1,74 @@
+{
+  "status": "compactness improved; independently reviewed; consequential retention policy remains undecided",
+  "draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/archive/export.sigil",
+    "sha256": "f3fa2968535120e191d19d4c45e966cb112f9df950a8e68d8723f6d823367fe9"
+  },
+  "resolved": [
+    "Removed two duplicate unauthorized-download prohibitions while retaining the authorization-only constraint and offered authorized download."
+  ],
+  "promises_preserved": [
+    "Later download of completed retained exports",
+    "Authorized download only",
+    "Download does not delete retained export",
+    "Automatic deletion of expired exports",
+    "Product owner decides retention duration"
+  ],
+  "rejected_suggestions": [],
+  "remaining_findings": [
+    {
+      "id": "EA-01",
+      "disposition": "design_choice",
+      "decision_needed": "When does a completed export expire (retention duration)?",
+      "owner": "product owner",
+      "consequence": "Determines how long users can recover completed exports and when automatic deletion applies.",
+      "action": "Left explicit in draft; human unavailable, no duration invented."
+    }
+  ],
+  "independent_review": {
+    "agent_handle": "/root/observe_writer_policy/review_archive",
+    "fork_turns": "none",
+    "status": "complete",
+    "fresh": true,
+    "request": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/request.json",
+    "raw_report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/report.raw.json",
+    "validation": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/validation.json",
+    "coverage": {
+      "components": [
+        "ExportArchive"
+      ],
+      "commitments_assessed": [
+        "Completed exports remain available for later download while retained.",
+        "Authorized users can download retained exports.",
+        "Downloading preserves the retained export for later downloads.",
+        "Unauthorized users may not download exports.",
+        "Expired exports must be deleted automatically.",
+        "Retention duration remains an explicit product-owner decision."
+      ],
+      "relationships_assessed": [
+        "The offered download interaction and authorization prohibition are compatible and preserve distinct positive and restrictive promises.",
+        "Preservation on download is compatible with automatic deletion upon expiry: downloading does not itself delete the export.",
+        "ExportArchive owns all selected contracts; the captured source contains no imports or Inline Links requiring additional provider context.",
+        "Every substantive commitment in captured intent.md is retained by the draft."
+      ],
+      "compactness": "The draft is compact. No material commitment-preserving simplification is warranted; deleting either the download-preservation promise or the authorization prohibition would lose an independent obligation.",
+      "consistency": "No incompatible adopted promises were found. The unresolved expiry policy is a human design choice and does not make the completed design-only assessment incomplete.",
+      "identity_verification": "All three captured input digests and the requested evaluator and language-pack manifest digests match the bytes read.",
+      "omitted_scope": [
+        "Implementation behavior and conformance.",
+        "Workspace-wide component uniqueness beyond the selected captured source.",
+        "Selection of an expiry policy on the product owner's behalf."
+      ]
+    },
+    "limitations": [
+      "Review applies to the exact captured bytes and original-to-capture mappings reported above; current workspace freshness was not asserted.",
+      "No compiler or network was used. Static design interpretation does not establish compiler acceptance, execution results, implementation conformance, or saturated coherence.",
+      "Read-only restriction was enforced by instructions only, not host sandboxing. No files were written or modified.",
+      "The product owner has not chosen when completed exports expire; the review identifies this decision without supplying policy."
+    ]
+  },
+  "no_compiler_or_network": true,
+  "outcome_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/outcome.json"
+}

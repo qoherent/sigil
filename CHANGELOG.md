@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Add separately callable Sigil 0.8 understanding, advisory design evaluation, and
+  compact writing skills. The writer delegates fresh review, applies corrections
+  supported by established intent, and preserves unresolved human decisions.
+- Bundle reproducible language authority for offline use and validate the complete
+  sibling catalog through installation and relocated releases. Keep legacy `sigil`
+  explicitly scoped to 0.7 native workflows.
+- Separate offline `test:skill` checks from `test:skill:native`, and document
+  observed agent behavior independently from package correctness.
+
 ## 0.7.1 - 2026-08-04
 
 - Advance the core, compiler, CLI, LSP, VS Code extension, and coding-agent

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Understand (0.8)"
+  short_description: "Explain Sigil 0.8 intent and Tag ownership"
+  default_prompt: "Use $sigil-understand to explain this Sigil 0.8 design, separating authored commitments, supported conclusions, unresolved intent, and implementation choices."

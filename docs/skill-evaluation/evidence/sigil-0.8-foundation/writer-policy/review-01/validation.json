@@ -1,0 +1,10 @@
+{
+  "report_complete_and_valid": true,
+  "current_input_bytes_match_assessed_inputs": true,
+  "authority_matches": true,
+  "original_mappings_and_source_root_match": true,
+  "additional_context": [],
+  "evidence_quotes_verified": true,
+  "agent_handle": "/root/observe_writer_policy/review_archive",
+  "report_sha256": "52ffbad257d660d2bfbe800f83d10703da4240b33bcda9b62ab3ce95bfc5e6cf"
+}

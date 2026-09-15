@@ -1,0 +1,10 @@
+{
+  "verdicts": [
+    {
+      "#": 1,
+      "status": "confirmed",
+      "protected_subject": "public-contract",
+      "reason": "The newly added report contract at review-contract.md:73-79 requires no source_root while its freshness rule at :111-118 requires comparing that root, so a conforming report can omit the value needed to enforce relocation safety when a root-relative import is present; incidence was not measured."
+    }
+  ]
+}

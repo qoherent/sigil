@@ -1,0 +1,87 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": {
+    "files": ["archive/export.sigil"],
+    "components": ["ExportArchive"],
+    "purpose": "Design-only review against adopted retention policy, contract consistency, ownership, and commitment-preserving compactness."
+  },
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/archive/export.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/archive/export.sigil",
+      "sha256": "1969c2e10b4673dadb2c5423bb21baa5803e8f65e3ae52f0e99af4229777ab8f"
+    },
+    {
+      "role": "context",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/policy/retention.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/policy/retention.md",
+      "sha256": "792f961dda3f232406ab4e95cc1b85a3be063b724109fc7b17b1f40c9adeec30"
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation:writer-retrieval-task",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/intent.txt",
+      "sha256": "86f86f758e81184631c37e8d405ad67174b45cf9280839044bdb2957c03c40e5"
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+      "sigil_version": "0.8.0",
+      "upstream_revision": "28ff9851a50032c2f6be9140c48a23d9d8f8a9c8"
+    },
+    "verification": "Exact-byte SHA-256 digests matched every requested input and authority identity. All five language-pack output files also matched their manifest digests.",
+    "guidance_read": [
+      "sigil-evaluate/references/design-review.md",
+      "sigil-evaluate/references/review-contract.md",
+      "sigil-understand/references/understanding.md",
+      "sigil-understand/references/language/sigil-reference.md: relevant structure, ownership, Facet, Inline Link, interpretation, and formatting rules",
+      "sigil-understand/references/language/sigil.ebnf"
+    ]
+  },
+  "findings": [],
+  "coverage": {
+    "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C",
+    "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures",
+    "components": ["ExportArchive"],
+    "commitments_assessed": [
+      "Goal, line 3: completed exports remain available for later download within the retention constraint.",
+      "Interface, line 6: an authorized user can download a retained export.",
+      "Constraints, lines 9-11: the adopted policy binds ExportArchive to thirty days of retention measured from completion, followed by automatic deletion.",
+      "Constraints, line 11: downloading does not reset expiry."
+    ],
+    "relationships_assessed": [
+      {
+        "source": "archive/export.sigil:9",
+        "raw_link": "[retention policy](../policy/retention.md)",
+        "resolved_original_target": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-C/policy/retention.md",
+        "mapped_capture": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-retrieval/r1/captures/policy/retention.md",
+        "assessment": "Resolved from the original archive directory. The explicitly adopted target's lines 1-2 agree with all three retention obligations in the draft."
+      },
+      {
+        "scope": "ExportArchive ownership and compactness",
+        "assessment": "ExportArchive owns its goal, download interface, and retention constraints. No competing owner or incompatible promise appears in the assessed evidence. The compact design preserves each independent policy obligation without requiring additional optional contracts or implementation details."
+      }
+    ],
+    "additional_project_context_used": [],
+    "unresolved_questions": [],
+    "omitted_scope": [
+      "Implementation behavior and conformance",
+      "Workspace-wide compiler validation",
+      "Unselected components"
+    ]
+  },
+  "limitations": [
+    "Compiler and network were unavailable; this report makes no compiler-validation claim.",
+    "Read-only restrictions were enforced by instructions only; host filesystem tools were unrestricted. No files were created, modified, or deleted.",
+    "The assessment is bound to the verified captured bytes and original-location mapping. Current workspace freshness must be checked before reusing this report.",
+    "This independent design-only assessment does not establish production behavior, implementation conformance, or saturated coherence."
+  ]
+}

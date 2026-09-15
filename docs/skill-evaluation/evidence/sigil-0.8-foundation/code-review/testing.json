@@ -1,0 +1,8 @@
+{
+  "reviewer": "testing",
+  "findings": [],
+  "residual_risks": [
+    "The full packages/cli test suite currently has three failures outside this review's changed scope (config parsing, graph edges, and raw design export), so it cannot provide a clean whole-suite regression signal for this change."
+  ],
+  "testing_gaps": []
+}

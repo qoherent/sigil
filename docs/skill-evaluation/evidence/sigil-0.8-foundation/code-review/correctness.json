@@ -1,0 +1,8 @@
+{
+  "reviewer": "correctness",
+  "findings": [],
+  "residual_risks": [],
+  "testing_gaps": [
+    "The observed freshness run covers provider-only mutation, but not the draft-only mutation specified in integrations/skills/sigil-write/evals/writing-loop-fixture.md:186. Exercise a pending review while the draft gains the display-continuity promise, then verify that the writer captures and independently reassesses the new draft before editing and preserves that promise. This tests the concrete stale-overwrite failure that provider-only freshness evidence does not exercise."
+  ]
+}

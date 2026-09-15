@@ -1,0 +1,14 @@
+component SearchPanel {
+  goal {
+    Show the user's current search results.
+  }
+  interface {
+    Display matching records.
+    Starting a new request preserves the already displayed results until its replacement is ready.
+  }
+  constraints {
+    Only the active request may publish new results.
+    An inactive request must never publish new results.
+    A response from a request that is no longer active cannot publish new results.
+  }
+}

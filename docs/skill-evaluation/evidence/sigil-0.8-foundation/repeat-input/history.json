@@ -1,0 +1,14 @@
+[
+  {
+    "id": "SP-1",
+    "affected_commitment": "active-request publication restriction",
+    "consequence": "Repeated publication wording hides the shared publication rule.",
+    "action": "Consolidated positive and negative publication restrictions into the single positive invariant, preserving display continuity.",
+    "before_sha256": "1f685e52f5f694f7ab28b6045285fbff191da9720515a53c5e98a15c146fd699",
+    "after_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+    "independent_promises_preserved": [
+      "active request only publication",
+      "retain already displayed results until replacement ready"
+    ]
+  }
+]

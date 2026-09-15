@@ -1,0 +1,10 @@
+{
+  "tool": "collaboration.spawn_agent",
+  "arguments": {
+    "task_name": "fresh_review",
+    "fork_turns": "none",
+    "message": "Use $sigil-evaluate at /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md for a read-only independent design review. The complete captured request is /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-correction/revision-1/request.json. Read it, verify captured identities, and follow its scope, authority, input mapping, and read restrictions. This request and its mapped inputs are your sole project evidence authority. Do not write any files; return the complete report as raw JSON in your final answer. Read-only is instructions only. Do not use network, compiler, other evidence, repository files, or evaluation fixtures. No inherited conversation is supplied. Relevant uncaptured context is available read-only within the original workspace specified in the request if needed."
+  },
+  "returned_handle": "/root/observe_writer_correction/fresh_review",
+  "request_sha256": "ebf6703b75c42a9f3d9ecb08e265a700e85cd7d4f41a1b000e0ae9367a3fa59b"
+}

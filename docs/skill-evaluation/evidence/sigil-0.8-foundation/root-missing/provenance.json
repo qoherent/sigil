@@ -1,0 +1,8 @@
+{
+  "kind": "controlled report replay",
+  "original_report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/round-1/report.raw.json",
+  "mutation": "missing source_root",
+  "current_input_digests_verified": true,
+  "new_independent_evaluation": false,
+  "review_contract_sha256": "6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961"
+}

@@ -1,0 +1,115 @@
+{
+  "reviewer": "adversarial-claude",
+  "cross_model_route": "claude",
+  "cross_model_target": "claude",
+  "cross_model_harness": "claude",
+  "serving_family": "claude",
+  "independence_verified": true,
+  "model_requested": "claude-opus-5",
+  "model_actual": "claude-opus-5",
+  "effort_requested": "high",
+  "effort_actual": "unverified",
+  "receipt_supported": true,
+  "findings": [
+    {
+      "title": "Local spec links pinned to URLs without existence check",
+      "severity": "P2",
+      "file": "scripts/sync-skill-language.ts",
+      "line": 148,
+      "why_it_matters": "The transformation converts a checkable repo-relative link into an opaque URL, so a mistyped or later-deleted background document ships to every skill user as a 404 and no check in the repo can detect it. The old packaging validator did stat local link targets (`assert((await Deno.stat(resolve(dirname(path), target))).isFile, \"Missing reference from ...\")`, retained at scripts/validate-native-skill.ts:597); the new language-pack pipeline has no equivalent, so the bundled authority's only outbound references are unverifiable by design.",
+      "autofix_class": "manual",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "scripts/sync-skill-language.ts:148-151 — `const pinned = `${UPSTREAM}/blob/${revision}/${` / `      target.split(\"/\").map(encodeURIComponent).join(\"/\")` / `    }${suffix}`;` / `    output = output.slice(0, link.start) + pinned + output.slice(link.end);` — the only guard before this is the escape check at :143 (`if (target.startsWith(\"../\") || isAbsolute(path))`); nothing stats `join(repoRoot, target)`.",
+        "Trigger: a maintainer writes `[migration guide](migrating-to-0.9.md)` in spec/sigil-reference.md (or renames spec/migrating-to-0.8.md, which is currently the sole rewritten target — integrations/skills/sigil-understand/references/language/sigil-reference.md:16 already carries `https://github.com/farhoud/sigil/blob/28ff9851.../spec/migrating-to-0.8.md`).",
+        "Step 2: `syncLanguagePack` renders the link into a pinned URL and records `outputSha256`; the file is never opened.",
+        "Step 3: `validateLanguagePack` (scripts/sync-skill-language.ts:230) re-renders from the same source and compares hashes — identical, so it passes.",
+        "Step 4: `validateBundledLanguagePack` skips the link entirely: scripts/sync-skill-language.ts:212 — `if (!localDestination(destination)) continue;` — a pinned https URL is not local.",
+        "Failure outcome: `deno task test:skill`, cli_test and test-cli-release.ts all report green while the shipped offline pack points readers at a URL that 404s; the only defect signal is a human clicking the link."
+      ],
+      "pre_existing": false,
+      "suggested_fix": "In `renderLanguageSource`, before building `pinned`, verify the target resolves to a real file. Since the function is synchronous and the repo root is not threaded through, the smallest defensible change is to collect the rewritten `target` paths and have `syncLanguagePack` (which already has `repoRoot`) `Deno.stat(join(repoRoot, target))` each one and throw `Background link target missing: ${source}: ${destination}` on NotFound. Assumption: every rewritten destination is a repository file rather than a directory or generated path; if directory targets are intended, accept `isFile || isDirectory`.",
+      "first_evidence": "scripts/sync-skill-language.ts:148-151 — `const pinned = `${UPSTREAM}/blob/${revision}/${` / `      target.split(\"/\").map(encodeURIComponent).join(\"/\")` / `    }${suffix}`;` / `    output = output.slice(0, link.start) + pinned + output.slice(link.end);` — the only guard before this is the escape check at :143 (`if (target.startsWith(\"../\") || isAbsolute(path))`); nothing stats `join(repoRoot, target)`."
+    },
+    {
+      "title": "Sync silently reuses stale revision pin after source edits",
+      "severity": "P2",
+      "file": "scripts/sync-skill-language.ts",
+      "line": 265,
+      "why_it_matters": "The manifest presents `upstreamRevision` as the provenance of the bundled bytes, but nothing ties the pin to the source content. After any spec edit, a plain re-sync stamps new content with the old commit and rewrites every background link to a revision that predates it, so users following those links land on stale or nonexistent documents. `--check` re-renders with the same recorded pin, so the drift gate stays green forever.",
+      "autofix_class": "manual",
+      "owner": "human",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "scripts/sync-skill-language.ts:263-266 — `let revision = options.revision;` / `  if (!revision) {` / `    revision = (await readManifest(packDirectory)).upstreamRevision;` / `  }`",
+        "scripts/skill-foundation_test.ts:107-118 codifies the behavior: the test appends `\"\\nChanged authority.\\n\"` to `spec/sigil-reference.md`, re-syncs with no revision (`const updated = await syncLanguagePack(directory);`), asserts the source hash changed (`updated.sources[0].sourceSha256 !== original.sources[0].sourceSha256`) and then asserts `equal(updated.upstreamRevision, revision);` — i.e. the pin is required to stay at the pre-edit commit.",
+        "Trigger: maintainer edits spec/sigil-reference.md and runs `deno run scripts/sync-skill-language.ts` (the documented no-argument form; `--revision` is optional per the usage string at :306).",
+        "Step 2: outputs and both hashes are regenerated, `upstreamRevision` is carried over from the old manifest.",
+        "Step 3: `validateLanguagePack` re-renders using `manifest.upstreamRevision` (scripts/sync-skill-language.ts:243) — the same stale value — so hashes match and the check passes.",
+        "Failure outcome: the shipped pack claims provenance at commit X while containing post-X content, and every rewritten background URL resolves against X. If the edit added a reference to a doc created after X, that URL 404s permanently and no repository check can observe it."
+      ],
+      "pre_existing": false,
+      "suggested_fix": "Make the pin a required input whenever content changes: in `syncLanguagePack`, after computing each `sourceSha256`, compare against the existing manifest and throw `Supply --revision: sources changed since <pin>` when any source hash differs and `options.revision` was not supplied. Update scripts/skill-foundation_test.ts:113-118 to pass a second distinct revision and assert the new pin. Assumption: the pin is meant to identify the commit the bundled bytes came from; if it is only meant to identify a stable docs anchor, document that in the manifest comment instead.",
+      "first_evidence": "scripts/sync-skill-language.ts:263-266 — `let revision = options.revision;` / `  if (!revision) {` / `    revision = (await readManifest(packDirectory)).upstreamRevision;` / `  }`"
+    },
+    {
+      "title": "Foundation sigilVersion is a literal with nothing to check it against",
+      "severity": "P2",
+      "file": "scripts/validate-skill.ts",
+      "line": 80,
+      "why_it_matters": "The pack and the three skills advertise the language version they implement, but that claim is a hardcoded string compared to another hardcoded string. The bundled spec text is whatever `spec/*.md` currently contains, so once the language moves on, the pack ships newer normative text labeled 0.8.0 and every consumer of `compatibility.json` / `manifest.json` is misinformed — while `deno task test:skill` stays green. The equivalent cross-artifact check the old validator had (`equal(config.sigilVersion, compatibility.sigilVersion)`) was not carried over to the foundation.",
+      "autofix_class": "advisory",
+      "owner": "human",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "scripts/validate-skill.ts:80 — `    equal(compatibility.sigilVersion, \"0.8.0\", `Language version: ${name}`);` — the expected value is a literal, not a value read from any repository artifact.",
+        "scripts/sync-skill-language.ts:165 — `    manifest.formatVersion !== 1 || manifest.sigilVersion !== \"0.8.0\" ||` and :274 `    sigilVersion: \"0.8.0\",` — the manifest's version claim is written and checked against the same literal.",
+        "The two claims are already demonstrably decoupled: `.sigil/config.json:2` is `\"sigilVersion\": \"0.7.0\"` while integrations/skills/sigil-understand/compatibility.json:2 is `\"sigilVersion\": \"0.8.0\"`, and no check relates them. The legacy path still does relate them — scripts/validate-native-skill.ts:582 `equal(config.sigilVersion, compatibility.sigilVersion);` — so the foundation is the only catalog member without that tie.",
+        "Trigger: the language advances and `spec/sigil-reference.md` is updated to describe 0.9 constructs. Step 2: `syncLanguagePack` re-hashes and rewrites the pack from the new spec, stamping `sigilVersion: \"0.8.0\"`. Step 3: `assertManifest` and validate-skill.ts both compare against the same `\"0.8.0\"` literal and pass. Failure outcome: sigil-write/SKILL.md:12 tells the agent these installed siblings \"supply 0.8.0 authority\" while the bundled normative text is 0.9, and no gate in the repository can distinguish the two."
+      ],
+      "pre_existing": false,
+      "suggested_fix": "Derive the expected version from one artifact instead of repeating a literal in three places: export a single `LANGUAGE_VERSION` from scripts/sync-skill-language.ts, assert it equals a version recorded in the spec itself (or in `.sigil/config.json` once the repo is on 0.8), and have validate-skill.ts:80 and `assertManifest` both compare against that. Assumption: the intended source of truth is the spec/config the pack is built from; if the foundation is deliberately pinned to 0.8 while the repo moves ahead, add an explicit comment and a check that the bundled spec still declares 0.8.",
+      "first_evidence": "scripts/validate-skill.ts:80 — `    equal(compatibility.sigilVersion, \"0.8.0\", `Language version: ${name}`);` — the expected value is a literal, not a value read from any repository artifact."
+    },
+    {
+      "title": "Foundation integrity check never runs on a user's install",
+      "severity": "P2",
+      "file": "scripts/validate-skill.ts",
+      "line": 40,
+      "why_it_matters": "This diff introduces the first cross-skill dependency graph in the catalog (sigil-write depends on sigil-evaluate and sigil-understand for its protocol and its only language authority), and writes a validator that can detect a broken one — but wires it exclusively into CI. A catalog that is incomplete on the user's machine produces no error at install time and no error at use time; the writing skill simply proceeds with dangling sibling links, which is precisely the state sigil-write/SKILL.md:12 forbids.",
+      "autofix_class": "advisory",
+      "owner": "human",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "scripts/validate-skill.ts:40-43 — `export async function validateFoundation(` / `  catalog: string,` / `  options: { repoRoot?: string } = {},` / `): Promise<void> {` — a repo-wide search for `validateFoundation` returns only scripts/validate-skill.ts, scripts/skill-foundation_test.ts, packages/cli/tests/cli_test.ts and scripts/test-cli-release.ts; nothing under packages/cli/src imports it, so the shipped `sigil skill install` never runs it.",
+        "sigil-write/SKILL.md:9-13 — `Read the sibling [understanding guidance](../sigil-understand/references/understanding.md)` ... `These installed siblings supply 0.8.0 authority; do not substitute legacy rules` — the skill's correctness depends on a sibling that may not be there.",
+        "Cascade step 1: `installSkills` (packages/cli/src/installer.ts:115-148, unchanged by this diff) creates each skill directory in a loop with no transaction; `writeManifest` runs only after the loop completes (:150-151). An interruption or an I/O failure while copying sigil-understand leaves sigil-write installed and sigil-understand missing or truncated, with no manifest entries recorded.",
+        "Cascade step 2: re-running the install cannot repair it in copy mode (the default on hosts where `Deno.symlink` is denied and `linkFallbackAllowed` falls back to `copyDirectory`): `plannedAction` finds an existing non-symlink directory that is not in the manifest and reaches `throw new Error(`Refusing to replace unmanaged skill path ${target}.`)` (packages/cli/src/installer.ts:249). Because planning completes before any install (:100-112), one such directory aborts the whole re-install.",
+        "Cascade step 3: the agent host still sees a valid `sigil-write/SKILL.md` and loads the skill; `../sigil-understand/references/language/sigil-reference.md` does not resolve, so the writer authors 0.8 designs with no normative reference and no signal that authority is absent.",
+        "Note on provenance: packages/cli/src/installer.ts is not modified by this diff; the hazard is created by the new cross-skill dependency contract (scripts/validate-skill.ts:10-14) landing without any runtime enforcement."
+      ],
+      "pre_existing": false,
+      "suggested_fix": "Call `validateFoundation` from the installer after `writeManifest` for each destination and fail the command (or emit a clear warning listing the missing skill) when it throws, so a partial install is reported at install time rather than surfacing as silent loss of language authority. Assumption: the CLI can depend on this module; if scripts/ must stay out of packages/cli, move `validateFoundation` into packages/cli/src and have scripts/validate-skill.ts import it from there.",
+      "first_evidence": "scripts/validate-skill.ts:40-43 — `export async function validateFoundation(` / `  catalog: string,` / `  options: { repoRoot?: string } = {},` / `): Promise<void> {` — a repo-wide search for `validateFoundation` returns only scripts/validate-skill.ts, scripts/skill-foundation_test.ts, packages/cli/tests/cli_test.ts and scripts/test-cli-release.ts; nothing under packages/cli/src imports it, so the shipped `sigil skill install` never runs it."
+    }
+  ],
+  "residual_risks": [
+    "The pinned background URLs assume `github.com/farhoud/sigil` is public and that commit 28ff9851a50032c2f6be9140c48a23d9d8f8a9c8 is pushed and never rewritten. A rebase, force-push, or private repository turns every rewritten link in the shipped pack into a 404, and the pipeline is deliberately offline (scripts/sync-skill-language.ts:206 `/** Installed-bundle check: source checkout, git, compiler and network are unnecessary. */`) so no check can ever observe it.",
+    "`documentaryText` pairs equal-length backtick runs across the whole document (scripts/sync-skill-language.ts:98-113), unlike CommonMark, which ends a code span at a blank line. Two unrelated stray single backticks separated by paragraphs would blank everything between them, hiding any link in that region from both the URL rewriting and the link validation — a silent skip rather than a failure. Current pack content contains no such occurrence (the only single-backtick lines found are legitimate multi-line spans in sigil/references/implementation-design.md and sigil-write/evals/writing-loop-fixture.md), and the new test at scripts/skill-foundation_test.ts:53 exercises `documentaryLinks` with the same masking function it would need to cross-check.",
+    "`validateBundledLanguagePack` rejects any directory entry not named in the manifest (scripts/sync-skill-language.ts:201-203, `if (!entry.isFile || !allowed.has(entry.name)) throw`). On macOS — the platform this work is being done on — a Finder-generated `.DS_Store` in the pack directory turns `deno task test:skill`, the new cli_test assertion and the release smoke test red at once, and in link-install mode the offending file lives in the developer's repository rather than the temp install.",
+    "`validateFoundation` scans only `.md` files (scripts/validate-skill.ts:32, `else if (entry.isFile && entry.name.endsWith(\".md\")) paths.push(path);`). The previous validator covered `.md|.sigil|.yaml`; references inside `agents/openai.yaml` are now unchecked apart from the `$name` prompt assertion.",
+    "The review contract requires capturing exact draft, intent, provider and linked bytes into temporary storage before every dispatch (sigil-evaluate/references/review-contract.md:11-13) and a fresh evaluator after every semantic revision (sigil-write/references/writing-loop.md:38), but neither document states a retention or cleanup rule beyond \"keep them available long enough for the receiving host\". Long authoring sessions accumulate byte-for-byte copies of the user's design sources in temp storage with no defined lifetime.",
+    "An `evidence_gap` finding directs the writer to retrieve context, add it to captured inputs and delegate again (sigil-write/references/writing-loop.md:80-82). The stop conditions at :104 cover a repeated issue \"after an attempted correction without new evidence\" and oscillating edits, but a chain of distinct evidence gaps involves neither, so the loop is bounded only by the number of reachable linked documents — each round costing a full fresh sub-agent."
+  ],
+  "testing_gaps": [
+    "No test relocates a symlink install. packages/cli/tests/cli_test.ts:7913-7916 renames the installation directory only when `forceCopy` is true, so the case where relocation breaks the relative symlinks the installer creates (packages/cli/src/installer.ts:131, `const linkTarget = relative(dirname(item.target), item.source);`) is never exercised — and that is the mode a user gets by default.",
+    "Only the `.agents/skills` destination is validated. Both cli_test and scripts/test-cli-release.ts:88 install with `--agent codex`; the `.claude/skills` destination produced by `--agent claude` (packages/cli/src/installer.ts:206) and the default all-agents install that writes both destinations are never passed to `validateFoundation`.",
+    "No test covers a partially installed catalog reaching the CLI. skill-foundation_test.ts exercises a missing skill directory against the validator directly, but nothing exercises install → failure → re-install, which is where `Refusing to replace unmanaged skill path` blocks recovery.",
+    "No test asserts that a rewritten background URL's path exists in the repository at the recorded revision; `scripts/skill-foundation_test.ts:79` only asserts the textual substitution is performed, using an invented `../docs/note.md#why` target that is never required to exist."
+  ]
+}

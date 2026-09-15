@@ -36,7 +36,7 @@ before running it, download the script first instead of piping it directly to a
 shell. Every archive is verified against the release's SHA-256 manifest before
 installation.
 
-Install the bundled Sigil skill globally for Codex, Claude Code, OpenCode, and
+Install the complete Sigil skill bundle globally for Codex, Claude Code, OpenCode, and
 Pi:
 
 ```bash
@@ -729,9 +729,29 @@ wireframe, and a repository image reference.
 `Slotted` is only an example project used to test the language. It is not the
 purpose of this repository.
 
-## Coding-Agent Skill
+## Coding-Agent Skills
 
-The portable skill lives in
+The bundle provides three independent Sigil 0.8 design entry points:
+
+| Skill | Use it to |
+| --- | --- |
+| [sigil-understand](integrations/skills/sigil-understand/SKILL.md) | Explain intent, contract roles, Tag ownership, and relevant context. |
+| [sigil-evaluate](integrations/skills/sigil-evaluate/SKILL.md) | Review design read-only for consequential problems and useful simplification. |
+| [sigil-write](integrations/skills/sigil-write/SKILL.md) | Write compact contracts and apply supported corrections through independent delegated review. |
+
+All three start at artifact version 0.1.0 and share the bundled 0.8.0 normative
+reference and grammar. Install the complete catalog with `sigil skill install`
+(or `--project`); writer and evaluator require their sibling reference files.
+They work from source without a compiler. The writer preserves unresolved human
+choices, rechecks review freshness, and provides an independently unreviewed draft
+and portable handoff if delegation cannot complete. Static package checks and
+[observed agent evaluations](docs/skill-evaluation/sigil-0.8-foundation.md) provide
+separate evidence; neither establishes 0.8 compiler support or code conformance.
+
+### Legacy Sigil 0.7 native workflow
+
+The existing `sigil` skill remains at its own artifact version, with its existing
+compiler compatibility metadata. Its 0.7 workflow lives in
 [integrations/skills/sigil/SKILL.md](integrations/skills/sigil/SKILL.md), with
 host adapters supplied separately.
 
@@ -780,8 +800,9 @@ provides authoring explanations and examples.
 
 ## Current Status
 
-The core, CLI, LSP, VS Code extension, and Sigil skill are pre-production
-artifacts at 0.7.1, over Sigil Language and configuration contract 0.7.0. See
+The implemented frontend and editor workflow remains pre-production and targets
+Sigil Language and configuration contract 0.7.0. Artifact versions are independent;
+the new design skills use the 0.8 specification without changing tooling support. See
 [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the
 [0.7 language migration guide](spec/migrating-to-0.7.md). Reviewed project
 vocabulary is described in the

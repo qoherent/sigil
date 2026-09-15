@@ -1,6 +1,6 @@
 ---
 name: sigil
-description: Author and inspect Sigil contracts, use native sigilc scope and semantic gates, and prepare or ingest independent per-source reconstructions.
+description: Author and inspect legacy Sigil 0.7 contracts using native sigilc scope and semantic gates. For Sigil 0.8 design understanding, writing, or advisory evaluation, use the sigil-understand, sigil-write, or sigil-evaluate skills.
 ---
 
 <!--
@@ -8,7 +8,11 @@ description: Author and inspect Sigil contracts, use native sigilc scope and sem
 @sigil implements integrations/skills/sigil/implementation-workflow.sigil::SigilImplementationWorkflow::ImplementationOwnershipWorkflow interface,logic,constraints,cases
 -->
 
-# Sigil
+# Sigil — legacy 0.7 native workflow
+
+This skill targets the implemented Sigil 0.7 language and native workflow.
+For 0.8 designs, select `sigil-understand`, `sigil-write`, or `sigil-evaluate`.
+Their source-based design workflows do not require the bootstrap below.
 
 `sigil` owns language inspection and structural Design export. Use `sigilc`
 directly for scope, freshness, preparation, ingestion, catalogs and semantic

@@ -1,4 +1,5 @@
 import { join, resolve } from "node:path";
+import { validateFoundation } from "./validate-skill.ts";
 import {
   deepStrictEqual as assertEquals,
   ok as assert,
@@ -19,6 +20,10 @@ try {
     );
   }
   assert(await exists(join(relocated, "integrations/skills/sigil/SKILL.md")));
+  await validateFoundation(join(relocated, "integrations/skills"));
+  assert(
+    !await exists(join(relocated, "integrations/skills/sigil-anchor-indexer")),
+  );
   const suffix = Deno.build.os === "windows" ? ".exe" : "";
   const language = join(relocated, "bin", `sigil${suffix}`);
   const compiler = join(relocated, "bin", `sigilc${suffix}`);
@@ -73,6 +78,15 @@ try {
   };
   const version = (await run(language, ["--version"])).trim();
   assert(/^\d+\.\d+\.\d+$/.test(version));
+  const catalog = JSON.parse(await run(language, ["skill", "list"]));
+  assertEquals(catalog.skills, [
+    "sigil",
+    "sigil-evaluate",
+    "sigil-understand",
+    "sigil-write",
+  ]);
+  await run(language, ["skill", "install", "--project", "--agent", "codex"]);
+  await validateFoundation(join(scratch, ".agents/skills"));
   const compilerVersion = (await run(compiler, ["--version"])).trim();
   assert(/^sigilc \d+\.\d+\.\d+$/.test(compilerVersion));
   await run(language, ["check", fixture, "--format", "json"]);

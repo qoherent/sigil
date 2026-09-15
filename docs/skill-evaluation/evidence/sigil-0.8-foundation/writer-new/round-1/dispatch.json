@@ -1,0 +1,13 @@
+{
+  "agent_handle": "/root/observe_writer_new/evaluate_search_panel",
+  "fork_turns": "none",
+  "dispatch_status": "spawned",
+  "request_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new/round-1/request.json",
+  "request_sha256": "090f3e8f9d16e26a13acddeb38c94c9a7c8aa89f07875201066e4c615fb0845e",
+  "read_only": "instructions only; no writes including reports",
+  "network": "prohibited",
+  "compiler": "prohibited",
+  "report_status": "complete",
+  "timestamp_utc": "2026-09-15T11:23:09.007441+00:00",
+  "report_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-new/round-1/raw-report.json"
+}

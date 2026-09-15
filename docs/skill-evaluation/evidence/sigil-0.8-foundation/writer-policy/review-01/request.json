@@ -1,0 +1,65 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "scope": {
+    "files": [
+      "archive/export.sigil"
+    ],
+    "components": [
+      "ExportArchive"
+    ],
+    "purpose": "Design-only independent review of compactness, consistency and preservation of adopted intent."
+  },
+  "established_intent": [
+    {
+      "input": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/intent.md",
+      "anchor": "entire document"
+    },
+    {
+      "input": "conversation:/root/observe_writer_policy/initial-task",
+      "anchor": "entire captured task"
+    }
+  ],
+  "unresolved_questions": [
+    "When does a completed export expire? The product owner has not chosen retention duration; it is consequential product policy, not an implementation choice."
+  ],
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures",
+  "inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/archive/export.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/archive/export.sigil",
+      "sha256": "f3fa2968535120e191d19d4c45e966cb112f9df950a8e68d8723f6d823367fe9"
+    },
+    {
+      "role": "intent",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B/intent.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/intent.md",
+      "sha256": "e866c53c57b4d812bab63c031e5bef3c870b3479a20afeee8f559891992fbed9"
+    },
+    {
+      "role": "intent",
+      "original_path": "conversation:/root/observe_writer_policy/initial-task",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures/conversation-intent.txt",
+      "sha256": "3a405981b49676392f5f4d0323d290ee967efb3b7471c37d1aa0435e50756135"
+    }
+  ],
+  "evaluator_skill": {
+    "entrypoint": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+    "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839",
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+    }
+  },
+  "read_only": {
+    "instructions": "Do not write or modify any files. Return report directly. Read only mapped captures, original writer-B workspace if necessary, and installed skill entrypoints/references. Do not read eval fixtures. No compiler or network.",
+    "host_restrictions": "Read-only is instructions only. Fresh evaluator has no inherited history.",
+    "allowed_read_roots": [
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-B",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-policy/review-01/captures",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate",
+      "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "report_contract_valid": true,
+  "all_current_input_hashes_match": true,
+  "authority_identity_and_manifest_outputs_match": true,
+  "original_source_root_and_link_mapping_match": true,
+  "current_independent_coverage": "complete for requested design-only ExportArchive scope",
+  "report_sha256": "aedb2fac7db70b148dab56afa7211cdf7ad823c19b03fabccb0aef0579c8d207",
+  "validation_note": "Initial mapping assertion used Path.resolve(), which expands macOS /var to /private/var; corrected check uses lexical original mapping. File bytes and requested mappings all match."
+}

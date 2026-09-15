@@ -162,7 +162,8 @@ own task:
 | `deno task test:lsp`              | `@qoherent/sigil-lsp` — lifecycle, diagnostics, symbols, hover, semantic tokens                |
 | `deno task test:vscode`           | Extension type-check and unit tests. No VS Code launch.                                        |
 | `deno task test:vscode:extension` | Extension integration tests. Launches VS Code.                                                 |
-| `deno task test:skill`            | Validates the bundled agent skill via [`scripts/validate-skill.ts`](scripts/validate-skill.ts) |
+| `deno task test:skill` | Offline metadata, dependencies, links and 0.8 reference reproduction via [`scripts/validate-skill.ts`](scripts/validate-skill.ts) |
+| `deno task test:skill:native` | Preserved legacy metadata and native command examples via [`scripts/validate-native-skill.ts`](scripts/validate-native-skill.ts) |
 | `deno task check:vscode`          | Extension type-check alone                                                                     |
 
 To narrow further, call `deno test` directly. Note that each package's task
@@ -198,7 +199,7 @@ orchestration stay outside the toolchain.
 | `packages/cli/`               | The `sigil` command: authored inspection, structural Design export and skill installation | Uses core language APIs; never invokes sigilc or models. Also owns skill installation. |
 | `packages/sigilc/` | Native scope, source identity, prepared inputs, disposable worlds, catalogs and fixed semantic gates | Rust; no model runtime or language-specific Implementation adapter. |
 | `packages/lsp/`               | The editor-neutral language server over core                                                                           | LSP 3.18 on stdio.                                                                                                                                                     |
-| `integrations/skills/sigil/`  | The host-neutral coding-agent skill: authoring guidance, design conversation, brownfield adoption and direct native commands | Markdown and Sigil only. No code dependency on `packages/`. |
+| `integrations/skills/` | Three source-based 0.8 design skills plus the legacy `sigil` 0.7 native workflow | Shared language pack and evaluator-owned review contract; models execute in the host. |
 | `integrations/editor/vscode/` | The VS Code extension: syntax, bundled LSP startup, semantic tokens, component preview                                 | The only Node.js code in the repository.                                                                                                                               |
 | `examples/`                   | `promise` and `slotted`, each an independently configured workspace                                                    | Design-pressure fixtures, excluded from the root workspace. Not products.                                                                                              |
 | `scripts/`                    | Release build and skill validation                                                                                     |                                                                                                                                                                        |
@@ -287,12 +288,30 @@ Closed/Converged exit 0; Disjoint and Drift exit 1 on their respective gates.
 Unavailable comparison remains unset. Tests, ownership comments and a completed
 gate do not individually prove full delivery or faithful reconstruction.
 
-`deno task test:skill` checks metadata/references and executes the documented
+`deno task test:skill:native` checks legacy metadata/references and executes the documented
 native commands on disposable fixtures. Build both tools first with
 `deno task build:sigilc` and `deno task build:cli`, or set `SIGIL_TEST_LANGUAGE`
 and `SIGIL_TEST_COMPILER` to the intended binaries. The root test task builds its
 prerequisites. Fixed fixture Turtle exercises protocol, not independent
-reconstruction of this repository. Release smoke tests cover all six gate states.
+reconstruction of this repository. Release smoke tests cover all six gate states
+and installation of all four skills from a relocated distribution.
+
+The 0.8 foundation check, `deno task test:skill`, needs only read access and no
+Sigil binaries. Run mutation/relocation regressions with
+`deno test --allow-read --allow-write scripts/skill-foundation_test.ts`.
+After an intentional specification change, regenerate its language pack with
+`deno run --allow-read --allow-write scripts/sync-skill-language.ts` (reuses the
+recorded upstream revision), or pass `--revision <full-commit-sha>` when updating
+the background-link pin. `deno run --allow-read scripts/sync-skill-language.ts --check`
+checks exact reproduction. Only documentary link destinations may change;
+fenced examples and inline code remain source text.
+
+Package checks are distinct from model behavior. Follow the
+[agent evaluation procedure](integrations/skills/sigil-write/evals/README.md),
+materialize 0.8 source fixtures only in temporary workspaces, and record actual
+outcomes in [the evidence report](docs/skill-evaluation/sigil-0.8-foundation.md).
+Keep expected answers out of tested agents' inputs and preserve failures and
+host limitations. Do not claim independent review from a writer's self-assessment.
 
 Delete obsolete behavior and its dedicated callers/tests during refactors.
 Preserve required frontend features through actual native infrastructure rather
@@ -350,8 +369,9 @@ is the authority on how they relate:
   the single literal in [`spec/language.sigil`](spec/language.sigil).
 - **Package artifacts** — currently 0.7.0, owned by each `packages/*/deno.json`.
 - **VS Code extension** — owned by its `package.json`.
-- **Agent skill** — owned by `integrations/skills/sigil/VERSION` and
-  `compatibility.json`.
+- **Agent skills** — each owns `VERSION` and `compatibility.json` in its
+  `integrations/skills/<name>/` directory. New 0.8 design skills declare language
+  and sibling requirements independently from the legacy native skill.
 
 Do not bump a version as a side effect of another change, and do not duplicate a
 version literal into a second file. A tool must reject a `sigilVersion` it does

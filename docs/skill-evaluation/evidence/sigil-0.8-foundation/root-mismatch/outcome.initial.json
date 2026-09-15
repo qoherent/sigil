@@ -1,0 +1,126 @@
+{
+  "status": "incomplete",
+  "current_draft": {
+    "role": "draft",
+    "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+    "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/capture/search/panel.sigil",
+    "sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc"
+  },
+  "draft_changed": false,
+  "adopted_intent_preserved": [
+    "Help users find records with SearchService-owned query.",
+    "Display search results for the current search.",
+    "Only the active request may publish search results.",
+    "Request cancellation remains an implementation possibility, not a selected design.",
+    "Preserve provider ownership and newest-first matching-results commitment."
+  ],
+  "report_validation": {
+    "reported_status": "complete",
+    "effective_status": "incomplete",
+    "usable_for_current_coverage": false,
+    "usable_for_automatic_corrections": false,
+    "required_fields_present": true,
+    "requested_source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact",
+    "reported_source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/another-workspace",
+    "source_root_matches": false,
+    "nested_scope_root_does_not_override_top_level_root": true,
+    "input_checks": [
+      {
+        "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/panel.sigil",
+        "request_capture_matches_digest": true,
+        "current_sha256": "1c9bca7e2c8133f8c7cabd1fd45cc5292de17ddbdc12cea27d9c9140ed4dd8dc",
+        "current_matches_assessed": true,
+        "mapping_matches": true
+      },
+      {
+        "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact/search/service.sigil",
+        "request_capture_matches_digest": true,
+        "current_sha256": "638b354d6a4a4a772f2a3ba8fe080bcb63003d535a4867691fca702f381cef31",
+        "current_matches_assessed": true,
+        "mapping_matches": true
+      },
+      {
+        "original_path": "conversation://root/observe_writer_freshness/task-intent",
+        "request_capture_matches_digest": true,
+        "current_sha256": "c69f3af526c6f58738996936b3a6ca50ae94f6b9871748b37a32f6911a302c4e",
+        "current_matches_assessed": true,
+        "mapping_matches": true
+      }
+    ],
+    "authority_checks": [
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/design-review.md",
+        "matches_report": true,
+        "current_sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358",
+        "reported_sha256": "12d5d346e87480b91534e891cdc690eb032d3a61ea7b4cf38f9aaa33ab04b358"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/references/review-contract.md",
+        "matches_report": false,
+        "current_sha256": "6c6869a26422555e832107ea1fafc09ad8c978266c429813d8a8578d375ce961",
+        "reported_sha256": "75644d94e30fe530dba483dc99b927ec24e010bfefca8d76ac07aefe10313a21"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/understanding.md",
+        "matches_report": true,
+        "current_sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c",
+        "reported_sha256": "0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil-reference.md",
+        "matches_report": true,
+        "current_sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e",
+        "reported_sha256": "a20be69c15bfeee2e4ca4d41b8bfc82f9eef75fa98cf4cb85681cb7af4606d5e"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/sigil.ebnf",
+        "matches_report": true,
+        "current_sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2",
+        "reported_sha256": "0b172dcb45b4a4065ca07c8a91fbc12ec08a70430ea9b3397574a16995c5bac2"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+        "matches_report": true,
+        "current_sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+      },
+      {
+        "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+        "matches_report": true,
+        "current_sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441"
+      }
+    ],
+    "additional_staleness": "Installed review-contract.md digest differs from the report authority.references_read entry; evaluator entrypoint and language-pack manifest/reference/grammar identities match."
+  },
+  "coverage": {
+    "current_independent_review": "unreviewed; no usable current coverage from supplied report",
+    "supplied_report_claims": [
+      "SearchPanel goal, interface, active-request publication constraint, cancellation rationale",
+      "SearchService query/search results ownership and newest-first ordering",
+      "Import resolution, Tag usage, provider-consumer relationship, compact-intent sufficiency"
+    ],
+    "accepted_coverage": [],
+    "omitted_scope": [
+      "All requested current design scope pending a valid fresh separate assessment",
+      "Implementation behavior/conformance/tests",
+      "Compiler and workspace-wide configuration validation"
+    ],
+    "same_agent_protocol_validation_is_not_independent_design_review": true
+  },
+  "dispositions": {
+    "supplied_findings": [],
+    "resolved_findings": [],
+    "applied_corrections": [],
+    "rejected_suggestions": [],
+    "report_disposition": "Reject current-coverage reuse because original resolution root differs; do not repair the report or infer a clean assessment from empty findings.",
+    "remaining_issue": "Fresh independent review must establish the requested original resolution root. No product-policy question is identified by the supplied request."
+  },
+  "exact_limitation": "The report source_root is /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/another-workspace but the request source_root is /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/compact. The shared contract explicitly makes an unequal root incomplete and unusable for current coverage or automatic corrections even when every file hash matches. A fresh retry cannot run because this observation disables native delegation by instruction; delegation tools are physically present. Filesystem tools are unrestricted and read/write scope limits are instruction-level. No network or compiler used. Additionally, report authority.references_read gives review-contract.md SHA-256 75644d94e30fe530dba483dc99b927ec24e010bfefca8d76ac07aefe10313a21, which differs from the installed contract; the handoff packages its current exact bytes.",
+  "handoff": {
+    "request_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/request.json",
+    "instructions_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/README.md",
+    "authority_mapping_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/root-mismatch/handoff/authority-mapping.json",
+    "exact_captures_retained": true,
+    "fresh_evaluator_dispatched": false,
+    "is_completed_review": false
+  }
+}

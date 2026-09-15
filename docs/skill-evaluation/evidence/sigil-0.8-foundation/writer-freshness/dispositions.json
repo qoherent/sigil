@@ -1,0 +1,22 @@
+{
+  "history": [
+    {
+      "affected_commitment": "SearchService result definition and its relationship to SearchPanel display",
+      "consequence": "Earlier report cannot cover changed provider promise despite unchanged draft bytes.",
+      "evidence": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/writer-freshness/prior-freshness.json",
+      "disposition": "stale report excluded from reuse",
+      "action": "Captured current provider and panel; obtained fresh independent review.",
+      "promises_preserved": [
+        "Provider returns matching records ranked newest first",
+        "Panel displays current search results",
+        "Only active request may publish",
+        "Cancellation remains an implementation option"
+      ]
+    }
+  ],
+  "fresh_findings": [],
+  "changes_applied": [],
+  "remaining_findings": [],
+  "rejected_suggestions": [],
+  "unresolved_questions": []
+}

@@ -1,0 +1,64 @@
+{
+  "key_fields": [
+    "affected_commitment",
+    "consequence"
+  ],
+  "prior_replayed_entries": [
+    {
+      "id": "SP-1",
+      "affected_commitment": "active-request publication restriction",
+      "consequence": "Repeated publication wording hides the shared publication rule.",
+      "action": "Consolidated positive and negative publication restrictions into the single positive invariant, preserving display continuity.",
+      "before_sha256": "1f685e52f5f694f7ab28b6045285fbff191da9720515a53c5e98a15c146fd699",
+      "after_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+      "independent_promises_preserved": [
+        "active request only publication",
+        "retain already displayed results until replacement ready"
+      ]
+    }
+  ],
+  "continuation_entries": [
+    {
+      "affected_commitment": "active-request publication restriction",
+      "consequence": "Repeated publication wording hides the shared publication rule.",
+      "ids": [
+        "SP-1",
+        "publication-wordiness-9"
+      ],
+      "evidence": {
+        "report": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/report.json",
+        "history": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/history.json",
+        "before": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/before.txt",
+        "provenance": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-input/provenance.json",
+        "draft": {
+          "role": "draft",
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/search/panel.sigil",
+          "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/search/panel.sigil",
+          "sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1"
+        },
+        "intent": {
+          "role": "intent",
+          "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/writer-E/intent.md",
+          "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/repeat-outcome/captures/intent.md",
+          "sha256": "af8e7bd342a451ee698ebe73248a61b46d9e7f3d7accdc597c856169bd4591ee"
+        },
+        "quotes": [
+          "Only the active request may publish new results.",
+          "Both are adopted product commitments and must survive simplification."
+        ]
+      },
+      "reported_disposition": "determined_correction",
+      "writer_disposition": "rejected_unsupported_repeated_finding",
+      "action": "No draft edit; stop this issue cycle.",
+      "reason": "The same commitment and consequence already received consolidation. The remaining single invariant is an adopted promise, not duplicated wording. The cited intent authorizes retaining it and does not authorize deletion. Removing it would discard the explicit prohibition on inactive-request publication. No new evidence supports another correction.",
+      "before_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+      "after_sha256": "0d381ea7d4bc66bab3979424257de740ca03a07aefb3a751b204d73d5f4037e1",
+      "independent_promises_preserved": [
+        "Only the active request may publish new results.",
+        "Starting a new request preserves displayed results until its replacement is ready."
+      ],
+      "cycle_state": "stopped_repeated_issue_without_new_evidence",
+      "provenance": "Controlled replay; neither history nor report establishes an actual evaluator run."
+    }
+  ]
+}

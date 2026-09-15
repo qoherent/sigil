@@ -1,0 +1,57 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": "Design-only assessment of SearchPanel publication and display behavior",
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-D",
+  "captured_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/compact-followup/capture",
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/direct-D/search/panel.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/evidence/compact-followup/capture/search/panel.sigil",
+      "sha256": "316f31fdf241548ac249d1f50e47f046a4b680958372618f57130fe69a00ca30",
+      "verification": "SHA-256 calculated from captured bytes and matched."
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_pack_manifest": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-foundation-evals-6wge0qs_/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "4cf2ab36e460ff1204dd6d59ad8fe9e399e61a2afe4810ab977638dfb160d441",
+      "sigil_version": "0.8.0"
+    },
+    "verification": "Evaluator entrypoint and manifest hashes matched the request. Reference and grammar hashes matched the manifest.",
+    "guidance_read": [
+      "sigil-evaluate/references/design-review.md",
+      "sigil-evaluate/references/review-contract.md",
+      "sigil-understand/references/understanding.md",
+      "sigil-understand/references/language/sigil-reference.md: component and contract rules, Facet ownership, interpretation boundaries",
+      "sigil-understand/references/language/sigil.ebnf"
+    ]
+  },
+  "findings": [],
+  "coverage": {
+    "components": ["SearchPanel"],
+    "commitments": [
+      "Goal, line 3: show the user's current search results.",
+      "Interface, lines 6–7: display matching records and preserve displayed results when a request starts until its replacement is ready.",
+      "Constraints, line 10: only the active request may publish new results."
+    ],
+    "relationships": [
+      "SearchPanel owns all three contributions.",
+      "The active-request invariant excludes publication by superseded requests without requiring enumerated response orderings.",
+      "Preserving displayed results while awaiting replacement is an independent, compatible promise and must remain.",
+      "No imports or Inline Links require additional context."
+    ],
+    "assessment": "The compact design expresses compatible publication and display commitments. No consequential omission, ownership conflict, or material simplification finding was established.",
+    "omitted_scope": ["Implementation behavior", "Whole-workspace validation"]
+  },
+  "limitations": [
+    "Read-only restrictions were instructions only; no writes were performed.",
+    "Assessment is bound to the captured bytes and supplied original-to-capture mapping. Original sources were not read, so current-source freshness is unverified.",
+    "No network access, compiler execution, repository inspection, or implementation testing was performed. This report does not establish compiler validity, implementation conformance, or saturated coherence."
+  ]
+}
