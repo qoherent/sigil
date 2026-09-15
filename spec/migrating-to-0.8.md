@@ -8,7 +8,20 @@ This migration guide does not claim that an automatic
 converter or a Tag-capable compiler is available. Update workspace version
 configuration only with tools that support the new revision.
 
-## Keep Concept block syntax
+## Replace identity-only Concepts with simple Tags
+
+Before 0.8, naming a concern with a Concept ID required a Concept block.
+Concept IDs were optional, but that form coupled identity to grouping.
+In 0.8, a [Tag](sigil-reference.md#tags-and-references) supplies the identity;
+a [Concept Tag block](sigil-reference.md#grouping-taggroup) adds optional
+grouping. Many existing Concept blocks can therefore become simple inline
+Tags in direct Facets when their headings only supply a name.
+
+Introduce the local Tag once with `*name*` and use bare references in the other
+relevant Facets. When removing a block, make its concern explicit in the prose
+and preserve each Facet's meaning, boundaries, contract role, and ownership.
+Keep grouping when it helps connect related contributions. Leave prose
+untagged when a reusable identity adds nothing; components may have no Tags.
 
 Existing grouping syntax remains valid:
 
