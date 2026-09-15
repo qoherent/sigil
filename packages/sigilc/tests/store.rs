@@ -2,7 +2,7 @@ mod support;
 use sigilc::{
     inputs::{Binding, PROJECTION_FORMAT, SemanticInput},
     sources::{capture, hash},
-    store::{Freshness, PreparedBinding, LockedStore, StoreLimits},
+    store::{Freshness, LockedStore, PreparedBinding, StoreLimits},
     turtle::{self, TurtleLimits},
 };
 use support::Workspace;
@@ -38,7 +38,8 @@ fn bindings_capture_generation_before_turtle_and_cannot_publish_out_of_order() {
         assert_eq!(store.inspect(&input).unwrap().status, Freshness::Missing);
         store.prepare(input.clone()).unwrap()
     };
-    let duplicate = serde_json::from_slice::<PreparedBinding>(&serde_json::to_vec(&prepared).unwrap()).unwrap();
+    let duplicate =
+        serde_json::from_slice::<PreparedBinding>(&serde_json::to_vec(&prepared).unwrap()).unwrap();
     let mut store = open(&root);
     store.publish(&prepared, &input, &facts()).unwrap();
     assert!(
@@ -318,4 +319,51 @@ fn cleanup_unlinks_artifacts_without_following_symlinks() {
     std::os::unix::fs::symlink(&outside.0, root.0.join(".sigil/worlds/design/nested")).unwrap();
     sigilc::store::clean(&root.0).unwrap();
     assert!(outside.0.join("preserved").is_file());
+}
+
+#[test]
+fn legacy_projection_and_history_remain_stored_but_cannot_be_reused() {
+    use serde_json::json;
+    let root = Workspace::new();
+    root.write("a.rs", b"unchanged source");
+    let current = binding(&root, "a.rs");
+    let mut legacy = current.clone();
+    legacy.projection_format = 1;
+    legacy.ontology = hash(b"old Concept vocabulary");
+    let legacy_hash = hash(&serde_json::to_vec(&("sigil-input-v1", &legacy)).unwrap());
+    let head = "implementation/a.rs";
+    let history = format!("{head}~{legacy_hash}");
+    let body = b"retained old projection bytes";
+    let entry = json!({"binding":legacy,"assertion_checksum":hash(body),"generation":hash(b"legacy generation")});
+    let mut entries = serde_json::Map::new();
+    entries.insert(head.into(), entry.clone());
+    entries.insert(history.clone(), entry);
+    root.write(
+        ".sigil/worlds/index.json",
+        &serde_json::to_vec(&json!({"version":3,"entries":entries})).unwrap(),
+    );
+    root.write(&format!(".sigil/worlds/{head}.egg"), body);
+    root.write(&format!(".sigil/worlds/{history}.egg"), body);
+    let before = std::fs::read(root.0.join(".sigil/worlds/index.json")).unwrap();
+    let mut store = open(&root);
+    assert_eq!(
+        store.inspect(&current).unwrap().status,
+        Freshness::Incompatible
+    );
+    assert!(store.inspect(&current).unwrap().assertions.is_empty());
+    assert!(store.prepare(legacy.clone()).is_err());
+    let prepared = PreparedBinding {
+        version: 2,
+        binding: legacy,
+        expected_generation: None,
+    };
+    assert!(store.publish(&prepared, &current, &facts()).is_err());
+    assert_eq!(
+        std::fs::read(root.0.join(".sigil/worlds/index.json")).unwrap(),
+        before
+    );
+    assert_eq!(
+        std::fs::read(root.0.join(format!(".sigil/worlds/{history}.egg"))).unwrap(),
+        body
+    );
 }

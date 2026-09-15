@@ -1,0 +1,423 @@
+{
+  "schemaVersion": 2,
+  "languageVersion": "0.8.0",
+  "frontendVersion": "0.7.1",
+  "sources": [
+    {
+      "path": "a.sigil",
+      "text": "@b.sigil from B import { b }\ncomponent A {\ngoal {\nDescribe A.\n}\ninterface {\nA *a* exists.\n\nUse b.\n}\n}\n"
+    },
+    {
+      "path": "b.sigil",
+      "text": "component B {\ngoal {\nDescribe B.\n}\ninterface {\nA *b* exists.\n}\n}\n"
+    },
+    {
+      "path": "c.sigil",
+      "text": "component C {\ngoal {\nDescribe C.\n}\ninterface {\nA *c* exists.\n}\n}\n"
+    }
+  ],
+  "context": [
+    {
+      "path": ".sigil/config.json",
+      "text": "{\"sigilVersion\":\"0.8.0\",\"workspace\":{\"name\":\"native-scope\"},\"files\":{\"include\":[\"**/*.sigil\"]}}"
+    },
+    {
+      "path": ".sigil/glossary.json",
+      "text": null
+    },
+    {
+      "path": ".sigil/local.json",
+      "text": null
+    }
+  ],
+  "diagnostics": [],
+  "imports": [
+    {
+      "id": "import:a.sigil:0",
+      "source": "a.sigil",
+      "target": "b.sigil",
+      "path": "b.sigil",
+      "provider": "B",
+      "providerId": "urn:sigil:component:b.sigil:B",
+      "range": {
+        "start": 0,
+        "end": 29
+      },
+      "pathRange": {
+        "start": 1,
+        "end": 8
+      },
+      "providerRange": {
+        "start": 14,
+        "end": 15
+      },
+      "status": "resolved",
+      "valid": true,
+      "complete": true,
+      "names": [
+        {
+          "id": "selection:a.sigil:25",
+          "name": "b",
+          "entity": "urn:sigil:component:b.sigil:B:tag:b",
+          "range": {
+            "start": 25,
+            "end": 26
+          },
+          "status": "resolved",
+          "uses": [
+            "reference:a.sigil:95"
+          ]
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "urn:sigil:component:a.sigil:A",
+      "type": "Component",
+      "label": "A",
+      "source": "a.sigil",
+      "owner": null,
+      "range": {
+        "start": 29,
+        "end": 102
+      },
+      "nameRange": {
+        "start": 39,
+        "end": 40
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "urn:sigil:component:a.sigil:A:tag:a",
+      "type": "Tag",
+      "label": "a",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "range": {
+        "start": 78,
+        "end": 81
+      },
+      "nameRange": {
+        "start": 79,
+        "end": 80
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "urn:sigil:component:b.sigil:B",
+      "type": "Component",
+      "label": "B",
+      "source": "b.sigil",
+      "owner": null,
+      "range": {
+        "start": 0,
+        "end": 65
+      },
+      "nameRange": {
+        "start": 10,
+        "end": 11
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "urn:sigil:component:b.sigil:B:tag:b",
+      "type": "Tag",
+      "label": "b",
+      "source": "b.sigil",
+      "owner": "urn:sigil:component:b.sigil:B",
+      "range": {
+        "start": 49,
+        "end": 52
+      },
+      "nameRange": {
+        "start": 50,
+        "end": 51
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "urn:sigil:component:c.sigil:C",
+      "type": "Component",
+      "label": "C",
+      "source": "c.sigil",
+      "owner": null,
+      "range": {
+        "start": 0,
+        "end": 65
+      },
+      "nameRange": {
+        "start": 10,
+        "end": 11
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "urn:sigil:component:c.sigil:C:tag:c",
+      "type": "Tag",
+      "label": "c",
+      "source": "c.sigil",
+      "owner": "urn:sigil:component:c.sigil:C",
+      "range": {
+        "start": 49,
+        "end": 52
+      },
+      "nameRange": {
+        "start": 50,
+        "end": 51
+      },
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "units": [
+    {
+      "id": "facet:a.sigil:50",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "section": "goal",
+      "range": {
+        "start": 50,
+        "end": 62
+      },
+      "proseRange": {
+        "start": 50,
+        "end": 62
+      },
+      "grouping": null,
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:a.sigil:76",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "section": "interface",
+      "range": {
+        "start": 76,
+        "end": 90
+      },
+      "proseRange": {
+        "start": 76,
+        "end": 90
+      },
+      "grouping": null,
+      "introductions": [
+        "definition:a.sigil:78"
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:a.sigil:91",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "section": "interface",
+      "range": {
+        "start": 91,
+        "end": 98
+      },
+      "proseRange": {
+        "start": 91,
+        "end": 98
+      },
+      "grouping": null,
+      "introductions": [],
+      "references": [
+        "reference:a.sigil:95"
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:b.sigil:21",
+      "source": "b.sigil",
+      "owner": "urn:sigil:component:b.sigil:B",
+      "section": "goal",
+      "range": {
+        "start": 21,
+        "end": 33
+      },
+      "proseRange": {
+        "start": 21,
+        "end": 33
+      },
+      "grouping": null,
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:b.sigil:47",
+      "source": "b.sigil",
+      "owner": "urn:sigil:component:b.sigil:B",
+      "section": "interface",
+      "range": {
+        "start": 47,
+        "end": 61
+      },
+      "proseRange": {
+        "start": 47,
+        "end": 61
+      },
+      "grouping": null,
+      "introductions": [
+        "definition:b.sigil:49"
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:c.sigil:21",
+      "source": "c.sigil",
+      "owner": "urn:sigil:component:c.sigil:C",
+      "section": "goal",
+      "range": {
+        "start": 21,
+        "end": 33
+      },
+      "proseRange": {
+        "start": 21,
+        "end": 33
+      },
+      "grouping": null,
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "facet:c.sigil:47",
+      "source": "c.sigil",
+      "owner": "urn:sigil:component:c.sigil:C",
+      "section": "interface",
+      "range": {
+        "start": 47,
+        "end": 61
+      },
+      "proseRange": {
+        "start": 47,
+        "end": 61
+      },
+      "grouping": null,
+      "introductions": [
+        "definition:c.sigil:49"
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "groups": [],
+  "introductions": [
+    {
+      "id": "definition:a.sigil:78",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "name": "a",
+      "kind": "inline",
+      "tag": "urn:sigil:component:a.sigil:A:tag:a",
+      "section": "interface",
+      "facet": "facet:a.sigil:76",
+      "group": null,
+      "range": {
+        "start": 78,
+        "end": 81
+      },
+      "nameRange": {
+        "start": 79,
+        "end": 80
+      },
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "definition:b.sigil:49",
+      "source": "b.sigil",
+      "owner": "urn:sigil:component:b.sigil:B",
+      "name": "b",
+      "kind": "inline",
+      "tag": "urn:sigil:component:b.sigil:B:tag:b",
+      "section": "interface",
+      "facet": "facet:b.sigil:47",
+      "group": null,
+      "range": {
+        "start": 49,
+        "end": 52
+      },
+      "nameRange": {
+        "start": 50,
+        "end": 51
+      },
+      "valid": true,
+      "complete": true
+    },
+    {
+      "id": "definition:c.sigil:49",
+      "source": "c.sigil",
+      "owner": "urn:sigil:component:c.sigil:C",
+      "name": "c",
+      "kind": "inline",
+      "tag": "urn:sigil:component:c.sigil:C:tag:c",
+      "section": "interface",
+      "facet": "facet:c.sigil:47",
+      "group": null,
+      "range": {
+        "start": 49,
+        "end": 52
+      },
+      "nameRange": {
+        "start": 50,
+        "end": 51
+      },
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "references": [
+    {
+      "id": "reference:a.sigil:95",
+      "source": "a.sigil",
+      "owner": "urn:sigil:component:a.sigil:A",
+      "facet": "facet:a.sigil:91",
+      "name": "b",
+      "tag": "urn:sigil:component:b.sigil:B:tag:b",
+      "status": "resolved",
+      "range": {
+        "start": 95,
+        "end": 96
+      }
+    }
+  ],
+  "links": []
+}

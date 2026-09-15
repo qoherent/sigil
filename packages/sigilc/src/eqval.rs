@@ -46,6 +46,9 @@ pub enum DesignState {
 
 #[derive(Debug, Serialize)]
 pub struct DesignWorld {
+    /// Descriptive source relations; never submitted as implication laws.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub structure: Option<serde_json::Value>,
     pub state: DesignState,
     pub closure: SaturatedWorld,
 }
@@ -64,7 +67,11 @@ pub fn design(
     } else {
         DesignState::Coherent
     };
-    Ok(DesignWorld { state, closure })
+    Ok(DesignWorld {
+        state,
+        closure,
+        structure: None,
+    })
 }
 
 // @sigil implements packages/sigilc/eqval.sigil::SigilWorldClosure::IsolatedClosure interface

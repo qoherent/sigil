@@ -9,6 +9,7 @@ publish = false
 egglog = { git = "https://github.com/egraphs-good/egglog.git", rev = "90635860397ce710f8c0a4eeb04154a8ebc3ac05", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.11"
 getrandom = "0.3.4"
 regex = "1"
 snapdir-core = { git = "https://github.com/qoherent/snapdir.git", rev = "b5e5780" }

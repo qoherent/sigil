@@ -2,9 +2,8 @@ mod support;
 use serde_json::json;
 use sigilc::{
     catalog::{Catalog, DesignIdentities},
-    frontend::{Entity, EntityType},
-    implementation, inputs,
     eqval::{DesignState, Limits},
+    implementation, inputs,
     sources::{Selection, capture},
     store::{Freshness, LockedStore, StoreLimits},
     turtle::{self, TurtleLimits},
@@ -13,17 +12,15 @@ use std::collections::BTreeMap;
 use support::Workspace;
 
 fn catalog(root: &Workspace, name: &str) -> Catalog {
-    root.write("a.sigil", b"fixture");
+    let source = format!(
+        "component A {{\ngoal {{\nDescribe A.\n}}\ninterface {{\nOffer A.\n}}\n}}\ncomponent {name} {{\ngoal {{\nDescribe {name}.\n}}\ninterface {{\nOffer {name}.\n}}\n}}"
+    );
+    root.write("a.sigil", source.as_bytes());
     let mut input = root.input(&["a.sigil"], json!([]));
     for label in ["A", name] {
-        input.entities.push(Entity {
-            id: format!("urn:sigil:component:a.sigil:{label}"),
-            kind: EntityType::Component,
-            label: label.into(),
-            source: "a.sigil".into(),
-            owner: None,
-            exported: true,
-        });
+        input
+            .entities
+            .push(serde_json::from_value(support::component("a.sigil", label, &source)).unwrap());
     }
     DesignIdentities::collect(&input, &BTreeMap::new())
         .unwrap()

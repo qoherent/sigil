@@ -4,128 +4,111 @@ import {
 } from "node:assert/strict";
 import { InMemorySigilFileSystem, loadDesignInput } from "../src/mod.ts";
 
-const config = JSON.stringify({
-  sigilVersion: "0.8.0",
-  workspace: { name: "fixture", members: [] },
-  files: { include: ["**/*.sigil"], exclude: [] },
-});
-const files = {
-  ".sigil/config.json": config,
-  "base.sigil": `component Base {
-  interface {
-    Value {
-      Expose a value.
-    }
-  }
-}
-`,
-  "extra.sigil": `@base.sigil import { Base }
-expand Base {
-  constraints {
-    Value {
-      Preserve the value.
-      ${"`".repeat(3)}ts
-      const example = 1;
-      ${"`".repeat(3)}
-    }
-  }
-}
-`,
-  "index.sigil": "@base.sigil import { Base }\n",
-  "unresolved.sigil": `expand Missing {
-  logic {
-    Keep this unresolved prose in the inventory.
-  }
-}
-`,
+export const designFixtureFiles = {
+  ".sigil/config.json": JSON.stringify({
+    sigilVersion: "0.8.0",
+    workspace: { name: "fixture" },
+    files: { include: ["**/*.sigil"] },
+  }),
+  "base.sigil":
+    "\uFEFFcomponent Base {\r\ngoal {\r\nOwn provider vocabulary.\r\n}\r\ninterface {\r\nA *value* and *result* exist.\r\n}\r\nconstraints {\r\nvalue {\r\nPreserve value and result.\r\n}\r\n}\r\n}\r\n",
+  "consumer.sigil":
+    "@base.sigil from Base import { value, result }\ncomponent Consumer {\ngoal {\nServe the caller.\n}\ninterface {\nUse value and result with [notes](./notes.md).\n```text\nraw 😀  \n```\n}\n}\n",
 };
-
-Deno.test("nested Design workspace binds only its selected config", async () => {
-  const parent = JSON.stringify({
-    ...JSON.parse(config),
-    files: { include: ["**/*.sigil"], exclude: ["child/**"] },
-  });
-  const nested = Object.fromEntries(
-    Object.entries(files).map(([path, text]) => [`child/${path}`, text]),
-  );
-  const { root, bundle } = await loadDesignInput(
-    new InMemorySigilFileSystem({ ".sigil/config.json": parent, ...nested }),
-    { startPath: "child" },
-  );
-  assertEquals(root, "child");
-  assertEquals(
-    bundle.context.find((c) => c.path === ".sigil/config.json")?.text,
-    config,
-  );
-  assertEquals(bundle.context.length, 3);
-  assert(bundle.sources.every((s) => !s.path.startsWith("child/")));
-});
-
-Deno.test("Design transport preserves physical units and resolved identity without lowering imports", async () => {
+Deno.test("Design schema 2 preserves all Tag relations and exact source buffers", async () => {
   const { bundle } = await loadDesignInput(
-    new InMemorySigilFileSystem(files),
+    new InMemorySigilFileSystem(designFixtureFiles),
     { startPath: "." },
   );
-  assertEquals(bundle.sources.length, 4);
-  assertEquals(bundle.units.length, 3);
-  const base = bundle.entities.find((e) => e.type === "Component")!;
-  assertEquals(base.id, "urn:sigil:component:base.sigil:Base");
+  assert(bundle);
+  assertEquals(bundle.schemaVersion, 2);
+  assertEquals(bundle.languageVersion, "0.8.0");
+  assertEquals(bundle.entities.filter((e) => e.type === "Tag").length, 2);
+  assertEquals(bundle.introductions.length, 3);
+  assertEquals(bundle.groups.length, 1);
+  assertEquals(bundle.references.length, 4);
+  assertEquals(bundle.links.length, 1);
+  const unit = bundle.units.find((u) => u.payload)!;
+  assertEquals(unit.references.length, 2);
+  assertEquals(unit.links.length, 1);
+  assertEquals(unit.payload!.rawBody, "raw 😀  \n");
   assertEquals(
-    bundle.units.find((u) => u.source === "extra.sigil")?.owner,
-    base.id,
+    bundle.sources.find((s) => s.path === "base.sigil")!.text,
+    designFixtureFiles["base.sigil"],
   );
-  assertEquals(
-    bundle.units.find((u) => u.source === "unresolved.sigil")?.owner,
-    null,
+  assertEquals(bundle.diagnostics, []);
+  assert(!JSON.stringify(bundle).includes('"exported"'));
+  assert(!JSON.stringify(bundle).includes('"concept"'));
+  const shared = JSON.parse(
+    await Deno.readTextFile(
+      new URL("./fixtures/design-input-080.json", import.meta.url),
+    ),
   );
-  assert(bundle.entities.some((e) => e.type === "Tag" && e.exported));
+  assertEquals(JSON.parse(JSON.stringify(bundle)), shared);
+});
+Deno.test("Design capture is deterministic and nested context belongs to the selected workspace", async () => {
+  const first = await loadDesignInput(
+    new InMemorySigilFileSystem(designFixtureFiles),
+    { startPath: "." },
+  );
+  const nested = Object.fromEntries(
+    Object.entries(designFixtureFiles).reverse().map((
+      [p, t],
+    ) => [`child/${p}`, t]),
+  );
+  const second = await loadDesignInput(new InMemorySigilFileSystem(nested), {
+    startPath: "child",
+  });
+  assertEquals(second.root, "child");
+  assertEquals(first.bundle, second.bundle);
+  assertEquals(second.bundle!.context.length, 3);
+});
+Deno.test("Design capture rejects malformed bytes without exporting replacement text", async () => {
+  for (const path of ["base.sigil", ".sigil/config.json"]) {
+    const result = await loadDesignInput(
+      new InMemorySigilFileSystem({
+        ...designFixtureFiles,
+        [path]: new Uint8Array([0xc3, 0x28]),
+      }),
+      { startPath: "." },
+    );
+    assertEquals(result.bundle, null);
+    assert(result.diagnostics.some((d) => d.code === "SIGIL_INVALID_ENCODING"));
+  }
+});
+Deno.test("Design capture retains independent invalid structure and ambiguous introductions", async () => {
+  const { bundle } = await loadDesignInput(
+    new InMemorySigilFileSystem({
+      ...designFixtureFiles,
+      "invalid.sigil":
+        "component Broken {\ngoal {\nA purpose.\n}\ninterface {\nA *duplicate* exists.\n\nAnother *duplicate* exists.\n}\n}\n",
+    }),
+    { startPath: "." },
+  );
+  assert(bundle);
+  const introductions = bundle.introductions.filter((i) =>
+    i.name === "duplicate"
+  );
+  assertEquals(introductions.length, 2);
+  assert(introductions.every((i) => i.tag === null));
   assert(bundle.diagnostics.some((d) => d.severity === "error"));
-  assertEquals(bundle.imports.find((i) => i.source === "index.sigil")?.names, [
-    { name: "Base", entity: base.id },
-  ]);
-  assertEquals(
-    bundle.sources.find((s) => s.path === "extra.sigil")?.text,
-    files["extra.sigil"],
-  );
-  assertEquals(bundle.context, [
-    { path: ".sigil/config.json", text: config },
-    { path: ".sigil/glossary.json", text: null },
-    { path: ".sigil/local.json", text: null },
-  ]);
-  assertEquals(Object.keys(bundle).sort(), [
-    "context",
-    "diagnostics",
-    "entities",
-    "frontendVersion",
-    "imports",
-    "schemaVersion",
-    "sources",
-    "units",
-  ]);
-  assert(!JSON.stringify(bundle).includes("dependsOn"));
+  assertEquals(bundle.sources.length, 3);
 });
 
-Deno.test("Design transport is deterministic across discovery order and captures loaded buffers", async () => {
-  const first = await loadDesignInput(new InMemorySigilFileSystem(files), {
-    startPath: ".",
-  });
-  const second = await loadDesignInput(
-    new InMemorySigilFileSystem(
-      Object.fromEntries(Object.entries(files).reverse()),
-    ),
-    { startPath: "." },
-  );
-  assertEquals(first, second);
-  const changed = { ...files, "base.sigil": files["base.sigil"] + "\n" };
-  const third = await loadDesignInput(new InMemorySigilFileSystem(changed), {
-    startPath: ".",
-  });
-  assertEquals(
-    first.bundle.sources.find((s) => s.path === "base.sigil")?.text,
-    files["base.sigil"],
-  );
-  assertEquals(
-    third.bundle.sources.find((s) => s.path === "base.sigil")?.text,
-    changed["base.sigil"],
-  );
+Deno.test("native cycle and scope fixtures are reproducible current frontend exports", async () => {
+  for (const name of ["design-cycle-080.json", "design-scope-080.json"]) {
+    const fixture = JSON.parse(
+      await Deno.readTextFile(new URL(`./fixtures/${name}`, import.meta.url)),
+    );
+    const files = Object.fromEntries(
+      [...fixture.sources, ...fixture.context]
+        .filter((s) => s.text !== null).map((s) => [s.path, s.text]),
+    );
+    const { bundle } = await loadDesignInput(
+      new InMemorySigilFileSystem(files),
+      { startPath: "." },
+    );
+    assert(bundle);
+    assertEquals(JSON.parse(JSON.stringify(bundle)), fixture);
+  }
 });

@@ -104,6 +104,14 @@ impl Scope {
             .retain(|e| design.sources.contains(&e.source));
         input.units.retain(|u| design.sources.contains(&u.source));
         input.imports.retain(|i| design.sources.contains(&i.source));
+        input.groups.retain(|g| design.sources.contains(&g.source));
+        input
+            .introductions
+            .retain(|i| design.sources.contains(&i.source));
+        input
+            .references
+            .retain(|r| design.sources.contains(&r.source));
+        input.links.retain(|l| design.sources.contains(&l.source));
         // Global/context diagnostics remain. Only diagnostics on known, excluded
         // authored files are outside this comparison's effective membership.
         input.diagnostics.retain(|d| {

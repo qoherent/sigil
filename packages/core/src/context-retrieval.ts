@@ -10,7 +10,7 @@ import {
   isSupportedImplementationSource,
   ownedImplementationTargetsFor,
 } from "./implementation-ownership.ts";
-import { normalizeImportPath, normalizePath, relativePath } from "./path.ts";
+import { normalizeImportPath, normalizePath } from "./path.ts";
 import {
   RetrievalIdentityCollision,
   RetrievalIdentityRegistry,
@@ -145,8 +145,8 @@ export async function retrievePurposeContext(
   if (accepted === undefined) {
     return fail("SIGIL_RETRIEVAL_TARGET_PATH_INVALID");
   }
-  const path = (value: string) =>
-    relativePath(resolved.workspace.root, normalizePath(value));
+  const provenance = new SourceProvenance(resolved.workspace.root);
+  const path = (value: string) => provenance.path(normalizePath(value));
   let seeds: ResolvedComponent[];
   if (target.kind === "component") {
     const named = resolved.components.filter((c) =>
@@ -195,7 +195,6 @@ export async function retrievePurposeContext(
 
   async function select(): Promise<PurposeRetrievalResult> {
     const identities = new RetrievalIdentityRegistry();
-    const provenance = new SourceProvenance(resolved.workspace.root);
     const nodes = new Map<string, NodeDraft>(),
       edges = new Map<string, EdgeValue>(),
       candidates = new Map<string, Candidate>();
@@ -987,7 +986,8 @@ async function exclusionFrontier(
   registry: RetrievalIdentityRegistry,
 ): Promise<ExcludedRelation[]> {
   const components = new Map(resolved.components.map((c) => [c.id, c]));
-  const path = (p: string) => relativePath(resolved.workspace.root, p);
+  const provenance = new SourceProvenance(resolved.workspace.root);
+  const path = (p: string) => provenance.path(p);
   const found: {
     value: ExcludedRelation;
     target: NodeValue;

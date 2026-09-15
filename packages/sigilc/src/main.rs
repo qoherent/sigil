@@ -35,7 +35,8 @@ Scope and semantic compilation flow:
 Gate exits: 0 = Coherent/Loose (Design), Closed/Converged (Implementation).
 1 = Disjoint (Design), Drift (Implementation). Loose/Converged are warnings.
 2 = usage; 3 = operational failure or unavailable comparison.
-"#.into()
+"#
+    .into()
 }
 
 fn main() -> ExitCode {

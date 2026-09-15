@@ -69,6 +69,20 @@ export function formatSigilDocument(
     c.declaration.sections.flatMap((s) => s.units)
   );
   const references = components.flatMap((c) => c.references);
+  const referenceRanges = new Map<string, SourceRange[]>();
+  for (const reference of references) {
+    const ranges = referenceRanges.get(reference.facetId) ?? [];
+    ranges.push(reference.range);
+    referenceRanges.set(reference.facetId, ranges);
+  }
+  const protectedRanges = new Map(facets.map((facet) => [facet.id, {
+    spans: [
+      ...facet.definitions.map((d) => d.range),
+      ...facet.links.map((l) => l.range),
+      ...referenceRanges.get(facet.id) ?? [],
+    ],
+    destinations: facet.links.map((l) => l.destinationRange),
+  }]));
   const sourceMap = document.source;
   const proseLines = new Map<number, Facet>();
   const payloadLines = new Set<number>();
@@ -103,16 +117,12 @@ export function formatSigilDocument(
     }
     const facet = proseLines.get(index);
     if (facet) {
-      const protectedSpans = [
-        ...facet.definitions.map((d) => d.range),
-        ...facet.links.map((l) => l.range),
-        ...references.filter((r) => r.facetId === facet.id).map((r) => r.range),
-      ];
+      const ranges = protectedRanges.get(facet.id)!;
       const wrapped = wrapLine(
         sourceMap,
         line,
-        protectedSpans,
-        facet.links.map((l) => l.destinationRange),
+        ranges.spans,
+        ranges.destinations,
       );
       if (!wrapped) {
         return reject([

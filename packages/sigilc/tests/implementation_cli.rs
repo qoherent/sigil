@@ -9,7 +9,12 @@ fn workspace() -> Workspace {
     root.write("main.rs", b"\xff\0direct target bytes");
     root.write("neighbor.py", b"secret neighbor body");
     let mut input = serde_json::to_value(root.input(&["a.sigil"], json!([]))).unwrap();
-    input["entities"]=json!(["A","B"].iter().map(|name|json!({"id":format!("urn:sigil:component:a.sigil:{name}"),"type":"Component","label":name,"source":"a.sigil","owner":null,"exported":true})).collect::<Vec<_>>());
+    input["entities"] = json!(
+        ["A", "B"]
+            .iter()
+            .map(|name| support::component("a.sigil", name, "component A {} component B {}"))
+            .collect::<Vec<_>>()
+    );
     root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
     root.write("selection.json", br#"{"paths":["main.rs"]}"#);
     root

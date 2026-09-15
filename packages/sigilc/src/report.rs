@@ -2,9 +2,9 @@
 use crate::{
     comparison::Comparison,
     design::{DesignReport, SourceStatus},
+    eqval::DesignWorld,
     frontend::{DesignInput, Range},
     implementation::ImplementationReport,
-    eqval::DesignWorld,
     store::Freshness,
 };
 use serde::Serialize;
@@ -27,6 +27,7 @@ pub fn unavailable_comparison() -> Diagnostics {
             witness: None,
         }],
         omitted: 0,
+        frontend: Vec::new(),
     }
 }
 
@@ -34,6 +35,9 @@ pub fn unavailable_comparison() -> Diagnostics {
 pub struct Diagnostics {
     pub items: Vec<Finding>,
     pub omitted: usize,
+    /// Complete frontend diagnostics retain stages and related source evidence.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub frontend: Vec<crate::frontend::Diagnostic>,
 }
 #[derive(Debug, Serialize)]
 pub struct Location {
@@ -41,6 +45,11 @@ pub struct Location {
     pub source: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub range: Option<Range>,
+    pub coordinate_system: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_digest: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation_range: Option<crate::frontend::ImplementationRange>,
 }
 #[derive(Debug, Serialize)]
 pub struct Finding {
@@ -94,13 +103,16 @@ impl Locations<'_> {
                     (
                         "design",
                         unit.source.clone(),
-                        Some(unit.range.start.clone()),
-                        Some(unit.range.end.clone()),
+                        Some(unit.range.start),
+                        Some(unit.range.end),
                     ),
                     Location {
                         side: "design",
                         source: unit.source.clone(),
                         range: Some(unit.range.clone()),
+                        coordinate_system: "utf8-bytes",
+                        source_digest: source_digest(self.input, &unit.source),
+                        implementation_range: None,
                     },
                 );
             } else if let Some(entity) = self.input.entities.iter().find(|e| e.id == reference) {
@@ -110,6 +122,9 @@ impl Locations<'_> {
                         side: "design",
                         source: entity.source.clone(),
                         range: None,
+                        coordinate_system: "utf8-bytes",
+                        source_digest: source_digest(self.input, &entity.source),
+                        implementation_range: None,
                     },
                 );
             }
@@ -124,6 +139,17 @@ impl Locations<'_> {
                             side,
                             source: source.clone(),
                             range: None,
+                            coordinate_system: if side == "design" {
+                                "utf8-bytes"
+                            } else {
+                                "utf16-lines"
+                            },
+                            source_digest: if side == "design" {
+                                source_digest(self.input, source)
+                            } else {
+                                None
+                            },
+                            implementation_range: None,
                         },
                     );
                 }
@@ -186,6 +212,13 @@ fn source_findings(result: &mut Diagnostics, side: &'static str, sources: &[Sour
                 side,
                 source: source.source.clone(),
                 range: None,
+                coordinate_system: if side == "design" {
+                    "utf8-bytes"
+                } else {
+                    "utf16-lines"
+                },
+                source_digest: None,
+                implementation_range: None,
             }],
             omitted_locations: 0,
             witness: None,
@@ -240,6 +273,12 @@ pub fn design(
             },
         ));
     }
+    result.frontend = input
+        .diagnostics
+        .iter()
+        .take(MAX_FINDINGS)
+        .cloned()
+        .collect();
     for diagnostic in result.take(&input.diagnostics) {
         result.push(Finding {
             code: diagnostic.code.clone(),
@@ -257,6 +296,14 @@ pub fn design(
                     side: "design",
                     source: source.clone(),
                     range: diagnostic.range.clone(),
+                    coordinate_system: if diagnostic.implementation_range.is_some() {
+                        "utf16-lines"
+                    } else {
+                        "utf8-bytes"
+                    },
+                    source_digest: source_digest(input, source)
+                        .or_else(|| diagnostic.source_digest.clone()),
+                    implementation_range: diagnostic.implementation_range.clone(),
                 })
                 .collect(),
             omitted_locations: 0,
@@ -348,4 +395,26 @@ pub fn implementation(
         ));
     }
     result
+}
+
+fn source_digest(input: &DesignInput, source: &str) -> Option<String> {
+    use sha2::{Digest, Sha256};
+    let text = input
+        .sources
+        .iter()
+        .find(|s| s.path == source)
+        .map(|s| s.text.as_str())
+        .or_else(|| {
+            input
+                .context
+                .iter()
+                .find(|c| c.path == source)
+                .and_then(|c| c.text.as_deref())
+        })?;
+    Some(
+        Sha256::digest(text.as_bytes())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect(),
+    )
 }

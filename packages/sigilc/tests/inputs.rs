@@ -2,9 +2,8 @@ mod support;
 use serde_json::json;
 use sigilc::{
     catalog::DesignIdentities,
-    frontend::{Entity, EntityType},
-    inputs::{self, Binding, DesignSnapshot, SemanticInput},
     eqval::DesignState,
+    inputs::{self, Binding, DesignSnapshot, SemanticInput},
     sources::capture,
 };
 use std::collections::BTreeMap;
@@ -12,33 +11,18 @@ use support::Workspace;
 
 const PATHS: &[&str] = &["a.sigil", "b.sigil", "c.sigil", "unrelated.sigil"];
 fn workspace() -> Workspace {
-    let root = Workspace::new();
-    for path in PATHS {
-        root.write(path, b"// original");
-    }
-    root
+    support::cycle_workspace()
 }
 fn snapshot(root: &Workspace) -> DesignSnapshot {
-    DesignSnapshot::capture(
-        &root.0,
-        root.input(
-            PATHS,
-            json!([
-                {"source":"a.sigil","target":"b.sigil","names":[]},
-                {"source":"c.sigil","target":"a.sigil","names":[]},
-                {"source":"b.sigil","target":"c.sigil","names":[]}
-            ]),
-        ),
-        10_000,
-    )
-    .unwrap()
+    DesignSnapshot::capture(&root.0, support::cycle_input(root), 10_000).unwrap()
 }
 
 #[test]
 fn design_transitive_imports_and_cycles_bind_private_bytes() {
     let root = workspace();
     let before = snapshot(&root);
-    root.write("b.sigil", b"// private change");
+    let text = std::fs::read_to_string(root.0.join("b.sigil")).unwrap();
+    root.write("b.sigil", format!("{text}\n// private change").as_bytes());
     let after = snapshot(&root);
     for path in ["a.sigil", "b.sigil", "c.sigil"] {
         assert_ne!(before.binding(path).unwrap(), after.binding(path).unwrap());
@@ -64,47 +48,20 @@ fn design_transitive_imports_and_cycles_bind_private_bytes() {
 }
 
 #[test]
-fn old_dependency_bindings_detect_deleted_edges_and_unresolved_graphs_expand_scope() {
+fn deleted_provider_bindings_widen_conservatively_instead_of_shrinking_the_world() {
     let root = workspace();
     let before = snapshot(&root);
     std::fs::remove_file(root.0.join("b.sigil")).unwrap();
-    let paths = &["a.sigil", "c.sigil", "unrelated.sigil"];
-    let deleted = DesignSnapshot::capture(
-        &root.0,
-        root.input(
-            paths,
-            json!([
-                {"source":"c.sigil","target":"a.sigil","names":[]}
-            ]),
-        ),
-        10_000,
-    )
-    .unwrap();
-    for path in ["a.sigil", "c.sigil"] {
+    let value = support::missing_cycle_provider();
+    let input = sigilc::frontend::DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+    let deleted = DesignSnapshot::capture(&root.0, input, 10_000).unwrap();
+    for path in ["a.sigil", "c.sigil", "unrelated.sigil"] {
         assert_ne!(
             before.binding(path).unwrap(),
             deleted.binding(path).unwrap()
         );
     }
-    assert_eq!(
-        before.binding("unrelated.sigil").unwrap(),
-        deleted.binding("unrelated.sigil").unwrap()
-    );
-    let unresolved = DesignSnapshot::capture(
-        &root.0,
-        root.input(
-            paths,
-            json!([
-                {"source":"a.sigil","target":null,"names":[]}
-            ]),
-        ),
-        10_000,
-    )
-    .unwrap();
-    assert_ne!(
-        deleted.binding("unrelated.sigil").unwrap(),
-        unresolved.binding("unrelated.sigil").unwrap()
-    );
+    assert!(sigilc::design::valid_frontend(&deleted).is_err());
 }
 
 #[test]
@@ -119,7 +76,7 @@ fn stale_frontend_buffers_and_context_absence_are_rejected() {
             .contains("source changed")
     );
     let input = root.input(PATHS, json!([]));
-    root.write(".sigil/config.json", b"{}");
+    root.write(".sigil/local.json", b"{}");
     assert!(
         DesignSnapshot::capture(&root.0, input, 10_000)
             .err()
@@ -156,14 +113,16 @@ fn implementation_key_contains_only_its_target_and_ontology_format_catalog() {
             &frozen.catalog
         )
     );
-    input.entities.push(Entity {
-        id: "urn:sigil:component:a.sigil:A".into(),
-        kind: EntityType::Component,
-        label: "A".into(),
-        source: "a.sigil".into(),
-        owner: None,
-        exported: true,
-    });
+    let source = "component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}";
+    input
+        .sources
+        .iter_mut()
+        .find(|s| s.path == "a.sigil")
+        .unwrap()
+        .text = source.into();
+    input
+        .entities
+        .push(serde_json::from_value(support::component("a.sigil", "A", source)).unwrap());
     let changed = DesignIdentities::collect(&input, &BTreeMap::new())
         .unwrap()
         .freeze(DesignState::Coherent, "d2".into(), true)
