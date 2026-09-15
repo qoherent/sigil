@@ -3,6 +3,10 @@ import { normalizePath } from "@qoherent/sigil-core";
 
 // @sigil uses packages/core/src/filesystem.sigil::SigilFileSystem::FileSystemPort interface,constraints,cases
 export class DenoSigilFileSystem implements SigilFileSystem {
+  async readSourceFile(path: string): Promise<Uint8Array> {
+    return await Deno.readFile(path);
+  }
+
   async readTextFile(path: string): Promise<string> {
     return await Deno.readTextFile(path);
   }
@@ -49,6 +53,12 @@ export class OverlaySigilFileSystem implements SigilFileSystem {
     const normalized = normalizePath(path);
     const overlay = this.#overlays.get(normalized);
     return overlay ?? await this.#base.readTextFile(normalized);
+  }
+
+  async readSourceFile(path: string): Promise<string | Uint8Array> {
+    const normalized = normalizePath(path);
+    return this.#overlays.get(normalized) ??
+      await this.#base.readSourceFile(normalized);
   }
 
   async exists(path: string): Promise<boolean> {

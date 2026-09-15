@@ -169,6 +169,7 @@
     "vscode:prepublish": "npm run build"
   },
   "dependencies": {
+    "entities": "7.0.0",
     "vscode-languageclient": "10.1.0"
   },
   "devDependencies": {

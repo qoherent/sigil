@@ -9,6 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "paths": {
+      "entities/decode": [
+        "./node_modules/entities/dist/esm/decode.js"
+      ],
       "@qoherent/sigil-core": [
         "../../../packages/core/src/mod.ts"
       ]

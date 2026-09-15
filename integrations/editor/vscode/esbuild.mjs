@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const repository = path.resolve(directory, "../../..");
+const nodePaths = [path.join(directory, "node_modules")];
 
 await rm(path.join(directory, "dist"), { recursive: true, force: true });
 await mkdir(path.join(directory, "build"), { recursive: true });
 
 await Promise.all([
   build({
+    nodePaths,
     entryPoints: [path.join(directory, "src/extension.ts")],
     outfile: path.join(directory, "dist/extension.js"),
     bundle: true,
@@ -21,6 +23,7 @@ await Promise.all([
     sourcemap: false,
   }),
   build({
+    nodePaths,
     entryPoints: [path.join(directory, "src/node-server.ts")],
     outfile: path.join(directory, "dist/server.js"),
     bundle: true,
@@ -33,6 +36,7 @@ await Promise.all([
     sourcemap: false,
   }),
   build({
+    nodePaths,
     entryPoints: [path.join(directory, "tests/extension/index.ts")],
     outfile: path.join(directory, "dist/test/extension.js"),
     bundle: true,

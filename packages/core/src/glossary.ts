@@ -11,7 +11,8 @@ import type {
 } from "./model/glossary.ts";
 import type { Facet, SigilDocument } from "./model/source.ts";
 import type { SigilDiagnostic } from "./model/diagnostics.ts";
-import type { SourceLocation, SourceRange } from "./model/language.ts";
+import type { SourceRange } from "./model/language.ts";
+import { captureSource, type SourceText } from "./source-text.ts";
 import type { SigilWorkspace } from "./model/workspace.ts";
 import { SIGIL_GLOSSARY_PATH } from "./model/language.ts";
 import { globMatches, normalizePath, relativePath } from "./path.ts";
@@ -23,6 +24,17 @@ export function parseSigilGlossary(
   source: string,
   filePath: string = SIGIL_GLOSSARY_PATH,
 ): GlossaryParseResult {
+  const captured = captureSource(filePath, source);
+  if (captured.diagnostics.length) {
+    return {
+      diagnostics: captured.diagnostics.map((d) =>
+        diagnostic("SIGIL_GLOSSARY_PARSE", d.message, {
+          filePath,
+          range: d.range,
+        })
+      ),
+    };
+  }
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -76,7 +88,7 @@ export function parseSigilGlossary(
     terms: RawGlossaryTerm[];
     contexts: RawGlossaryContext[];
   };
-  const rangeFinder = new TermRangeFinder(source);
+  const rangeFinder = new TermRangeFinder(captured.source!);
   const workspaceScope: GlossaryScope = { kind: "workspace" };
   const terms = raw.terms.map((entry) =>
     toTerm(entry, workspaceScope, rangeFinder)
@@ -103,7 +115,7 @@ export function parseSigilGlossary(
 
 /*
  * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::ContextResolutionEngine interface
- * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::ContextResolution logic,constraints,cases
+ * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::ContextResolutionEngine logic,constraints,cases
  */
 export function resolveGlossaryForFile(
   glossary: WorkspaceGlossary,
@@ -146,31 +158,28 @@ export function resolveGlossaryForFile(
 
 /*
  * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::TermRecognitionEngine interface
- * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::TermRecognition logic,constraints,cases
+ * @sigil implements packages/core/src/glossary.sigil::SigilGlossaryEngine::TermRecognitionEngine logic,constraints,cases
  */
 export function glossaryOccurrencesForDocument(
   context: ResolvedGlossaryContext,
   document: SigilDocument,
 ): readonly GlossaryOccurrence[] {
-  if (context.entries.length === 0) return [];
+  if (context.entries.length === 0 || !document.source) return [];
   const spellings = context.entries.flatMap((term) =>
     [term.term, ...term.aliases].map((spelling) => ({ spelling, term }))
   ).sort((left, right) =>
     right.spelling.length - left.spelling.length ||
     left.spelling.localeCompare(right.spelling)
   );
-  const units = [...document.components, ...document.expands]
+  const units = document.components
     .flatMap((declaration) =>
       declaration.sections.flatMap((section) => section.units)
     )
-    .sort((left, right) =>
-      left.range.start.line - right.range.start.line ||
-      left.range.start.column - right.range.start.column
-    );
+    .sort((left, right) => left.range.start - right.range.start);
 
   const occurrences: GlossaryOccurrence[] = [];
   for (const unit of units) {
-    occurrences.push(...matchUnit(unit, spellings));
+    occurrences.push(...matchUnit(unit, spellings, document.source));
   }
   return occurrences;
 }
@@ -264,11 +273,7 @@ export function glossaryContextForFiles(
 }
 
 function rangesOverlap(left: SourceRange, right: SourceRange): boolean {
-  const start = (range: SourceRange) =>
-    range.start.line * 1_000_000 + range.start.column;
-  const end = (range: SourceRange) =>
-    range.end.line * 1_000_000 + range.end.column;
-  return start(left) <= end(right) && start(right) <= end(left);
+  return left.start < right.end && right.start < left.end;
 }
 
 interface RawGlossaryTerm {
@@ -509,21 +514,15 @@ function mergeEffectiveTerms(
 function matchUnit(
   unit: Facet,
   spellings: readonly { spelling: string; term: GlossaryTerm }[],
+  snapshot: SourceText,
 ): GlossaryOccurrence[] {
   const occurrences: GlossaryOccurrence[] = [];
+  const firstLine = snapshot.locationAtByte(unit.proseRange.start)!.line - 1;
   for (let offset = 0; offset < unit.sourceLines.length; offset++) {
-    const source = unit.sourceLines[offset];
-    const text = source.trim();
-    const column = source.indexOf(text) + 1;
-    occurrences.push(
-      ...matchUnitLine(
-        unit,
-        text,
-        unit.range.start.line + offset,
-        column,
-        spellings,
-      ),
-    );
+    const line = snapshot.lines[firstLine + offset];
+    const text = line.content.trim();
+    const start = line.utf16Start + line.content.indexOf(text);
+    occurrences.push(...matchUnitLine(unit, text, start, snapshot, spellings));
   }
   return occurrences;
 }
@@ -531,8 +530,8 @@ function matchUnit(
 function matchUnitLine(
   unit: Facet,
   text: string,
-  lineNumber: number,
-  column: number,
+  utf16Start: number,
+  snapshot: SourceText,
   spellings: readonly { spelling: string; term: GlossaryTerm }[],
 ): GlossaryOccurrence[] {
   const excluded = excludedColumns(text);
@@ -567,14 +566,10 @@ function matchUnitLine(
       ownerName: unit.ownerName,
       sectionName: unit.sectionName,
       range: {
-        start: {
-          line: lineNumber,
-          column: column + index,
-        },
-        end: {
-          line: lineNumber,
-          column: column + index + matchedSpelling.length,
-        },
+        start: snapshot.byteOffsetAtUtf16(utf16Start + index)!,
+        end: snapshot.byteOffsetAtUtf16(
+          utf16Start + index + matchedSpelling.length,
+        )!,
       },
     });
     index += matchedSpelling.length;
@@ -608,7 +603,7 @@ function normalizeRelative(path: string): string {
 }
 
 class TermRangeFinder {
-  readonly #source: string;
+  readonly #source: SourceText;
   readonly #matches: {
     readonly value: string;
     readonly start: number;
@@ -616,9 +611,9 @@ class TermRangeFinder {
     used: boolean;
   }[];
 
-  constructor(source: string) {
+  constructor(source: SourceText) {
     this.#source = source;
-    this.#matches = [...source.matchAll(
+    this.#matches = [...source.text.matchAll(
       /"term"\s*:\s*("(?:\\.|[^"\\])*")/gu,
     )].flatMap((match) => {
       try {
@@ -641,24 +636,15 @@ class TermRangeFinder {
       !item.used && item.value === value
     );
     if (!match) {
-      const start = sourceLocationAt(this.#source, 0);
+      const start = 0;
       return { start, end: start };
     }
     match.used = true;
     return {
-      start: sourceLocationAt(this.#source, match.start),
-      end: sourceLocationAt(this.#source, match.end),
+      start: this.#source.byteOffsetAtUtf16(match.start)!,
+      end: this.#source.byteOffsetAtUtf16(match.end)!,
     };
   }
-}
-
-function sourceLocationAt(source: string, offset: number): SourceLocation {
-  const before = source.slice(0, offset);
-  const lines = before.split("\n");
-  return {
-    line: lines.length,
-    column: lines.at(-1)!.length + 1,
-  };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

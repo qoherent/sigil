@@ -5,7 +5,12 @@ import {
   parseSigilConfig,
   parseSigilLocalConfig,
 } from "./config.ts";
-import { diagnostic } from "./diagnostics.ts";
+import {
+  compareScalarText,
+  diagnostic,
+  orderDiagnostics,
+} from "./diagnostics.ts";
+import { captureSource, type SourceInput } from "./source-text.ts";
 import { parseSigilGlossary } from "./glossary.ts";
 import {
   SIGIL_CONFIG_PATH,
@@ -126,7 +131,7 @@ export async function loadSigilWorkspace(
       workspaceSnapshotIdentity: await sha256Canonical({ records: [] }),
       memberRoots: [],
       files: loadedFiles,
-      diagnostics,
+      diagnostics: orderDiagnostics(diagnostics),
     };
   }
 
@@ -174,21 +179,34 @@ export async function loadSigilWorkspace(
     .sort();
 
   for (const path of paths) {
-    const source = await fs.readTextFile(path);
-    const parsed = parseSigilDocument(path, source, {
+    const input = await fs.readSourceFile(path);
+    const parsed = parseSigilDocument(path, input, {
       sigilVersion: discovery.config.sigilVersion,
     });
-    loadedFiles.push({ path, source, document: parsed.document });
+    loadedFiles.push({
+      path,
+      source: parsed.document.source?.text,
+      document: parsed.document,
+    });
     diagnostics.push(...parsed.diagnostics);
   }
 
   const glossaryPath = joinPath(discovery.root, SIGIL_GLOSSARY_PATH);
   if (await fs.exists(glossaryPath)) {
-    const glossarySource = await fs.readTextFile(glossaryPath);
-    const parsed = parseSigilGlossary(
-      glossarySource,
-      glossaryPath,
-    );
+    const glossaryInput = await fs.readSourceFile(glossaryPath);
+    const glossaryCapture = captureSource(glossaryPath, glossaryInput);
+    const glossarySource = glossaryCapture.source?.text;
+    const parsed = glossaryCapture.diagnostics.length
+      ? {
+        glossary: undefined,
+        diagnostics: glossaryCapture.diagnostics.map((d) =>
+          diagnostic("SIGIL_GLOSSARY_PARSE", d.message, {
+            filePath: glossaryPath,
+            range: d.range,
+          })
+        ),
+      }
+      : parseSigilGlossary(glossarySource!, glossaryPath);
     diagnostics.push(...parsed.diagnostics);
     return {
       ...discovery,
@@ -198,7 +216,7 @@ export async function loadSigilWorkspace(
         discovery.configSource!,
         loadedFiles,
         glossaryPath,
-        glossarySource,
+        glossaryInput,
         discovery.localConfigPath,
         discovery.localConfigSource,
       ),
@@ -206,7 +224,7 @@ export async function loadSigilWorkspace(
       glossary: parsed.glossary,
       memberRoots,
       files: loadedFiles,
-      diagnostics,
+      diagnostics: orderDiagnostics(diagnostics),
     };
   }
 
@@ -224,7 +242,7 @@ export async function loadSigilWorkspace(
     ),
     memberRoots,
     files: loadedFiles,
-    diagnostics,
+    diagnostics: orderDiagnostics(diagnostics),
   };
 }
 
@@ -243,7 +261,23 @@ async function readDiscoveredConfig(
       )],
     };
   }
-  const configSource = await fs.readTextFile(configPath);
+  const configCapture = captureSource(
+    configPath,
+    await fs.readSourceFile(configPath),
+  );
+  if (configCapture.diagnostics.length) {
+    return {
+      root,
+      configPath,
+      diagnostics: configCapture.diagnostics.map((d) =>
+        diagnostic("SIGIL_CONFIG_PARSE", d.message, {
+          filePath: configPath,
+          range: d.range,
+        })
+      ),
+    };
+  }
+  const configSource = configCapture.source!.text;
   const parsed = parseSigilConfig(
     configSource,
     configPath,
@@ -258,7 +292,25 @@ async function readDiscoveredConfig(
       diagnostics: parsed.diagnostics,
     };
   }
-  const localConfigSource = await fs.readTextFile(localConfigPath);
+  const localCapture = captureSource(
+    localConfigPath,
+    await fs.readSourceFile(localConfigPath),
+  );
+  if (localCapture.diagnostics.length) {
+    return {
+      root,
+      configPath,
+      configSource,
+      localConfigPath,
+      diagnostics: localCapture.diagnostics.map((d) =>
+        diagnostic("SIGIL_CONFIG_PARSE", d.message, {
+          filePath: localConfigPath,
+          range: d.range,
+        })
+      ),
+    };
+  }
+  const localConfigSource = localCapture.source!.text;
   const local = parseSigilLocalConfig(localConfigSource, localConfigPath);
   return {
     root,
@@ -280,7 +332,7 @@ async function workspaceSnapshotIdentity(
   configSource: string,
   files: readonly LoadedSigilFile[],
   glossaryPath?: string,
-  glossarySource?: string,
+  glossarySource?: SourceInput,
   localConfigPath?: string,
   localConfigSource?: string,
 ): Promise<string> {
@@ -300,17 +352,22 @@ async function workspaceSnapshotIdentity(
     ...files.map((file) => ({
       kind: "sigil",
       path: relativePath(root, file.path),
-      text: file.source ?? "",
+      input: file.document.rawBytes
+        ? { kind: "bytes", bytes: [...file.document.rawBytes] }
+        : { kind: "text", text: file.document.rawText },
     })),
     ...(glossaryPath && glossarySource !== undefined
       ? [{
         kind: "glossary",
         path: relativePath(root, glossaryPath),
-        text: glossarySource,
+        input: typeof glossarySource === "string"
+          ? { kind: "text", text: glossarySource }
+          : { kind: "bytes", bytes: [...glossarySource] },
       }]
       : []),
   ].sort((left, right) =>
-    left.path.localeCompare(right.path) || left.kind.localeCompare(right.kind)
+    compareScalarText(left.path, right.path) ||
+    compareScalarText(left.kind, right.kind)
   );
   return `sha256:${await sha256Canonical({ records })}`;
 }

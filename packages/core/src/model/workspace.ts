@@ -2,6 +2,7 @@ import type { SigilConfig } from "./configuration.ts";
 import type { SigilDiagnostic } from "./diagnostics.ts";
 import type { WorkspaceGlossary } from "./glossary.ts";
 import type { SigilDocument } from "./source.ts";
+import type { SourceInput } from "../source-text.ts";
 export type { SigilConfig } from "./configuration.ts";
 export type { SigilDiagnostic } from "./diagnostics.ts";
 export type { WorkspaceGlossary } from "./glossary.ts";
@@ -9,6 +10,8 @@ export type { SigilDocument } from "./source.ts";
 
 // @sigil implements packages/core/src/model/workspace.sigil::SigilWorkspaceModel::WorkspaceModel interface
 export interface SigilFileSystem {
+  /** Disk adapters return original bytes; editor overlays return supplied text. */
+  readSourceFile(path: string): Promise<SourceInput>;
   readTextFile(path: string): Promise<string>;
   exists(path: string): Promise<boolean>;
   listFiles(root: string): Promise<readonly string[]>;

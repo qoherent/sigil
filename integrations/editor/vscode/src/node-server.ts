@@ -7,6 +7,10 @@ import { SigilLanguageServer } from "../../../../packages/lsp/src/server.ts";
 
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::SupportedExtensionHosts interface,constraints,cases
 class NodeSigilFileSystem implements SigilFileSystem {
+  async readSourceFile(path: string): Promise<Uint8Array> {
+    return await readFile(path);
+  }
+
   async readTextFile(path: string): Promise<string> {
     return await readFile(path, "utf8");
   }
