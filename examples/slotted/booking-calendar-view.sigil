@@ -35,7 +35,7 @@ component BookingCalendarView {
         behavior.
     }
 
-        state {
+    state {
         loading while calendar data is requested
 
         empty when no rooms are available in the selected range

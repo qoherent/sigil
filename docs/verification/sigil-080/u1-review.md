@@ -1,4 +1,10 @@
-# U1 design migration review
+# U1 design migration review — historical milestone
+
+This records the exact U1 milestone before downstream consistency corrections.
+Its original reports and hashes remain historical evidence. Current combined
+coverage is recorded in [design-review.md](design-review.md); the U2 retrieval-provider correction and later explicit-import corrections to
+configuration, glossary, and model-summary designs supersede this page as a claim
+about current bytes.
 
 ## Outcome
 

@@ -5,57 +5,62 @@ component SigilSourceIdentity {
 
   interface {
     SemanticInputs {
-      Bind Implementation to only its captured path and exact bytes, fixed
-      ontology and projection format, and frozen identity-catalog fingerprint.
-      Selection and neighboring source changes do not invalidate that object.
-      Design additionally binds the conservative transitive resolved import
-      closure and required structural owners, frontend structure and version,
-      and applicable config and glossary bytes including absence. Cycles
-      terminate with a visited set. Unresolved
-      imports conservatively bind the entire selected Design set.
-      Recheck frontend source and context bytes against the filesystem before
-      accepting that bundle as a current snapshot. Capture membership separately
-      from the reusable per-source key. No production metadata enters either key.
+      Bind Implementation to only its captured path and exact bytes, fixed ontology
+      and projection format, and frozen identity-catalog fingerprint. Selection and
+      neighboring source changes do not invalidate that object. Design additionally
+      binds the conservative transitive resolved import closure and required
+      structural owners, frontend schema, language version, artifact version, and all
+      structural relation arrays, and applicable config and glossary bytes including
+      absence. Cycles terminate with a visited set. Unresolved imports conservatively
+      bind the entire selected Design set. Recheck frontend source and context bytes
+      against the filesystem before accepting that bundle as a current snapshot.
+      Capture membership separately from the reusable per-source key. No production
+      metadata enters either key.
     }
 
     SourceSelection {
-      Select normalized workspace-relative paths and directories using Sigil
-      include and exclude globs. Support arbitrary source extensions. Exclude
-      generated internal trees and configured vendor directories.
-      Refuse accidental empty selections and make intentional empty scope explicit.
-      For explicit file-only selection, filter requested paths before hashing
-      and do not traverse unrelated trees. Reuse snapdir file hashing and the
-      same manifest encoding as directory discovery. Validate selected regular
-      files and reject detected changes during hashing; no persistent shortcut
-      replaces current content identity.
+      Select normalized workspace-relative paths and directories using Sigil include
+      and exclude globs. Support arbitrary source extensions. Exclude generated
+      internal trees and configured vendor directories. Refuse accidental empty
+      selections and make intentional empty scope explicit. For explicit file-only
+      selection, filter requested paths before hashing and do not traverse unrelated
+      trees. Reuse snapdir file hashing and the same manifest encoding as directory
+      discovery. Validate selected regular files and reject detected changes during
+      hashing; no persistent shortcut replaces current content identity.
     }
 
     SourceIdentity {
-      Use snapdir manifests and BLAKE3 content hashes. Hash a versioned encoding
-      of sorted path, file type, and content checksum rows for selected scope.
-      Capture exact bounded source bytes and compare their checksum with a fresh
-      snapdir file hash. Reject paths crossing symlinks or workspace boundaries.
+      Use snapdir manifests and BLAKE3 content hashes. Hash a versioned encoding of
+      sorted path, file type, and content checksum rows for selected scope. Capture
+      exact bounded source bytes and compare their checksum with a fresh snapdir file
+      hash. Reject paths crossing symlinks or workspace boundaries.
     }
   }
-}
 
-expand SigilSourceIdentity {
   constraints {
+
+    StructuralBinding {
+      Preparation and per-source Design binding include schema 2, languageVersion
+      0.8.0, components and Facets, Tag introductions and groupings, import
+      selections, bare references, links, ranges, and provenance. Changed relevant
+      structure invalidates bindings through existing freshness checks even when
+      semantic assertions appear unchanged.
+    }
     SourceIdentity {
       Permission changes preserve semantic identity. Renames and duplicate-file
-      additions change selected-scope identity. A file's identity depends on its
-      own normalized path and bytes, never on neighboring source or model data.
-      Disable snapdir symlink following and object-store checksum recovery.
-      Reject explicitly selected symlinks and non-regular files.
+      additions change selected-scope identity. A file's identity depends on its own
+      normalized path and bytes, never on neighboring source or model data. Disable
+      snapdir symlink following and object-store checksum recovery. Reject explicitly
+      selected symlinks and non-regular files.
     }
   }
 
   cases {
     FocusedSelection {
-      Selecting four explicit files does not read an unrelated large or
-      unreadable tree. Duplicate requested paths yield one manifest row.
-      Internal, vendor, include and exclude rules still apply before content
-      reads. Equivalent file-only and directory selections have equal identity.
+      Selecting four explicit files does not read an unrelated large or unreadable
+      tree. Duplicate requested paths yield one manifest row. Internal, vendor,
+      include and exclude rules still apply before content reads. Equivalent
+      file-only and directory selections have equal identity.
     }
 
     SourceIdentity {

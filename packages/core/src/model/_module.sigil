@@ -1,3 +1,14 @@
+@packages/core/src/model/retrieval.sigil from SigilRetrievalModel import { RetrievalModel }
+@packages/core/src/model/graph.sigil from SigilGraphModel import { GraphModel }
+@packages/core/src/model/resolution.sigil from SigilResolutionModel import { ResolutionModel }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
+@packages/core/src/model/ownership.sigil from SigilImplementationOwnershipModel import { OwnershipModel }
+@packages/core/src/model/glossary.sigil from SigilGlossaryModel import { GlossaryModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
+@packages/core/src/model/configuration.sigil from SigilConfigurationModel import { ConfigurationModel }
+@packages/core/src/model/language.sigil from SigilLanguageModel import { LanguageModel }
+
 component SigilSemanticModel {
   goal {
     Summarize the independently owned immutable deterministic core
@@ -6,12 +17,11 @@ component SigilSemanticModel {
 
   interface {
     ModelNamespace {
-      The [language](language.sigil), [configuration](configuration.sigil),
-      [diagnostic](diagnostics.sigil), [source](source.sigil),
-      [glossary](glossary.sigil), [ownership](ownership.sigil),
-      [workspace](workspace.sigil), [resolution](resolution.sigil),
-      [graph](graph.sigil), and [retrieval](retrieval.sigil) designs own their
-      respective domain models.
+      LanguageModel, ConfigurationModel, DiagnosticModel, SourceModel, GlossaryModel,
+      OwnershipModel, WorkspaceModel, ResolutionModel, GraphModel, and RetrievalModel
+      retain their respective domain data definitions and independent component
+      owners. This summary assembles their responsibilities without acquiring or
+      re-exporting their Tags.
     }
   }
 
@@ -31,7 +41,7 @@ component SigilSemanticModel {
       operational parsing, loading, resolution, graph, and retrieval behavior.
 
       Trade-offs: Consumers use explicit owner imports where shared vocabulary is
-      needed and documentary links for related context.
+      needed and Inline Links for supporting documents.
 
       Design issues addressed: Independently evolving model domains no longer
       converge on one ownership boundary.

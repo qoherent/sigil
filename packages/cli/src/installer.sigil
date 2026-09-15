@@ -8,6 +8,14 @@ component SkillInstaller {
   }
 
   interface {
+
+    SkillCompatibility {
+      Catalog and installation results include declared language/tool compatibility.
+      The four-skill bundle retains sigil as legacy 0.7 with frozen incompatible tool
+      ranges and includes the three current 0.8 sibling skills. Discovery remains
+      data-driven; packaging compatibility metadata does not authorize silently
+      choosing or installing another binary.
+    }
     SkillCatalog {
       listInstalledSkills(sourceDirectory?) returns the resolved source directory and
       sorted valid skill names
@@ -41,9 +49,7 @@ component SkillInstaller {
       returned installation paths are absolute host paths
     }
   }
-}
 
-expand SkillInstaller {
   state {
     SkillCatalog {
       installable skills are sorted immediate non-hidden directories containing

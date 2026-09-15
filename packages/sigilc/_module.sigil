@@ -1,37 +1,50 @@
-@packages/core/src/design-input.sigil import { SigilDesignInput }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 
 component SigilSemanticCompiler {
   goal {
-    Derive disposable Design and Implementation worlds using fixed semantic
-    laws while keeping language interpretation and external workers separate.
+    Derive disposable Design and Implementation worlds using fixed semantic laws
+    while keeping language interpretation and external workers separate.
   }
 
   interface {
     FrontendBoundary {
-      Accept the closed, versioned structural bundle from SigilDesignInput.
-      Reject unknown fields at every level, malformed source paths, duplicate
-      identities, dangling ownership and import references, and invalid ranges.
-      The TypeScript frontend owns parsing and language resolution. Rust owns
-      input identity and semantic interpretation of validated assertions.
+      Accept only frontend schema 2 with explicit languageVersion 0.8.0 separate from
+      frontend artifact version, as defined by ResolvedDesignInput. Reject unknown
+      fields at every level, malformed source paths, duplicate identities, dangling
+      ownership and import references, and invalid ranges. The TypeScript frontend
+      owns parsing and language resolution. Rust owns input identity and semantic
+      interpretation of validated assertions.
     }
   }
-}
 
-expand SigilSemanticCompiler {
   constraints {
+
+    TagTransport {
+      Validate components, Facets, exact Tag introductions and local groupings,
+      import selections, bare references, and Inline Links including their ownership,
+      contract roles, source ranges, and related diagnostics. Reject schema 1,
+      unsupported language, removed expand/visibility/single-Concept fields, and
+      incompatible structural relations.
+
+      The structural companion preserves provenance alongside semantic
+      inputs/results; it introduces no behavior-algebra laws or implication rules.
+      Source/context freshness checks remain native-owned. Invalid UTF-8 has no
+      faithful frontend bundle and cannot enter compilation.
+    }
+
     FrontendBoundary {
       No obligations, semantic closure, rules, implementation evidence, model
-      configuration or production metadata can enter through frontend transport.
-      Unit inventory records physical authored ranges without asserting their
-      meaning. Invalid input never supplies a completed semantic verdict.
+      configuration or production metadata can enter through frontend transport. Unit
+      inventory records physical authored ranges without asserting their meaning.
+      Invalid input never supplies a completed semantic verdict.
     }
   }
 
   cases {
     FrontendBoundary {
       Reject a semantic result inserted at either the bundle or entity level.
-      Preserve valid unresolved imports and units with null owners so diagnostics
-      can explain failed language resolution without inventing identities.
+      Preserve valid unresolved imports and units with null owners so diagnostics can
+      explain failed language resolution without inventing identities.
     }
   }
 }

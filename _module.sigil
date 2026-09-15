@@ -1,10 +1,10 @@
-@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
-@packages/core import { SigilCore }
-@packages/cli import { SigilCli }
-@packages/sigilc import { SigilSemanticCompiler }
-@packages/lsp import { SigilLsp }
-@integrations/editor/vscode import { SigilVsCodeExtension }
-@integrations/skills/sigil import { SigilSkill }
+@integrations/editor/vscode/_module.sigil from SigilVsCodeExtension import { ExtensionPackage }
+@packages/lsp/_module.sigil from SigilLsp import { LspPackage }
+@packages/sigilc/_module.sigil from SigilSemanticCompiler import { FrontendBoundary }
+@packages/cli/_module.sigil from SigilCli import { CliInvocation, DesignExport }
+@packages/core/_module.sigil from SigilCore import { CorePackage }
+@spec/language.sigil from SigilWorkspaceConfig import { WorkspaceBoundary, ConfigFile }
+@spec/language.sigil from SigilLanguage import { LanguageVersion, ComponentContract, TagIdentity }
 
 component Sigil {
   goal {
@@ -30,20 +30,19 @@ component Sigil {
       sources consistently
     }
 
-    ComponentVisibilityGuarantee {
-      ComponentVisibilityGuarantee adapts ComponentVisibility into a root-level
-      visibility promise.
+    TagSelectionGuarantee {
+      TagSelectionGuarantee exposes the TagIdentity contract at the root boundary.
 
-      keeps every component importable through its explicit Sigil source path
-      regardless of directory-import shorthand
+      keeps every component-owned Tag selectable through an explicit declaring file,
+      provider component, and exact Tag name
     }
 
     ToolchainSurfaces {
       provides non-interactive command-line automation, editor-neutral language
       intelligence, and a VS Code authoring surface
 
-      SigilCli, SigilLsp, and SigilVsCodeExtension remain available through their
-      imported owning contracts
+      CliInvocation, LspPackage, and ExtensionPackage provide the command-line,
+      language-server, and VS Code surfaces through their owning components
 
       keeps command-line and language-server operations from modifying .sigil source,
       except for explicitly requested CLI source formatting
@@ -58,17 +57,14 @@ component Sigil {
     }
 
     SemanticCompilation {
-      Use SigilCli for authored-language operations and structural Design export.
-      Invoke SigilSemanticCompiler through standalone sigilc for deterministic
-      preparation, ingestion, freshness, catalog and semantic gates.
-      External workers interpret captured source; models do not supply verdicts.
-      Keep source editing and orchestration outside both compiler binaries.
+      Use CliInvocation for authored-language operations and DesignExport for
+      structural export. Invoke SigilSemanticCompiler through standalone sigilc for
+      deterministic preparation, ingestion, freshness, catalog and semantic gates.
+      External workers interpret captured source; models do not supply verdicts. Keep
+      source editing and orchestration outside both compiler binaries.
     }
-
   }
-}
 
-expand Sigil {
   state {
     ReleaseMaturity {
       Sigil artifacts are pre-production.
@@ -83,21 +79,37 @@ expand Sigil {
 
     SkillWorkflow {
       The host skill applies semantic judgment, conducts design and review
-      conversations, and honors the user's existing authorization for scoped
-      Sigil and implementation.
+      conversations, and honors the user's existing authorization for scoped Sigil
+      and implementation.
     }
 
     SemanticCompilation {
-      SigilCore parses and resolves authored Sigil. SigilSemanticCompiler validates
-      its structural bundle and source-local Turtle, then saturates Design and
-      Implementation separately under fixed laws. Design yields obligations;
-      comparison checks those obligations against Implementation closure.
+      CorePackage parses and resolves authored Sigil. SigilSemanticCompiler validates
+      its structural bundle under FrontendBoundary and its source-local Turtle, then
+      saturates Design and Implementation separately under fixed laws. Design yields
+      obligations; comparison checks those obligations against Implementation
+      closure.
     }
   }
 
   constraints {
-    LanguageVersion {
-      SigilLanguage owns the single language and workspace-configuration version
+
+    CurrentAndHistoricalDesign {
+      Bind current designs to [the reference](spec/sigil-reference.md),
+      [grammar](spec/sigil.ebnf), and [migration guide](spec/migrating-to-0.8.md).
+      These designs specify intended 0.8 behavior pending implementation and do not
+      claim legacy compiler validation or current implementation conformance.
+
+      Retain [the historical skill](integrations/skills/sigil/SKILL.md) as frozen 0.7
+      material outside active 0.8 discovery and compatibility. The current
+      [understanding](integrations/skills/sigil-understand/SKILL.md),
+      [writing](integrations/skills/sigil-write/SKILL.md), and
+      [evaluation](integrations/skills/sigil-evaluate/SKILL.md) siblings own current
+      design workflows.
+    }
+
+    RootLanguageVersion {
+      LanguageVersion owns the single language and workspace-configuration version
       literal.
     }
 
@@ -106,19 +118,20 @@ expand Sigil {
       Sigil contract does not duplicate them.
     }
 
-    ComponentContract {
-      Public contracts live in components, operational rationale lives in matching
-      expands, and trivial reconstructable mechanics need no separate component.
+    RootComponentContract {
+      ComponentContract requires every component to declare all of its contracts
+      together; trivial reconstructable mechanics need no separate component. Facets
+      retain their owner and contract role.
     }
 
-    ConfigFile {
+    RootWorkspaceConfiguration {
       ConfigFile is the sole authority for selecting a Sigil workspace root and its
       declared members.
     }
 
     ModuleIndexFile {
-      ModuleIndexFile defines directory-import shorthand and has no
-      workspace-discovery authority.
+      _module.sigil is an ordinary source with no directory-import, namespace,
+      re-export, or workspace-discovery authority.
     }
 
     ToolchainSurfaces {
@@ -130,19 +143,21 @@ expand Sigil {
     SkillWorkflow {
       Host-assisted semantic judgment remains outside deterministic core packages.
 
-      The review workflow remains host-neutral and requires explicit human approval
-      before semantic Sigil edits or implementation.
+      Current understanding, writing, and independent evaluation follow the sibling
+      skills and the user existing scoped authorization. Undecided consequential
+      policy remains human-owned; determined preservation corrections proceed
+      autonomously.
     }
 
     SemanticCompilation {
       Native sigilc owns semantic laws, content identity and disposable worlds.
-      Independent Implementation workers receive exactly one captured source,
-      the fixed ontology and the frozen Design identity catalog, without Design
-      prose or relationships. No provider framework, compiler facade, receipt
-      verifier, accepted-world store or legacy event protocol remains.
-      Coherent and Loose Design exit 0; Disjoint exits 1. Closed and Converged
-      Implementation exit 0; Drift exits 1. Usage and runtime/unavailable results
-      are not semantic verdicts. Gate success never proves software delivery.
+      Independent Implementation workers receive exactly one captured source, the
+      fixed ontology and the frozen Design identity catalog, without Design prose or
+      relationships. No provider framework, compiler facade, receipt verifier,
+      accepted-world store or legacy event protocol remains. Coherent and Loose
+      Design exit 0; Disjoint exits 1. Closed and Converged Implementation exit 0;
+      Drift exits 1. Usage and runtime/unavailable results are not semantic verdicts.
+      Gate success never proves software delivery.
     }
 
     ReleaseMaturity {
@@ -154,13 +169,13 @@ expand Sigil {
   decisions {
     SemanticCompilation {
       Decision: Keep language interpretation in the existing frontend and put
-      deterministic semantic compilation in one Rust binary.
-      Scope: Governs compiler, CLI, CI and editor boundaries; external workers own
-      model calls and independent reconstruction, and external workflows own edits.
-      Trade-offs: Callers pass a captured structural bundle explicitly; native
-      sigilc does not parse the authored Sigil language or invoke its frontend.
-      Consequences: Delete the TypeScript compiler and adapter packages rather
-      than preserve compatibility dispatch or duplicate semantic laws.
+      deterministic semantic compilation in one Rust binary. Scope: Governs compiler,
+      CLI, CI and editor boundaries; external workers own model calls and independent
+      reconstruction, and external workflows own edits. Trade-offs: Callers pass a
+      captured structural bundle explicitly; native sigilc does not parse the
+      authored Sigil language or invoke its frontend. Consequences: Delete the
+      TypeScript compiler and adapter packages rather than preserve compatibility
+      dispatch or duplicate semantic laws.
     }
   }
 
@@ -171,8 +186,9 @@ expand Sigil {
     }
 
     SkillWorkflow {
-      A material semantic change remains unedited until the exact Sigil proposal
-      receives explicit human approval.
+      A consequential policy not settled by supplied intent remains visible for human
+      decision; intent-preserving corrections follow current writing/evaluation
+      guidance.
     }
 
     ArtifactVersionOwnership {
@@ -181,11 +197,11 @@ expand Sigil {
     }
 
     SemanticCompilation {
-      The language CLI exports structural Design without a semantic runtime.
-      Native preparation and ingestion produce disposable source-local objects;
-      global closure derives shared meaning without a model-owned verdict.
-      The editor consumes native named states and diagnostics directly.
-      A scoped green result never authorizes deployment or proves full delivery.
+      The language CLI exports structural Design without a semantic runtime. Native
+      preparation and ingestion produce disposable source-local objects; global
+      closure derives shared meaning without a model-owned verdict. The editor
+      consumes native named states and diagnostics directly. A scoped green result
+      never authorizes deployment or proves full delivery.
     }
   }
 }

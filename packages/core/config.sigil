@@ -1,3 +1,4 @@
+@packages/core/src/diagnostics.sigil from SigilDiagnostics import { DiagnosticConstruction }
 @spec/language.sigil from SigilWorkspaceConfig import { ConfigFile }
 @packages/core/src/model/configuration.sigil from SigilConfigurationModel import { ConfigurationModel }
 
@@ -16,7 +17,7 @@ component SigilConfigurationParser {
       validated configuration when available and accumulated diagnostics
 
       ConfigurationModel owns the result and configuration data; the
-      [diagnostics design](src/diagnostics.sigil) owns diagnostic construction
+      DiagnosticConstruction supplies diagnostic creation
     }
   }
 

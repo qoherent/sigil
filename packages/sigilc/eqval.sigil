@@ -5,41 +5,39 @@ component SigilWorldClosure {
 
   interface {
     IndependentComparison {
-      Compare finite Design obligations with independently saturated
-      Implementation facts in a third fixed eqval instance. Design facts never
-      enter Implementation closure or its matching tables. A missing positive
-      relation cannot satisfy a prohibition.
-      Return Drift for positive disagreement, Converged for unresolved evidence,
-      and Closed only for Coherent Design, fresh complete selected inputs and
-      satisfied obligations. Disjoint Design leaves Implementation state unset.
-      A current contradiction takes precedence over unrelated missing inputs.
-      Reject attempts to compare a Design closure as Implementation or to reuse
-      closure from a different compiled runtime.
+      Compare finite Design obligations with independently saturated Implementation
+      facts in a third fixed eqval instance. Design facts never enter Implementation
+      closure or its matching tables. A missing positive relation cannot satisfy a
+      prohibition. Return Drift for positive disagreement, Converged for unresolved
+      evidence, and Closed only for Coherent Design, fresh complete selected inputs
+      and satisfied obligations. Disjoint Design leaves Implementation state unset. A
+      current contradiction takes precedence over unrelated missing inputs. Reject
+      attempts to compare a Design closure as Implementation or to reuse closure from
+      a different compiled runtime.
     }
 
     DesignObligations {
-      Derive required interpretation from the frontend's physical unit inventory.
-      A complete structured proposition can interpret a unit; a model assertion
+      Derive required interpretation from the frontend's physical unit inventory. A
+      complete structured proposition can interpret a unit; a model assertion
       claiming completeness cannot. Keep Design interpretation obligations separate
-      from requirements on code. Inspect missing fulfillment after closure.
-      Return Disjoint for contradictions, Loose for unresolved required meaning,
-      and Coherent when neither remains. Operational errors return no state.
+      from requirements on code. Inspect missing fulfillment after closure. Return
+      Disjoint for contradictions, Loose for unresolved required meaning, and
+      Coherent when neither remains. Operational errors return no state.
 
-      Lower provides to a positive provides obligation, requires to availability
-      of provides, excludes to a uses prohibition, and required propositions to
-      their exact predicate and expected value. Latency budgets require bounded
-      Implementation latency. Required states need an owner, and exclusive
-      ownership prohibits multiple independently observed owners. Missing extra
-      owners cannot prove exclusive ownership complete. Other descriptive metadata
-      and relations do not
-      automatically impose code obligations.
+      Lower provides to a positive provides obligation, requires to availability of
+      provides, excludes to a uses prohibition, and required propositions to their
+      exact predicate and expected value. Latency budgets require bounded
+      Implementation latency. Required states need an owner, and exclusive ownership
+      prohibits multiple independently observed owners. Missing extra owners cannot
+      prove exclusive ownership complete. Other descriptive metadata and relations do
+      not automatically impose code obligations.
     }
 
     IsolatedClosure {
-      Each saturation creates a fresh EGraph containing only that world's
-      validated assertions. Derive dependency reachability, delegated capabilities,
-      structured propositions, contradictions, minimum distance and maximum risk.
-      Return sorted fixed tables with bounded rule and source witnesses.
+      Each saturation creates a fresh EGraph containing only that world's validated
+      assertions. Derive dependency reachability, delegated capabilities, structured
+      propositions, contradictions, minimum distance and maximum risk. Return sorted
+      fixed tables with bounded rule and source witnesses.
     }
 
     RuntimeIdentity {
@@ -47,27 +45,32 @@ component SigilWorldClosure {
       dependencies. Reports identify the engine that produced their evidence.
     }
   }
-}
 
-expand SigilWorldClosure {
   constraints {
+
+    StructuralProvenance {
+      Carry schema 2 Tag, selection, reference, link, Facet-owner, contract-role and
+      source-range provenance beside saturation inputs and results. This structural
+      companion adds no implication law, obligation-satisfaction shortcut, behavioral
+      equivalence, or change to the existing finite behavior algebra.
+    }
     IsolatedClosure {
-      Workers cannot supply rules or fill compiler-owned tables. Keep raw
-      conflicting values so minimum and maximum merges cannot hide contradictions.
-      Use bounded tuple witnesses without concatenated semantic IDs or recursively
-      expanding proof strings. Reject unsupported numeric path sums.
-      Bound input rows, runtime rows, iterations and elapsed time. Check runtime
-      limits between default egglog iterations and before returning. Limit failure
-      returns no completed closure or semantic verdict.
+      Workers cannot supply rules or fill compiler-owned tables. Keep raw conflicting
+      values so minimum and maximum merges cannot hide contradictions. Use bounded
+      tuple witnesses without concatenated semantic IDs or recursively expanding
+      proof strings. Reject unsupported numeric path sums. Bound input rows, runtime
+      rows, iterations and elapsed time. Check runtime limits between default egglog
+      iterations and before returning. Limit failure returns no completed closure or
+      semantic verdict.
     }
   }
 
   cases {
     IsolatedClosure {
-      Linking A dependsOn B in one object with B dependsOn C in another derives
-      A reachable C without modifying either object. Saturating a world separately
-      does not carry those facts into it. Positive cost cycles terminate through
-      minimum merge; reachable risk propagates through maximum merge.
+      Linking A dependsOn B in one object with B dependsOn C in another derives A
+      reachable C without modifying either object. Saturating a world separately does
+      not carry those facts into it. Positive cost cycles terminate through minimum
+      merge; reachable risk propagates through maximum merge.
     }
   }
 }

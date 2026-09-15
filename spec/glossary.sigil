@@ -1,3 +1,5 @@
+@spec/language.sigil from SigilLanguage import { TagIdentity }
+
 component SigilWorkspaceGlossary {
   goal {
     Define the optional reviewed vocabulary authority for one configured Sigil
@@ -69,9 +71,10 @@ component SigilWorkspaceGlossary {
       structural syntax, fenced content types and bodies, inline code, and URLs do
       not contain glossary occurrences
 
-      These glossary-specific exclusions do not define Tag recognition. Follow the
-      [language reference](sigil-reference.md#tags-and-references) for Tag identity
-      and references; glossary identity remains independent
+      These glossary-specific exclusions do not define TagIdentity or Tag
+      recognition. Follow the [language
+      reference](sigil-reference.md#tags-and-references) for Tag identity and
+      references; glossary identity remains independent
     }
   }
 

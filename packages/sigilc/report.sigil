@@ -1,10 +1,23 @@
 component SigilGateDiagnostics {
   goal {
-    Explain native gate results to terminal and editor consumers without making
-    a frontend interpret eqval tables or reimplement semantic decisions.
+    Explain native gate results to terminal and editor consumers without making a
+    frontend interpret eqval tables or reimplement semantic decisions.
   }
 
   interface {
+
+    ReportSchema {
+      Native reports use report schema 2, versioned independently from frontend
+      schema 2. Locations distinguish Sigil UTF-8 byte ranges from explicitly
+      identified Implementation coordinate units. Preserve the captured source digest
+      and available snapshot needed to check freshness.
+
+      Direct, related, and destination locations retain exact source identity and
+      coordinates. Consumers convert Sigil byte ranges only against the matching
+      captured source; when only current disk text is available its digest must match
+      before conversion. Missing or stale ranges remain unavailable and never become
+      guessed editor positions.
+    }
     NativeFindings {
       Attach versioned presentation diagnostics to Design compilation and
       Implementation comparison. Preserve named states, input identities and
@@ -15,55 +28,52 @@ component SigilGateDiagnostics {
     }
 
     Attribution {
-      Preserve each finding's side, code, severity, message and finite eqval
-      table witness. Comparison witnesses retain their exact Design obligation.
-      Resolve authored-unit identities to physical ranges from the frontend;
-      resolve assertion fingerprints to contributing captured source paths.
-      Keep Design locations distinct from Implementation locations. Missing
-      source ranges stay absent; do not invent code locations or model evidence.
-      For a disagreement, retain up to 8 matching Implementation because rows
-      and their omitted count as direct or derived witnesses, without recursive
-      proof expansion.
+      Preserve each finding's side, code, severity, message and finite eqval table
+      witness. Comparison witnesses retain their exact Design obligation. Resolve
+      authored-unit identities to physical ranges from the frontend; resolve
+      assertion fingerprints to contributing captured source paths. Keep Design
+      locations distinct from Implementation locations. Missing source ranges stay
+      absent; do not invent code locations or model evidence. For a disagreement,
+      retain up to 8 matching Implementation because rows and their omitted count as
+      direct or derived witnesses, without recursive proof expansion.
     }
 
     Bounds {
-      Return at most 1000 findings and 8 locations per finding, with explicit
-      omitted counts. Prioritize contradictions over warning findings. Preserve
-      full native tables separately; presentation truncation never changes states.
-      Keep output deterministic and do not recursively expand proof trees.
+      Return at most 1000 findings and 8 locations per finding, with explicit omitted
+      counts. Prioritize contradictions over warning findings. Preserve full native
+      tables separately; presentation truncation never changes states. Keep output
+      deterministic and do not recursively expand proof trees.
     }
   }
-}
 
-expand SigilGateDiagnostics {
   constraints {
     NativeFindings {
       Presentation adds no semantic rules, obligation satisfaction, worker inputs,
-      projection binding fields or diagnostic history. Frontends consume native
-      named states and findings directly, without translating a legacy report.
+      projection binding fields or diagnostic history. Frontends consume native named
+      states and findings directly, without translating a legacy report.
     }
   }
 
   cases {
     ObservedEditorGap {
-      During the native editor cutover the running loop returned Loose Design
-      and unavailable comparison as states and raw tables, but no ranged findings.
-      That real consumer need requires native presentation, not a TypeScript
-      table interpreter. Verify the corrected output on the same refactor and
-      adopt it in the retained editor before retiring its old event protocol.
+      During the native editor cutover the running loop returned Loose Design and
+      unavailable comparison as states and raw tables, but no ranged findings. That
+      real consumer need requires native presentation, not a TypeScript table
+      interpreter. Verify the corrected output on the same refactor and adopt it in
+      the retained editor before retiring its old event protocol.
     }
 
     Attribution {
-      A missing authored interpretation points to its exact physical unit range.
-      A contradiction points to available contributing source files and retains
-      its rule witness. A code disagreement preserves the Design obligation
-      alongside independent Implementation witnesses. Unresolved is not Drift.
+      A missing authored interpretation points to its exact physical unit range. A
+      contradiction points to available contributing source files and retains its
+      rule witness. A code disagreement preserves the Design obligation alongside
+      independent Implementation witnesses. Unresolved is not Drift.
     }
 
     Bounds {
-      More than 1000 findings reports truncation while preserving a red state
-      and prioritizing its contradictions. A fact shared by more than 8 files
-      reports omitted locations. Repeated output is deterministic.
+      More than 1000 findings reports truncation while preserving a red state and
+      prioritizing its contradictions. A fact shared by more than 8 files reports
+      omitted locations. Repeated output is deterministic.
     }
   }
 }

@@ -1,4 +1,4 @@
-@packages/core/src/model import { SigilSemanticModel }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
 
 component SigilFileSystem {
   goal {
@@ -9,6 +9,15 @@ component SigilFileSystem {
   }
 
   interface {
+
+    ByteInput {
+      readBytesFile(path) returns exact bytes or rejects with the host failure.
+      Disk-backed Sigil and configuration ingress uses bytes and strict UTF-8
+      decoding; readTextFile remains available for other host text.
+
+      The deterministic in-memory implementation supports exact byte fixtures,
+      including invalid UTF-8, without replacement decoding.
+    }
     FileSystemPort {
       readTextFile(path) returns file text or rejects with the host failure
 
@@ -24,9 +33,7 @@ component SigilFileSystem {
       from a record or map
     }
   }
-}
 
-expand SigilFileSystem {
   logic {
     InMemoryFileSystem {
       Normalize every supplied path before storing it.
@@ -38,8 +45,10 @@ expand SigilFileSystem {
   }
 
   constraints {
+
     FileSystemPort {
-      SigilFileSystem supplies host-neutral access for SigilSemanticModel data.
+      SigilFileSystem supplies the host-neutral filesystem access represented by
+      WorkspaceModel.
 
       Parsing and resolution do not access host filesystems directly.
 

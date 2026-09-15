@@ -25,8 +25,7 @@ component SigilCompilationBoundary {
       units, the deciding tie-break when one applied, and a reason when no boundary
       was inferred.
 
-      strategy is exactly exact-target, nearest-covering-module-index,
-      covering-component, or workspace-fallback.
+      strategy is exactly exact-target, covering-component, or workspace-fallback.
 
       diagnostics reports an invalid or unresolvable seed; a caller refuses the run
       rather than treating the reported workspace target as a real choice.
@@ -49,30 +48,29 @@ component SigilCompilationBoundary {
       A seed resolves to the set of affected component identities and affected source
       files.
 
-      A component seed contributes that component and its matching expand files; an
+      A component seed contributes that component and its declaration file; an
       ambiguous name without a declaration path contributes every component that
       carries it.
 
-      A file seed contributes the file plus every component declared in it and every
-      component whose matching expand lives in it.
+      A file seed contributes the file plus every component declared in it.
 
-      A location seed contributes the innermost component or expand enclosing that
-      line, and otherwise falls back to its file.
+      A location seed contributes the innermost component enclosing that
+      authoritative source position, and otherwise falls back to its file.
 
       A directory seed contributes every loaded file beneath the normalized
-      workspace-relative path, including expand-only and declarationless files, plus
-      the components those files belong to.
+      workspace-relative path, including declarationless files, plus their declared
+      components.
     }
 
     BoundaryClosure {
       A candidate covers the affected scope only when its closure contains every
       affected component identity and every affected file.
 
-      A module-index candidate closes transitively over the components it imports,
-      because a module index assembles a namespace.
+      An ordinary _module.sigil component has no special closure or ranking
+      privilege.
 
-      A component candidate closes over its own declaration, matching expands, direct
-      imports, and direct importers.
+      A component candidate closes over its own declaration, directly selected Tag
+      providers and their required owner context, and actual direct consumer uses.
     }
 
     ProximityRanking {
@@ -86,9 +84,7 @@ component SigilCompilationBoundary {
       exact-case component name.
     }
   }
-}
 
-expand SigilCompilationBoundary {
   logic {
     BoundarySelection {
       Return the workspace immediately for a workspace seed, because it is already
@@ -98,8 +94,7 @@ expand SigilCompilationBoundary {
       inference was skipped. Reject an exact request over a directory, because a
       directory is not itself a compilable target.
 
-      Prefer a covering module index; otherwise prefer a covering component;
-      otherwise fall back to the workspace.
+      Prefer a covering component; otherwise fall back to the workspace.
     }
 
     AffectedScope {
@@ -111,11 +106,10 @@ expand SigilCompilationBoundary {
     }
 
     BoundaryClosure {
-      Traverse a module-index candidate breadth-first over imported components and
-      stop at each already visited identity, so an import cycle terminates.
+      Traverse required structural owner and direct-use relationships with visited
+      identities so cycles terminate; do not infer a namespace from directories.
 
-      Absorb each reached component's declaration path and matching expand files into
-      the closure.
+      Absorb each reached component declaration path into the closure.
     }
 
     ProximityRanking {
@@ -127,8 +121,8 @@ expand SigilCompilationBoundary {
     }
 
     WorkspaceFallback {
-      Fall back to the workspace when the seed resolves to no loaded Facet,
-      and when no candidate covers the complete affected scope.
+      Fall back to the workspace when the seed resolves to no loaded Facet, and when
+      no candidate covers the complete affected scope.
 
       Record the reason for the fallback in the selection evidence.
     }
@@ -144,8 +138,8 @@ expand SigilCompilationBoundary {
 
   constraints {
     BoundarySelection {
-      Selection uses only loaded configured-workspace facts and the resolved import
-      and expand graph.
+      Selection uses only loaded configured-workspace facts and the resolved
+      Tag-selection and consumer-use graph.
 
       Selection performs no filesystem discovery and does not depend on discovery
       order, evaluator behavior, package manifests, or agent judgment.
@@ -214,22 +208,6 @@ expand SigilCompilationBoundary {
       Revisit when: Selection needs evidence the resolved graph does not carry.
     }
 
-    ModuleIndexPreference {
-      Decision: Prefer the nearest covering module index over any covering component.
-
-      Scope: Governs candidate ordering between the two candidate classes; excludes
-      ranking within a class.
-
-      Design issues addressed: A module index is the intentional boundary summary for
-      its directory, so it is the boundary a reviewer expects when one covers the
-      work.
-
-      Trade-offs: A module index closure is wider than a single component, so a
-      narrow change can compile a broader boundary.
-
-      Consequences: Escalating from a leaf component to its closest covering module
-      index is the normal outcome rather than an exception.
-    }
 
     CompleteCoverageOrWorkspace {
       Decision: Select a candidate only when it completely covers the affected scope,
@@ -269,14 +247,14 @@ expand SigilCompilationBoundary {
     }
 
     GraphDerivedClosure {
-      Decision: Compute the coverage closure from the resolved import and expand
-      graph rather than by invoking purpose retrieval per candidate.
+      Decision: Compute the coverage closure from the resolved Tag-selection and
+      consumer-use graph rather than by invoking purpose retrieval per candidate.
 
       Scope: Governs closure construction inside boundary selection; excludes the
       retrieval results supplied to evaluators.
 
-      Assumptions: The resolved graph already carries the import, importer, and
-      expand relationships that retrieval derives its closure from.
+      Assumptions: The resolved graph already carries the provider, consumer, and
+      ownership relationships that retrieval derives its closure from.
 
       Trade-offs: Closure construction is duplicated logic that must stay aligned
       with retrieval as relationships evolve.
@@ -294,22 +272,21 @@ expand SigilCompilationBoundary {
 
   cases {
     BoundarySelection {
-      A leaf component whose closest module index covers its expands and direct
-      relationships resolves to that module index.
+      A leaf component resolves to the nearest covering component when its closure
+      covers every affected identity and file.
 
-      A component with no covering module index resolves to itself when it is the
-      smallest complete boundary.
+      A component resolves to itself when it is the smallest complete boundary.
 
       An exact-target request over the same component preserves the component as the
       final target.
 
-      An exact-target request over a directory is rejected rather than widened to
-      the workspace.
+      An exact-target request over a directory is rejected rather than widened to the
+      workspace.
     }
 
     AffectedScope {
-      A location inside an expand resolves through the parent component and can then
-      select a broader covering boundary.
+      A location inside an operational contract selects its owning component and can
+      then select a broader covering boundary.
 
       A directory holding several related contracts resolves to one deterministic
       boundary.
@@ -319,8 +296,8 @@ expand SigilCompilationBoundary {
     }
 
     ProximityRanking {
-      Two module indexes that cover the same scope are separated by distance vector,
-      and an exact distance tie is separated by module-index path.
+      Two covering components are separated by distance vector, then normalized
+      declaration path and exact component name.
     }
 
     WorkspaceFallback {
