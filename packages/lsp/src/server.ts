@@ -16,6 +16,7 @@ import {
   OwnershipSourceIndex,
   renderDocumentMarkdown,
   semanticTokens,
+  type SourceSnapshots,
 } from "./features.ts";
 import {
   DenoSigilFileSystem,
@@ -87,6 +88,10 @@ export class SigilLanguageServer {
   #state: ServerState = "uninitialized";
   #workspaceStart: string;
   #resolved?: ResolvedSigilWorkspace;
+  #sources: SourceSnapshots = new Map();
+  #generation = 0;
+  #resolvedGeneration = 0;
+  #ownershipConfig?: string;
   #ownershipSourceIndex?: OwnershipSourceIndex;
   #ownershipSourceRoot?: string;
   #ownershipHoverCache?: OwnershipHoverCache;
@@ -153,6 +158,13 @@ export class SigilLanguageServer {
         "Server is shutting down.",
       );
     }
+    const generation = this.#generation;
+    if (
+      request.method !== "initialize" && request.method !== "shutdown" &&
+      this.#resolvedGeneration !== generation
+    ) {
+      return failure(request.id, -32801, "Workspace content changed.");
+    }
     try {
       let result: unknown;
       switch (request.method) {
@@ -186,6 +198,12 @@ export class SigilLanguageServer {
           );
       }
       if (this.#cancelled.delete(request.id)) return cancelled(request.id);
+      if (
+        request.method !== "initialize" && request.method !== "shutdown" &&
+        generation !== this.#generation
+      ) {
+        return failure(request.id, -32801, "Workspace content changed.");
+      }
       return { jsonrpc: "2.0", id: request.id, result };
     } catch (error) {
       if (error instanceof InvalidParamsError) {
@@ -219,12 +237,26 @@ export class SigilLanguageServer {
           return await this.#didClose(params);
         case "workspace/didChangeWatchedFiles": {
           const value = didChangeWatchedFilesParams(params);
+          const paths = value.changes.map((change) =>
+            fileUriToPath(change.uri)
+          );
+          const implementationChanged = paths.some(
+            isSupportedImplementationSource,
+          );
+          const reloadPending = this.#resolvedGeneration !== this.#generation;
+          if (implementationChanged) {
+            this.#generation++;
+            this.#resolvedGeneration = this.#generation;
+            this.#invalidateOwnershipSourceIndex();
+          }
           if (
-            value.changes.some((change) =>
-              isSupportedImplementationSource(fileUriToPath(change.uri))
+            (implementationChanged && reloadPending) ||
+            paths.some((path) =>
+              path.endsWith(".sigil") ||
+              /\/\.sigil\/(config|glossary|local)\.json$/.test(path)
             )
           ) {
-            this.#invalidateOwnershipSourceIndex();
+            if (await this.#reload()) return this.#diagnosticNotifications();
           }
           return [];
         }
@@ -257,7 +289,7 @@ export class SigilLanguageServer {
         hoverProvider: true,
         semanticTokensProvider: {
           legend: {
-            tokenTypes: ["type", "concept", "term"],
+            tokenTypes: ["type", "tag", "term"],
             tokenModifiers: [],
           },
           full: true,
@@ -278,14 +310,14 @@ export class SigilLanguageServer {
       uri: value.textDocument.uri,
       version: value.textDocument.version,
     });
-    await this.#reload();
-    return this.#diagnosticNotifications();
+    return await this.#reload() ? this.#diagnosticNotifications() : [];
   }
 
   async #didChange(params: unknown): Promise<readonly JsonRpcOutgoing[]> {
     const value = didChangeParams(params);
     const path = fileUriToPath(value.textDocument.uri);
-    if (!this.#openDocuments.has(path)) return [];
+    const current = this.#openDocuments.get(path);
+    if (!current || value.textDocument.version <= current.version) return [];
     const change = value.contentChanges.at(-1);
     if (!change) return [];
     this.#fs.set(path, change.text);
@@ -293,8 +325,7 @@ export class SigilLanguageServer {
       uri: value.textDocument.uri,
       version: value.textDocument.version,
     });
-    await this.#reload();
-    return this.#diagnosticNotifications();
+    return await this.#reload() ? this.#diagnosticNotifications() : [];
   }
 
   async #didClose(params: unknown): Promise<readonly JsonRpcOutgoing[]> {
@@ -302,18 +333,19 @@ export class SigilLanguageServer {
     const path = fileUriToPath(value.textDocument.uri);
     this.#fs.delete(path);
     this.#openDocuments.delete(path);
-    await this.#reload();
-    return this.#diagnosticNotifications([value.textDocument.uri]);
+    return await this.#reload()
+      ? this.#diagnosticNotifications([value.textDocument.uri])
+      : [];
   }
 
-  async #documentSymbol(params: unknown): Promise<unknown> {
+  #documentSymbol(params: unknown): unknown {
     const value = documentSymbolParams(params);
     const path = fileUriToPath(value.textDocument.uri);
     const document = this.#resolved?.workspace.files.find((item) =>
       normalizePath(item.path) === path
     )?.document;
     if (!document) return [];
-    return documentSymbols(document, await this.#fs.readTextFile(path));
+    return documentSymbols(document);
   }
 
   async #definition(params: unknown): Promise<unknown> {
@@ -324,6 +356,7 @@ export class SigilLanguageServer {
       this.#fs,
       fileUriToPath(value.textDocument.uri),
       value.position,
+      this.#sources,
     );
   }
 
@@ -336,17 +369,18 @@ export class SigilLanguageServer {
       this.#ownershipHoverCache,
       fileUriToPath(value.textDocument.uri),
       value.position,
+      this.#sources,
     );
   }
 
-  async #semanticTokens(params: unknown): Promise<unknown> {
+  #semanticTokens(params: unknown): unknown {
     const value = semanticTokensParams(params);
     if (!this.#resolved) return { data: [] };
     const path = fileUriToPath(value.textDocument.uri);
     return semanticTokens(
       this.#resolved,
       path,
-      await this.#fs.readTextFile(path),
+      this.#sources,
     );
   }
 
@@ -367,16 +401,23 @@ export class SigilLanguageServer {
       this.#fs,
       this.#ownershipHoverCache,
       fileUriToPath(uri),
+      this.#sources,
     );
   }
 
-  async #reload(): Promise<void> {
-    const workspace = await loadSigilWorkspace(this.#fs, {
+  async #reload(): Promise<boolean> {
+    const generation = ++this.#generation;
+    const fs = this.#fs.snapshot();
+    const workspace = await loadSigilWorkspace(fs, {
       startPath: this.#workspaceStart,
       currentDirectory: this.#currentDirectory,
     });
+    if (generation !== this.#generation) return false;
     this.#resolved = resolveSigilWorkspace(workspace);
+    this.#sources = fs.sources;
+    this.#resolvedGeneration = generation;
     this.#rebuildOwnershipProjectionCache();
+    return true;
   }
 
   #rebuildOwnershipProjectionCache(): void {
@@ -387,8 +428,17 @@ export class SigilLanguageServer {
       return;
     }
     const root = normalizePath(this.#resolved.workspace.root);
-    if (!this.#ownershipSourceIndex || this.#ownershipSourceRoot !== root) {
-      this.#ownershipSourceIndex = new OwnershipSourceIndex(root, this.#fs);
+    const config = JSON.stringify(this.#resolved.workspace.config);
+    if (
+      !this.#ownershipSourceIndex || this.#ownershipSourceRoot !== root ||
+      config !== this.#ownershipConfig
+    ) {
+      this.#ownershipSourceIndex = new OwnershipSourceIndex(
+        root,
+        this.#fs,
+        this.#resolved.workspace.config,
+      );
+      this.#ownershipConfig = config;
       this.#ownershipSourceRoot = root;
     }
     this.#ownershipHoverCache = new OwnershipHoverCache(
@@ -400,7 +450,11 @@ export class SigilLanguageServer {
   #invalidateOwnershipSourceIndex(): void {
     if (!this.#resolved) return;
     const root = normalizePath(this.#resolved.workspace.root);
-    this.#ownershipSourceIndex = new OwnershipSourceIndex(root, this.#fs);
+    this.#ownershipSourceIndex = new OwnershipSourceIndex(
+      root,
+      this.#fs,
+      this.#resolved.workspace.config,
+    );
     this.#ownershipSourceRoot = root;
     this.#ownershipHoverCache = new OwnershipHoverCache(
       this.#resolved,
@@ -428,6 +482,10 @@ export class SigilLanguageServer {
               (globPattern) => ({ globPattern, kind: 7 }),
             ),
           },
+        }, {
+          id: "sigil/language-watch",
+          method: "workspace/didChangeWatchedFiles",
+          registerOptions: { watchers: [{ globPattern: "**/*", kind: 7 }] },
         }],
       },
     }];
@@ -436,7 +494,10 @@ export class SigilLanguageServer {
   #diagnosticNotifications(
     extraUris: readonly string[] = [],
   ): readonly JsonRpcOutgoing[] {
-    const grouped = diagnosticsByUri(this.#resolved?.diagnostics ?? []);
+    const grouped = diagnosticsByUri(
+      this.#resolved?.diagnostics ?? [],
+      this.#sources,
+    );
     const currentUris = new Set<string>([
       ...grouped.keys(),
       ...[...this.#openDocuments.values()].map((item) => item.uri),
@@ -612,6 +673,8 @@ function textDocumentPositionParams(
   const value = requiredRecord(params, "text document position params");
   const position = requiredRecord(value.position, "position");
   if (
+    !Number.isInteger(position.line) ||
+    !Number.isInteger(position.character) ||
     typeof position.line !== "number" ||
     typeof position.character !== "number" ||
     position.line < 0 || position.character < 0

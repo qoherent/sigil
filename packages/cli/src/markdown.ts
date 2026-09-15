@@ -112,20 +112,18 @@ function appendSelectedSection(
 
 function appendSelectedInterface(
   lines: string[],
-  concepts: readonly RetrievalProjectionTagGroup[],
+  groups: readonly RetrievalProjectionTagGroup[],
 ): void {
   if (
-    !concepts.some((concept) =>
-      concept.items.length || concept.ownership.length
-    )
+    !groups.some((group) => group.items.length || group.ownership.length)
   ) return;
   lines.push("### Interface");
-  for (const concept of concepts) {
-    if (!concept.items.length && !concept.ownership.length) continue;
-    if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
+  for (const group of groups) {
+    if (!group.items.length && !group.ownership.length) continue;
+    if (group.name) lines.push("", `#### ${escapeMarkdown(group.name)}`);
     lines.push(
-      ...concept.items.map(renderUnit),
-      ...concept.ownership.map(renderOwnership),
+      ...group.items.map(renderUnit),
+      ...group.ownership.map(renderOwnership),
     );
   }
   lines.push("");
@@ -161,20 +159,18 @@ function appendRelatedLabeled(
 
 function appendRelatedInterface(
   lines: string[],
-  concepts: readonly RetrievalProjectionTagGroup[],
+  groups: readonly RetrievalProjectionTagGroup[],
 ): void {
   if (
-    !concepts.some((concept) =>
-      concept.items.length || concept.ownership.length
-    )
+    !groups.some((group) => group.items.length || group.ownership.length)
   ) return;
   lines.push("**Interface**");
-  for (const concept of concepts) {
-    if (!concept.items.length && !concept.ownership.length) continue;
-    if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
+  for (const group of groups) {
+    if (!group.items.length && !group.ownership.length) continue;
+    if (group.name) lines.push("", `#### ${escapeMarkdown(group.name)}`);
     lines.push(
-      ...concept.items.map(renderUnit),
-      ...concept.ownership.map(renderOwnership),
+      ...group.items.map(renderUnit),
+      ...group.ownership.map(renderOwnership),
     );
   }
   lines.push("");

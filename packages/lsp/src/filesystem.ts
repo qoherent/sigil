@@ -1,5 +1,9 @@
-import type { SigilFileSystem } from "@qoherent/sigil-core";
-import { normalizePath } from "@qoherent/sigil-core";
+import type {
+  SigilFileSystem,
+  SourceInput,
+  SourceText,
+} from "@qoherent/sigil-core";
+import { captureSource, normalizePath } from "@qoherent/sigil-core";
 
 // @sigil uses packages/core/src/filesystem.sigil::SigilFileSystem::FileSystemPort interface,constraints,cases
 export class DenoSigilFileSystem implements SigilFileSystem {
@@ -35,6 +39,12 @@ export class OverlaySigilFileSystem implements SigilFileSystem {
 
   constructor(base: SigilFileSystem) {
     this.#base = base;
+  }
+
+  snapshot(): CapturedSigilFileSystem {
+    const overlay = new OverlaySigilFileSystem(this.#base);
+    for (const [path, text] of this.#overlays) overlay.set(path, text);
+    return new CapturedSigilFileSystem(overlay);
   }
 
   set(path: string, source: string): void {
@@ -122,4 +132,33 @@ export function pathToFileUri(path: string): string {
     ? `/${normalized}`
     : normalized;
   return url.href;
+}
+
+/** One load reads each original source once, including configuration and glossary. */
+export class CapturedSigilFileSystem implements SigilFileSystem {
+  readonly #reads = new Map<string, Promise<SourceInput>>();
+  readonly sources: Map<string, SourceText> = new Map();
+  constructor(readonly base: SigilFileSystem) {}
+  readSourceFile(path: string): Promise<SourceInput> {
+    const normalized = normalizePath(path);
+    let captured = this.#reads.get(normalized);
+    if (!captured) {
+      captured = this.base.readSourceFile(normalized).then((input) => {
+        const source = captureSource(normalized, input).source;
+        if (source) this.sources.set(normalized, source);
+        return typeof input === "string" ? input : input.slice();
+      });
+      this.#reads.set(normalized, captured);
+    }
+    return captured;
+  }
+  readTextFile(path: string): Promise<string> {
+    return this.base.readTextFile(path);
+  }
+  exists(path: string): Promise<boolean> {
+    return this.base.exists(path);
+  }
+  listFiles(path: string): Promise<readonly string[]> {
+    return this.base.listFiles(path);
+  }
 }
