@@ -70,8 +70,15 @@ changed authority also invalidates reuse of the report.
 
 ## Report
 
-Return `protocol`, `status` (`complete` or `incomplete`), `scope`,
+Return `protocol`, `status` (`complete` or `incomplete`), `scope`, `source_root`,
 `assessed_inputs`, `authority`, `findings`, `coverage`, and `limitations`.
+`source_root` records the original absolute workspace root actually used for
+root-relative resolution. In a delegated report it must exactly match the
+request's `source_root`; a missing or unequal value makes the report incomplete
+and unusable for current coverage or automatic corrections, even when all file
+hashes match. Recapture and retry or provide the portable handoff. For direct
+review, record the established root, or null with the affected resolution
+limitation when it cannot be established; do not guess a root from capture paths.
 `assessed_inputs` echoes verified identities of the bytes actually read, including
 additional context; it must not blindly echo the requested manifest. Check
 captured input hashes before assessing. Mismatch leaves the affected assessment

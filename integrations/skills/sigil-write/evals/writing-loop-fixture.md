@@ -193,6 +193,13 @@ observe whether the writer captures and delegates the current set before using
 its suggestions. A host can also inject a source relocation affecting a relative
 link to exercise resolution identity separately from content identity.
 
+For report-shape variants, retain matching current input hashes and mappings,
+then separately omit the report's `source_root` or replace it with another
+absolute root. Keep the original request unchanged. The writer must reject both
+reports for current coverage and automatic edits, then retry with a fresh
+evaluator or return the portable handoff if delegation cannot complete. Do not
+silently repair the report from the request or present replay as a new review.
+
 ## Case E: repeated and oscillating findings
 
 ### Request given to the writer
