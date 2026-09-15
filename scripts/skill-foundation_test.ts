@@ -4,6 +4,7 @@ import {
   rejects,
 } from "node:assert/strict";
 import { dirname, join, resolve } from "node:path";
+import { validateFoundation } from "./validate-skill.ts";
 import {
   documentaryLinks,
   LANGUAGE_PACK_PATH,
@@ -15,6 +16,67 @@ import {
 
 const root = resolve(import.meta.dirname!, "..");
 const revision = "0123456789012345678901234567890123456789";
+
+async function copyTree(source: string, target: string): Promise<void> {
+  await Deno.mkdir(target, { recursive: true });
+  for await (const entry of Deno.readDir(source)) {
+    if (entry.isDirectory) {
+      await copyTree(join(source, entry.name), join(target, entry.name));
+    } else if (entry.isFile) {
+      await Deno.copyFile(join(source, entry.name), join(target, entry.name));
+    }
+  }
+}
+
+Deno.test("foundation validates relocated catalog and rejects broken dependencies and documentary links", async () => {
+  const catalog = await Deno.makeTempDir({
+    prefix: "sigil foundation catalog 空 ",
+  });
+  try {
+    await copyTree(join(root, "integrations/skills"), catalog);
+    await validateFoundation(catalog);
+    const entry = join(catalog, "sigil-write/SKILL.md");
+    const original = await Deno.readTextFile(entry);
+    await Deno.writeTextFile(
+      entry,
+      original +
+        "\n`[literal](absent.md)`\n```text\n[example](absent.md)\n```\n",
+    );
+    await validateFoundation(catalog);
+    await Deno.writeTextFile(
+      entry,
+      original + "\n[Missing reference](references/absent.md)\n",
+    );
+    await rejects(() => validateFoundation(catalog), /Missing local reference/);
+    await Deno.writeTextFile(
+      entry,
+      original + "\n[Legacy](../sigil/SKILL.md)\n",
+    );
+    await rejects(
+      () => validateFoundation(catalog),
+      /outside declared foundation dependencies/,
+    );
+    await Deno.writeTextFile(entry, original);
+    const metadataPath = join(catalog, "sigil-write/compatibility.json");
+    const metadata = await Deno.readTextFile(metadataPath);
+    await Deno.writeTextFile(
+      metadataPath,
+      JSON.stringify({ sigilVersion: "0.8.0", requiredSkills: [] }),
+    );
+    await rejects(() => validateFoundation(catalog), /Required skills/);
+    await Deno.writeTextFile(metadataPath, metadata);
+    await Deno.rename(
+      join(catalog, "sigil-evaluate"),
+      join(catalog, "unavailable-evaluator"),
+    );
+    await rejects(
+      () => validateFoundation(catalog),
+      /Missing foundation skill/,
+    );
+  } finally {
+    await Deno.remove(catalog, { recursive: true });
+  }
+});
 
 async function fixture(run: (directory: string) => Promise<void>) {
   const directory = await Deno.makeTempDir({ prefix: "sigil foundation 空 " });

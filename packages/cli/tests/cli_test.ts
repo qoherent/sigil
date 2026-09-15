@@ -10,6 +10,7 @@ import metadata from "../deno.json" with { type: "json" };
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
 import { resolveInstalledSkillsDirectory } from "../src/installer.ts";
 import { runCli } from "../src/main.ts";
+import { validateFoundation } from "../../../scripts/validate-skill.ts";
 import type { CheckRequest } from "../src/args.ts";
 import { formatResult } from "../src/formatters.ts";
 import { renderRetrieveMarkdown } from "../src/markdown.ts";
@@ -2311,6 +2312,59 @@ Deno.test("skill discovery resolves valid skills from the source installation", 
   }
   assert(names.includes("sigil"));
   assert(names.includes("sigil-anchor-indexer"));
+  const listed = await runCli(["skill", "list"], {
+    install: { sourceDirectory: source },
+  });
+  assertEquals(listed.exitCode, EXIT_OK);
+  assertEquals(
+    parseJson(listed.stdout).skills.join(","),
+    "sigil,sigil-evaluate,sigil-understand,sigil-write",
+  );
+});
+
+Deno.test("skill real bundle retains sibling references in global and project links and relocated copies", async () => {
+  // macOS /var aliases /private/var; use the physical parent for relative links
+  // crossing from this temporary installation to the repository's real catalog.
+  const root = await Deno.realPath(
+    await Deno.makeTempDir({ prefix: "sigil real catalog 空 " }),
+  );
+  const sourceDirectory = await resolveInstalledSkillsDirectory();
+  try {
+    for (const scope of ["global", "project"]) {
+      for (const forceCopy of [false, true]) {
+        const destination = `${root}/${scope}-${forceCopy ? "copy" : "link"}`;
+        const result = await runCli([
+          "skill",
+          "install",
+          "--agent",
+          "codex",
+          ...(scope === "project" ? ["--project"] : []),
+        ], {
+          install: {
+            sourceDirectory,
+            userHome: destination,
+            targetRoot: destination,
+            forceCopy,
+          },
+        });
+        assertEquals(result.exitCode, EXIT_OK);
+        assertEquals(parseJson(result.stdout).skills.length, 4);
+        const catalog = `${destination}/.agents/skills`;
+        assertEquals(
+          (await Deno.lstat(`${catalog}/sigil-write`)).isSymlink,
+          !forceCopy,
+        );
+        await validateFoundation(catalog);
+        if (forceCopy) {
+          const relocated = `${destination} relocated Ω`;
+          await Deno.rename(destination, relocated);
+          await validateFoundation(`${relocated}/.agents/skills`);
+        }
+      }
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 // @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillSourceDiscovery interface,logic,cases
