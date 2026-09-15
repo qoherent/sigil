@@ -1,3 +1,5 @@
+import { cp, mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,27 +33,42 @@ if (
   if (existsSync(renamedExecutable)) vscodeExecutablePath = renamedExecutable;
 }
 
-await runTests({
-  vscodeExecutablePath,
-  extensionDevelopmentPath: extension,
-  extensionTestsPath: path.join(extension, "dist/test/extension.js"),
-  launchArgs: [
-    path.join(repository, "examples/slotted"),
-    "--disable-extensions",
-  ],
-  extensionTestsEnv: {
-    SIGIL_REPO_ROOT: repository,
-    SIGIL_TEST_COMPILER: process.env.SIGIL_TEST_COMPILER ??
-      path.join(
-        repository,
-        "packages/sigilc/target/debug",
-        process.platform === "win32" ? "sigilc.exe" : "sigilc",
-      ),
-    SIGIL_TEST_LANGUAGE: process.env.SIGIL_TEST_LANGUAGE ??
-      path.join(
-        repository,
-        "build",
-        process.platform === "win32" ? "sigil.exe" : "sigil",
-      ),
-  },
-});
+const fixture = process.env.SIGIL_TEST_WORKSPACE
+  ? undefined
+  : await mkdtemp(path.join(os.tmpdir(), "sigil-editor-workspace-"));
+const workspace = process.env.SIGIL_TEST_WORKSPACE ??
+  path.join(fixture, "slotted");
+if (fixture) {
+  await cp(path.join(repository, "examples/slotted"), workspace, {
+    recursive: true,
+  });
+}
+try {
+  await runTests({
+    vscodeExecutablePath,
+    extensionDevelopmentPath: extension,
+    extensionTestsPath: path.join(extension, "dist/test/extension.js"),
+    launchArgs: [
+      workspace,
+      "--disable-extensions",
+    ],
+    extensionTestsEnv: {
+      SIGIL_REPO_ROOT: repository,
+      SIGIL_TEST_WORKSPACE: workspace,
+      SIGIL_TEST_COMPILER: process.env.SIGIL_TEST_COMPILER ??
+        path.join(
+          repository,
+          "packages/sigilc/target/debug",
+          process.platform === "win32" ? "sigilc.exe" : "sigilc",
+        ),
+      SIGIL_TEST_LANGUAGE: process.env.SIGIL_TEST_LANGUAGE ??
+        path.join(
+          repository,
+          "build",
+          process.platform === "win32" ? "sigil.exe" : "sigil",
+        ),
+    },
+  });
+} finally {
+  if (fixture) await rm(fixture, { recursive: true, force: true });
+}

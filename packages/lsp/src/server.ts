@@ -5,6 +5,7 @@ import {
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
   type SigilFileSystem,
+  type SourceText,
   supportedImplementationSourceGlobPatterns,
 } from "@qoherent/sigil-core";
 import {
@@ -63,6 +64,8 @@ type ServerState =
 export interface SigilLanguageServerOptions {
   readonly fs?: SigilFileSystem;
   readonly currentDirectory?: string;
+  /** Host-specific protocol view; parsing and exported source remain original. */
+  readonly protocolSource?: (source: SourceText) => SourceText;
 }
 
 /**
@@ -80,6 +83,7 @@ export interface SigilLanguageServerOptions {
  */
 export class SigilLanguageServer {
   readonly #fs: OverlaySigilFileSystem;
+  readonly #protocolSource?: (source: SourceText) => SourceText;
   readonly #currentDirectory: string;
   readonly #openDocuments = new Map<string, { uri: string; version: number }>();
   readonly #publishedUris = new Set<string>();
@@ -100,6 +104,7 @@ export class SigilLanguageServer {
   #exitCode: number | undefined;
 
   constructor(options: SigilLanguageServerOptions = {}) {
+    this.#protocolSource = options.protocolSource;
     this.#fs = new OverlaySigilFileSystem(
       options.fs ?? new DenoSigilFileSystem(),
     );
@@ -414,7 +419,13 @@ export class SigilLanguageServer {
     });
     if (generation !== this.#generation) return false;
     this.#resolved = resolveSigilWorkspace(workspace);
-    this.#sources = fs.sources;
+    this.#sources = this.#protocolSource
+      ? new Map(
+        [...fs.sources].map((
+          [path, source],
+        ) => [path, this.#protocolSource!(source)]),
+      )
+      : fs.sources;
     this.#resolvedGeneration = generation;
     this.#rebuildOwnershipProjectionCache();
     return true;

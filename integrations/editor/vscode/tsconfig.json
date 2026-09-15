@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "paths": {
       "entities/decode": [
-        "./node_modules/entities/dist/esm/decode.js"
+        "./node_modules/entities/dist/esm/decode.d.ts"
       ],
       "@qoherent/sigil-core": [
         "../../../packages/core/src/mod.ts"

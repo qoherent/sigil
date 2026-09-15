@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { nativeLocationRange } from "./coordinates.ts";
 import path from "node:path";
 import * as vscode from "vscode";
 import {
@@ -351,14 +353,22 @@ async function compileFromEditor(
       markCompilationStale(diagnostics, status, focus);
       return;
     }
-    projectCompilationReport(
+    await projectCompilationReport(
       report,
       diagnostics,
       status,
       folder.uri,
       focus,
       documentUri ? "File and native dependency closure" : "Workspace",
+      () =>
+        activeCompilation === operation &&
+        (workspaceRevisions.get(folderKey) ?? 0) === startingRevision,
     );
+    if (activeCompilation !== operation) return;
+    if ((workspaceRevisions.get(folderKey) ?? 0) !== startingRevision) {
+      markCompilationStale(diagnostics, status, focus);
+      return;
+    }
     output.show(true);
     return report;
   } catch (error) {
@@ -475,28 +485,53 @@ async function selectCompilationFolder(
   return selected?.folder;
 }
 
-function projectCompilationReport(
+async function projectCompilationReport(
   report: NativeReport,
   collection: vscode.DiagnosticCollection,
   status: vscode.StatusBarItem,
   root: vscode.Uri,
   focus: CompilationFocus,
   target: string,
-): void {
+  isCurrent: () => boolean,
+): Promise<void> {
   const byUri = new Map<string, vscode.Diagnostic[]>();
+  const snapshots = new Map<
+    string,
+    { bytes: Uint8Array; document: vscode.TextDocument; version: number }
+  >();
   for (const group of diagnosticGroups(report)) {
     for (const item of group.items) {
       for (const location of item.locations) {
         const uri = vscode.Uri.joinPath(root, location.source);
-        const r = location.range;
-        const range = r
-          ? new vscode.Range(
-            r.start.line - 1,
-            r.start.column - 1,
-            r.end.line - 1,
-            r.end.column - 1,
-          )
-          : new vscode.Range(0, 0, 0, 0);
+        let range = new vscode.Range(0, 0, 0, 0);
+        if (location.range || location.implementation_range) {
+          let snapshot = snapshots.get(uri.toString());
+          if (!snapshot) {
+            const bytes = await readFile(uri.fsPath);
+            const document = await vscode.workspace.openTextDocument(uri);
+            snapshot = { bytes, document, version: document.version };
+            snapshots.set(uri.toString(), snapshot);
+          }
+          const { bytes, document } = snapshot;
+          if (document.isDirty) {
+            throw new Error(
+              `Stale source: ${location.source}; save and compile again.`,
+            );
+          }
+          const mapped = nativeLocationRange(
+            location,
+            bytes,
+            document.getText(),
+          );
+          if (mapped) {
+            range = new vscode.Range(
+              mapped.start.line,
+              mapped.start.character,
+              mapped.end.line,
+              mapped.end.character,
+            );
+          }
+        }
         const severity = item.severity === "error"
           ? vscode.DiagnosticSeverity.Error
           : item.severity === "warning"
@@ -513,6 +548,16 @@ function projectCompilationReport(
         byUri.set(key, [...(byUri.get(key) ?? []), diagnostic]);
       }
     }
+  }
+  if (!isCurrent()) return;
+  if (
+    [...snapshots.values()].some(({ document, version }) =>
+      document.isDirty || document.version !== version
+    )
+  ) {
+    throw new Error(
+      "Source changed during diagnostic projection; compile again.",
+    );
   }
   collection.set(
     [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),

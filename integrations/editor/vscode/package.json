@@ -68,11 +68,11 @@
       {
         "language": "sigil",
         "scopes": {
-          "concept": [
-            "entity.name.type.concept.sigil"
+          "tag": [
+            "entity.name.type.tag.sigil"
           ],
           "term": [
-            "entity.name.type.concept.sigil"
+            "entity.name.type.tag.sigil"
           ]
         }
       }
@@ -162,7 +162,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "check": "tsc --noEmit",
-    "test:unit": "tsx --test tests/unit/compilation.test.ts tests/unit/contributions.test.ts",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
     "test:extension": "npm run build && node scripts/run-extension-tests.mjs",
     "test": "npm run check && npm run test:unit",
     "package": "npm run build && node scripts/package-extension.mjs",
@@ -180,6 +180,8 @@
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.1",
     "tsx": "^4.20.6",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
   }
 }

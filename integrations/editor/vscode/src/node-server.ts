@@ -1,3 +1,4 @@
+import { EditorProtocolSource } from "./coordinates.ts";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { Readable, Writable } from "node:stream";
 import type { SigilFileSystem } from "@qoherent/sigil-core";
@@ -58,6 +59,7 @@ async function main(): Promise<void> {
   const output = Writable.toWeb(process.stdout) as WritableStream<Uint8Array>;
   const server = new SigilLanguageServer({
     fs: new NodeSigilFileSystem(),
+    protocolSource: (source) => new EditorProtocolSource(source),
     currentDirectory: process.cwd(),
   });
   process.exitCode = await runLanguageServer(input, output, server);

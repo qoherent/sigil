@@ -7,9 +7,9 @@ import * as vscode from "vscode";
 export async function run(): Promise<void> {
   const repository = process.env.SIGIL_REPO_ROOT;
   assert(repository, "SIGIL_REPO_ROOT is required");
-  const source = vscode.Uri.file(
-    path.join(repository, "examples/slotted/auth.sigil"),
-  );
+  const workspace = process.env.SIGIL_TEST_WORKSPACE ??
+    path.join(repository, "examples/slotted");
+  const source = vscode.Uri.file(path.join(workspace, "auth.sigil"));
   const document = await vscode.workspace.openTextDocument(source);
   const editor = await vscode.window.showTextDocument(document);
   assert.equal(document.languageId, "sigil");
@@ -38,7 +38,9 @@ export async function run(): Promise<void> {
     "Removed beam/world/view/handoff/receipt commands must not be registered",
   );
 
-  const position = new vscode.Position(0, 31);
+  const position = document.positionAt(
+    document.getText().indexOf("import { UserProfile") + "import { ".length,
+  );
   editor.selection = new vscode.Selection(position, position);
 
   const hovers = await eventually(async () =>
@@ -71,7 +73,8 @@ export async function run(): Promise<void> {
   );
   assert(definitions.length > 0, "Expected go-to-definition results");
 
-  const sectionReferenceOffset = document.getText().indexOf("User.email");
+  const sectionReferenceOffset =
+    document.getText().indexOf("Auth uses UserProfile") + "Auth uses ".length;
   assert.notEqual(
     sectionReferenceOffset,
     -1,
@@ -89,7 +92,7 @@ export async function run(): Promise<void> {
     sectionHovers.some((hover) =>
       hover.contents.some((content) =>
         (typeof content === "string" ? content : content.value).includes(
-          "User",
+          "UserProfile",
         )
       )
     ),
@@ -149,11 +152,13 @@ export async function run(): Promise<void> {
       vscode.ConfigurationTarget.Global,
     );
     const report = await vscode.commands.executeCommand<{
+      version: number;
       world: { state: string };
       scope: { design: { roots: string[]; sources: string[] } };
       diagnostics: { items: Array<{ code: string; locations: unknown[] }> };
     }>("sigil.compileFile");
     assert(report, `Native Design report missing: ${errors.join("; ")}`);
+    assert.equal(report.version, 2);
     assert.equal(report.world.state, "Loose");
     assert.deepEqual(report.scope.design.roots, ["auth.sigil"]);
     assert(report.scope.design.sources.includes("user-profile.sigil"));
@@ -235,6 +240,13 @@ export async function run(): Promise<void> {
       "Dirty documents must not launch the missing executable again",
     );
     await vscode.commands.executeCommand("workbench.action.files.revert");
+    await compileConfiguration.update(
+      "executable",
+      nativeCompiler,
+      vscode.ConfigurationTarget.Global,
+    );
+    await verifyCoordinates(workspace, errors);
+    await vscode.window.showTextDocument(document);
   } finally {
     (vscode.window as unknown as { showErrorMessage: typeof originalError })
       .showErrorMessage = originalError;
@@ -319,4 +331,86 @@ async function eventually<T>(
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return result;
+}
+
+async function verifyCoordinates(
+  workspace: string,
+  errors: string[],
+): Promise<void> {
+  const provider = vscode.Uri.file(
+    path.join(workspace, "coordinate-provider.sigil"),
+  );
+  const consumer = vscode.Uri.file(
+    path.join(workspace, "coordinate-consumer.sigil"),
+  );
+  const raw =
+    "\uFEFFcomponent Coordinates {\r\ngoal {\r\nOwn vocabulary.\r\n}\r\ninterface {\r\n😀 A *café results* preserves content.\r\n}\r\n}\r\n";
+  const using =
+    "@coordinate-provider.sigil from Coordinates import { café results }\ncomponent Consumer {\ngoal {\nUse vocabulary.\n}\ninterface {\n😀 Use café results here.\n}\n}\n";
+  try {
+    await writeFile(provider.fsPath, raw);
+    await writeFile(consumer.fsPath, using);
+    const document = await vscode.workspace.openTextDocument(consumer);
+    await vscode.window.showTextDocument(document);
+    for (const name of ["Coordinates", "café results"]) {
+      const definitions = await eventually(async () =>
+        await vscode.commands.executeCommand<vscode.Location[]>(
+          "vscode.executeDefinitionProvider",
+          consumer,
+          document.positionAt(using.indexOf(name)),
+        )
+      );
+      assert(definitions.length, `No coordinate definition for ${name}`);
+      const target = await vscode.workspace.openTextDocument(
+        definitions[0].uri,
+      );
+      assert.equal(target.getText(definitions[0].range), name);
+      assert(
+        !target.getText().startsWith("\uFEFF"),
+        "VS Code should hide the disk BOM",
+      );
+    }
+    const target = await vscode.workspace.openTextDocument(provider);
+    await vscode.window.showTextDocument(target);
+    const reports = await eventually(async () => {
+      const report = await vscode.commands.executeCommand<
+        {
+          version: number;
+          diagnostics: {
+            items: {
+              code: string;
+              locations: {
+                source: string;
+                range?: { start: number; end: number };
+              }[];
+            }[];
+          };
+        }
+      >("sigil.compileFile");
+      return report ? [report] : [];
+    });
+    const report = reports[0];
+    assert(report, `Coordinate compilation failed: ${errors.join("; ")}`);
+    assert.equal(report.version, 2);
+    const expected = report.diagnostics.items.flatMap((item) =>
+      item.locations.filter((l) =>
+        l.source === "coordinate-provider.sigil" && l.range
+      ).map((l) =>
+        Buffer.from(raw).subarray(l.range!.start, l.range!.end).toString()
+          .replace(/\r\n|\r/g, "\n")
+      )
+    );
+    assert(expected.length, "Expected native source locations");
+    const actual = vscode.languages.getDiagnostics(provider).filter((d) =>
+      d.source === "sigilc" && !d.range.isEmpty
+    ).map((d) => target.getText(d.range).replace(/\r\n|\r/g, "\n"));
+    assert.deepEqual(
+      actual,
+      expected,
+      "Native byte ranges must select the original Facets in the real editor",
+    );
+  } finally {
+    await rm(provider.fsPath, { force: true });
+    await rm(consumer.fsPath, { force: true });
+  }
 }

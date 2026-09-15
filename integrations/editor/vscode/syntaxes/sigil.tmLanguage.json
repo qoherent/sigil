@@ -4,6 +4,15 @@
   "scopeName": "source.sigil",
   "patterns": [
     {
+      "include": "#fences"
+    },
+    {
+      "include": "#links"
+    },
+    {
+      "include": "#escapes"
+    },
+    {
       "include": "#imports"
     },
     {
@@ -13,7 +22,7 @@
       "include": "#sections"
     },
     {
-      "include": "#concepts"
+      "include": "#tags"
     },
     {
       "include": "#braces"
@@ -23,8 +32,10 @@
     "imports": {
       "patterns": [
         {
-          "match": "^\\s*(@[^\\s]+)\\s+(import)\\s+(\\{)([^}]+)(\\})",
-          "captures": {
+          "begin": "^\\s*(@[^\\s]+)(?:\\s+(from)\\s+([A-Za-z][A-Za-z0-9_]*))?\\s+(import)\\s*(\\{)",
+          "end": "\\}",
+          "name": "meta.import.sigil",
+          "beginCaptures": {
             "1": {
               "name": "string.unquoted.import-path.sigil"
             },
@@ -32,22 +43,43 @@
               "name": "keyword.control.import.sigil"
             },
             "3": {
-              "name": "punctuation.section.braces.begin.sigil"
+              "name": "entity.name.type.component.sigil"
+            },
+            "4": {
+              "name": "keyword.control.import.sigil"
             },
             "5": {
+              "name": "punctuation.section.braces.begin.sigil"
+            }
+          },
+          "endCaptures": {
+            "0": {
               "name": "punctuation.section.braces.end.sigil"
             }
-          }
+          },
+          "patterns": [
+            {
+              "match": "[^,}\\s](?:[^,}\\r\\n]*[^,}\\s])?",
+              "name": "entity.name.type.tag.sigil"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.sigil"
+            }
+          ]
         }
       ]
     },
     "declarations": {
       "patterns": [
         {
-          "match": "\\b(component|expand)\\s+([A-Za-z][A-Za-z0-9_]*)",
+          "match": "^\\s*(component)\\s+([A-Za-z][A-Za-z0-9_]*)",
           "captures": {
             "1": {
               "name": "keyword.declaration.sigil"
+            },
+            "2": {
+              "name": "entity.name.type.component.sigil"
             }
           }
         }
@@ -68,26 +100,60 @@
         }
       ]
     },
-    "concepts": {
-      "patterns": [
-        {
-          "match": "^\\s*([A-Za-z][A-Za-z0-9_-]*)\\s*(\\{)\\s*$",
-          "captures": {
-            "1": {
-              "name": "entity.name.type.concept.sigil"
-            },
-            "2": {
-              "name": "punctuation.section.braces.begin.sigil"
-            }
-          }
-        }
-      ]
-    },
     "braces": {
       "patterns": [
         {
           "match": "[{}]",
           "name": "punctuation.section.braces.sigil"
+        }
+      ]
+    },
+    "fences": {
+      "patterns": [
+        {
+          "begin": "^\\s*(`{3,})[^`]*$",
+          "end": "^\\s*\\1`*\\s*$",
+          "name": "markup.fenced_code.block.sigil",
+          "contentName": "string.quoted.literal.sigil"
+        }
+      ]
+    },
+    "links": {
+      "patterns": [
+        {
+          "match": "!?\\[(?:\\\\.|[^\\]\\\\])*\\]\\((?:\\\\.|[^()\\\\]|\\([^()]*\\))*\\)",
+          "name": "markup.underline.link.sigil"
+        }
+      ]
+    },
+    "escapes": {
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.sigil"
+        }
+      ]
+    },
+    "tags": {
+      "patterns": [
+        {
+          "match": "^\\s*([^{}*]+?)\\s*(\\{)\\s*$",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.tag.sigil"
+            },
+            "2": {
+              "name": "punctuation.section.braces.begin.sigil"
+            }
+          }
+        },
+        {
+          "match": "(?<![\\\\*])\\*([^*\\r\\n]+)\\*(?!\\*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.tag.sigil"
+            }
+          }
         }
       ]
     }

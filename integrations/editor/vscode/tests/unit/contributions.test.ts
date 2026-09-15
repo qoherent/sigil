@@ -158,7 +158,7 @@ test("TextMate grammar colors syntax without treating capitalized prose as names
   assert(grammar.repository.imports);
   assert(grammar.repository.declarations);
   assert(grammar.repository.sections);
-  assert(grammar.repository.concepts);
+  assert(grammar.repository.tags);
   assert.equal(
     grammar.repository.sections.patterns[0].match.includes("decisions"),
     true,
@@ -169,22 +169,22 @@ test("TextMate grammar colors syntax without treating capitalized prose as names
     false,
   );
   assert.equal(
-    JSON.stringify(grammar).includes("entity.name.type.concept.sigil"),
+    JSON.stringify(grammar).includes("entity.name.type.tag.sigil"),
     true,
   );
   assert.equal(JSON.stringify(grammar).includes("comment"), false);
 });
 
 // @sigil tests integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::EditorLanguageSupport interface,state,logic,constraints,cases
-test("manifest maps concept and glossary semantic tokens to a visible TextMate scope", async () => {
+test("manifest maps Tag and glossary semantic tokens to a visible TextMate scope", async () => {
   const manifest = JSON.parse(await readFile("package.json", "utf8"));
   assert.deepEqual(
     manifest.contributes.semanticTokenScopes[0],
     {
       language: "sigil",
       scopes: {
-        concept: ["entity.name.type.concept.sigil"],
-        term: ["entity.name.type.concept.sigil"],
+        tag: ["entity.name.type.tag.sigil"],
+        term: ["entity.name.type.tag.sigil"],
       },
     },
   );
