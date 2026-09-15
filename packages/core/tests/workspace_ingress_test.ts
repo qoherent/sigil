@@ -10,6 +10,25 @@ const config = JSON.stringify({
 });
 const bytes = (text: string) => new TextEncoder().encode(text);
 
+Deno.test("valid workspace identities describe exact text independently of byte or overlay ingress", async () => {
+  const text =
+    "\uFEFFcomponent C {\r\ngoal {\r\nOwn a responsibility.\r\n}\r\ninterface {\r\nOffer an interaction.\r\n}\r\n}";
+  const load = (source: string | Uint8Array) =>
+    loadSigilWorkspace(
+      new InMemorySigilFileSystem({
+        ".sigil/config.json": config,
+        "c.sigil": source,
+      }),
+      { startPath: "." },
+    );
+  const disk = await load(bytes(text)), overlay = await load(text);
+  assertEquals(
+    disk.workspaceSnapshotIdentity,
+    overlay.workspaceSnapshotIdentity,
+  );
+  assert(/^[a-f0-9]{64}$/.test(disk.workspaceSnapshotIdentity));
+});
+
 class BinaryOnlyFileSystem extends InMemorySigilFileSystem {
   override readTextFile(_path: string): Promise<string> {
     return Promise.reject(

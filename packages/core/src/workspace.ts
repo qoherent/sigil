@@ -10,7 +10,11 @@ import {
   diagnostic,
   orderDiagnostics,
 } from "./diagnostics.ts";
-import { captureSource, type SourceInput } from "./source-text.ts";
+import {
+  captureSource,
+  type SourceCapture,
+  type SourceInput,
+} from "./source-text.ts";
 import { parseSigilGlossary } from "./glossary.ts";
 import {
   SIGIL_CONFIG_PATH,
@@ -104,7 +108,10 @@ export async function discoverSigilWorkspace(
         diagnostics: [diagnostic(
           "SIGIL_NESTED_CONFIG",
           `Workspace ${root} is nested inside parent workspace ${parentRoot} without being excluded by it.`,
-          { filePath: selected.configPath },
+          {
+            filePath: selected.configPath,
+            related: [{ filePath: parent.configPath }],
+          },
         )],
       };
     }
@@ -128,7 +135,7 @@ export async function loadSigilWorkspace(
   if (!discovery.config || !discovery.configPath) {
     return {
       ...discovery,
-      workspaceSnapshotIdentity: await sha256Canonical({ records: [] }),
+      workspaceSnapshotIdentity: "unavailable",
       memberRoots: [],
       files: loadedFiles,
       diagnostics: orderDiagnostics(diagnostics),
@@ -141,7 +148,7 @@ export async function loadSigilWorkspace(
   );
   const nestedConfigs = allPaths
     .filter((path) => isSigilConfigPath(path) && path !== discovery.configPath)
-    .sort();
+    .sort(compareScalarText);
   const nestedRoots = nestedConfigs.map((path) =>
     path.slice(0, -`/${SIGIL_CONFIG_PATH}`.length)
   );
@@ -152,7 +159,7 @@ export async function loadSigilWorkspace(
       diagnostics.push(diagnostic(
         "SIGIL_NESTED_CONFIG",
         `Workspace member ${nestedRoot} must not contain its own ${SIGIL_CONFIG_PATH}.`,
-        { filePath: path },
+        { filePath: path, related: [{ filePath: discovery.configPath }] },
       ));
       continue;
     }
@@ -165,7 +172,7 @@ export async function loadSigilWorkspace(
     diagnostics.push(diagnostic(
       "SIGIL_NESTED_CONFIG",
       `Nested ${SIGIL_CONFIG_PATH} must be inside a subtree excluded by workspace ${discovery.root}.`,
-      { filePath: path },
+      { filePath: path, related: [{ filePath: discovery.configPath }] },
     ));
   }
 
@@ -176,7 +183,7 @@ export async function loadSigilWorkspace(
     .filter((path) =>
       matchesSigilFile(relativePath(discovery.root, path), discovery.config!)
     )
-    .sort();
+    .sort(compareScalarText);
 
   for (const path of paths) {
     const input = await fs.readSourceFile(path);
@@ -336,6 +343,23 @@ async function workspaceSnapshotIdentity(
   localConfigPath?: string,
   localConfigSource?: string,
 ): Promise<string> {
+  let completeText = true;
+  const capturedText = (capture: SourceCapture) => {
+    if (
+      capture.source &&
+      !capture.diagnostics.some((d) =>
+        d.code === "SIGIL_INVALID_ENCODING" ||
+        d.code === "SIGIL_INVALID_CHARACTER"
+      )
+    ) {
+      return { text: capture.source.text };
+    }
+    completeText = false;
+    // This identifies retained invalid evidence, never a complete textual snapshot.
+    return {
+      invalidInput: capture.rawBytes ? [...capture.rawBytes] : capture.rawText,
+    };
+  };
   const records = [
     {
       kind: "config",
@@ -352,24 +376,21 @@ async function workspaceSnapshotIdentity(
     ...files.map((file) => ({
       kind: "sigil",
       path: relativePath(root, file.path),
-      input: file.document.rawBytes
-        ? { kind: "bytes", bytes: [...file.document.rawBytes] }
-        : { kind: "text", text: file.document.rawText },
+      ...capturedText(file.document),
     })),
     ...(glossaryPath && glossarySource !== undefined
       ? [{
         kind: "glossary",
         path: relativePath(root, glossaryPath),
-        input: typeof glossarySource === "string"
-          ? { kind: "text", text: glossarySource }
-          : { kind: "bytes", bytes: [...glossarySource] },
+        ...capturedText(captureSource(glossaryPath, glossarySource)),
       }]
       : []),
   ].sort((left, right) =>
     compareScalarText(left.path, right.path) ||
     compareScalarText(left.kind, right.kind)
   );
-  return `sha256:${await sha256Canonical({ records })}`;
+  const digest = await sha256Canonical({ records });
+  return completeText ? digest : `invalid:${digest}`;
 }
 
 function isSigilConfigPath(path: string): boolean {

@@ -5,8 +5,8 @@ export type { SigilDiagnostic } from "./diagnostics.ts";
 export type { SourceRange } from "./language.ts";
 export type {
   ResolvedComponent,
-  ResolvedTag,
   ResolvedSigilWorkspace,
+  ResolvedTag,
 } from "./resolution.ts";
 
 export type ImplementationRelation = "implements" | "uses" | "tests";
@@ -33,10 +33,7 @@ export interface ImplementationEvidenceInput {
   readonly diagnostics: readonly SigilDiagnostic[];
 }
 
-export interface ComponentIdentity {
-  readonly componentName: string;
-  readonly declarationPath: string;
-}
+export type { ComponentIdentity } from "./identity.ts";
 
 export interface OwnedImplementationTarget {
   readonly relation: ImplementationRelation;
@@ -50,7 +47,7 @@ export interface OwnedImplementationTarget {
 
 export interface OwnedImplementationProjection {
   readonly owningComponent: ResolvedComponent;
-  readonly concept?: ResolvedTag;
+  readonly tag?: ResolvedTag;
   readonly sectionName?: ImplementationSection;
   readonly targets: readonly OwnedImplementationTarget[];
   readonly diagnostics: readonly SigilDiagnostic[];

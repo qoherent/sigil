@@ -1,5 +1,5 @@
 import type { ResolvedSigilWorkspace } from "./model/resolution.ts";
-import type { SigilDiagnostic } from "./model/diagnostics.ts";
+import { orderDiagnostics } from "./diagnostics.ts";
 import type { SigilWorkspace } from "./model/workspace.ts";
 import { buildSigilGraph } from "./graph.ts";
 import { glossaryProjectionForWorkspace } from "./glossary.ts";
@@ -18,23 +18,9 @@ export function resolveSigilWorkspace(
     ...resolution,
     graph: buildSigilGraph(resolution),
     glossary,
-    diagnostics: mergeDiagnostics(
-      resolution.diagnostics,
-      glossary.diagnostics,
-    ),
+    diagnostics: orderDiagnostics([
+      ...resolution.diagnostics,
+      ...glossary.diagnostics,
+    ]),
   };
-}
-
-function mergeDiagnostics(
-  ...groups: ReadonlyArray<readonly SigilDiagnostic[]>
-): ResolvedSigilWorkspace["diagnostics"] {
-  const seen = new Set<string>();
-  return groups.flatMap((group) =>
-    group.filter((item) => {
-      const key = JSON.stringify(item);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-  );
 }
