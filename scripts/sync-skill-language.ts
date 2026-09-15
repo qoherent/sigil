@@ -117,7 +117,7 @@ export function documentaryLinks(markdown: string): DocumentaryLink[] {
   return links;
 }
 
-function localDestination(destination: string): boolean {
+export function localDestination(destination: string): boolean {
   return !/^[a-z][a-z0-9+.-]*:/i.test(destination) &&
     !destination.startsWith("#") && !destination.startsWith("//");
 }

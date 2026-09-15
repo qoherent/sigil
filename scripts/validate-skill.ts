@@ -2,6 +2,7 @@ import { deepStrictEqual as equal, ok as assert } from "node:assert/strict";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import {
   documentaryLinks,
+  localDestination,
   validateBundledLanguagePack,
   validateLanguagePack,
 } from "./sync-skill-language.ts";
@@ -107,10 +108,7 @@ export async function validateFoundation(
       for (
         const { destination } of documentaryLinks(await Deno.readTextFile(path))
       ) {
-        if (
-          /^[a-z][a-z0-9+.-]*:/i.test(destination) ||
-          destination.startsWith("#") || destination.startsWith("//")
-        ) continue;
+        if (!localDestination(destination)) continue;
         const targetPath = decodeURIComponent(destination.split(/[?#]/)[0])
           .replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~])/g, "$1");
         if (!targetPath) continue;
