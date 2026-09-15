@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Write (0.8)"
+  short_description: "Write compact Sigil designs with delegated review"
+  default_prompt: "Use $sigil-write to draft or revise this Sigil 0.8 design, delegate independent review, and apply corrections supported by established intent."
