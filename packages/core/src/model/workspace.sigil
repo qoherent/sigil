@@ -1,7 +1,7 @@
-@packages/core/src/model/configuration.sigil import { SigilConfigurationModel }
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/glossary.sigil import { SigilGlossaryModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
+@packages/core/src/model/configuration.sigil from SigilConfigurationModel import { ConfigurationModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/glossary.sigil from SigilGlossaryModel import { GlossaryModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilWorkspaceModel {
   goal {
@@ -11,10 +11,19 @@ component SigilWorkspaceModel {
 
   interface {
     WorkspaceModel {
-      SigilConfigurationModel, SigilSourceModel, SigilGlossaryModel, and
-      SigilDiagnosticModel provide the associated data. SigilFileSystem,
+      ConfigurationModel, SourceModel, GlossaryModel, and
+      DiagnosticModel provide the associated data. SigilFileSystem,
       LoadedSigilFile, SigilWorkspace, and WorkspaceLoadOptions represent
       host-neutral filesystem access and one loaded workspace snapshot.
+
+      SigilFileSystem provides byte reads for disk-backed Sigil and configuration
+      inputs. Strict UTF-8 decoding precedes parser entry; replacement-decoded text
+      is never evidence that source bytes were valid. Other text reads remain
+      available for independently governed document types.
+
+      Loaded sources preserve original bytes and text with their common source map.
+      One invalid source retains diagnostics while independent valid sources remain
+      usable; invalid configuration prevents that workspace from loading sources.
     }
   }
 }

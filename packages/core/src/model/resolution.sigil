@@ -1,14 +1,14 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/workspace.sigil import { SigilWorkspaceModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
 
 component SigilResolutionModel {
   goal {
-    Define immutable import, component, Concept, and contract-resolution data.
+    Define immutable import, component, Tag, and contract-resolution data.
   }
 
   interface {
     ResolutionModel {
-      SigilSourceModel and SigilWorkspaceModel provide input shapes.
+      SourceModel and WorkspaceModel provide input shapes.
       *SigilResolution* and its *resolved imports*, *expansions*, *Tag scopes*,
       and *dependency contexts* preserve relationship-resolution output.
 

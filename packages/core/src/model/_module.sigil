@@ -1,34 +1,23 @@
-@packages/core/src/model/language.sigil import { SigilLanguageModel }
-@packages/core/src/model/configuration.sigil import { SigilConfigurationModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/glossary.sigil import { SigilGlossaryModel }
-@packages/core/src/model/ownership.sigil import { SigilImplementationOwnershipModel }
-@packages/core/src/model/workspace.sigil import { SigilWorkspaceModel }
-@packages/core/src/model/resolution.sigil import { SigilResolutionModel }
-@packages/core/src/model/graph.sigil import { SigilGraphModel }
-@packages/core/src/model/retrieval.sigil import { SigilRetrievalModel }
-
 component SigilSemanticModel {
   goal {
-    Assemble the intentionally explicit namespace of immutable deterministic core
+    Summarize the independently owned immutable deterministic core
     model contracts without owning their domain behavior or data definitions.
   }
 
   interface {
     ModelNamespace {
-      SigilSemanticModel provides SigilLanguageModel, SigilConfigurationModel,
-      SigilDiagnosticModel, SigilSourceModel, SigilGlossaryModel,
-      SigilImplementationOwnershipModel, SigilWorkspaceModel, SigilResolutionModel,
-      SigilGraphModel, and SigilRetrievalModel through explicit domain modules.
+      The [language](language.sigil), [configuration](configuration.sigil),
+      [diagnostic](diagnostics.sigil), [source](source.sigil),
+      [glossary](glossary.sigil), [ownership](ownership.sigil),
+      [workspace](workspace.sigil), [resolution](resolution.sigil),
+      [graph](graph.sigil), and [retrieval](retrieval.sigil) designs own their
+      respective domain models.
     }
   }
-}
 
-expand SigilSemanticModel {
   constraints {
     DomainModelAssembly {
-      The module index assembles domain model contracts only; each domain component
+      This ordinary summary describes domain model contracts only; each component
       owns its independently evolving immutable data shapes.
     }
   }
@@ -36,19 +25,20 @@ expand SigilSemanticModel {
   decisions {
     DomainModelDecomposition {
       Decision: Split the former aggregate model contract into domain components and
-      require consumers to adopt explicit domain-module imports.
+      let consumers select needed Tags directly from their domain owners.
 
       Scope: Governs core model contract ownership and import paths; excludes
       operational parsing, loading, resolution, graph, and retrieval behavior.
 
-      Trade-offs: Consumers migrate imports and cross-domain types use explicit
-      dependencies rather than relying on one aggregate module.
+      Trade-offs: Consumers use explicit owner imports where shared vocabulary is
+      needed and documentary links for related context.
 
       Design issues addressed: Independently evolving model domains no longer
       converge on one ownership boundary.
 
-      Consequences: Model changes remain localized while the module index exposes the
-      intentional namespace assembly.
+      Consequences: Model changes remain localized while this ordinary source
+      supplies
+      documentary context without re-exporting vocabulary.
     }
   }
 }

@@ -1,6 +1,5 @@
-@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig, SigilModuleIndex }
-@packages/core/src/model import { SigilSemanticModel }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
+@spec/language.sigil from SigilWorkspaceConfig import { ConfigFile }
+@packages/core/src/model/configuration.sigil from SigilConfigurationModel import { ConfigurationModel }
 
 component SigilConfigurationParser {
   goal {
@@ -16,50 +15,18 @@ component SigilConfigurationParser {
       parseSigilConfig(source, filePath?) returns a SigilConfigParseResult with
       validated configuration when available and accumulated diagnostics
 
-      SigilSemanticModel owns the result and configuration data, while
-      SigilDiagnostics owns diagnostic construction
-    }
-  }
-}
-
-expand SigilWorkspaceConfig {
-  constraints {
-    LocalToolConfiguration {
-      LocalConfigFile is the optional .sigil/local.json developer configuration
-      beside ConfigFile.
-
-      LocalConfigFile contains only an optional tools object. Its values recursively
-      override matching tools objects from ConfigFile; a local scalar, array, or null
-      replaces the matching shared value.
-
-      LocalConfigFile cannot override sigilVersion, workspace, files, or any other
-      ConfigFile top-level field. Absence leaves ConfigFile tools unchanged.
-
-      A malformed LocalConfigFile or a local top-level key other than tools makes
-      workspace configuration invalid without changing ConfigFile.
-
-      LocalConfigFile is developer-local configuration and is excluded from version
-      control by the repository's .gitignore.
+      ConfigurationModel owns the result and configuration data; the
+      [diagnostics design](src/diagnostics.sigil) owns diagnostic construction
     }
   }
 
-  cases {
-    LocalToolConfiguration {
-      A missing LocalConfigFile preserves the ConfigFile tools object.
-
-      A LocalConfigFile can replace one host-local tool setting while retaining all
-      other shared tools fields.
-
-      A LocalConfigFile cannot alter workspace membership or Sigil source selection.
-    }
-  }
-}
-
-expand SigilConfigurationParser {
   logic {
     ConfigurationParsing {
-      Parse strict UTF-8 JSON and validate the complete ConfigFile shape before
-      returning configuration data.
+      Validate scalar text and parse strict JSON, then validate the complete
+      ConfigFile shape before returning configuration data.
+
+      Disk-backed input is strictly decoded from UTF-8 bytes before parser entry by
+      the workspace boundary; this in-memory parser performs no filesystem reads.
 
       Preserve recoverable configuration diagnostics without selecting workspace
       sources or performing filesystem access.
@@ -105,145 +72,6 @@ expand SigilConfigurationParser {
 
       Malformed JSON or invalid fields returns configuration diagnostics and no
       validated configuration.
-    }
-  }
-}
-
-expand SigilWorkspaceConfig {
-  state {
-    ConfiguredLanguageVersion {
-      supported sigilVersion is the LanguageVersion declared by SigilLanguage
-    }
-
-    SourceSelection {
-      default files.include is ["**/*.sigil"]
-
-      default files.exclude is [".git/**", ".deno/**", "node_modules/**", "build/**",
-      "coverage/**"]
-    }
-
-    ToolConfiguration {
-      default tools is {}
-    }
-  }
-
-  logic {
-    WorkspaceBoundary {
-      Without an explicit root, discovery walks from the target toward filesystem
-      root and selects the nearest eligible ConfigFile.
-
-      A nearer ConfigFile owns the target when every configured parent excludes that
-      nearer workspace root.
-
-      A configured parent that includes the nearer workspace root produces a
-      multiple-ancestor configuration error.
-
-      With an explicit root, discovery requires ConfigFile directly inside the
-      supplied root and does not search elsewhere.
-
-      A nested ConfigFile inside an excluded subtree defines an independent workspace
-      and is skipped by the parent.
-
-      A nested ConfigFile inside an included subtree produces an error and its
-      subtree is not loaded.
-    }
-
-    ConfigValidation {
-      Discovery parses and validates ConfigFile before loading any Sigil source.
-    }
-
-    SourceSelection {
-      File discovery evaluates include globs against normalized workspace-relative
-      POSIX paths.
-
-      Exclude matches take precedence over include matches.
-
-      The pattern **/*.sigil matches Sigil files at the workspace root and in nested
-      directories.
-    }
-  }
-
-  constraints {
-    ConfigValidation {
-      ConfigFile contains strict UTF-8 JSON.
-
-      Required top-level keys are sigilVersion, workspace, and files.
-
-      Unknown top-level keys are rejected.
-    }
-
-    WorkspaceBoundary {
-      workspace contains required name and optional members keys and rejects unknown
-      keys.
-
-      workspace.members contains unique non-root workspace-relative directory paths
-      that do not overlap.
-
-      Package manifests may inform human proposals but do not participate in
-      workspace discovery.
-
-      ConfigFile, not ModuleIndexFile, defines workspace roots and members.
-
-      workspace.members identifies configured summary boundaries for Brownfield
-      review without granting or restricting ModuleIndexFile eligibility.
-    }
-
-    SourceSelection {
-      files contains required include and optional exclude keys and rejects unknown
-      keys.
-    }
-
-    ToolConfiguration {
-      tools is optional and core preserves namespaced JSON objects without
-      interpreting them.
-    }
-
-    ConfigurationScope {
-      Project descriptions and rationale remain outside ConfigFile.
-
-      Package and release metadata remain in their owning manifests.
-    }
-  }
-
-  cases {
-    WorkspaceBoundary {
-      A target below one eligible ConfigFile resolves its containing directory as the
-      workspace root.
-
-      A target with no ancestor ConfigFile reports SIGIL_CONFIG_NOT_FOUND and loads
-      no Sigil files.
-
-      A nested ConfigFile excluded by every configured parent resolves independently.
-
-      A nested ConfigFile still included by a configured parent reports
-      SIGIL_NESTED_CONFIG and loads no source.
-
-      An explicit root without a direct ConfigFile reports SIGIL_CONFIG_NOT_FOUND.
-    }
-
-    ConfigValidation {
-      Malformed JSON reports SIGIL_CONFIG_PARSE and loads no Sigil files.
-
-      Missing, mistyped, empty, or unknown fields report SIGIL_CONFIG_INVALID and
-      load no Sigil files.
-    }
-
-    ConfiguredLanguageVersion {
-      An unsupported sigilVersion reports an error diagnostic and loads no Sigil
-      files.
-    }
-
-    SourceSelection {
-      A matching excluded path is not loaded even when an include pattern also
-      matches it.
-    }
-
-    WorkspaceBoundary {
-      The workspace root and each declared member are configured summary boundaries
-      for Brownfield review.
-
-      An undeclared package directory is not a configured summary boundary even when
-      it contains a package manifest.
     }
   }
 }

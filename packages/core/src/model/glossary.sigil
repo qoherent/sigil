@@ -1,5 +1,5 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilGlossaryModel {
   goal {
@@ -9,7 +9,7 @@ component SigilGlossaryModel {
 
   interface {
     GlossaryModel {
-      SigilSourceModel supplies source ranges and SigilDiagnosticModel supplies
+      SourceModel supplies source ranges and DiagnosticModel supplies
       diagnostics. WorkspaceGlossary, GlossaryTerm, GlossaryContext, resolved
       contexts, occurrences, parse results, and projections preserve scoped
       vocabulary data.

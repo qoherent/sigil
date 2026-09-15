@@ -1,5 +1,5 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilRetrievalModel {
   goal {
@@ -9,7 +9,7 @@ component SigilRetrievalModel {
 
   interface {
     RetrievalModel {
-      SigilSourceModel and SigilDiagnosticModel provide source and diagnostic data.
+      SourceModel and DiagnosticModel provide source and diagnostic data.
 
       *PurposeRetrievalResult* and its *target*, *graph*, *evidence*, *inclusion*,
       *exclusion*, *context*, and *fingerprint* data preserve deterministic
@@ -89,7 +89,7 @@ component SigilRetrievalModel {
       evidence order.
 
       Module-context components sort after cycle members and before no other
-      component category; duplicate module-index summaries are omitted.
+      component category; duplicate ordinary project summaries are omitted.
 
       Projection locations use normalized repository-relative paths and one-based
       line and column values already carried by raw retrieval evidence.
