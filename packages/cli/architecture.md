@@ -1,6 +1,6 @@
 # sigil-cli Architecture
 
-**Status:** Draft **Owner:** _TBD_ **Last updated:** 2026-07-09
+**Status:** Draft **Owner:** _TBD_ **Last updated:** 2026-09-15
 
 This document defines the architecture style, internal modules, dependency
 rules, and implementation guidelines for `sigil-cli`. Product requirements live
@@ -19,7 +19,7 @@ parse argv -> create command request -> call sigil-core -> shape output -> write
 
 Command modules may shape output for agents, CI, scripts, and review workflows.
 They must not reinterpret Sigil syntax, imports, graph edges, diagnostics, or
-collected expansions independently.
+Tag ownership independently.
 
 ## 2. Design Principles
 
@@ -268,9 +268,9 @@ Each command should have:
 
 Commands should keep option behavior boring and explicit.
 
-Do not add interactive prompts in version 0.7.
+Commands remain non-interactive for language 0.8.
 
-Do not add mutation or formatting commands in version 0.7.
+Explicit init, fmt and skill installation own their existing write boundaries.
 
 ## 9. Historical Anchor Extension Proposal
 
@@ -341,7 +341,7 @@ Required scenarios:
 - `check` returns `0` for a valid workspace;
 - `check` returns `1` for error diagnostics;
 - `check` does not return `1` for warnings alone;
-- `graph` emits file and expansion edges;
+- `graph` emits file imports and selected Tag edges;
 - `context --component Auth` emits deterministic context data;
 - context data labels direct-dependency decisions as agent rationale outside the
   dependent-facing contract;
@@ -355,3 +355,18 @@ Required scenarios:
 
 Tests should snapshot JSON shapes only after the output contract is
 intentionally stable.
+
+## Language 0.8 source boundary
+
+Disk Sigil and config ingress uses original bytes and strict decoding. Core owns
+byte ranges, Tag resolution, Facet relationships and provider projections. Text
+locations are derived from the captured source; implementation annotations use
+separate UTF-16 ranges. Output path normalization touches structured path
+fields, never arbitrary text, link destinations or fenced contents.
+
+The exporter emits core schema 2 directly. A missing bundle is an encoding
+failure, with no stdout transport. Native compilation stays outside this
+process. Context obtains complete provider contracts and consumer uses from
+shared core projections. Retrieval Markdown takes the version-2 presentation
+projection. Formatting validates all proposed source replacements before any
+write.

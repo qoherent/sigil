@@ -5,7 +5,7 @@ import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
 import { CoreAdapter } from "../src/core-adapter.ts";
 
 async function workspace() {
-  const root = await Deno.makeTempDir({ prefix: "sigil-export-" });
+  const root = await Deno.makeTempDir({ dir: "/tmp", prefix: "sigil-export-" });
   await Deno.mkdir(`${root}/.sigil`);
   const config = JSON.stringify({
     sigilVersion: SIGIL_VERSION,
@@ -14,7 +14,7 @@ async function workspace() {
   });
   await Deno.writeTextFile(`${root}/.sigil/config.json`, config);
   const source =
-    `component Exact {\n  goal {\n    Preserve ${root}/verbatim and café.\n  }\n  interface {\n    Text { Preserve captured text. }\n  }\n}\n`;
+    `component Exact {\n  goal {\n    Preserve ${root}/verbatim and café.\n  }\n  interface {\n    Text {\n      Preserve captured text.\n    }\n  }\n}\n`;
   await Deno.writeTextFile(`${root}/main.sigil`, source);
   return { root, source, config };
 }
@@ -33,12 +33,17 @@ Deno.test("export emits the raw native bundle and preserves captured text withou
       "diagnostics",
       "entities",
       "frontendVersion",
+      "groups",
       "imports",
+      "introductions",
+      "languageVersion",
+      "links",
+      "references",
       "schemaVersion",
       "sources",
       "units",
     ]);
-    assertEquals(bundle.schemaVersion, 1);
+    assertEquals(bundle.schemaVersion, 2);
     assertEquals(bundle.sources, [{ path: "main.sigil", text: source }]);
     assertEquals(
       bundle.context.find((c: { path: string }) =>
@@ -130,6 +135,132 @@ Deno.test("host discovery preserves nested configs while excluding generated Sig
         d.code === "SIGIL_NESTED_CONFIG"
       ),
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("invalid UTF-8 exports no transport and parse retains encoding diagnostics", async () => {
+  const { root } = await workspace();
+  try {
+    await Deno.writeFile(`${root}/main.sigil`, new Uint8Array([0xc3, 0x28]));
+    const result = await runCli(["export", "design", root]);
+    assertEquals(result.exitCode, 1);
+    assertEquals(result.stdout, "");
+    assert(result.stderr.includes("SIGIL_INVALID_ENCODING"));
+    const parsed = await runCli(["parse", `${root}/main.sigil`]);
+    assertEquals(parsed.exitCode, 1);
+    assert(
+      JSON.parse(parsed.stdout).diagnostics.some((d: { code: string }) =>
+        d.code === "SIGIL_INVALID_ENCODING"
+      ),
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("relative display paths do not rewrite authored prose or captured payloads", async () => {
+  const { root, source } = await workspace();
+  try {
+    const result = await runCli(["context", ".", "--component", "Exact"], {
+      core: new CoreAdapter({ currentDirectory: root }),
+    });
+    assertEquals(result.exitCode, 0, result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert(
+      output.componentContracts[0].goalLines[0].includes(`${root}/verbatim`),
+    );
+    const parsed = await runCli(["parse", "main.sigil"], {
+      core: new CoreAdapter({ currentDirectory: root }),
+    });
+    assertEquals(JSON.parse(parsed.stdout).document.source.text, source);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("fmt repairs width across selected providers and consumers before writing", async () => {
+  const { root } = await workspace();
+  try {
+    const make = (name: string, body: string) =>
+      `component ${name} {\ngoal {\nOwn this contract.\n}\ninterface {\n${body}\n}\n}\n`;
+    const provider = make(
+      "Provider",
+      "A *search results* exists.\n\n" + "word ".repeat(25),
+    );
+    const consumer = "@main.sigil from Provider import { search results }\n" +
+      make("Consumer", "prefix ".repeat(12) + "search results follow.");
+    await Deno.writeTextFile(`${root}/main.sigil`, provider);
+    await Deno.writeTextFile(`${root}/consumer.sigil`, consumer);
+    const check = await runCli(["fmt", root, "--check"]);
+    assertEquals(check.exitCode, 1);
+    assertEquals(await Deno.readTextFile(`${root}/main.sigil`), provider);
+    const formatted = await runCli(["fmt", root]);
+    assertEquals(formatted.exitCode, 0, formatted.stdout);
+    assertEquals((await runCli(["check", root])).exitCode, 0);
+    assertEquals((await runCli(["fmt", root, "--check"])).exitCode, 0);
+    const exported = JSON.parse(
+      (await runCli(["export", "design", root])).stdout,
+    );
+    assertEquals(
+      exported.references.filter((r: { source: string }) =>
+        r.source === "consumer.sigil"
+      ).map((r: { name: string }) => r.name),
+      ["search results"],
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("CLI export matches the shared schema-2 native fixture exactly", async () => {
+  const root = await Deno.makeTempDir({ dir: "/tmp", prefix: "sigil-shared-" });
+  try {
+    const fixture = JSON.parse(
+      await Deno.readTextFile(
+        new URL(
+          "../../core/tests/fixtures/design-input-080.json",
+          import.meta.url,
+        ),
+      ),
+    );
+    for (const file of [...fixture.sources, ...fixture.context]) {
+      if (file.text === null) continue;
+      await Deno.mkdir(
+        `${root}/${
+          file.path.includes("/")
+            ? file.path.slice(0, file.path.lastIndexOf("/"))
+            : "."
+        }`,
+        { recursive: true },
+      );
+      await Deno.writeTextFile(`${root}/${file.path}`, file.text);
+    }
+    const result = await runCli(["export", "design", root]);
+    assertEquals(result.exitCode, 0, result.stderr);
+    assertEquals(JSON.parse(result.stdout), fixture);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("text diagnostic columns derive from captured Unicode source", async () => {
+  const { root } = await workspace();
+  try {
+    const source =
+      "\uFEFFcomponent Exact {\r\ngoal {\r\nPreserve text.\r\n}\r\ninterface {\r\n😀 café *broken\r\n}\r\n}\r\n";
+    await Deno.writeTextFile(`${root}/main.sigil`, source);
+    const output = JSON.parse(
+      (await runCli(["check", root, "--format", "json"])).stdout,
+    );
+    const diagnostic = output.diagnostics.find((d: { code: string }) =>
+      d.code === "SIGIL_INCOMPLETE_TAG"
+    );
+    assertEquals(diagnostic.sourceLocation, { line: 6, column: 8 });
+    assertEquals(typeof diagnostic.range.start, "number");
+    const text = await runCli(["check", root, "--show-locations"]);
+    assert(text.stdout.includes("main.sigil:6:8"));
   } finally {
     await Deno.remove(root, { recursive: true });
   }

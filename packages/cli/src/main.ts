@@ -1,4 +1,4 @@
-/** Command-line interface for versioned Sigil 0.7 workspaces. @module */
+/** Command-line interface for versioned Sigil 0.8 workspaces. @module */
 import { type HelpTopic, parseArgs } from "./args.ts";
 import { type CommandHandlerOptions, runCommand } from "./commands.ts";
 import { EXIT_RUNTIME, EXIT_USAGE, exitCodeForDiagnostics } from "./exit.ts";
@@ -202,6 +202,13 @@ export async function runCli(
 
   try {
     const result = await runCommand(parsed.request, options);
+    if (result.command === "export-design" && !result.bundle) {
+      return {
+        exitCode: exitCodeForDiagnostics(result.diagnostics) || 1,
+        stdout: "",
+        stderr: `${JSON.stringify({ diagnostics: result.diagnostics })}\n`,
+      };
+    }
     const formatDifference = result.command === "fmt" && result.check &&
       result.files.some((file) => file.status === "noncanonical");
     return {

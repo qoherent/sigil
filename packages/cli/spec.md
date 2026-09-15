@@ -1,8 +1,8 @@
 # sigil-cli Requirements
 
-**Status:** Accepted for 0.7.1 **Last updated:** 2026-08-04
+**Status:** Language 0.8 migration **Last updated:** 2026-09-15
 
-This document defines the 0.7 product requirements for `sigil-cli`.
+This document defines the 0.8 product requirements for `sigil-cli`.
 
 `sigil-cli` is the command-line interface over `sigil-core`. It exists for
 agents, CI, scripts, debugging, and review/documentation workflows. It is not
@@ -16,9 +16,9 @@ extract information from Sigil workspaces.
 It should make the shared `sigil-core` model usable from a terminal without
 reinterpreting Sigil independently.
 
-## 2. Version 0.7 Scope
+## 2. Version 0.8 Scope
 
-Version 0.7 must provide commands to:
+Version 0.8 must provide commands to:
 
 - parse one Sigil file;
 - check a file or workspace for diagnostics;
@@ -27,15 +27,15 @@ Version 0.7 must provide commands to:
 - render a simple Markdown review view.
 - initialize a non-interactive versioned workspace config;
 - report CLI, core, and Sigil versions.
-- surface Tag name diagnostics and resolved Tag scopes.
+- surface Tag diagnostics and owner-qualified Tag namespaces.
 - export the complete structural Design bundle for direct native `sigilc` use.
 
-Version 0.7 should favor predictable, machine-readable behavior over rich
+Version 0.8 should favor predictable, machine-readable behavior over rich
 terminal UI.
 
 ## 3. Out Of Scope
 
-Version 0.7 must not implement:
+Version 0.8 must not implement:
 
 - editor UI;
 - LSP transport;
@@ -46,10 +46,10 @@ Version 0.7 must not implement:
 - watch mode;
 - generated diagrams;
 - anchors or code/spec synchronization;
-- automatic mutation of authored source or implementation files.
+- mutation of implementation files or automatic source migration. Explicit `fmt`
+  remains the supported authored-source formatting command.
 
-Anchors remain outside the implemented 0.5 surface. The rejected historical
-anchor surface is defined below and does not change the 0.6 acceptance criteria.
+The rejected anchor proposal below remains historical and inactive.
 
 ## 4. Runtime And Dependency Requirements
 
@@ -117,7 +117,7 @@ Exit codes should be stable:
   diagnostics.
 
 Warnings alone should not produce exit code `1`. Ungrouped Facets and mixed
-ungrouped/Concept-grouped contracts are valid and produce no grouping warning.
+ungrouped/Tag-grouped contracts are valid and produce no grouping warning.
 
 ## 7. Commands
 
@@ -148,6 +148,20 @@ Skill commands accept no positional path beyond `list` or `install` and do not
 accept `--root`. CLI workspace discovery does not traverse symlink entries, so
 linked project skills are not loaded as duplicate workspace sources.
 
+Catalog and installation results include declared language/tool requirements,
+language compatibility, and `runtimeValidation: "not-run"`. The retained legacy
+skill requirements remain frozen and incompatible with the new language
+toolchain.
+
+### `sigil export design [path]`
+
+Emit raw schema-2 Design JSON for language 0.8.0 without a command envelope.
+Preserve original source bytes through strict UTF-8 capture and byte-ranged
+structural records. Representable language errors stay in the bundle and exit 1.
+Malformed UTF-8 emits no bundle; diagnostics go to stderr and exit 1. Runtime
+failures exit 3 without partial transport. Native semantic operations remain
+direct `sigilc` invocations by the caller.
+
 ### `sigil parse <file>`
 
 Parses one Sigil source file and returns the parsed document plus diagnostics.
@@ -159,9 +173,9 @@ Required output data:
 - file path;
 - imports;
 - components;
-- expands;
+- Tag groups, inline definitions, references and links;
 - Facets;
-- diagnostics.
+- diagnostics with stage, related evidence and original UTF-8 byte ranges.
 
 This command should not load or resolve a full workspace unless a later option
 explicitly asks for it.
@@ -190,9 +204,10 @@ beneath the requested directory, and delegates canonical rendering to
 `sigil-core`.
 
 Formatting wraps ordinary prose at 79 content characters without counting
-leading indentation. It preserves Facet identity and embedded-content
-content. Every selected source must parse and resolve without errors before any
-file is written.
+leading indentation. It preserves Facet identity and embedded-content content,
+exact Tag recognition and link targets. Width-only diagnostics may be repaired;
+any other error prevents writing. Formatting uses the captured provider
+vocabulary, then validates all proposed replacements together before writing.
 
 Without `--check`, the command writes only changed selected sources. With
 `--check`, it performs no writes and exits `1` when any selected source is
@@ -227,16 +242,16 @@ Required output data:
 
 - workspace root;
 - file dependency edges;
-- component-to-expansion edges;
+- selected provider Tag edges and actual reference uses;
 - diagnostics.
 
-The command should not generate diagrams in version 0.7.
+The command should not generate diagrams in version 0.8.
 
 ### `sigil context`
 
 Produces deterministic agent-oriented context data from resolved Sigil.
 
-Version 0.7 should use graph and exact-match signals only.
+Version 0.8 should use graph and exact-match signals only.
 
 Supported selectors:
 
@@ -248,8 +263,8 @@ Required output data:
 - workspace root;
 - selected components;
 - component contracts;
-- collected expansions;
-- resolved Tag scopes;
+- complete owner declarations and Facet provenance;
+- owner-qualified Tag namespaces;
 - related file paths;
 - a scoped glossary context containing accepted terms, aliases, definitions,
   resolved bounded contexts, and occurrences from those related files, or `null`
@@ -257,9 +272,9 @@ Required output data:
 - diagnostics.
 
 The scoped glossary context excludes accepted vocabulary that does not occur in
-the selected component or file and its collected expansion sources.
+the selected component or file and its direct provider context.
 
-Version 0.7 must not implement embeddings, opaque ranking, or full semantic
+Version 0.8 must not implement embeddings, opaque ranking, or full semantic
 search.
 
 ### `sigil render [path]`
@@ -269,7 +284,7 @@ Produces a simple Markdown review view.
 Required output:
 
 - component contracts;
-- collected expansions;
+- complete owner declarations and Facet provenance;
 - diagnostics summary;
 - source file references.
 
@@ -290,17 +305,19 @@ workspace name and configured Sigil version.
 
 ### `sigil export design [path]`
 
-Use core's `loadDesignInput` to emit the raw closed structural JSON bundle.
-The optional path locates the complete workspace; use native `--scope` for focus.
-Preserve captured source/config/glossary text and diagnostics without display-path
-rewriting or a CLI envelope. Support `--root`, `--pretty` and `--format json`;
-reject quiet suppression and non-JSON formats. Language errors return 1 with the
-bundle; runtime failures return 3 without partial output. Export invokes no model
-or semantic compiler. Use `sigilc` directly for semantic operations.
+Use core's `loadDesignInput` to emit the raw closed structural JSON bundle. The
+optional path locates the complete workspace; use native `--scope` for focus.
+Preserve captured source/config/glossary text and diagnostics without
+display-path rewriting or a CLI envelope. Support `--root`, `--pretty` and
+`--format json`; reject quiet suppression and non-JSON formats. Language errors
+return 1 with the bundle; runtime failures return 3 without partial output.
+Export invokes no model or semantic compiler. Use `sigilc` directly for semantic
+operations.
 
 The legacy `sigil semantic` group is removed, including beam/accepted-world,
-managed-view, retained handoff, receipt and TS7 verification commands. Invocation
-returns ordinary invalid usage, with no forwarding or migration route.
+managed-view, retained handoff, receipt and TS7 verification commands.
+Invocation returns ordinary invalid usage, with no forwarding or migration
+route.
 
 ## 8. Output Contracts
 
@@ -325,7 +342,8 @@ The adapter should:
 - check path existence;
 - list files recursively under the workspace root;
 - normalize paths consistently with `sigil-core` expectations;
-- list only config.json, local.json and glossary.json inside metadata directories;
+- list only config.json, local.json and glossary.json inside metadata
+  directories;
 - ignore `.git` directories by default.
 
 The adapter should not skip authored `.sigil` files based on package or
@@ -334,7 +352,7 @@ models/operators invoke sigilc directly for preparation, ingestion and gates.
 
 ## 10. Acceptance Scenarios
 
-Version 0.7 is acceptable when tests or scripted checks demonstrate that
+Version 0.8 is acceptable when tests or scripted checks demonstrate that
 `sigil-cli` can:
 
 - parse `examples/promise/promise.sigil` and emit JSON;
@@ -344,12 +362,13 @@ Version 0.7 is acceptable when tests or scripted checks demonstrate that
 - report diagnostics with stable codes;
 - return exit code `1` when error diagnostics exist;
 - return exit code `0` when only warnings or no diagnostics exist;
-- accept ungrouped and mixed Concept-grouped Interface Facets without warnings;
-- emit graph JSON with file and expansion edges;
+- accept ungrouped and mixed Tag-grouped Interface Facets without warnings;
+- emit graph JSON with file imports and selected Tag edges;
 - emit context JSON for `--component Auth`;
-- emit resolved Tag scopes in context JSON;
-- emit each direct dependency's public contract and decision sections once in
-  context JSON while excluding transitive and other private dependency details;
+- emit resolved Tag namespaces in context JSON;
+- emit each direct provider's complete contracts, selections and actual consumer
+  references in context JSON without inferring transitive or runtime
+  dependencies;
 - render Markdown for the Slotted example;
 - avoid duplicating parser or resolver behavior outside `sigil-core`.
 
@@ -365,12 +384,13 @@ entrypoint as commands grow.
 Keep command shaping separate from `sigil-core` data models so the core API
 remains reusable by LSP and editor integrations.
 
-Commands remain non-interactive. Model interaction and orchestration are external.
-Init creates missing workspace metadata, fmt explicitly formats authored source,
-and skill installation writes the selected skill destinations. Semantic commands,
-provider/profile authoring, migrations, compiler events and runtime doctor are
-removed, with no forwarding command. Init writes an empty tools object; normal
-workspace configuration discovery, validation and version reporting remain.
+Commands remain non-interactive. Model interaction and orchestration are
+external. Init creates missing workspace metadata, fmt explicitly formats
+authored source, and skill installation writes the selected skill destinations.
+Semantic commands, provider/profile authoring, migrations, compiler events and
+runtime doctor are removed, with no forwarding command. Init writes an empty
+tools object; normal workspace configuration discovery, validation and version
+reporting remain.
 
 ## 12. Historical Anchor Command Proposal
 
@@ -379,10 +399,10 @@ The following rejected design is retained for history. Version 0.7 has no
 
 ### `sigil anchors candidates [path] --component <name>`
 
-Read-only. Returns the selected component, collected expansions, Facet
-locators, and no more than twenty deterministically ordered TypeScript
-candidates per line. Each candidate reports inspectable ordering signals. The
-command does not invoke a model.
+Read-only. Returns the selected component, collected expansions, Facet locators,
+and no more than twenty deterministically ordered TypeScript candidates per
+line. Each candidate reports inspectable ordering signals. The command does not
+invoke a model.
 
 ### `sigil anchors check [path]`
 

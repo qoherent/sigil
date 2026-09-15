@@ -10,7 +10,7 @@ main human UI.
 
 Package docs:
 
-- [spec.md](spec.md): version 0.7 CLI requirements, command behavior, output
+- [spec.md](spec.md): language 0.8 CLI requirements, command behavior, output
   contracts, and acceptance scenarios.
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
@@ -31,7 +31,7 @@ irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
 Alternatively, install the published JSR package when Deno is available:
 
 ```bash
-deno install --global --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil jsr:@qoherent/sigil@0.7
+deno install --global --allow-read --allow-write --allow-env=HOME,USERPROFILE --name sigil jsr:@qoherent/sigil
 ```
 
 Local development install:
@@ -47,7 +47,7 @@ Implemented responsibilities:
 - install version-owned agent skills globally or into a target repository;
 - expose parser output;
 - run workspace checks;
-- report missing interface concept identifiers as actionable warnings;
+- expose owner-qualified Tags, explicit imports and source-faithful diagnostics;
 - produce agent-oriented context packs;
 - render Markdown for review and documentation workflows;
 - keep CLI behavior thin over `sigil-core`.
@@ -75,9 +75,9 @@ Commands:
   source occurrences;
 - `sigil graph [path]` returns component and import graph data;
 - `sigil context ...` returns agent context JSON with direct dependencies'
-  public contracts and decision rationale plus reviewed terminology recognized
-  in the selected and related Sigil files, excluding terms whose `agentContext`
-  value is `false`;
+  complete provider contracts, selected Tags and consumer reference evidence
+  plus reviewed terminology recognized in the selected and related Sigil files,
+  excluding terms whose `agentContext` value is `false`;
 - `sigil retrieve [path] (--component name | --file file) --purpose
   semantic|architecture|implementation`
   returns a deterministic selected graph, exact evidence, inclusion reasons,
@@ -89,9 +89,24 @@ Commands:
 
 Export preserves captured source, configuration, glossary and diagnostics. It
 supports JSON only and rejects `--quiet`. The path locates a workspace; select
-focused Design roots with native `--scope`, after export. Exit 0 means no language
-errors, 1 means language errors remain in the bundle, 2 means invalid usage, and
-3 means an operational failure. These exits do not describe semantic gate states.
+focused Design roots with native `--scope`, after export. Exit 0 means no
+language errors, 1 means language errors remain in the bundle, 2 means invalid
+usage, and 3 means an operational failure. Invalid UTF-8 cannot produce a
+faithful bundle: stdout stays empty and stderr carries encoding diagnostics with
+exit 1. A representable language-invalid source retains its captured text and
+diagnostics in schema-2 JSON. These exits do not describe semantic gate states.
+
+Language ranges are half-open original UTF-8 byte offsets. Text diagnostic
+locations use scalar columns derived from the captured source. Implementation
+annotation ranges remain explicitly separate, using one-based UTF-16 columns.
+Relative display paths never rewrite authored prose, links or payload contents.
+
+The skill catalog reports each skill's declared compatibility. The retained
+`sigil` skill targets language 0.7 with frozen CLI `^0.8.0`, core `^0.7.0` and
+native `^0.1.0` requirements. It is incompatible with the new language
+toolchain. Installing skill documentation does not run or certify its runtime
+workflow. Use `sigil-understand`, `sigil-write` and `sigil-evaluate` for 0.8
+designs.
 
 Use the native compiler directly:
 

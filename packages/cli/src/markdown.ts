@@ -1,8 +1,7 @@
 import type {
-  CollectedExpansion,
   ComponentContractView,
-  ResolvedComponent,
-  ResolvedTagScope,
+  EmbeddedContent,
+  Facet,
   SigilDiagnostic,
 } from "@qoherent/sigil-core";
 import type { CoreAdapter } from "./core-adapter.ts";
@@ -10,9 +9,9 @@ import type { ContextCommandResult } from "./output-model.ts";
 import type {
   RetrievalProjection,
   RetrievalProjectionComponent,
-  RetrievalProjectionTag,
   RetrievalProjectionItem,
   RetrievalProjectionOwnership,
+  RetrievalProjectionTagGroup,
 } from "@qoherent/sigil-core";
 
 // @sigil implements packages/cli/src/retrieval-markdown.sigil::SigilRetrievalMarkdown::RetrievalMarkdownProjection interface,constraints,cases
@@ -74,12 +73,9 @@ export function renderRetrieveMarkdown(
     "Cycle members",
     projection.components.filter((item) => item.role === "cycle-member"),
   );
-  appendRelatedGroup(
-    lines,
-    "Module Context",
-    projection.components.filter((item) => item.role === "module-context"),
-    true,
-  );
+  if (projection.budget) {
+    lines.push("## Budget", "", JSON.stringify(projection.budget), "");
+  }
   if (projection.diagnostics.length) {
     lines.push(
       "## Diagnostics",
@@ -116,15 +112,15 @@ function appendSelectedSection(
 
 function appendSelectedInterface(
   lines: string[],
-  tags: readonly RetrievalProjectionTag[],
+  concepts: readonly RetrievalProjectionTagGroup[],
 ): void {
   if (
-    !tags.some((concept) =>
+    !concepts.some((concept) =>
       concept.items.length || concept.ownership.length
     )
   ) return;
   lines.push("### Interface");
-  for (const concept of tags) {
+  for (const concept of concepts) {
     if (!concept.items.length && !concept.ownership.length) continue;
     if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
     lines.push(
@@ -139,7 +135,6 @@ function appendRelatedGroup(
   lines: string[],
   heading: string,
   components: readonly RetrievalProjectionComponent[],
-  includeSummary = false,
 ): void {
   if (!components.length) return;
   lines.push(`## ${heading}`, "");
@@ -152,10 +147,6 @@ function appendRelatedGroup(
     );
     appendRelatedLabeled(lines, "Goal", component.goal);
     appendRelatedInterface(lines, component.interface);
-    if (includeSummary) {
-      appendRelatedLabeled(lines, "Constraints", component.constraints);
-      appendRelatedLabeled(lines, "Decisions", component.decisions);
-    }
   }
 }
 
@@ -170,15 +161,15 @@ function appendRelatedLabeled(
 
 function appendRelatedInterface(
   lines: string[],
-  tags: readonly RetrievalProjectionTag[],
+  concepts: readonly RetrievalProjectionTagGroup[],
 ): void {
   if (
-    !tags.some((concept) =>
+    !concepts.some((concept) =>
       concept.items.length || concept.ownership.length
     )
   ) return;
   lines.push("**Interface**");
-  for (const concept of tags) {
+  for (const concept of concepts) {
     if (!concept.items.length && !concept.ownership.length) continue;
     if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
     lines.push(
@@ -190,7 +181,9 @@ function appendRelatedInterface(
 }
 
 function renderUnit(item: RetrievalProjectionItem): string {
-  return `- ${escapeMarkdown(item.text)}`;
+  return `- ${escapeMarkdown(item.text)}${
+    item.facet?.payload ? `\n\n${renderPayload(item.facet.payload)}` : ""
+  }\n`;
 }
 
 function renderOwnership(item: RetrievalProjectionOwnership): string {
@@ -202,6 +195,16 @@ function renderOwnership(item: RetrievalProjectionOwnership): string {
   if (item.sections.length) {
     text += `: ${
       item.sections.map((section) => escapeMarkdown(section)).join(", ")
+    }`;
+  }
+  if (item.tagName) {
+    const owner = item.tagIdentity?.owner;
+    text += `; Tag: ${escapeMarkdown(item.tagName)}; Origin: ${
+      owner
+        ? `${escapeMarkdown(owner.declarationPath)}::${
+          escapeMarkdown(owner.componentName)
+        }`
+        : "unresolved"
     }`;
   }
   return text;
@@ -224,19 +227,10 @@ export function renderWorkspaceMarkdown(
     `Sigil: ${resolved.workspace.config?.sigilVersion ?? "unresolved"}`,
     "",
   ];
-  const contracts = core.componentContracts(resolved);
-  for (const [index, contract] of contracts.entries()) {
-    lines.push(...formatComponentContract(contract));
-    const component = resolved.components[index];
-    const expansion = componentIdentityMatches(contract, component)
-      ? component.expansions
-      : undefined;
-    if (expansion?.expands.length) {
-      lines.push(...formatCollectedExpansion(expansion));
-    }
-    lines.push("");
+  for (const contract of core.componentContracts(resolved)) {
+    lines.push(...formatContract(contract, 2));
   }
-  lines.push(...formatDiagnostics("## Diagnostics", resolved.diagnostics));
+  lines.push(...formatDiagnostics(resolved.diagnostics));
   return `${lines.join("\n")}\n`;
 }
 
@@ -250,7 +244,6 @@ export function renderContextMarkdown(result: ContextCommandResult): string {
     `Sigil: ${result.sigilVersion ?? "unresolved"}`,
     "",
   ];
-
   if (!result.selectedComponents.length) {
     lines.push(
       "## Selection",
@@ -258,450 +251,172 @@ export function renderContextMarkdown(result: ContextCommandResult): string {
       "- No context matched the requested component or file.",
       "",
     );
-  } else {
-    for (const [index, component] of result.selectedComponents.entries()) {
-      const contract = result.componentContracts.find((item) =>
-        item.name === component.name && item.filePath === component.filePath
-      );
-      lines.push(
-        `## ${component.name}`,
-        "",
-        `Source: ${component.filePath}`,
-        "",
-      );
-      if (contract) {
-        lines.push(...formatContractBody(contract));
-      } else {
-        lines.push("### Contract", "", "- none");
-      }
-
-      const expansion = expansionForComponent(result, component, index);
-      if (expansion?.expands.length) {
-        lines.push(...formatCollectedExpansion(expansion));
-      }
-
-      const tagScope = tagScopeForComponent(
-        result,
-        component,
-        index,
-      );
-      if (tagScope) {
-        lines.push(...formatTagScope(tagScope));
-      }
-
-      const dependencyContext = agentDependencyContextForComponent(
-        result,
-        component,
-        index,
-      );
-      if (dependencyContext) {
-        lines.push(...formatAgentDependencyContext(dependencyContext));
-      }
-
-      const dependentContext = agentDependentContextForComponent(
-        result,
-        component,
-        index,
-      );
-      if (dependentContext) {
-        lines.push(...formatAgentDependentContext(dependentContext));
-      }
-
-      const ownershipProjection = ownedImplementationProjectionForComponent(
-        result,
-        component,
-        index,
-      );
-      if (ownershipProjection) {
-        lines.push(...formatOwnedImplementationProjection(ownershipProjection));
-      }
-
-      lines.push("");
-    }
   }
-
-  lines.push("## Related Files", "");
-  lines.push(...formatList(result.relatedFilePaths));
-  lines.push("");
-
-  if (result.glossaryContext) {
-    lines.push("## Glossary Context", "");
-    lines.push(`Glossary: ${result.glossaryContext.glossaryPath ?? "absent"}`);
-    lines.push("");
-    lines.push("### Terms");
-    lines.push(
-      ...formatList(
-        result.glossaryContext.terms.map((term) =>
-          `${term.term}: ${term.definition}`
-        ),
-      ),
+  for (const component of result.selectedComponents) {
+    const contract = result.componentContracts.find((c) =>
+      c.declaration.id === component.id
     );
-    lines.push("");
-    lines.push("### Occurrences");
-    lines.push(...formatList(result.glossaryContext.occurrences.map((
-      occurrence,
-    ) =>
-      `${occurrence.filePath}:${occurrence.range.start.line}:${occurrence.range.start.column} ${occurrence.matchedSpelling} -> ${occurrence.term.term}`
-    )));
+    if (contract) lines.push(...formatContract(contract, 2));
+    lines.push("### Tags", "");
+    for (const tag of component.tags) {
+      lines.push(
+        `- ${
+          escapeMarkdown(tag.name)
+        } (${tag.status}; ${component.filePath}; ${tag.introductions.length} introductions)`,
+      );
+    }
+    if (!component.tags.length) lines.push("- none");
+    lines.push("", "### Accessible Tags", "");
+    for (const accessible of component.accessibleTags) {
+      const owner = accessible.tag?.identity?.owner;
+      lines.push(
+        `- ${escapeMarkdown(accessible.name)} (${accessible.status}${
+          owner ? `; ${owner.componentName}, ${owner.declarationPath}` : ""
+        })`,
+      );
+    }
+    lines.push("", "### References", "");
+    for (const reference of component.references) {
+      const owner = reference.tagIdentity?.owner;
+      lines.push(
+        `- ${
+          escapeMarkdown(reference.name)
+        }: ${reference.sectionName}, bytes ${reference.range.start}–${reference.range.end}${
+          owner
+            ? `; from ${owner.componentName} (${owner.declarationPath})`
+            : `; ${reference.status}`
+        }`,
+      );
+    }
+    const dependency = result.agentDependencyContexts.find((c) =>
+      c.selectedComponent.id === component.id
+    );
+    lines.push("", "### Direct Dependencies", "");
+    if (!dependency?.providers.length) lines.push("- none");
+    for (const provider of dependency?.providers ?? []) {
+      lines.push(
+        `Selected Tags: ${
+          provider.selections.map((s) => escapeMarkdown(s.name)).join(", ")
+        }`,
+        "",
+        `Consumer uses: ${provider.uses.length}`,
+        "",
+      );
+      const providerContract = dependency!.dependencyContracts.find((c) =>
+        c.declaration.id === provider.component.id
+      );
+      if (providerContract) lines.push(...formatContract(providerContract, 4));
+    }
+    const dependent = result.agentDependentContexts?.find((c) =>
+      c.selectedComponent.id === component.id
+    );
+    if (dependent) {
+      lines.push("### Direct Importers", "");
+      if (!dependent.importingFiles.length) lines.push("- none");
+      for (const file of dependent.importingFiles) {
+        lines.push(`#### ${file.filePath}`, "");
+        for (const contextual of file.contextualContracts) {
+          lines.push(...formatContract(contextual, 5));
+        }
+      }
+    }
+    const ownership = result.ownedImplementationProjections.find((p) =>
+      p.owningComponent.id === component.id
+    );
+    lines.push("### Owned Implementation Targets", "");
+    if (!ownership?.targets.length) lines.push("- none");
+    for (const target of ownership?.targets ?? []) {
+      lines.push(
+        `- ${target.relation} [${
+          target.sections.join(", ")
+        }]: ${target.filePath}${
+          target.symbolIdentity ? ` ${target.symbolIdentity}` : ""
+        }`,
+      );
+    }
     lines.push("");
   }
-
-  lines.push(...formatDiagnostics("## Diagnostics", result.diagnostics));
+  lines.push(
+    "## Related Files",
+    "",
+    ...result.relatedFilePaths.map((p) => `- ${p}`),
+    "",
+  );
+  if (result.glossaryContext) {
+    lines.push(
+      "## Glossary Context",
+      "",
+      `Glossary: ${result.glossaryContext.glossaryPath}`,
+      "",
+      "### Terms",
+      "",
+    );
+    for (const term of result.glossaryContext.terms) {
+      lines.push(`- ${term.term}: ${term.definition}`);
+    }
+    lines.push("", "### Occurrences", "");
+    for (const occurrence of result.glossaryContext.occurrences) {
+      lines.push(
+        `- ${occurrence.filePath}:byte-${occurrence.range.start} ${occurrence.matchedSpelling} -> ${occurrence.term.term}`,
+      );
+    }
+    lines.push("");
+  }
+  lines.push(...formatDiagnostics(result.diagnostics));
   return `${lines.join("\n")}\n`;
 }
 
-function formatComponentContract(contract: ComponentContractView): string[] {
-  return formatComponentContractAtLevel(contract, 2);
-}
-
-function formatComponentContractAtLevel(
+function formatContract(
   contract: ComponentContractView,
-  headingLevel: number,
+  level: number,
 ): string[] {
-  return [
-    `${heading(headingLevel)} ${contract.name}`,
+  const lines = [
+    `${"#".repeat(level)} ${escapeMarkdown(contract.name)}`,
     "",
     `Source: ${contract.filePath}`,
     "",
-    ...formatContractBody(contract, headingLevel + 1),
   ];
-}
-
-function formatContractBody(
-  contract: ComponentContractView,
-  headingLevel = 3,
-): string[] {
-  const lines = [
-    `${heading(headingLevel)} Goal`,
-    ...formatList(contract.goalLines),
-    "",
-    `${heading(headingLevel)} Interface`,
-  ];
-  if (contract.ungroupedInterfaceLines.length) {
-    lines.push(...formatList(contract.ungroupedInterfaceLines));
-  } else if (!contract.interfaceTags.length) {
-    lines.push("- none");
-  }
-  for (const concept of contract.interfaceTags) {
+  for (const section of contract.declaration.sections) {
     lines.push(
+      `${"#".repeat(level + 1)} ${section.name[0].toUpperCase()}${
+        section.name.slice(1)
+      }`,
       "",
-      `${heading(headingLevel + 1)} ${concept.identifier}`,
-      ...formatList(concept.lines),
     );
-  }
-  return lines;
-}
-
-function formatCollectedExpansion(expansion: CollectedExpansion): string[] {
-  const lines = ["", "### Expansions"];
-  for (const item of expansion.expands) {
-    lines.push("", `Source: ${item.filePath}`);
-    for (const section of item.declaration.sections) {
-      lines.push(
-        "",
-        `#### ${section.name}`,
-        ...formatList(section.units.map((unit) => unit.prose)),
-      );
-    }
-  }
-  return lines;
-}
-
-function formatAgentDependencyContext(
-  context: ContextCommandResult["agentDependencyContexts"][number],
-): string[] {
-  const lines = ["", "### Direct Dependencies"];
-  if (!context.dependencyContracts.length) {
-    lines.push("- none");
-  } else {
-    const renderedDecisionIndexes = new Set<number>();
-    const dependencyDecisions = uniqueDependencyDecisions(
-      context.dependencyDecisions,
-    );
-    const dependencyNameCounts = new Map<string, number>();
-    for (const contract of context.dependencyContracts) {
-      dependencyNameCounts.set(
-        contract.name,
-        (dependencyNameCounts.get(contract.name) ?? 0) + 1,
-      );
-    }
-    for (const contract of context.dependencyContracts) {
-      lines.push("", ...formatComponentContractAtLevel(contract, 4));
-      const canAssociateByName = dependencyNameCounts.get(contract.name) === 1;
-      const decisions = canAssociateByName
-        ? dependencyDecisions
-          .map((decision, index) => ({ decision, index }))
-          .filter(({ decision }) => decision.componentName === contract.name)
-        : [];
-      lines.push("", "##### Dependency Decisions");
-      if (!decisions.length) {
-        lines.push("- none");
-      } else {
-        for (const { decision, index } of decisions) {
-          renderedDecisionIndexes.add(index);
-          lines.push(`- ${decision.filePath}`);
-          for (const unit of decision.section.units) {
-            lines.push(`  - ${unit.prose}`);
-          }
-        }
+    let group: string | undefined;
+    for (const facet of section.units) {
+      if (facet.groupingId !== group && facet.groupingTag) {
+        lines.push(
+          `${"#".repeat(level + 2)} ${escapeMarkdown(facet.groupingTag)}`,
+          "",
+        );
       }
-    }
-    const unassociatedDecisions = dependencyDecisions
-      .map((decision, index) => ({ decision, index }))
-      .filter(({ index }) => !renderedDecisionIndexes.has(index));
-    if (unassociatedDecisions.length) {
-      lines.push("", "#### Other Dependency Decisions");
-      for (const { decision } of unassociatedDecisions) {
-        lines.push(`- ${decision.componentName} (${decision.filePath})`);
-        for (const unit of decision.section.units) {
-          lines.push(`  - ${unit.prose}`);
-        }
-      }
+      group = facet.groupingId;
+      lines.push(...renderFacet(facet));
     }
   }
   return lines;
 }
-
-function formatAgentDependentContext(
-  context: NonNullable<
-    ContextCommandResult["agentDependentContexts"]
-  >[number],
-): string[] {
-  const lines = ["", "### Direct Importers"];
-  if (!context.importingFiles.length) {
-    lines.push("- none");
-    return lines;
-  }
-  for (const importingFile of context.importingFiles) {
-    lines.push("", `#### ${importingFile.filePath}`);
-    lines.push(
-      `- Imports: ${importingFile.importedComponent.name} (${importingFile.importedComponent.filePath})`,
-    );
-    lines.push("", "##### Contextual Contracts");
-    if (!importingFile.contextualContracts.length) {
-      lines.push("- none");
-      continue;
-    }
-    for (const contract of importingFile.contextualContracts) {
-      lines.push("", ...formatComponentContractAtLevel(contract, 6));
-    }
+function renderFacet(facet: Facet): string[] {
+  const lines = [facet.prose, ""];
+  for (const payload of facet.literalBlocks) {
+    lines.push(renderPayload(payload), "");
   }
   return lines;
 }
-
-function formatTagScope(
-  namespace: ResolvedTagScope,
-): string[] {
-  const lines = ["", "### Tag Scope"];
-  lines.push("", "#### Public Tags");
-  lines.push(...formatTags(namespace.publicTags));
-  lines.push("", "#### Accessible Tags");
-  lines.push(...formatTags(namespace.accessibleTags));
-  lines.push("", "#### Declared Tags");
-  lines.push(...formatTags(namespace.tags));
-  lines.push("", "#### References");
-  if (!namespace.references.length) {
-    lines.push("- none");
-  } else {
-    for (const reference of namespace.references) {
-      lines.push(
-        `- ${reference.tagIdentity.identifier} from ${reference.tagIdentity.componentName} (${reference.tagIdentity.filePath}) referenced by ${reference.ownerKind} ${reference.ownerName} ${reference.sectionName} in ${reference.filePath}`,
-      );
-    }
-  }
-  return lines;
+function renderPayload(payload: EmbeddedContent): string {
+  const fence = "`".repeat(Math.max(3, payload.fenceLength));
+  return `${fence}${payload.type ?? ""}\n${payload.rawBody}${
+    /[\r\n]$/.test(payload.rawBody) ? "" : "\n"
+  }${fence}`;
 }
-
-function uniqueDependencyDecisions(
-  decisions: ContextCommandResult["agentDependencyContexts"][number][
-    "dependencyDecisions"
-  ],
-): ContextCommandResult["agentDependencyContexts"][number][
-  "dependencyDecisions"
-] {
-  const seen = new Set<string>();
-  return decisions.filter((decision) => {
-    const key = [
-      decision.componentName,
-      decision.filePath,
-      ...decision.section.units.map((unit) => unit.prose),
-    ].join("\0");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function formatTags(
-  tags: ResolvedTagScope["tags"],
-): string[] {
-  if (!tags.length) return ["- none"];
-  return tags.map((concept) => {
-    const visibility = concept.isPublic ? "public" : "private";
-    const origin = concept.isImported ? "imported" : "declared";
-    const occurrences = concept.occurrences
-      .map((occurrence) =>
-        `${occurrence.ownerKind} ${occurrence.componentName} ${occurrence.sectionName} in ${occurrence.filePath}`
-      )
-      .join("; ");
-    return `- ${concept.identifier} (${concept.identity.componentName}, ${concept.identity.filePath}; ${visibility}, ${origin})${
-      occurrences ? `: ${occurrences}` : ""
-    }`;
-  });
-}
-
-function formatOwnedImplementationProjection(
-  projection: ContextCommandResult["ownedImplementationProjections"][number],
-): string[] {
-  const lines = ["", "### Owned Implementation Targets"];
-  if (!projection.targets.length) {
-    lines.push("- none");
-  } else {
-    for (const target of projection.targets) {
-      const sections = target.sections.length
-        ? ` [${target.sections.join(", ")}]`
-        : "";
-      const symbol = target.symbolIdentity ? ` ${target.symbolIdentity}` : "";
-      lines.push(
-        `- ${target.relation}${sections}: ${target.filePath}${symbol}`,
-      );
-    }
-  }
-  if (projection.diagnostics.length) {
-    lines.push("", "#### Ownership Diagnostics");
-    for (const diagnostic of projection.diagnostics) {
-      lines.push(`- ${formatDiagnostic(diagnostic)}`);
-    }
-  }
-  return lines;
-}
-
-function formatDiagnostics(
-  heading: string,
-  diagnostics: readonly SigilDiagnostic[],
-): string[] {
-  const lines = [heading, ""];
-  if (!diagnostics.length) lines.push("- none");
-  else {
-    for (const item of diagnostics) {
-      lines.push(`- ${formatDiagnostic(item)}`);
-    }
-  }
-  return lines;
-}
-
-function formatDiagnostic(diagnostic: SigilDiagnostic): string {
-  return `${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`;
-}
-
-function formatList(lines: readonly string[]): string[] {
-  return lines.length ? lines.map((line) => `- ${line}`) : ["- none"];
-}
-
-function heading(level: number): string {
-  return "#".repeat(level);
-}
-
-function expansionForComponent(
-  result: ContextCommandResult,
-  component: ResolvedComponent,
-  index: number,
-): CollectedExpansion | undefined {
-  const indexed = result.selectedComponents[index];
-  if (componentIdentityMatches(indexed, component)) return component.expansions;
-  return undefined;
-}
-
-function tagScopeForComponent(
-  result: ContextCommandResult,
-  component: ResolvedComponent,
-  index: number,
-): ResolvedTagScope | undefined {
-  if (namespaceMatchesComponent(component.tagScope, component)) {
-    return component.tagScope;
-  }
-  const indexed = result.tagScopes[index];
-  if (indexed && namespaceMatchesComponent(indexed, component)) return indexed;
-  return result.tagScopes.find((namespace) =>
-    namespaceMatchesComponent(namespace, component)
-  );
-}
-
-function agentDependencyContextForComponent(
-  result: ContextCommandResult,
-  component: ResolvedComponent,
-  index: number,
-): ContextCommandResult["agentDependencyContexts"][number] | undefined {
-  const indexed = result.agentDependencyContexts[index];
-  if (
-    indexed && componentIdentityMatches(indexed.selectedComponent, component)
-  ) {
-    return indexed;
-  }
-  return result.agentDependencyContexts.find((item) =>
-    componentIdentityMatches(item.selectedComponent, component)
-  );
-}
-
-function agentDependentContextForComponent(
-  result: ContextCommandResult,
-  component: ResolvedComponent,
-  index: number,
-):
-  | NonNullable<
-    ContextCommandResult["agentDependentContexts"]
-  >[number]
-  | undefined {
-  const contexts = result.agentDependentContexts ?? [];
-  const indexed = contexts[index];
-  if (
-    indexed && componentIdentityMatches(indexed.selectedComponent, component)
-  ) {
-    return indexed;
-  }
-  return contexts.find((item) =>
-    componentIdentityMatches(item.selectedComponent, component)
-  );
-}
-
-function ownedImplementationProjectionForComponent(
-  result: ContextCommandResult,
-  component: ResolvedComponent,
-  index: number,
-): ContextCommandResult["ownedImplementationProjections"][number] | undefined {
-  const indexed = result.ownedImplementationProjections[index];
-  if (
-    indexed && componentIdentityMatches(indexed.owningComponent, component)
-  ) {
-    return indexed;
-  }
-  return result.ownedImplementationProjections.find((item) =>
-    componentIdentityMatches(item.owningComponent, component)
-  );
-}
-
-function componentIdentityMatches(
-  left: Pick<ResolvedComponent, "name" | "filePath"> | undefined,
-  right: Pick<ResolvedComponent, "name" | "filePath"> | undefined,
-): boolean {
-  if (!left || !right) return false;
-  return left.name === right.name && left.filePath === right.filePath;
-}
-
-function namespaceMatchesComponent(
-  namespace: ResolvedTagScope,
-  component: ResolvedComponent,
-): boolean {
-  if (namespace.componentName !== component.name) return false;
+function formatDiagnostics(diagnostics: readonly SigilDiagnostic[]): string[] {
   return [
-    ...namespace.tags,
-    ...namespace.accessibleTags,
-    ...namespace.publicTags,
-  ].some((concept) =>
-    concept.identity.componentName === component.name &&
-    concept.identity.filePath === component.filePath
-  ) || namespace.references.some((reference) =>
-    reference.componentName === component.name &&
-    reference.filePath === component.filePath
-  );
+    "## Diagnostics",
+    "",
+    ...(diagnostics.length
+      ? diagnostics.map((d) => `- ${d.severity} ${d.code}: ${d.message}`)
+      : ["- none"]),
+    "",
+  ];
 }

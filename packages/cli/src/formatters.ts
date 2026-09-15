@@ -11,7 +11,9 @@ export async function formatResult(
   if (request.quiet) return "";
   // Captured source/config text is compiler input, never display text.
   if (result.command === "export-design") {
-    return `${JSON.stringify(result.bundle, null, request.pretty ? 2 : 0)}\n`;
+    return result.bundle
+      ? `${JSON.stringify(result.bundle, null, request.pretty ? 2 : 0)}\n`
+      : "";
   }
   result = normalizeResultPaths(result, request);
   if (
@@ -103,19 +105,39 @@ function controllingPath(request: CommandRequest): string | undefined {
   return "path" in request ? request.path : undefined;
 }
 
-function replaceStrings(value: unknown, from: string, to: string): unknown {
-  if (typeof value === "string") {
+const pathFields = new Set([
+  "workspaceRoot",
+  "configPath",
+  "glossaryPath",
+  "filePath",
+  "declarationPath",
+  "sourceFile",
+  "targetFile",
+  "relatedFilePaths",
+  "memberRoots",
+]);
+function replaceStrings(
+  value: unknown,
+  from: string,
+  to: string,
+  field = "",
+): unknown {
+  if (typeof value === "string" && pathFields.has(field)) {
     const prefix = to === "." ? "" : `${to}/`;
-    return value.replaceAll(`${from}/`, prefix).replaceAll(from, to);
+    return value === from
+      ? to
+      : value.startsWith(`${from}/`)
+      ? prefix + value.slice(from.length + 1)
+      : value;
   }
   if (Array.isArray(value)) {
-    return value.map((item) => replaceStrings(item, from, to));
+    return value.map((item) => replaceStrings(item, from, to, field));
   }
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value).map((
         [key, item],
-      ) => [key, replaceStrings(item, from, to)]),
+      ) => [key, replaceStrings(item, from, to, key)]),
     );
   }
   return value;
@@ -178,8 +200,8 @@ function formatCheckText(
     const label = `${diagnostic.severity} ${diagnostic.code}`;
     const location = showLocations && diagnostic.filePath
       ? ` ${diagnostic.filePath}${
-        diagnostic.range
-          ? `:${diagnostic.range.start.line}:${diagnostic.range.start.column}`
+        diagnostic.sourceLocation
+          ? `:${diagnostic.sourceLocation.line}:${diagnostic.sourceLocation.column}`
           : ""
       }`
       : "";
@@ -204,7 +226,11 @@ function formatGlossaryText(
       ? ` [${occurrence.term.scope.id}]`
       : "";
     lines.push(
-      `${occurrence.filePath}:${occurrence.range.start.line}:${occurrence.range.start.column} ${occurrence.matchedSpelling} -> ${occurrence.term.term}${context}`,
+      `${occurrence.filePath}${
+        occurrence.sourceLocation
+          ? `:${occurrence.sourceLocation.line}:${occurrence.sourceLocation.column}`
+          : `:byte-${occurrence.range.start}`
+      } ${occurrence.matchedSpelling} -> ${occurrence.term.term}${context}`,
     );
   }
   for (const item of result.diagnostics) {
