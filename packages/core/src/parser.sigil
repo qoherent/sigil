@@ -65,7 +65,6 @@ component SigilParser {
       and repeated optional sections under the normative recovery policy.
     }
 
-
     TagSyntaxParsing {
       For TagIdentity, accept Facets directly under every contract without requiring
       Tag blocks.
@@ -231,7 +230,6 @@ component SigilParser {
       An indivisible token longer than 79 content characters produces
       SIGIL_UNFORMATTABLE_LINE.
     }
-
 
     VersionChecking {
       Under LanguageVersion, an unsupported version returns an empty partial document

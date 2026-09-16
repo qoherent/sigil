@@ -212,7 +212,6 @@ component SigilCompilationBoundary {
       Revisit when: Selection needs evidence the resolved graph does not carry.
     }
 
-
     CompleteCoverageOrWorkspace {
       Decision: Select a candidate only when it completely covers the affected scope,
       and otherwise compile the workspace.

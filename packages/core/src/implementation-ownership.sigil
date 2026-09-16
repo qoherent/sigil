@@ -498,7 +498,6 @@ component SigilImplementationOwnership {
       requires section-level targets.
     }
 
-
     LookupAbsenceSemantics {
       Decision: Require exact component name and declaration-path identity, reserve
       undefined for an unresolved exact component or supplied Tag, and return an
