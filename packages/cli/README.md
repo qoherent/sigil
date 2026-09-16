@@ -71,6 +71,11 @@ Commands:
 - `sigil check [path]` returns diagnostics; add `--format text --show-locations`
   to append each diagnostic's file path, line, and column to the text output
   (default text output and JSON are unchanged without the flag);
+- `sigil fmt [paths...]` formats selected files or included sources beneath
+  selected directories in one workspace, deduplicating overlaps. No paths means
+  the current directory, so running at the workspace root selects all included
+  workspace sources. Add `--check` to report noncanonical files without writing;
+  `--root` anchors configuration discovery, while paths still resolve from cwd;
 - `sigil glossary [path]` reports reviewed entries, resolved contexts, and
   source occurrences;
 - `sigil graph [path]` returns component and import graph data;

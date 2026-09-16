@@ -107,6 +107,17 @@ another necessary source prevents assessing requested meaning, return
 An unresolved human design choice can appear in a completed assessment.
 Absent compiler validation alone does not prevent a completed design-only review.
 
+Mechanical observations use the existing `coverage` and `limitations` fields
+under [mechanical validation](mechanical-validation.md), without adding required
+protocol fields. Identify the actual tool, command, workspace, targets, exits,
+diagnostics, and mechanically assessed input snapshot. Keep configuration and
+other CLI input identities separate from semantic `assessed_inputs` unless that
+context actually informed design judgment. The request's existing `scope` may
+identify the writer's mechanical snapshot by path and digest. A live workspace
+whose relevant source or configuration differs cannot establish mechanical
+coverage of that earlier capture. Direct evaluation records in-place evidence
+without creating files; the caller can retain the returned observations later.
+
 Do not disguise an interrupted, cancelled, missing, or malformed report as empty
 findings. The caller treats missing required fields, unverifiable identities,
 unsupported dispositions, or missing correction authority as incomplete and

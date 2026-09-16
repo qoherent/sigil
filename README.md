@@ -742,11 +742,32 @@ The bundle provides three independent Sigil 0.8 design entry points:
 All three start at artifact version 0.1.0 and share the bundled 0.8.0 normative
 reference and grammar. Install the complete catalog with `sigil skill install`
 (or `--project`); writer and evaluator require their sibling reference files.
-They work from source without a compiler. The writer preserves unresolved human
+Writing and evaluation use a verified compatible CLI when available. The writer
+runs `check`, formats only authored files, and rechecks before capturing inputs
+for independent review. The evaluator runs `check` and `fmt --check` read-only.
+Without compatible tooling they continue from source and explicitly report
+mechanical validation as unavailable. The writer preserves unresolved human
 choices, rechecks review freshness, and provides an independently unreviewed draft
 and portable handoff if delegation cannot complete. Static package checks and
 [observed agent evaluations](docs/skill-evaluation/sigil-0.8-foundation.md) provide
-separate evidence; neither establishes 0.8 compiler support or code conformance.
+separate evidence. Mechanical checks do not establish design coherence or code
+conformance. The [mechanical fixtures](integrations/skills/sigil-write/evals/mechanical-validation-fixture.md)
+cover CLI-enabled behavior separately from the earlier offline observations.
+
+`sigil fmt [paths...]` accepts multiple files or directories within one workspace:
+
+```sh
+sigil fmt first.sigil second.sigil
+sigil fmt design
+sigil fmt first.sigil design --check
+```
+
+Bare `sigil fmt` selects the current directory: all included workspace sources
+when run at the root, or only sources beneath a nested working directory.
+`--root` selects configuration context, not a replacement formatting target.
+Overlapping targets are deduplicated; every target and the combined result
+validate before any write. Workspace checks may report errors outside the
+selected files, but formatting writes only changed selected `.sigil` files.
 
 ### Legacy Sigil 0.7 native workflow
 

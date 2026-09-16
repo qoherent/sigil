@@ -17,8 +17,19 @@ repetition while retaining independent promises and meaningful constraints.
 
 Record consequential unresolved questions without deciding policy on the user's
 behalf. Continue independent supported work before returning those questions.
-Do not demand a compiler or claim compiler validation, implementation conformance,
+Do not demand a compiler or claim unobserved validation, implementation conformance,
 or saturated coherence from this design workflow.
+
+## Check and format the authored scope
+
+Follow the evaluator-owned [mechanical guidance](../../sigil-evaluate/references/mechanical-validation.md)
+to verify CLI compatibility and workspace context. Check the real workspace,
+apply supported non-width corrections within the authored scope, format explicit
+authored files, and recheck before capture. Let `fmt` repair supported width
+errors; submit related authored files together when batch support is available.
+Keep completed diagnostics visible, including unrelated errors that block
+formatting. Do not broaden writes or change policy to clear them. Continue
+meaningful writing and review if tooling or mechanical coverage is unavailable.
 
 ## Capture and delegate
 
@@ -87,7 +98,8 @@ scope. Never treat its missing coverage as an empty findings list. Apply only
 findings whose evidence and freshness can be established under the shared
 contract; preserve the remaining coverage limitation.
 
-After any semantic edit or change to relevant context, delegate fresh review.
+After any semantic edit or change to relevant context, repeat the mechanical
+pass before capture and delegate fresh review.
 Freshness uses exact bytes, so recapture and reassess changed files even when an
 edit appears cosmetic before claiming that their current bytes were reviewed.
 
@@ -118,6 +130,9 @@ failure, or repeated issue that prevents further progress. Every exit includes:
 - Actual independent review coverage tied to assessed inputs, its freshness, and
   explicit omissions or host limits. Distinguish an earlier reviewed revision
   from a later independently unreviewed revision.
+- Mechanical commands, actual scope and input identities, outcomes and diagnostics,
+  or the specific reason validation was unavailable; keep these separate from
+  independent semantic review coverage.
 - The precise blocker or question when unfinished, and the shared contract's
   portable handoff with retained exact captures when delegation cannot complete.
 

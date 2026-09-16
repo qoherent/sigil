@@ -197,11 +197,15 @@ Required output data for JSON:
 
 Default human output may be concise text, but JSON must remain available.
 
-### `sigil fmt [path] [--check]`
+### `sigil fmt [paths...] [--check]`
 
-Loads the workspace, selects the requested file or included `.sigil` sources
-beneath the requested directory, and delegates canonical rendering to
-`sigil-core`.
+Loads one workspace, selects the deduplicated union of requested files and
+included `.sigil` sources beneath requested directories, and delegates canonical
+rendering to `sigil-core`. Results follow workspace source order regardless of
+argument order. With no paths, selection defaults to the current directory:
+at the workspace root this selects all included workspace sources, and in a
+nested directory it selects only sources beneath that directory. `--root`
+anchors workspace discovery without changing cwd-relative path selection.
 
 Formatting wraps ordinary prose at 79 content characters without counting
 leading indentation. It preserves Facet identity and embedded-content content,
@@ -212,8 +216,17 @@ vocabulary, then validates all proposed replacements together before writing.
 Without `--check`, the command writes only changed selected sources. With
 `--check`, it performs no writes and exits `1` when any selected source is
 noncanonical. Output identifies formatted, unchanged, noncanonical, and failed
-sources. The command does not automatically select the whole repository unless
-the user explicitly selects its workspace root.
+sources. A missing, excluded, unmatched, or different-workspace target aborts
+the entire invocation with exit `3` before any write. Source diagnostics retain
+exit `1`. All targets and combined replacements must validate before writing;
+this does not promise rollback after a filesystem failure during replacement.
+
+```sh
+sigil fmt                          # from workspace root: all included sources
+sigil fmt first.sigil second.sigil # only these two files
+sigil fmt design                   # included sources beneath design/
+sigil fmt first.sigil design --check # mixed selection, no writes
+```
 
 ### `sigil glossary [path]`
 

@@ -103,7 +103,13 @@ Options:
   --show-locations  Add file path, line, and column to text diagnostics
   --help            Show this help
 `,
-  fmt: `Usage: sigil fmt [path] [options]
+  fmt: `Usage: sigil fmt [paths...] [options]
+
+Select files or directories in one workspace; overlapping targets are deduplicated.
+With no paths, select the current directory. At the workspace root, this selects
+all included workspace sources. Only changed selected .sigil files are written.
+All targets and combined replacements are validated before writing any file.
+Paths resolve from the current directory; --root only anchors workspace discovery.
 
 Options:
   --check           Report noncanonical source without writing
