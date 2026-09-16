@@ -5,6 +5,7 @@ import {
   SIGIL_VERSION,
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
+import { resolve } from "node:path";
 import { CoreAdapter } from "../src/core-adapter.ts";
 import metadata from "../deno.json" with { type: "json" };
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
@@ -580,6 +581,28 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
     winText,
   );
   assert(!winText.includes("\\"), "paths must render with forward slashes");
+
+  // A workspace on another drive cannot be rendered relative to cwd.
+  const otherDrive = normalizePath(Deno.cwd()).startsWith("C:") ? "Z:" : "C:";
+  const otherRoot = `${otherDrive}/repo`;
+  const otherResult: CheckCommandResult = {
+    ...winResult,
+    workspaceRoot: otherRoot,
+    configPath: `${otherRoot}/.sigil/config.json`,
+    diagnostics: [{
+      ...winResult.diagnostics[0],
+      filePath: `${otherRoot}/pkg/a.sigil`,
+    }],
+  };
+  const otherOutput = parseJson(
+    await formatResult(otherResult, {
+      ...base,
+      format: "json",
+    }),
+  );
+  assertEquals(otherOutput.workspaceRoot, otherRoot);
+  assertEquals(otherOutput.configPath, `${otherRoot}/.sigil/config.json`);
+  assertEquals(otherOutput.diagnostics[0].filePath, `${otherRoot}/pkg/a.sigil`);
 
   // A relative invocation normalizes absolute workspace paths to relative POSIX.
   const cwd = normalizePath(Deno.cwd());
@@ -2009,7 +2032,7 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
 Deno.test("fmt preserves absolute output paths for single and mixed targets", async () => {
-  const root = await makeWorkspace("fmt-absolute-output");
+  const root = normalizePath(await makeWorkspace("fmt-absolute-output"));
   try {
     await Deno.writeTextFile(`${root}/first.sigil`, validSigil("First"));
     await Deno.writeTextFile(`${root}/second.sigil`, validSigil("Second"));
@@ -2052,7 +2075,7 @@ Deno.test("fmt preserves absolute output paths for single and mixed targets", as
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
 Deno.test("fmt batches cwd-relative paths with spaces and preserves source order", async () => {
-  const root = await makeWorkspace("fmt-batch");
+  const root = normalizePath(await makeWorkspace("fmt-batch"));
   try {
     await Deno.mkdir(`${root}/selected`);
     const sources = new Map([
@@ -2079,7 +2102,7 @@ Deno.test("fmt batches cwd-relative paths with spaces and preserves source order
     assertEquals(checked.exitCode, EXIT_DIAGNOSTICS);
     const selectedPaths = parseJson(checked.stdout).files.map(
       (file: { filePath: string }) =>
-        normalizePath(`${Deno.cwd()}/${file.filePath}`),
+        normalizePath(resolve(Deno.cwd(), file.filePath)),
     );
     assertEquals(
       JSON.stringify(selectedPaths),
@@ -2228,7 +2251,7 @@ Deno.test("fmt rejects an undiscovered ancestor before writing any source", asyn
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
 Deno.test("fmt keeps omitted target at cwd even with an explicit root", async () => {
-  const root = await makeWorkspace("fmt-default");
+  const root = normalizePath(await makeWorkspace("fmt-default"));
   try {
     await Deno.mkdir(`${root}/selected`);
     const source = noncanonicalSigil("Selected");
@@ -2250,7 +2273,7 @@ Deno.test("fmt keeps omitted target at cwd even with an explicit root", async ()
       assertEquals(parseJson(checked.stdout).files.length, 1);
       assertEquals(
         normalizePath(
-          `${Deno.cwd()}/${parseJson(checked.stdout).files[0].filePath}`,
+          resolve(Deno.cwd(), parseJson(checked.stdout).files[0].filePath),
         ),
         `${root}/selected/main.sigil`,
       );

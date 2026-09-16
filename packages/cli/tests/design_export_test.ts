@@ -1,11 +1,14 @@
 import { assert, assertEquals } from "@std/assert";
-import { SIGIL_VERSION } from "@qoherent/sigil-core";
+import { normalizePath, SIGIL_VERSION } from "@qoherent/sigil-core";
 import { runCli } from "../src/main.ts";
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
 import { CoreAdapter } from "../src/core-adapter.ts";
 
 async function workspace() {
-  const root = await Deno.makeTempDir({ dir: "/tmp", prefix: "sigil-export-" });
+  const root = normalizePath(
+    // The root also appears as prose, whose indivisible spans have a width limit.
+    await Deno.makeTempDir(),
+  );
   await Deno.mkdir(`${root}/.sigil`);
   const config = JSON.stringify({
     sigilVersion: SIGIL_VERSION,
@@ -14,7 +17,7 @@ async function workspace() {
   });
   await Deno.writeTextFile(`${root}/.sigil/config.json`, config);
   const source =
-    `component Exact {\n  goal {\n    Preserve ${root}/verbatim and café.\n  }\n  interface {\n    Text {\n      Preserve captured text.\n    }\n  }\n}\n`;
+    `component Exact {\n  goal {\n    ${root}/verbatim\n    preserves café.\n  }\n  interface {\n    Text {\n      Preserve captured text.\n    }\n  }\n}\n`;
   await Deno.writeTextFile(`${root}/main.sigil`, source);
   return { root, source, config };
 }
@@ -141,10 +144,9 @@ Deno.test("host discovery preserves nested configs while excluding generated Sig
 });
 
 Deno.test("child workspace export reports nested parent evidence as a language error", async () => {
-  const parent = await Deno.makeTempDir({
-    dir: "/tmp",
-    prefix: "sigil-nested-export-",
-  });
+  const parent = normalizePath(
+    await Deno.makeTempDir({ prefix: "sigil-nested-export-" }),
+  );
   const child = `${parent}/child`;
   const config = JSON.stringify({
     sigilVersion: SIGIL_VERSION,
@@ -255,7 +257,7 @@ Deno.test("fmt repairs width across selected providers and consumers before writ
 });
 
 Deno.test("CLI export matches the shared schema-2 native fixture exactly", async () => {
-  const root = await Deno.makeTempDir({ dir: "/tmp", prefix: "sigil-shared-" });
+  const root = await Deno.makeTempDir({ prefix: "sigil-shared-" });
   try {
     const fixture = JSON.parse(
       await Deno.readTextFile(

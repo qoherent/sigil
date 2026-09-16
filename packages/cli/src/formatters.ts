@@ -148,6 +148,9 @@ function replaceStrings(
 
 function relativeFrom(root: string, path: string): string {
   if (root === path) return ".";
+  const rootDrive = root.match(/^[A-Za-z]:/)?.[0];
+  const pathDrive = path.match(/^[A-Za-z]:/)?.[0];
+  if (rootDrive !== pathDrive) return path;
   const rootParts = root.split("/").filter(Boolean);
   const pathParts = path.split("/").filter(Boolean);
   let common = 0;
