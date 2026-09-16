@@ -135,6 +135,19 @@ export async function run(): Promise<void> {
     errors.push(message);
     return Promise.resolve(undefined);
   };
+  const changes: string[] = [];
+  const watcher = vscode.workspace.createFileSystemWatcher("**/*");
+  const observations = [
+    watcher,
+    watcher.onDidCreate((uri) => changes.push(`created ${uri.fsPath}`)),
+    watcher.onDidChange((uri) => changes.push(`changed ${uri.fsPath}`)),
+    watcher.onDidDelete((uri) => changes.push(`deleted ${uri.fsPath}`)),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("sigil.compile")) {
+        changes.push("compilation settings changed");
+      }
+    }),
+  ];
   try {
     await compileConfiguration.update(
       "executable",
@@ -151,13 +164,19 @@ export async function run(): Promise<void> {
       "design",
       vscode.ConfigurationTarget.Global,
     );
+    changes.length = 0;
     const report = await vscode.commands.executeCommand<{
       version: number;
       world: { state: string };
       scope: { design: { roots: string[]; sources: string[] } };
       diagnostics: { items: Array<{ code: string; locations: unknown[] }> };
     }>("sigil.compileFile");
-    assert(report, `Native Design report missing: ${errors.join("; ")}`);
+    assert(
+      report,
+      `Native Design report missing: ${errors.join("; ")}; events: ${
+        JSON.stringify(changes)
+      }`,
+    );
     assert.equal(report.version, 2);
     assert.equal(report.world.state, "Loose");
     assert.deepEqual(report.scope.design.roots, ["auth.sigil"]);
@@ -248,6 +267,7 @@ export async function run(): Promise<void> {
     await verifyCoordinates(workspace, errors);
     await vscode.window.showTextDocument(document);
   } finally {
+    for (const observation of observations) observation.dispose();
     (vscode.window as unknown as { showErrorMessage: typeof originalError })
       .showErrorMessage = originalError;
     for (
