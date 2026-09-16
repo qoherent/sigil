@@ -1,26 +1,41 @@
 import type { SigilFileSystem } from "./model/workspace.ts";
 import { normalizePath } from "./path.ts";
+import type { SourceInput } from "./source-text.ts";
 
 // @sigil implements packages/core/src/filesystem.sigil::SigilFileSystem::InMemoryFileSystem interface,logic,constraints,cases
 export class InMemorySigilFileSystem implements SigilFileSystem {
-  readonly #files: Map<string, string>;
+  readonly #files: Map<string, SourceInput>;
 
-  constructor(files: Record<string, string> | Map<string, string>) {
+  constructor(files: Record<string, SourceInput> | Map<string, SourceInput>) {
     this.#files = new Map();
     const entries = files instanceof Map
       ? files.entries()
       : Object.entries(files);
     for (const [path, source] of entries) {
-      this.#files.set(normalizePath(path), source);
+      this.#files.set(
+        normalizePath(path),
+        typeof source === "string" ? source : source.slice(),
+      );
     }
   }
 
-  readTextFile(path: string): Promise<string> {
+  readSourceFile(path: string): Promise<SourceInput> {
     const source = this.#files.get(normalizePath(path));
     if (source === undefined) {
       return Promise.reject(new Error(`File not found: ${path}`));
     }
-    return Promise.resolve(source);
+    return Promise.resolve(
+      typeof source === "string" ? source : source.slice(),
+    );
+  }
+
+  async readTextFile(path: string): Promise<string> {
+    const source = await this.readSourceFile(path);
+    return typeof source === "string"
+      ? source
+      : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
+        source,
+      );
   }
 
   exists(path: string): Promise<boolean> {

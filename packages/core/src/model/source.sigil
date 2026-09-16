@@ -1,5 +1,5 @@
-@packages/core/src/model/language.sigil import { SigilLanguageModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
+@packages/core/src/model/language.sigil from SigilLanguageModel import { LanguageModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilSourceModel {
   goal {
@@ -9,27 +9,46 @@ component SigilSourceModel {
 
   interface {
     SourceModel {
-      SigilLanguageModel supplies structural vocabulary and source positions, and
-      SigilDiagnosticModel supplies diagnostics. Facet, EmbeddedFacet,
-      EmbeddedContent, concept
-      blocks, sections, declarations, SigilDocument, ParseResult, FormatResult, and
+      LanguageModel supplies structural vocabulary and source positions, and
+      DiagnosticModel supplies diagnostics. Facet, EmbeddedFacet, EmbeddedContent,
+      sections, components, SigilDocument, ParseResult, FormatResult, and
       ParseOptions preserve recovered source structures and diagnostics.
 
-      A Facet preserves its introducing prose, source location, owner, contract,
-      optional Concept identifier, and any fenced EmbeddedContent. An EmbeddedFacet
-      is the complete Facet with nonempty fenced content, not the fenced body alone.
+      A Facet preserves its introducing prose, source location, component owner,
+      contract role, optional local grouping Tag occurrence, and one attached
+      payload when present. An EmbeddedFacet is the complete Facet with attached
+      fenced content, including an empty payload, not the fenced body alone.
 
-      isEmbeddedFacet identifies the content-bearing form. Existing serialized
-      units and literalBlocks field names remain stable while their TypeScript
-      types use native Facet terminology.
+      isEmbeddedFacet identifies the attached-payload form. Existing units and
+      literalBlocks serialized field names remain stable where compatible with
+      the explicit 0.8 structures and the schema-2 native frontend boundary.
 
       Component is the ownership container. A contract can freely mix direct
-      Facets and multiple Concept blocks; an absent Concept identifier does not
-      require a synthetic wrapper identity.
+      Facets and multiple local grouping occurrences; an ungrouped Facet needs no
+      synthetic wrapper identity.
 
-      Type documentation encourages Concepts for recurring cross-contract concerns
-      and useful public identities while preserving direct shared guarantees and
-      small single-concern components without redundant grouping.
+      Type documentation encourages Tags for useful recurring identities and
+      grouping where it connects contributions, preserving direct shared
+      guarantees and small components without redundant groups.
+
+      Source documents retain exact original text, raw bytes for disk inputs,
+      physical line endings, BOM, and a common source map. String overlays are
+      validated as scalar sequences before deriving UTF-8 offsets; their encoded
+      bytes are not evidence about any original disk encoding.
+
+      First-class inline Tag introductions, local grouping occurrences, import
+      selections, eligible bare references, and complete links remain distinct
+      records with exact spelling, original ranges, and relevant Facet ownership.
+      No expand form, visibility layer, or single-Concept field survives in the
+      0.8 source contract.
+
+      Links retain raw spans, labels, destinations, titles, and image kind;
+      payloads retain original lines, delimiter ranges, and dedented presentation
+      separately. Parsing content does not retrieve link targets.
+
+      Recovered structures retain validity and completeness evidence and never
+      expose invented definitions as valid authored declarations. Scanner records
+      retain candidates separately from later collective owner and Tag resolution.
     }
   }
 }

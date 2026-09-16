@@ -151,6 +151,11 @@ export interface PublishDiagnosticsParams {
     readonly code: string;
     readonly source: "sigil";
     readonly message: string;
+    readonly relatedInformation?: readonly {
+      readonly location: Location;
+      readonly message: string;
+    }[];
+    readonly data?: unknown;
   }[];
 }
 

@@ -2,13 +2,27 @@
 
 The [normative reference](sigil-reference.md) and [EBNF grammar](sigil.ebnf)
 define 0.8.0, a breaking
-revision from 0.7. Current tools and the repository's `.sigil` sources still use 0.7.0.
+revision from 0.7. Current tools and active repository sources implement 0.8.0;
+retained historical skill sources are excluded from discovery.
 The [language guide](sigil-language.md) teaches authoring through examples.
 This migration guide does not claim that an automatic
 converter or a Tag-capable compiler is available. Update workspace version
 configuration only with tools that support the new revision.
 
-## Keep Concept block syntax
+## Replace identity-only Concepts with simple Tags
+
+Before 0.8, naming a concern with a Concept ID required a Concept block.
+Concept IDs were optional, but that form coupled identity to grouping.
+In 0.8, a [Tag](sigil-reference.md#tags-and-references) supplies the identity;
+a [Concept Tag block](sigil-reference.md#grouping-taggroup) adds optional
+grouping. Many existing Concept blocks can therefore become simple inline
+Tags in direct Facets when their headings only supply a name.
+
+Introduce the local Tag once with `*name*` and use bare references in the other
+relevant Facets. When removing a block, make its concern explicit in the prose
+and preserve each Facet's meaning, boundaries, contract role, and ownership.
+Keep grouping when it helps connect related contributions. Leave prose
+untagged when a reusable identity adds nothing; components may have no Tags.
 
 Existing grouping syntax remains valid:
 
@@ -269,11 +283,11 @@ material actually read and keep missing targets or fragments unresolved.
 
 ## Implementation status
 
-The language specification defines the breaking Tag revision. The repository's
-parser, resolver, formatter, editor grammar, `.sigil` contracts, configuration,
-and native frontend still target language 0.7.0. The new syntax is not yet an
-implemented or released tool capability. Do not treat the examples as passing
-compiler checks or change the workspace config to claim unsupported tooling.
+The parser, resolver, formatter, editor grammar, active `.sigil` contracts,
+configuration and native frontend implement 0.8.0 in this checkout. Publication
+is separate. See [compatibility](../COMPATIBILITY.md) and the
+[migration verification](../docs/verification/sigil-080/) for evidence and limits.
+Do not use historical 0.7 binaries to validate the new syntax.
 
 The migration replaces the previous “infer public identifiers from Interface
 prose” gap with explicit Tag introductions. It also requires:
@@ -291,11 +305,11 @@ prose” gap with explicit Tag introductions. It also requires:
 - Tag-use checks, diagnostics, and recovery;
 - preservation of declarations, references, grouping, name accessibility, and ownership
   through Design export, semantic input, catalogs, and saturation;
-- formatter, LSP navigation/completion/diagnostics, editor syntax, authoring
-  skills, examples, and migration tooling for the new syntax.
+- formatter, LSP navigation/hover/diagnostics, editor syntax, authoring
+  skills and examples for the new syntax; no automatic converter is provided.
 
-The [language tooling contract](language.sigil) still describes 0.7 behavior and
-must be revised together with its implementation. It does not override this
+The [language tooling contract](language.sigil) and its implementation now
+describe the 0.8 behavior. It does not override this
 language specification. The behavior algebra under `packages/eqval/` is an
 unaccepted idea, not a language contract or a prerequisite for the Tag migration.
 

@@ -46,6 +46,10 @@ Use these fixtures:
   compact design, contradiction, ownership conflict, simplification and missing policy.
 - [Writing loop](writing-loop-fixture.md): corrections, unresolved choices, evidence
   retrieval, freshness, progress, and handoff.
+- [Mechanical validation](mechanical-validation-fixture.md): compatible CLI use,
+  scoped formatting, read-only evaluation, unavailable tooling, and exact-revision
+  evidence. Run these with their own CLI availability; older offline cases remain
+  explicitly offline.
 
 For a diagnostic-driven loop, an ordinary writer may fix the defect while drafting,
 before its first review. Record that honestly. To exercise the correction path,
@@ -67,10 +71,14 @@ never establishes independent review. When simulating absent delegation through
 instructions, say it was disabled by instruction; do not claim the host lacked tools.
 
 Record whether read-only was sandbox-enforced or merely instructed. Do not claim
-compiler conformance, code alignment, saturated coherence, or automatic behavior
+unobserved mechanical validation, code alignment, saturated coherence, or behavior
 on untested hosts. Unavailable evidence or delegation is a valid incomplete
 outcome when the skill reports it accurately.
 
 Repository observations live at `docs/skill-evaluation/sigil-0.8-foundation.md`.
 Update that report only from executed runs, with enough source identity and
 request detail for another host to reproduce the case.
+
+Record new CLI-enabled observations separately in
+`docs/skill-evaluation/sigil-mechanical-validation.md`; preserve the historical
+offline report's original limitations.

@@ -1,5 +1,5 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/resolution.sigil import { SigilResolutionModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/resolution.sigil from SigilResolutionModel import { ResolutionModel }
 
 component SigilGraphModel {
   goal {
@@ -8,9 +8,13 @@ component SigilGraphModel {
 
   interface {
     GraphModel {
-      SigilSourceModel and SigilResolutionModel provide graph evidence. SigilGraph
-      and its component, import, file-dependency, and expansion edges preserve
+      SourceModel and ResolutionModel provide graph evidence. SigilGraph
+      and its component, selected-Tag import, and file-dependency edges preserve
       deterministic graph output.
+
+      Edges preserve originating owner and selection evidence without synthesizing
+      expansion, directory-index, re-export, runtime-call, or consumer-to-provider
+      obligation relationships. Cycles remain traversable graph relationships.
     }
   }
 }

@@ -18,12 +18,13 @@
     "test:vscode:extension": "deno task build:cli && npm --prefix integrations/editor/vscode run test:extension",
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
     "test:skill:native": "deno run --allow-read --allow-write --allow-run --allow-env scripts/validate-native-skill.ts",
-    "test": "deno task test:sigilc && deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:skill && deno task test:skill:native && deno test --allow-read --allow-write scripts/skill-foundation_test.ts",
+    "test": "deno task test:sigilc && deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task test:native:protocol && deno task test:skill && deno task test:skill:native && deno test --allow-read --allow-write scripts/skill-foundation_test.ts",
     "package:vscode": "deno run --allow-read --allow-run scripts/ensure-vscode-deps.ts && npm --prefix integrations/editor/vscode run package",
     "package:cli": "deno run --allow-read --allow-write --allow-run --allow-env scripts/build-cli-release.ts",
     "publish:dry-run": "deno task --cwd packages/core publish:dry-run && deno task --cwd packages/cli publish:dry-run && deno task --cwd packages/lsp publish:dry-run && deno task package:vscode",
     "build:sigilc": "cargo build --locked --manifest-path packages/sigilc/Cargo.toml",
     "test:sigilc": "cargo test --locked --manifest-path packages/sigilc/Cargo.toml",
-    "build:cli": "deno compile --allow-read --allow-write --allow-env --output build/sigil packages/cli/src/main.ts"
+    "build:cli": "deno compile --allow-read --allow-write --allow-env --output build/sigil packages/cli/src/main.ts",
+    "test:native:protocol": "deno run --allow-read --allow-write --allow-run --allow-env scripts/validate-native-protocol.ts"
   }
 }

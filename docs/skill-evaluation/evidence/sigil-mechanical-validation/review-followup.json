@@ -1,0 +1,53 @@
+{
+  "review_run_id": "sigil-mechanical-pcvobixl",
+  "reviewed_head": "29f9ef355a57a95041eeb5f2dd81702ebc30a0b2",
+  "review_status": "complete",
+  "review_verdict_before_fixes": "Ready with fixes",
+  "applied": [
+    {
+      "id": "#3",
+      "problem": "Failed ancestor discovery fell back to cwd and passed root comparison.",
+      "correction": "Require discovery.config before accepting root equality; preserve explicit-root ancestor exemption.",
+      "verification": "New in-memory and CLI regressions failed before correction, then passed for both argument orders and check/write modes; zero writes verified."
+    },
+    {
+      "id": "simplify-quality-output-paths",
+      "problem": "Variadic request bypassed absolute output-path convention.",
+      "correction": "Use an absolute fmt target when present, or first target otherwise, under existing explicit-root precedence.",
+      "verification": "New single/mixed target regression failed before correction; after correction reversed mixed argument order has identical absolute output."
+    }
+  ],
+  "batches_dispatched": 0,
+  "inline_basis": "Exactly one applicable completed-review finding; relevant core-adapter region already in context. Output-path correction arose from the earlier simplification pass.",
+  "unresolved_required_fixes": [],
+  "advisory_disposition": "No current defect established by absent older-single-target or cosmetic-mutation observations; actual observation coverage and unexecuted variants remain explicitly documented. File-size-only suggestion rejected by review. No expanded observation run or test reorganization is claimed.",
+  "validation": {
+    "CLI": "75 passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "full_suite": "passed: deno task test after both corrections",
+    "workspace_check": "zero diagnostics",
+    "contract_formatting": "both unchanged"
+  },
+  "operational_handoff": "Before release, smoke-test two explicit files and an invalid mixed target in a disposable workspace; expected output is selected-only formatting, stable order, exit 3 and unchanged bytes on invalid targets. Unexpected writes or changed single-target output would warrant withholding/reverting release. Production monitoring owner/window is not configured in this repository; this work is local and unreleased.",
+  "final_source_sha256": {
+    "packages/cli/src/core-adapter.ts": "0d42d4c77277a024f45744824b8c1c92da640a2e4712fd34859f70297697f6ff",
+    "packages/cli/src/formatters.ts": "1610adc82c87263cdc4b6934e056ca6d582f118a7411eeb59c72a06ec177e6cc",
+    "packages/cli/tests/cli_test.ts": "4160f657cde239a07e52f9ae323b649758587f2bcc800729c2f786da04ed6ea9",
+    "packages/cli/tests/formatting_test.ts": "927d2b4ca37ddc0f49899819468303d23e02e51ff306aa36673d73d689c37468"
+  },
+  "validation_logs": {
+    "full_suite": {
+      "path": "/tmp/sigil-mechanical-full-test-final.log",
+      "sha256": "74cb3641bf2f2e7354c15de499576dd907ec83e972104be336b3d01cad8d6b1a"
+    },
+    "typecheck": {
+      "path": "/tmp/sigil-final-check.log",
+      "sha256": "fc88911400a40d7a9dab2caa2bc2fc1e2d5498215af7197267a005dfa29d2bfe"
+    },
+    "lint": {
+      "path": "/tmp/sigil-final-lint.log",
+      "sha256": "5e3aa83d667281f957bbf3d9bb78a77d1f609e80d483e8f2533f07d12271fd9b"
+    }
+  }
+}

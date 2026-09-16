@@ -6,6 +6,8 @@ export * from "./config.ts";
 export * from "./glossary.ts";
 export * from "./implementation-ownership.ts";
 export * from "./parser.ts";
+export * from "./source-text.ts";
+export * from "./inline-content.ts";
 export * from "./formatter.ts";
 export * from "./workspace.ts";
 export * from "./design-input.ts";

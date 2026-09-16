@@ -53,8 +53,8 @@ project, or the platform; qualify it when ambiguity is possible.
 ### Sigil Language
 
 The versioned contract governing `.sigil` syntax, structure, sections, imports,
-workspace interpretation, and meaning. Current tools support `0.7.0`; the
-[Tag language revision](sigil-reference.md) targets `0.8.0`. The definitions below
+workspace interpretation, and meaning. Current tools support the
+[Tag language revision](sigil-reference.md), `0.8.0`. The definitions below
 use the Tag model where it differs from the historical 0.7 behavior.
 
 ### Sigil source

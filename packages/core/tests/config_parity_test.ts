@@ -1,5 +1,6 @@
 import { Ajv2020 } from "ajv-2020";
-import { parseSigilConfig, SIGIL_VERSION } from "../src/mod.ts";
+import { parseSigilConfig } from "../src/config.ts";
+import { SIGIL_VERSION } from "../src/model/language.ts";
 
 // Parity suite for the Sigil workspace configuration contract, which is defined
 // twice: the strict parser in packages/core/src/config.ts and the published
@@ -14,7 +15,7 @@ import { parseSigilConfig, SIGIL_VERSION } from "../src/mod.ts";
 // discovered mismatch is recorded here and escalated to a separate review.
 //
 // Note: the parser accepts exactly the one supported language version. That
-// version is SIGIL_VERSION (currently "0.5.0"), imported here so the suite stays
+// version is SIGIL_VERSION, imported here so the suite stays
 // correct across version bumps rather than hard-coding it.
 
 type Category =

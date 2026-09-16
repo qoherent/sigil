@@ -11,12 +11,12 @@ import {
 
 const diagnostics = { items: [], omitted: 0 };
 const design = (state: string) => ({
-  version: 1,
+  version: 2,
   world: { state },
   diagnostics,
 });
 const implementation = (state: string) => ({
-  version: 1,
+  version: 2,
   design: design("Coherent"),
   implementation: {},
   comparison: { design: "Coherent", implementation: state },
@@ -54,7 +54,7 @@ test("accepts all six native named states only with their command-specific exit"
     );
   }
   const unavailable = {
-    version: 1,
+    version: 2,
     design: design("Loose"),
     implementation: null,
     comparison: null,
@@ -76,6 +76,7 @@ test("rejects legacy, malformed, mismatched and unsafe diagnostic reports", () =
     const invalid of [
       null,
       {},
+      { ...design("Coherent"), version: 1 },
       { reportVersion: 3, status: "green", diagnostics: [] },
       { ...design("Coherent"), diagnostics: { items: [], omitted: -1 } },
       design("green"),
@@ -91,7 +92,9 @@ test("rejects legacy, malformed, mismatched and unsafe diagnostic reports", () =
     locations: [{
       side: "design",
       source: "a.sigil",
-      range: { start: { line: 2, column: 1 }, end: { line: 3, column: 4 } },
+      coordinate_system: "utf8-bytes",
+      source_digest: "a".repeat(64),
+      range: { start: 2, end: 8 },
     }],
     omitted_locations: 0,
   };
@@ -110,7 +113,7 @@ async function fixture(nativeScript?: string) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), "sigil editor tests "));
   await writeFile(
     path.join(cwd, "export"),
-    'process.stdout.write(JSON.stringify({schemaVersion:1, sources:[{path:"a.sigil",text:"exact"}]}));',
+    'process.stdout.write(JSON.stringify({schemaVersion:2,languageVersion:"0.8.0", sources:[{path:"a.sigil",text:"exact"}]}));',
   );
   await writeFile(
     path.join(cwd, "compile"),
@@ -262,5 +265,32 @@ test("runtime failure cannot accept a valid-looking successful report", async ()
     );
   } finally {
     await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test("obsolete or failing language exports never launch the native compiler", async () => {
+  for (
+    const script of [
+      'console.log(JSON.stringify({schemaVersion:1,languageVersion:"0.7.0"}));',
+      'console.log(JSON.stringify({schemaVersion:2,languageVersion:"0.8.0",diagnostics:[{code:"INVALID"}]}));process.exitCode=1;',
+    ]
+  ) {
+    const cwd = await fixture();
+    try {
+      await writeFile(path.join(cwd, "export"), script);
+      await assert.rejects(
+        runCompilationProcess({
+          executable: process.execPath,
+          languageExecutable: process.execPath,
+          cwd,
+          focus: "design",
+          onLog: () => {},
+        }).result,
+        /Incompatible language export|Language export failed/,
+      );
+      await assert.rejects(readFile(path.join(cwd, "observed.json")), /ENOENT/);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
   }
 });

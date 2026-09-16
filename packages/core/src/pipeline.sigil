@@ -1,8 +1,11 @@
-@packages/core/src/model import { SigilSemanticModel }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
-@packages/core/src/resolver.sigil import { SigilResolver }
-@packages/core/src/graph.sigil import { SigilGraphBuilder }
-@packages/core/src/glossary.sigil import { SigilGlossaryEngine }
+@packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInspection }
+@packages/core/src/graph.sigil from SigilGraphBuilder import { GraphConstruction }
+@packages/core/src/resolver.sigil from SigilResolver import { RelationshipResolution }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
+@packages/core/src/model/glossary.sigil from SigilGlossaryModel import { GlossaryModel }
+@packages/core/src/model/graph.sigil from SigilGraphModel import { GraphModel }
+@packages/core/src/model/resolution.sigil from SigilResolutionModel import { ResolutionModel }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
 
 component SigilWorkspaceResolutionPipeline {
   goal {
@@ -29,35 +32,35 @@ component SigilWorkspaceResolutionPipeline {
       lifecycle or session.
     }
   }
-}
 
-expand SigilWorkspaceResolutionPipeline {
   logic {
     WorkspaceResolutionPipeline {
-      Resolve the loaded workspace through SigilResolver to obtain relationship data
-      and diagnostics.
+      Consume the loaded WorkspaceModel through RelationshipResolution to obtain
+      relationship data and diagnostics.
 
-      Derive the workspace glossary projection through SigilGlossaryEngine, then
-      construct the relationship graph through SigilGraphBuilder.
+      Derive the workspace glossary projection through GlossaryInspection, then
+      construct the relationship graph through GraphConstruction.
 
       Return one ResolvedSigilWorkspace containing resolution data, graph data,
       glossary data, and merged diagnostics.
 
-      SigilSemanticModel owns the immutable result shapes and SigilDiagnostics owns
-      the diagnostic records consumed by the merge.
+      ResolutionModel, GraphModel, and GlossaryModel own the immutable result shapes;
+      DiagnosticModel owns the diagnostic records consumed by the merge.
 
-      Merge resolution and glossary diagnostics in source-stage order while removing
-      exact duplicate diagnostic records.
+      Merge resolution and glossary diagnostics using the adopted diagnostic ordering
+      and exact-record coalescing. Keep stage execution order separate from final
+      diagnostic order, and retain stage and related-location evidence.
     }
   }
 
   constraints {
+
     WorkspaceResolutionPipeline {
       The pipeline consumes an already loaded SigilWorkspace and performs no source
       parsing, configuration discovery, or filesystem access.
 
-      SigilResolver owns relationship interpretation, SigilGraphBuilder owns graph
-      construction, and SigilGlossaryEngine owns glossary projection.
+      RelationshipResolution owns relationship interpretation, GraphConstruction owns
+      graph construction, and GlossaryInspection owns glossary projection.
 
       The pipeline owns only stage ordering, result assembly, and exact diagnostic
       deduplication.

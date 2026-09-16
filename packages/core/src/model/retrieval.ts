@@ -1,10 +1,15 @@
+import type { TagIdentity } from "./identity.ts";
+import type { ResolvedTagReference, TagIntroduction } from "./resolution.ts";
+import type { InlineLink, InlineTagDefinition } from "../inline-content.ts";
+import type { EmbeddedContent } from "./source.ts";
+import type { OwnedImplementationTarget } from "./ownership.ts";
+import type {
+  ImplementationLocation,
+  ImplementationRange,
+} from "./language.ts";
 import type { SigilDiagnostic } from "./diagnostics.ts";
 import type { ImplementationSection } from "./ownership.ts";
-import type {
-  SigilSectionName,
-  SourceLocation,
-  SourceRange,
-} from "./language.ts";
+import type { SigilSectionName, SourceRange } from "./language.ts";
 export type { SigilDiagnostic } from "./diagnostics.ts";
 export type { ImplementationSection } from "./ownership.ts";
 export type { SigilSectionName, SourceRange } from "./language.ts";
@@ -29,28 +34,22 @@ export type RetrievalNodeKind =
   | "request-target"
   | "component-declaration"
   | "sigil-file"
-  | "expansion"
-  | "module-index"
-  | "public-concept-origin"
+  | "tag-origin"
   | "implementation-target";
 export type RetrievalRelation =
   | "selected-declaration"
-  | "matching-expansion"
   | "direct-dependency"
   | "direct-importer"
-  | "containing-module-index"
   | "cycle-member"
-  | "public-concept-origin"
+  | "tag-origin"
   | "owned-implementation";
 export type EvidenceKind =
   | "selected-contract"
-  | "selected-expansion"
   | "dependency-contract"
   | "dependency-decision"
   | "importer-contract"
   | "cycle-contract"
-  | "module-index-summary"
-  | "public-concept-origin"
+  | "tag-origin"
   | "glossary-definition"
   | "ownership-projection"
   | "diagnostic";
@@ -60,7 +59,12 @@ export interface RetrievalNode {
   readonly path: string;
   readonly componentName?: string;
   readonly range?: SourceRange;
-  readonly location?: SourceLocation;
+  readonly location?: ImplementationLocation;
+  readonly implementationRange?: ImplementationRange;
+  readonly tag?: {
+    readonly identity: TagIdentity;
+    readonly introductions: readonly TagIntroduction[];
+  };
 }
 export interface RetrievalEdge {
   readonly identity: string;
@@ -69,6 +73,10 @@ export interface RetrievalEdge {
   readonly targetIdentity: string;
   readonly originPath: string;
   readonly originRange?: SourceRange;
+  readonly implementationRange?: ImplementationRange;
+  readonly selectionId?: string;
+  readonly tagIdentity?: TagIdentity;
+  readonly useIds?: readonly string[];
 }
 export interface SelectedRetrievalGraph {
   readonly nodes: readonly RetrievalNode[];
@@ -80,9 +88,13 @@ export interface EvidenceUnit {
   readonly path?: string;
   readonly componentName?: string;
   readonly sectionName?: SigilSectionName | ImplementationSection;
-  readonly conceptIdentity?: string;
+  readonly sourceSnapshot?: string;
+  readonly facet?: RetrievedFacet;
+  readonly diagnostic?: SigilDiagnostic;
+  readonly ownership?: RetrievedOwnership;
+  readonly implementationRange?: ImplementationRange;
   readonly range?: SourceRange;
-  readonly location?: SourceLocation;
+  readonly location?: ImplementationLocation;
   readonly text: string;
   readonly inclusionReasonIdentities: readonly string[];
 }
@@ -125,8 +137,8 @@ export interface AggregatedRetrievalContext {
   readonly sections: readonly ContextSection[];
 }
 export interface PurposeRetrievalResult {
-  readonly schema: "sigil-purpose-retrieval/v1";
-  readonly policyVersion: 1;
+  readonly schema: "sigil-purpose-retrieval/v2";
+  readonly policyVersion: 2;
   readonly workspaceSnapshotIdentity: string;
   readonly target: RetrievalTargetIdentity;
   readonly purpose: RetrievalPurpose;
@@ -146,18 +158,24 @@ export interface RetrievalProjectionLocation {
 }
 export interface RetrievalProjectionItem extends RetrievalProjectionLocation {
   readonly text: string;
+  readonly facet?: RetrievedFacet;
+  readonly sourceSnapshot?: string;
 }
-export interface RetrievalProjectionConcept {
+export interface RetrievalProjectionTagGroup {
   readonly name?: string;
+  readonly groupId?: string;
   readonly items: readonly RetrievalProjectionItem[];
   readonly ownership: readonly RetrievalProjectionOwnership[];
 }
 export interface RetrievalProjectionOwnership {
   readonly path: string;
-  readonly location?: SourceLocation;
+  readonly location?: ImplementationLocation;
   readonly relation: "implements" | "uses" | "tests";
   readonly symbol?: string;
   readonly sections: readonly ImplementationSection[];
+  readonly tagName?: string;
+  readonly tagIdentity?: TagIdentity;
+  readonly facetIds: readonly string[];
 }
 export interface RetrievalProjectionLink {
   readonly relation: string;
@@ -172,10 +190,9 @@ export interface RetrievalProjectionComponent {
     | "selected"
     | "dependency"
     | "importer"
-    | "cycle-member"
-    | "module-context";
+    | "cycle-member";
   readonly goal: readonly RetrievalProjectionItem[];
-  readonly interface: readonly RetrievalProjectionConcept[];
+  readonly interface: readonly RetrievalProjectionTagGroup[];
   readonly state: readonly RetrievalProjectionItem[];
   readonly logic: readonly RetrievalProjectionItem[];
   readonly constraints: readonly RetrievalProjectionItem[];
@@ -189,11 +206,32 @@ export interface RetrievalProjectionGlossaryEntry {
   readonly definition: string;
 }
 export interface RetrievalProjection {
-  readonly schema: "sigil-retrieval-projection/v1";
+  readonly schema: "sigil-retrieval-projection/v2";
+  readonly budget?: RetrievalBudgetReport;
   readonly purpose: RetrievalPurpose;
   readonly target: RetrievalTargetIdentity;
   readonly components: readonly RetrievalProjectionComponent[];
   readonly glossary: readonly RetrievalProjectionGlossaryEntry[];
   readonly diagnostics: readonly SigilDiagnostic[];
   readonly fingerprint: string;
+}
+
+/** One consumer-owned Facet, with all its original recognition evidence. */
+export interface RetrievedFacet {
+  readonly id: string;
+  readonly componentId: string;
+  readonly groupingId?: string;
+  readonly groupingTag?: string;
+  readonly definitions: readonly InlineTagDefinition[];
+  readonly references: readonly ResolvedTagReference[];
+  readonly links: readonly InlineLink[];
+  readonly sourceLines: readonly string[];
+  readonly originalProse: string;
+  readonly prose: string;
+  readonly payload?: EmbeddedContent;
+  readonly valid: boolean;
+  readonly complete: boolean;
+}
+export interface RetrievedOwnership extends OwnedImplementationTarget {
+  readonly componentPath: string;
 }

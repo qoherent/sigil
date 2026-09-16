@@ -52,14 +52,15 @@ VS Code extension releases are currently available as manually installable
 publishing remains deferred.
 
 
-The [language guide](spec/sigil-language.md) teaches the upcoming 0.8.0 language;
+The [language guide](spec/sigil-language.md) teaches the 0.8.0 language;
 the [normative reference](spec/sigil-reference.md) and [EBNF grammar](spec/sigil.ebnf)
 define its rules:
 inline `*Tags*`, unchanged Concept Tag grouping syntax, and explicit imports
 such as `@search/records.sigil from RecordSearch import { query, search results }`.
 All seven contracts belong directly to components; `expand` and language-level
 public/private distinctions are removed. Tags introduced in any contract may
-be imported. The installed tooling and walkthrough below still target 0.7.0; see the
+be imported. This checkout implements 0.8.0; released artifacts have independent
+versions and must be checked before installation. See the
 [Tag migration guide](spec/migrating-to-0.8.md).
 
 ## Seven Words
@@ -129,9 +130,7 @@ component SearchPublication {
       Ignored means the current Results remain unchanged.
     }
   }
-}
 
-expand SearchPublication {
   state {
     Admission {
       ActiveRequest identifies the request whose response is current.
@@ -672,7 +671,7 @@ The Sigil platform architecture is drafted in
 Rejected historical architecture exploration for generated Receipts, evidence,
 and anchors is recorded in
 [ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md),
-but those capabilities are outside the active v0.7 workspace.
+but those capabilities are outside the active 0.8 workspace.
 
 Project-specific terms, statuses, reserved names, and abbreviations are defined
 in the [Sigil glossary](spec/glossary.md).
@@ -682,10 +681,11 @@ Open design questions are tracked in
 
 ## Repository Layout
 
+Legacy skill sources remain retained but excluded from active discovery.
 The root [.sigil/config.json](./.sigil/config.json) defines this repository as a
-Sigil 0.7.0 workspace and excludes the independent example projects. The root
-[_module.sigil](./_module.sigil) is its directory-import index and contains the
-ordinary high-level project summary for this configured boundary.
+Sigil 0.8.0 workspace and excludes the independent example projects. The root
+[_module.sigil](./_module.sigil) is an ordinary source containing the
+high-level project summary for this configured boundary.
 
 - `spec/` contains language, workflow, platform architecture, and open-question
   documents.
@@ -742,18 +742,42 @@ The bundle provides three independent Sigil 0.8 design entry points:
 All three start at artifact version 0.1.0 and share the bundled 0.8.0 normative
 reference and grammar. Install the complete catalog with `sigil skill install`
 (or `--project`); writer and evaluator require their sibling reference files.
-They work from source without a compiler. The writer preserves unresolved human
+Writing and evaluation use a verified compatible CLI when available. The writer
+runs `check`, formats only authored files, and rechecks before capturing inputs
+for independent review. The evaluator runs `check` and `fmt --check` read-only.
+Without compatible tooling they continue from source and explicitly report
+mechanical validation as unavailable. The writer preserves unresolved human
 choices, rechecks review freshness, and provides an independently unreviewed draft
 and portable handoff if delegation cannot complete. Static package checks and
 [observed agent evaluations](docs/skill-evaluation/sigil-0.8-foundation.md) provide
-separate evidence; neither establishes 0.8 compiler support or code conformance.
+separate evidence. Mechanical checks do not establish design coherence or code
+conformance. The [mechanical fixtures](integrations/skills/sigil-write/evals/mechanical-validation-fixture.md)
+cover CLI-enabled behavior separately from the earlier offline observations.
+The [mechanical validation observations](docs/skill-evaluation/sigil-mechanical-validation.md)
+record actual commands, independent reviews, input identities, and limitations.
+
+`sigil fmt [paths...]` accepts multiple files or directories within one workspace:
+
+```sh
+sigil fmt first.sigil second.sigil
+sigil fmt design
+sigil fmt first.sigil design --check
+```
+
+Bare `sigil fmt` selects the current directory: all included workspace sources
+when run at the root, or only sources beneath a nested working directory.
+`--root` selects configuration context, not a replacement formatting target.
+Overlapping targets are deduplicated; every target and the combined result
+validate before any write. Workspace checks may report errors outside the
+selected files, but formatting writes only changed selected `.sigil` files.
 
 ### Legacy Sigil 0.7 native workflow
 
 The existing `sigil` skill remains at its own artifact version, with its existing
 compiler compatibility metadata. Its 0.7 workflow lives in
 [integrations/skills/sigil/SKILL.md](integrations/skills/sigil/SKILL.md), with
-host adapters supplied separately.
+host adapters supplied separately. Its frozen compiler requirements are incompatible
+with the current 0.8 tools; `sigil skill list` reports that explicitly.
 
 The skill teaches coding-agent hosts to:
 
@@ -800,46 +824,27 @@ provides authoring explanations and examples.
 
 ## Current Status
 
-The implemented frontend and editor workflow remains pre-production and targets
-Sigil Language and configuration contract 0.7.0. Artifact versions are independent;
-the new design skills use the 0.8 specification without changing tooling support. See
-[PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the
-[0.7 language migration guide](spec/migrating-to-0.7.md). Reviewed project
-vocabulary is described in the
-[workspace glossary guide](spec/sigil-glossary.md).
+The core, CLI, LSP and VS Code integration implement Sigil language 0.8.0.
+Native structural transport and reports use schema 2. These are local,
+pre-production changes; this migration does not publish a release. Artifact
+versions and legacy requirements are listed in [COMPATIBILITY.md](COMPATIBILITY.md).
+See the [migration guide](spec/migrating-to-0.8.md),
+[configuration](spec/sigil-config.md), and
+[verification evidence](docs/verification/sigil-080/).
 
-This repository contains the Sigil language and workflow specifications,
-platform architecture, examples, a shared Deno TypeScript core, a working CLI,
-and portable coding-agent skill integration.
+The shared core owns strict source capture, component-owned Tags, explicit
+provider imports, exact references, protected links/payloads, staged recovery,
+workspace boundaries, glossary and ownership projections, graph/context retrieval,
+formatting and source-faithful Design export. The CLI and bundled language server
+use those shared results. VS Code provides navigation, diagnostics, highlighting,
+whole-document preview and direct native compilation with verified source ranges.
 
-`sigil-core` implements explicit language-version parsing, strict config
-validation, config-based discovery, declared workspace-member metadata, glob
-filtering, source ranges and semantic units, reviewed workspace-glossary
-validation and occurrence matching, explicit file and directory-index import
-resolution, collective expansion, graphs, scoped glossary context projections,
-and stable diagnostics. `sigil-cli` implements `init`, `version`, `parse`,
-`check`, `glossary`, `graph`, `context`, Markdown `render`, and explicit `fmt`
-commands with machine-readable output and stable exit behavior.
-
-`sigil-lsp` is an implemented pre-production deliverable. Its initial contract
-covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
-symbols, definition navigation, hover, and resolver-backed semantic highlighting
-for components, concepts, and reviewed glossary terms over a stdio transport.
-
-The Sigil VS Code extension is an implemented pre-production deliverable. Its
-initial contract covers TextMate syntax highlighting, bundled LSP startup,
-resolver-backed component highlighting through LSP semantic tokens,
-editor-native language features, and a read-only component preview derived from
-standard hover responses.
-
-Semantic readiness, standards research, brownfield reconciliation, reviewed
-post-Sigil glossary extraction, proposal gates, scoped terminology handoff, and
-implementation colocation live in the host-neutral Sigil skill rather than
-`sigil-core`. The skill also discovers coherent implementation and UI
-components, distinguishes component contracts from implementation-specific
-expands and trivial mechanics, and requires an implementation coverage map
-before coding. The active boundary keeps deterministic facts in shared packages
-and model-assisted interpretation in the host-neutral skill workflow.
+Independent interpretation remains external to deterministic tooling. Native
+states describe the supplied projections and compiler laws; successful language
+checks, fixed-Turtle protocol tests and design reviews make different claims.
+The retained 0.7 skill is historical and excluded from active workspace discovery.
+The 0.8 understanding, writing and evaluation skills provide the current design
+workflow without requiring compiler-based proof.
 
 Editor integrations other than VS Code, stricter body semantics, and additional
 project configuration remain deferred.
@@ -850,4 +855,4 @@ active or deferred Sigil components.
 records the rejected proposal for deterministic shared packages, attributed
 host-assisted interpretation, a `sigil-indexer`, and generated review records
 without adding inline Sigil syntax. Its indexer and anchor contracts are not
-part of the active v0.7 workspace.
+part of the active 0.8 workspace.

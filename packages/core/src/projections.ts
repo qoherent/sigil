@@ -1,15 +1,28 @@
-import type { ImportedComponentEdge } from "./model/graph.ts";
+import { compareScalarText } from "./diagnostics.ts";
+import type { ImportedTagEdge } from "./model/graph.ts";
 import type {
   AgentDependencyContext,
   AgentDependentContext,
-  CollectedExpansion,
   ComponentContractView,
-  DependencyDecisionView,
-  DependentImportingFileContext,
+  ProviderContext,
+  TagNamespace,
+} from "./model/projections.ts";
+import type {
   ResolvedComponent,
-  ResolvedConceptNamespace,
   ResolvedSigilWorkspace,
 } from "./model/resolution.ts";
+import type { ComponentDeclaration, Facet } from "./model/source.ts";
+export type * from "./model/projections.ts";
+
+export function resolvedComponentFor(
+  resolved: ResolvedSigilWorkspace,
+  name: string,
+): ResolvedComponent | undefined {
+  const candidates = resolved.components.filter((c) => c.name === name);
+  return candidates.length === 1 && candidates[0].identity
+    ? candidates[0]
+    : undefined;
+}
 
 // @sigil implements packages/core/src/projections.sigil::SigilProjections::ContractProjection interface,logic,cases
 export function componentContracts(
@@ -18,24 +31,29 @@ export function componentContracts(
   return resolved.components.map(componentContractView);
 }
 
-// @sigil implements packages/core/src/projections.sigil::SigilProjections::ConceptNamespaceProjection interface,logic,cases
-export function conceptNamespaceFor(
+// @sigil implements packages/core/src/projections.sigil::SigilProjections::TagScopeProjection interface,logic,cases
+export function tagNamespaceFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
-): ResolvedConceptNamespace | undefined {
-  return resolved.components.find((component) =>
-    component.name === componentName
-  )?.conceptNamespace;
+): TagNamespace | undefined {
+  const component = resolvedComponentFor(resolved, componentName);
+  return component
+    ? {
+      name: component.name,
+      identity: component.identity,
+      tags: component.tags,
+      accessibleTags: component.accessibleTags,
+      references: component.references,
+    }
+    : undefined;
 }
 
-// @sigil implements packages/core/src/projections.sigil::SigilProjections::ExpansionProjection interface,logic,cases
-export function collectedExpansionFor(
+// @sigil implements packages/core/src/projections.sigil::SigilProjections::ComponentDesignProjection interface,logic,cases
+export function componentDesignFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
-): CollectedExpansion | undefined {
-  return resolved.components.find((component: ResolvedComponent) =>
-    component.name === componentName
-  )?.expansions;
+): ComponentDeclaration | undefined {
+  return resolvedComponentFor(resolved, componentName)?.declaration;
 }
 
 // @sigil implements packages/core/src/projections.sigil::SigilProjections::AgentDependencyContext interface,logic,constraints,cases
@@ -43,60 +61,51 @@ export function agentDependencyContextFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
 ): AgentDependencyContext | undefined {
-  const selectedComponent = resolved.components.find((component) =>
-    component.name === componentName
-  );
+  const selectedComponent = resolvedComponentFor(resolved, componentName);
   if (!selectedComponent) return undefined;
-
-  const dependencies: ResolvedComponent[] = [];
-  const seen = new Set<string>();
+  const providers = new Map<string, ProviderContext>();
   for (
-    const resolvedImport of resolved.imports.filter((item) =>
-      item.sourceFile === selectedComponent.filePath
+    const item of resolved.imports.filter((i) =>
+      i.sourceFile === selectedComponent.filePath
     )
   ) {
-    for (const importedName of resolvedImport.names) {
-      if (!importedName.component || !importedName.componentFile) continue;
-      const key = `${importedName.componentFile}\0${importedName.name}`;
-      if (seen.has(key)) continue;
-      const dependency = resolved.components.find((component) =>
-        component.name === importedName.name &&
-        component.filePath === importedName.componentFile
-      );
-      if (!dependency) continue;
-      seen.add(key);
-      dependencies.push(dependency);
-    }
+    const component = resolved.components.find((c) => c.id === item.providerId);
+    if (!component?.identity) continue;
+    const selections = item.names.filter((s) => s.status === "resolved");
+    if (!selections.length) continue;
+    const previous = providers.get(component.id);
+    providers.set(component.id, {
+      component,
+      selections: [...(previous?.selections ?? []), ...selections],
+      uses: [
+        ...(previous?.uses ?? []),
+        ...selections.flatMap((s) =>
+          s.uses.filter((u) => u.componentId === selectedComponent.id)
+        ),
+      ],
+    });
   }
-
-  const dependencyDecisions: DependencyDecisionView[] = dependencies.flatMap(
-    (dependency) =>
-      dependency.expansions.expands.flatMap((expansion) =>
-        expansion.declaration.sections
-          .filter((section) => section.name === "decisions")
-          .map((section) => ({
-            componentName: dependency.name,
-            filePath: expansion.filePath,
-            section,
-          }))
-      ),
-  );
-  const dependencyContracts = dependencies.map(componentContractView);
-  const relatedFilePaths = [
-    ...new Set([
-      selectedComponent.filePath,
-      ...selectedComponent.expansions.expands.map((item) => item.filePath),
-      ...dependencyContracts.map((contract) => contract.filePath),
-      ...dependencyDecisions.map((decision) => decision.filePath),
-    ]),
-  ].sort();
-
+  const contexts = [...providers.values()];
   return {
     selectedComponent,
-    collectedExpansion: selectedComponent.expansions,
-    dependencyContracts,
-    dependencyDecisions,
-    relatedFilePaths,
+    providers: contexts,
+    dependencyContracts: contexts.map((p) =>
+      componentContractView(p.component)
+    ),
+    dependencyDecisions: contexts.flatMap((p) =>
+      p.component.declaration.sections.filter((s) => s.name === "decisions")
+        .map((section) => ({
+          componentName: p.component.name,
+          filePath: p.component.filePath,
+          section,
+        }))
+    ),
+    relatedFilePaths: [
+      ...new Set([
+        selectedComponent.filePath,
+        ...contexts.map((p) => p.component.filePath),
+      ]),
+    ].sort(compareScalarText),
   };
 }
 
@@ -105,88 +114,89 @@ export function agentDependentContextFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
 ): AgentDependentContext | undefined {
-  const selectedComponent = resolved.components.find((component) =>
-    component.name === componentName
-  );
+  const selectedComponent = resolvedComponentFor(resolved, componentName);
   if (!selectedComponent) return undefined;
-
-  const edgesByImportingFile = new Map<string, ImportedComponentEdge[]>();
-  for (
-    const edge of resolved.graph.importedComponentEdges.filter((edge) =>
-      edge.targetFile === selectedComponent.filePath &&
-      edge.componentName === selectedComponent.name &&
-      edge.sourceFile !== selectedComponent.filePath
-    )
-  ) {
-    const existing = edgesByImportingFile.get(edge.sourceFile) ?? [];
-    const key = importEdgeKey(edge);
-    if (!existing.some((item) => importEdgeKey(item) === key)) {
-      existing.push(edge);
-    }
-    edgesByImportingFile.set(edge.sourceFile, existing);
+  const byFile = new Map<string, ImportedTagEdge[]>();
+  for (const edge of resolved.graph.importedTagEdges) {
+    if (
+      edge.providerComponentId !== selectedComponent.id ||
+      edge.sourceFile === selectedComponent.filePath
+    ) continue;
+    const edges = byFile.get(edge.sourceFile) ?? [];
+    if (!edges.some((e) => e.id === edge.id)) edges.push(edge);
+    byFile.set(edge.sourceFile, edges);
   }
-
-  const importingFiles: DependentImportingFileContext[] = [
-    ...edgesByImportingFile.entries(),
-  ]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([filePath, importEdges]) => ({
+  const importingFiles = [...byFile].sort(([a], [b]) => compareScalarText(a, b))
+    .map(([filePath, edges]) => ({
       filePath,
-      importedComponent: {
-        name: selectedComponent.name,
-        filePath: selectedComponent.filePath,
-      },
-      importEdges: [...importEdges].sort(compareImportEdges),
-      contextualContracts: resolved.components
-        .filter((component) => component.filePath === filePath)
-        .map(componentContractView),
+      provider: selectedComponent,
+      importEdges: edges.sort((a, b) =>
+        a.originRange.start - b.originRange.start ||
+        compareScalarText(a.id, b.id)
+      ),
+      contextualContracts: resolved.components.filter((c) =>
+        c.filePath === filePath
+      ).map(componentContractView),
     }));
-
   return {
     selectedComponent,
     importingFiles,
-    relatedFilePaths: importingFiles.map((item) => item.filePath).sort(),
+    relatedFilePaths: importingFiles.map((f) => f.filePath),
   };
-}
-
-function importEdgeKey(edge: ImportedComponentEdge): string {
-  return [
-    edge.sourceFile,
-    edge.targetFile,
-    edge.componentName,
-    edge.importPath,
-  ].join("\0");
-}
-
-function compareImportEdges(
-  left: ImportedComponentEdge,
-  right: ImportedComponentEdge,
-): number {
-  return importEdgeKey(left).localeCompare(importEdgeKey(right));
 }
 
 function componentContractView(
   component: ResolvedComponent,
 ): ComponentContractView {
-  const goal = component.declaration.sections.find((section) =>
-    section.name === "goal"
-  );
-  const iface = component.declaration.sections.find((section) =>
-    section.name === "interface"
+  const goal = component.declaration.sections.filter((s) => s.name === "goal");
+  const iface = component.declaration.sections.filter((s) =>
+    s.name === "interface"
   );
   return {
     name: component.name,
     filePath: component.filePath,
-    goalLines: goal?.units.map((unit) => unit.prose) ?? [],
-    interfaceLines: iface?.units.map((unit) => unit.prose) ?? [],
-    ungroupedInterfaceLines:
-      iface?.units.filter((unit) => unit.conceptIdentifier === undefined).map((
-        unit,
-      ) => unit.prose) ?? [],
-    interfaceConcepts: iface?.concepts.map((concept) => ({
-      identifier: concept.identifier,
-      lines: concept.units.map((unit) => unit.prose),
-      sourceRange: concept.range,
-    })) ?? [],
+    declaration: component.declaration,
+    goalLines: goal.flatMap((s) => s.units.map((u) => u.prose)),
+    interfaceLines: iface.flatMap((s) => s.units.map((u) => u.prose)),
+    ungroupedInterfaceLines: iface.flatMap((s) =>
+      s.units.filter((u) => u.groupingId === undefined).map((u) => u.prose)
+    ),
+    interfaceTags: iface.flatMap((s) =>
+      s.groups.map((g) => ({
+        name: g.name,
+        lines: g.units.map((u) => u.prose),
+        sourceRange: g.range,
+      }))
+    ),
   };
+}
+
+/** A shared Tag never transfers another component's authored Facets. */
+export function componentFacetsFor(
+  component: ResolvedComponent,
+  tagName?: string,
+  sectionName?: string,
+): readonly Facet[] {
+  const facets = component.declaration.sections.filter((s) =>
+    sectionName === undefined || s.name === sectionName
+  ).flatMap((s) => s.units);
+  if (tagName === undefined) return facets;
+  const tag = component.accessibleTags.find((t) =>
+    t.name === tagName && t.status === "resolved"
+  )?.tag;
+  if (!tag?.identity) return [];
+  const local = component.tags.find((t) => t.identity?.id === tag.identity!.id);
+  const introduced = new Set(
+    local?.introductions.filter((i) => i.valid).flatMap((i) =>
+      i.facetId ? [i.facetId] : []
+    ) ?? [],
+  );
+  const referenced = new Set(
+    component.references.filter((r) => r.tagIdentity?.id === tag.identity!.id)
+      .map((r) => r.facetId),
+  );
+  return facets.filter((f) =>
+    introduced.has(f.id) || referenced.has(f.id) ||
+    (local && f.groupingTag === tagName)
+  );
 }

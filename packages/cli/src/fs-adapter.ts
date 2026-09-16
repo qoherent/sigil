@@ -6,6 +6,10 @@ import {
 
 // @sigil uses packages/core/src/filesystem.sigil::SigilFileSystem::FileSystemPort interface,constraints,cases
 export class DenoSigilFileSystem implements SigilFileSystem {
+  async readSourceFile(path: string): Promise<Uint8Array> {
+    return await Deno.readFile(path);
+  }
+
   async readTextFile(path: string): Promise<string> {
     return await Deno.readTextFile(path);
   }

@@ -1,0 +1,221 @@
+[
+  {
+    "case": "root-default",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/root-default",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\".\",\"configPath\":\".sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"root-default\",\"check\":false,\"files\":[{\"filePath\":\"design/second.sigil\",\"status\":\"formatted\"},{\"filePath\":\"first.sigil\",\"status\":\"formatted\"},{\"filePath\":\"third.sigil\",\"status\":\"unchanged\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "6c4b1ed8fe13e11cc3b556b406547f6ca550dfb26b8f2d86500d4f2100b46657",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "8de8bf333c4221194faa68a89ce2ffa31e7667449e298ae4471584067246b0e0"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "bf87bc1bd986e3da2a89753becedb982b7a0559243ef25377c1e3541aef956f0",
+      "design/second.sigil": "0ea164c5d7452559c874d7e11189cf0cfb536eef6ca612d2020bb51bab605c5d",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "8de8bf333c4221194faa68a89ce2ffa31e7667449e298ae4471584067246b0e0"
+    },
+    "changed": [
+      "design/second.sigil",
+      "first.sigil"
+    ]
+  },
+  {
+    "case": "nested-default",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-default/design",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\"..\",\"configPath\":\"../.sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"nested-default\",\"check\":false,\"files\":[{\"filePath\":\"../design/second.sigil\",\"status\":\"formatted\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "2dd5d2fb8472f282cf88f45b4e4d678e3230727b93cd13d1d58cdd66ab4e5830"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "0ea164c5d7452559c874d7e11189cf0cfb536eef6ca612d2020bb51bab605c5d",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "2dd5d2fb8472f282cf88f45b4e4d678e3230727b93cd13d1d58cdd66ab4e5830"
+    },
+    "changed": [
+      "design/second.sigil"
+    ]
+  },
+  {
+    "case": "explicit-file",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/explicit-file",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "first.sigil",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\".\",\"configPath\":\".sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"explicit-file\",\"check\":false,\"files\":[{\"filePath\":\"first.sigil\",\"status\":\"formatted\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "6c4b1ed8fe13e11cc3b556b406547f6ca550dfb26b8f2d86500d4f2100b46657",
+      "design/second.sigil": "06c26b93a6834499227627876026f265b411b46e5367ce353fd086a39d54a785",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "a7cebb660cc7e391ba0a5d5a0a39f0df829e9ef9d18e14f4e1acc47db90f45c2"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "bf87bc1bd986e3da2a89753becedb982b7a0559243ef25377c1e3541aef956f0",
+      "design/second.sigil": "06c26b93a6834499227627876026f265b411b46e5367ce353fd086a39d54a785",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "a7cebb660cc7e391ba0a5d5a0a39f0df829e9ef9d18e14f4e1acc47db90f45c2"
+    },
+    "changed": [
+      "first.sigil"
+    ]
+  },
+  {
+    "case": "explicit-dir",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/explicit-dir",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "design",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\".\",\"configPath\":\".sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"explicit-dir\",\"check\":false,\"files\":[{\"filePath\":\"design/second.sigil\",\"status\":\"formatted\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "e7071e6fe85718805d731e3b76aea96d143aa6f691ffd8bb5510c2d892116d60"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "0ea164c5d7452559c874d7e11189cf0cfb536eef6ca612d2020bb51bab605c5d",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "e7071e6fe85718805d731e3b76aea96d143aa6f691ffd8bb5510c2d892116d60"
+    },
+    "changed": [
+      "design/second.sigil"
+    ]
+  },
+  {
+    "case": "mixed",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/mixed",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "first.sigil",
+      "design",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\".\",\"configPath\":\".sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"mixed\",\"check\":false,\"files\":[{\"filePath\":\"design/second.sigil\",\"status\":\"formatted\"},{\"filePath\":\"first.sigil\",\"status\":\"formatted\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "6c4b1ed8fe13e11cc3b556b406547f6ca550dfb26b8f2d86500d4f2100b46657",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "b1015b938b1584df3d2dd71d7c842a28b8bc04273ffa3f7e9836658ed5ceb2ca"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "bf87bc1bd986e3da2a89753becedb982b7a0559243ef25377c1e3541aef956f0",
+      "design/second.sigil": "0ea164c5d7452559c874d7e11189cf0cfb536eef6ca612d2020bb51bab605c5d",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "b1015b938b1584df3d2dd71d7c842a28b8bc04273ffa3f7e9836658ed5ceb2ca"
+    },
+    "changed": [
+      "design/second.sigil",
+      "first.sigil"
+    ]
+  },
+  {
+    "case": "nested-root",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-root/design",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "--root",
+      "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-root",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\"/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-root\",\"configPath\":\"/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-root/.sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"nested-root\",\"check\":false,\"files\":[{\"filePath\":\"/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/nested-root/design/second.sigil\",\"status\":\"formatted\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "93d89c489ad71730e19a296cdcfda2167df35b6dfa2ebf851f45102a8c95807f"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "cfed0cf1360a54ce3c602ba7d6523628c2a3a8cea9904e6e0a5399aa9bea7799",
+      "design/second.sigil": "0ea164c5d7452559c874d7e11189cf0cfb536eef6ca612d2020bb51bab605c5d",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "93d89c489ad71730e19a296cdcfda2167df35b6dfa2ebf851f45102a8c95807f"
+    },
+    "changed": [
+      "design/second.sigil"
+    ]
+  },
+  {
+    "case": "check",
+    "cwd": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/cli-smoke-canonical/check",
+    "command": [
+      "/Users/farhoud/.deno/bin/sigil",
+      "fmt",
+      "first.sigil",
+      "design",
+      "--check",
+      "--format",
+      "json"
+    ],
+    "exit": 1,
+    "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\".\",\"configPath\":\".sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"check\",\"check\":true,\"files\":[{\"filePath\":\"design/second.sigil\",\"status\":\"noncanonical\"},{\"filePath\":\"first.sigil\",\"status\":\"noncanonical\"}],\"diagnostics\":[]}\n",
+    "stderr": "",
+    "before": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "6c4b1ed8fe13e11cc3b556b406547f6ca550dfb26b8f2d86500d4f2100b46657",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "1786b35e6630983c2c59f5deea210123225d836f149685e8b00264989c58ad13"
+    },
+    "after": {
+      "third.sigil": "351a0557e4621590a90efeb470f3d7e812a56504772c99dbe66263c4d768f69d",
+      "first.sigil": "6c4b1ed8fe13e11cc3b556b406547f6ca550dfb26b8f2d86500d4f2100b46657",
+      "design/second.sigil": "8116715b88c539f0bd2f47aa5687266bd274a045a758a1c71fefcf1ddf89c03c",
+      "excluded/ignored.sigil": "21a609084d76a445767ce790ce14b57847d0658ef5c193bc1ced031609b393ea",
+      ".sigil/config.json": "1786b35e6630983c2c59f5deea210123225d836f149685e8b00264989c58ad13"
+    },
+    "changed": []
+  }
+]

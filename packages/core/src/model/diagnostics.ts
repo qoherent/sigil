@@ -1,4 +1,8 @@
-import type { SigilDiagnosticSeverity, SourceRange } from "./language.ts";
+import type {
+  ImplementationRange,
+  SigilDiagnosticSeverity,
+  SourceRange,
+} from "./language.ts";
 export type { SigilDiagnosticSeverity, SourceRange } from "./language.ts";
 
 export type SigilDiagnosticCode =
@@ -6,24 +10,33 @@ export type SigilDiagnosticCode =
   | "SIGIL_UNKNOWN_SECTION"
   | "SIGIL_MISSING_GOAL"
   | "SIGIL_MISSING_INTERFACE"
-  | "SIGIL_MODULE_WITHOUT_COMPONENT"
-  | "SIGIL_INVALID_CONCEPT_IDENTIFIER"
-  | "SIGIL_EMPTY_CONCEPT_BLOCK"
-  | "SIGIL_NESTED_CONCEPT_BLOCK"
-  | "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
-  | "SIGIL_CONCEPT_IDENTIFIER_STYLE"
+  | "SIGIL_INVALID_ENCODING"
+  | "SIGIL_INVALID_CHARACTER"
+  | "SIGIL_UNCLOSED_BLOCK"
+  | "SIGIL_DUPLICATE_SECTION"
+  | "SIGIL_EMPTY_TAG_GROUP"
+  | "SIGIL_NESTED_TAG_GROUP"
+  | "SIGIL_INCOMPLETE_TAG"
+  | "SIGIL_INVALID_TAG_NAME"
+  | "SIGIL_DUPLICATE_TAG_DEFINITION"
+  | "SIGIL_DUPLICATE_TAG_IMPORT"
+  | "SIGIL_TAG_NAME_COLLISION"
+  | "SIGIL_UNRESOLVED_IMPORTED_TAG"
+  | "SIGIL_UNUSED_TAG_IMPORT"
+  | "SIGIL_LINK_TARGET_UNAVAILABLE"
+  | "SIGIL_INTERPRETATION_UNRESOLVED"
+  | "SIGIL_SEMANTIC_CONFLICT"
+  | "SIGIL_LAYOUT_DEPENDENT_PROSE"
   | "SIGIL_DETACHED_LITERAL_BLOCK"
   | "SIGIL_LITERAL_WITHOUT_INTRODUCTION"
   | "SIGIL_UNCLOSED_LITERAL_BLOCK"
   | "SIGIL_INVALID_LITERAL_TYPE"
   | "SIGIL_LINE_TOO_LONG"
   | "SIGIL_UNFORMATTABLE_LINE"
+  | "SIGIL_FORMAT_CONTEXT_UNAVAILABLE"
   | "SIGIL_UNRESOLVED_IMPORT_PATH"
   | "SIGIL_UNRESOLVED_IMPORTED_COMPONENT"
-  | "SIGIL_UNUSED_IMPORT"
-  | "SIGIL_EXPAND_WITHOUT_COMPONENT"
   | "SIGIL_DUPLICATE_COMPONENT"
-  | "SIGIL_IMPORT_CYCLE"
   | "SIGIL_CONFIG_NOT_FOUND"
   | "SIGIL_CONFIG_PARSE"
   | "SIGIL_CONFIG_INVALID"
@@ -40,6 +53,7 @@ export type SigilDiagnosticCode =
   | "SIGIL_GLOSSARY_CONTEXT_OVERLAP"
   | "SIGIL_GLOSSARY_TERM_COLLISION"
   | "SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY"
+  | "SIGIL_IMPLEMENTATION_ANNOTATION"
   | "SIGIL_RETRIEVAL_TARGET_PATH_INVALID"
   | "SIGIL_RETRIEVAL_COMPONENT_NOT_FOUND"
   | "SIGIL_RETRIEVAL_COMPONENT_IDENTITY_MISMATCH"
@@ -52,10 +66,29 @@ export type SigilDiagnosticCode =
   | "SIGIL_BOUNDARY_SEED_NOT_FOUND"
   | "SIGIL_BOUNDARY_EXACT_TARGET_UNSUPPORTED";
 
-export interface SigilDiagnostic {
-  readonly code: SigilDiagnosticCode;
-  readonly severity: SigilDiagnosticSeverity;
-  readonly message: string;
+export type DiagnosticStage =
+  | "parsing"
+  | "structure"
+  | "workspace"
+  | "resolution"
+  | "interpretation"
+  | "host";
+
+export interface DiagnosticLocation {
   readonly filePath?: string;
   readonly range?: SourceRange;
+  readonly sourceDigest?: string;
+  readonly implementationRange?: ImplementationRange;
+}
+
+export interface RelatedDiagnosticLocation extends DiagnosticLocation {
+  readonly message?: string;
+}
+
+export interface SigilDiagnostic extends DiagnosticLocation {
+  readonly code: SigilDiagnosticCode;
+  readonly stage: DiagnosticStage;
+  readonly severity: SigilDiagnosticSeverity;
+  readonly message: string;
+  readonly related: readonly RelatedDiagnosticLocation[];
 }

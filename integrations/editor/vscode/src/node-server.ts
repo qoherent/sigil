@@ -1,3 +1,4 @@
+import { EditorProtocolSource } from "./coordinates.ts";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { Readable, Writable } from "node:stream";
 import type { SigilFileSystem } from "@qoherent/sigil-core";
@@ -7,6 +8,10 @@ import { SigilLanguageServer } from "../../../../packages/lsp/src/server.ts";
 
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::SupportedExtensionHosts interface,constraints,cases
 class NodeSigilFileSystem implements SigilFileSystem {
+  async readSourceFile(path: string): Promise<Uint8Array> {
+    return await readFile(path);
+  }
+
   async readTextFile(path: string): Promise<string> {
     return await readFile(path, "utf8");
   }
@@ -54,6 +59,7 @@ async function main(): Promise<void> {
   const output = Writable.toWeb(process.stdout) as WritableStream<Uint8Array>;
   const server = new SigilLanguageServer({
     fs: new NodeSigilFileSystem(),
+    protocolSource: (source) => new EditorProtocolSource(source),
     currentDirectory: process.cwd(),
   });
   process.exitCode = await runLanguageServer(input, output, server);

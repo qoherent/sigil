@@ -5,8 +5,16 @@ use support::Workspace;
 
 fn workspace() -> Workspace {
     let root = Workspace::new();
-    for p in ["a.sigil", "b.sigil", "c.sigil"] {
-        root.write(p, b"// authored");
+    let fixture = fixture();
+    for item in fixture["sources"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(fixture["context"].as_array().unwrap())
+    {
+        if let Some(text) = item["text"].as_str() {
+            root.write(item["path"].as_str().unwrap(), text.as_bytes());
+        }
     }
     root.write("main.any", b"implementation target");
     root.write("neighbor.any", b"private neighbor");
@@ -14,18 +22,32 @@ fn workspace() -> Workspace {
     scope(&root, &["a.sigil"]);
     root
 }
-fn frontend(root: &Workspace, paths: &[&str]) {
-    let mut input = serde_json::to_value(root.input(
-        paths,
-        json!([
-            {"source":"a.sigil","target":"b.sigil","names":[]}
-        ]),
+fn fixture() -> Value {
+    serde_json::from_str(include_str!(
+        "../../core/tests/fixtures/design-scope-080.json"
     ))
-    .unwrap();
-    input["entities"]=json!(paths.iter().map(|p| {
-        let label=p[..1].to_uppercase();
-        json!({"id":format!("urn:sigil:component:{p}:{label}"),"type":"Component","label":label,"source":p,"owner":null,"exported":true})
-    }).collect::<Vec<_>>());
+    .unwrap()
+}
+fn frontend(root: &Workspace, paths: &[&str]) {
+    let mut input = fixture();
+    input["sources"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|s| paths.contains(&s["path"].as_str().unwrap()));
+    for field in [
+        "entities",
+        "units",
+        "imports",
+        "groups",
+        "introductions",
+        "references",
+        "links",
+    ] {
+        input[field]
+            .as_array_mut()
+            .unwrap()
+            .retain(|r| paths.contains(&r["source"].as_str().unwrap()));
+    }
     root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
 }
 fn scope(root: &Workspace, paths: &[&str]) {
@@ -68,9 +90,26 @@ fn publish(root: &Workspace, side: &str, source: &str, out: &str, body: &str, us
         args.extend(["--scope", "scope.json"]);
     }
     run(root, &args, 0);
+    // Fixed test interpretations account for every authored Facet explicitly.
+    // These statements are supplied by this fixture, never inferred from imports.
+    let mut coverage = String::new();
+    if side == "design" {
+        for u in fixture()["units"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|u| u["source"] == source)
+        {
+            let id = u["id"].as_str().unwrap();
+            let owner = u["owner"].as_str().unwrap();
+            coverage.push_str(&format!("<{owner}> s:uses <{owner}> . <{id}> a s:Contract; s:from <{owner}>; s:relation \"uses\"; s:target <{owner}>; s:expected true .\n"));
+        }
+    } else {
+        coverage.push_str("<urn:sigil:component:a.sigil:A> s:uses <urn:sigil:component:a.sigil:A> . <urn:sigil:component:b.sigil:B> s:uses <urn:sigil:component:b.sigil:B> .");
+    }
     root.write(
         "facts.ttl",
-        format!("@prefix s: <https://sigil.dev/ontology/1#> . {body}").as_bytes(),
+        format!("@prefix s: <https://sigil.dev/ontology/1#> . {body} {coverage}").as_bytes(),
     );
     let binding = format!("{out}/binding.json");
     let mut args = vec![
@@ -143,7 +182,7 @@ fn scoped_pipeline_excludes_unrelated_contradictions_and_reuses_objects_across_r
         "Coherent"
     );
     let before = scoped(&root, &["entities"], 0);
-    assert_eq!(before["catalog"]["entries"].as_array().unwrap().len(), 2);
+    assert_eq!(before["catalog"]["entries"].as_array().unwrap().len(), 4);
     assert_eq!(
         scoped(&root, &["compare"], 0)["comparison"]["implementation"],
         "Converged"

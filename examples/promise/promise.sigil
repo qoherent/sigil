@@ -19,7 +19,7 @@ component Promise {
     Promise.try(handler)
   }
 
-    state {
+  state {
     Pending
 
     Resolved(value)

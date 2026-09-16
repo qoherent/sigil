@@ -1,24 +1,31 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/workspace.sigil import { SigilWorkspaceModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
 
 component SigilResolutionModel {
   goal {
-    Define immutable import, component, concept, and contract-resolution data.
+    Define immutable import, component, Tag, and contract-resolution data.
   }
 
   interface {
     ResolutionModel {
-      SigilSourceModel and SigilWorkspaceModel provide input shapes. SigilResolution
-      and its resolved imports, components, expansions, concepts, namespaces, and
-      dependency contexts preserve relationship-resolution output.
+      SourceModel and WorkspaceModel provide input shapes. SigilResolution and its
+      resolved imports, components, owner-scoped Tags, selected identities, bare
+      references, and dependency contexts preserve relationship-resolution output.
 
-      Repeated Concept occurrences preserve their collective identity and each
-      contribution's contract and source location. Imported reuse preserves the
-      originating identity without transferring consumer requirements upstream.
+      A Tag identity combines exact name and owner independently of occurrence
+      order. Inline definitions and local grouping occurrences retain distinct
+      evidence with each contribution's contract, Facet, and source location.
+      Imported reuse preserves the originating identity without transferring
+      consumer requirements upstream.
 
-      Concept identity groups related contributions but does not establish
-      behavioral equality. Direct Facets remain in their component's sections
-      without a synthetic Concept entry.
+      Tag identity groups related contributions but does not establish behavioral
+      equality. Direct Facets remain in their component's contracts without a
+      synthetic Tag entry. All contracts remain available as provider context;
+      only explicitly selected identities enter the importing source vocabulary.
+
+      Duplicate definitions, duplicate selections, and name collisions retain
+      conflicting evidence without an order-dependent winner. Independent valid
+      names remain resolvable, and cycles terminate without supplying absent Tags.
     }
   }
 }

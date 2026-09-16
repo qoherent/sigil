@@ -1,14 +1,30 @@
-import { sha256Canonical } from "./canonical.ts";
-import { diagnostic } from "./diagnostics.ts";
+import { canonicalJson, sha256Bytes, sha256Canonical } from "./canonical.ts";
+import {
+  compareScalarText,
+  diagnostic,
+  orderDiagnostics,
+} from "./diagnostics.ts";
 import { glossaryContextForFiles } from "./glossary.ts";
 import { stronglyConnectedComponentGroups } from "./graph.ts";
-import { ownedImplementationTargetsFor } from "./implementation-ownership.ts";
-import { dirname, normalizePath, relativePath } from "./path.ts";
-import type {
-  GlossaryContextProjection,
-  GlossaryProjection,
-} from "./model/glossary.ts";
+import {
+  isSupportedImplementationSource,
+  ownedImplementationTargetsFor,
+} from "./implementation-ownership.ts";
+import { normalizeImportPath, normalizePath } from "./path.ts";
+import {
+  RetrievalIdentityCollision,
+  RetrievalIdentityRegistry,
+} from "./retrieval-identity.ts";
+import { SourceProvenance } from "./source-provenance.ts";
+import type { GlossaryProjection } from "./model/glossary.ts";
 import type { ImplementationEvidenceInput } from "./model/ownership.ts";
+import type { SigilDiagnostic } from "./model/diagnostics.ts";
+import type { SourceRange } from "./model/language.ts";
+import type {
+  ResolvedComponent,
+  ResolvedSigilWorkspace,
+} from "./model/resolution.ts";
+import type { Facet } from "./model/source.ts";
 import type {
   EvidenceKind,
   EvidenceUnit,
@@ -19,51 +35,43 @@ import type {
   RetrievalBudgetReport,
   RetrievalEdge,
   RetrievalNode,
-  RetrievalNodeKind,
-  RetrievalProjection,
   RetrievalPurpose,
   RetrievalRelation,
 } from "./model/retrieval.ts";
-import type {
-  ResolvedComponent,
-  ResolvedSigilWorkspace,
-} from "./model/resolution.ts";
-import type { Facet } from "./model/source.ts";
-import type { SigilDiagnostic } from "./model/diagnostics.ts";
-import type {
-  SigilSectionName,
-  SourceLocation,
-  SourceRange,
-} from "./model/language.ts";
-import type {
-  RetrievalProjectionComponent,
-  RetrievalProjectionItem,
-  RetrievalProjectionLink,
-  RetrievalProjectionOwnership,
-} from "./model/retrieval.ts";
+export { projectRetrieval } from "./retrieval-projection.ts";
 
-const RELATION_ORDER: readonly RetrievalRelation[] = [
+const RELATIONS: readonly RetrievalRelation[] = [
   "selected-declaration",
-  "matching-expansion",
   "direct-dependency",
   "direct-importer",
-  "containing-module-index",
   "cycle-member",
-  "public-concept-origin",
+  "tag-origin",
   "owned-implementation",
 ];
-const EVIDENCE_ORDER: readonly EvidenceKind[] = [
+const KINDS: readonly EvidenceKind[] = [
   "selected-contract",
-  "selected-expansion",
   "dependency-contract",
   "dependency-decision",
   "importer-contract",
   "cycle-contract",
-  "module-index-summary",
-  "public-concept-origin",
+  "tag-origin",
   "glossary-definition",
   "ownership-projection",
   "diagnostic",
+];
+const RULES = [
+  "select-target",
+  "select-direct-dependency",
+  "select-direct-importer",
+  "select-cycle-member",
+  "select-tag-origin",
+  "select-owned-implementation",
+  "select-glossary-term",
+];
+const EXCLUSION_RULES = [
+  "exclude-transitive-dependency",
+  "exclude-transitive-importer",
+  "exclude-cycle-outward",
 ];
 const ERROR_MESSAGES = {
   SIGIL_RETRIEVAL_TARGET_PATH_INVALID:
@@ -85,278 +93,31 @@ const ERROR_MESSAGES = {
 } as const;
 type RetrievalErrorCode = keyof typeof ERROR_MESSAGES;
 
-interface NodeDraft {
-  readonly kind: RetrievalNodeKind;
-  readonly path: string;
-  readonly componentName?: string;
-  readonly range?: SourceRange;
-  readonly location?: SourceLocation;
-  readonly classRank: number;
-}
-interface EdgeDraft {
-  readonly relation: RetrievalRelation;
-  readonly sourceKey: string;
-  readonly targetKey: string;
-  readonly originPath: string;
-  readonly originRange?: SourceRange;
-}
-interface EvidenceDraft {
-  readonly kind: EvidenceKind;
-  readonly path?: string;
-  readonly componentName?: string;
-  readonly sectionName?:
-    | SigilSectionName
-    | "interface"
-    | "state"
-    | "logic"
-    | "constraints"
-    | "cases";
-  readonly conceptIdentity?: string;
-  readonly range?: SourceRange;
-  readonly location?: SourceLocation;
-  readonly text: string;
+type NodeValue = Omit<RetrievalNode, "identity">;
+type EdgeValue =
+  & Omit<RetrievalEdge, "identity" | "sourceIdentity" | "targetIdentity">
+  & { sourceKey: string; targetKey: string };
+type EvidenceValue = Omit<
+  EvidenceUnit,
+  "identity" | "inclusionReasonIdentities"
+>;
+interface ReasonDraft {
   readonly rule: string;
   readonly seedKey: string;
-  readonly edgeKeys: readonly string[];
+  readonly anchorKey: string;
+  readonly triggerKey?: string;
 }
-
-interface ProjectionEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly path: string;
-  role: RetrievalProjectionComponent["role"];
-  goal: RetrievalProjectionItem[];
-  interface: ProjectionConceptDraft[];
-  state: RetrievalProjectionItem[];
-  logic: RetrievalProjectionItem[];
-  constraints: RetrievalProjectionItem[];
-  decisions: RetrievalProjectionItem[];
-  cases: RetrievalProjectionItem[];
-  ownership: RetrievalProjectionOwnership[];
-  links: RetrievalProjectionLink[];
-  concepts: Map<string, ProjectionConceptDraft>;
+interface Candidate {
+  value: EvidenceValue;
+  reasons: ReasonDraft[];
 }
-
-interface ProjectionConceptDraft {
-  readonly name?: string;
-  readonly items: RetrievalProjectionItem[];
-  readonly ownership: RetrievalProjectionOwnership[];
+interface NodeDraft {
+  value: NodeValue;
+  rank: number;
 }
-
-// @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::RetrievalProjectionDerivation interface
-export async function projectRetrieval(
-  result: PurposeRetrievalResult,
-): Promise<RetrievalProjection> {
-  const entries = new Map<string, ProjectionEntry>();
-  const roleFor = (kind: EvidenceKind) =>
-    kind.startsWith("dependency")
-      ? "dependency"
-      : kind === "importer-contract"
-      ? "importer"
-      : kind === "cycle-contract"
-      ? "cycle-member"
-      : kind === "module-index-summary"
-      ? "module-context"
-      : kind === "selected-contract" || kind === "selected-expansion"
-      ? "selected"
-      : undefined;
-  const rank = (role: string) =>
-    ["selected", "dependency", "importer", "cycle-member", "module-context"]
-      .indexOf(role);
-  const declarationByName = new Map(
-    result.graph.nodes.filter((node) =>
-      node.kind === "component-declaration" && node.componentName
-    ).map((
-      node,
-    ) => [node.componentName!, `${node.path}::${node.componentName}`]),
-  );
-  const expansionOwners = new Map(
-    result.graph.edges.filter((edge) => edge.relation === "matching-expansion")
-      .map((edge) => [edge.targetIdentity, edge.sourceIdentity]),
-  );
-  const componentIdFor = (item: EvidenceUnit) => {
-    const expandedNode = result.graph.nodes.find((node) =>
-      node.path === item.path && node.componentName === item.componentName &&
-      node.kind === "expansion"
-    );
-    const owner = expandedNode
-      ? expansionOwners.get(expandedNode.identity)
-      : undefined;
-    const ownerNode = owner
-      ? result.graph.nodes.find((node) => node.identity === owner)
-      : undefined;
-    return ownerNode?.componentName
-      ? `${ownerNode.path}::${ownerNode.componentName}`
-      : declarationByName.get(item.componentName!) ??
-        `${item.path}::${item.componentName}`;
-  };
-  const glossary = result.evidence.flatMap((item) => {
-    if (item.kind !== "glossary-definition") return [];
-    const separator = item.text.indexOf(": ");
-    if (separator < 0) return [];
-    return [{
-      term: item.text.slice(0, separator),
-      definition: item.text.slice(separator + 2),
-    }];
-  });
-  for (const item of result.evidence) {
-    if (
-      !item.componentName || !item.path ||
-      ![
-        "selected-contract",
-        "selected-expansion",
-        "dependency-contract",
-        "dependency-decision",
-        "importer-contract",
-        "cycle-contract",
-        "module-index-summary",
-        "ownership-projection",
-      ].includes(item.kind)
-    ) continue;
-    const id = componentIdFor(item);
-    if (item.kind === "module-index-summary" && entries.has(id)) continue;
-    const nextRole = roleFor(item.kind);
-    if (item.kind === "ownership-projection") {
-      const existing = entries.get(id);
-      if (!existing) continue;
-      existing.ownership.push({
-        relation: item.text.split(" ")[0] as RetrievalProjectionOwnership[
-          "relation"
-        ],
-        path: item.path,
-        location: item.location,
-        symbol: item.text.match(/ at (.+?)(?: \[|$)/)?.[1],
-        sections:
-          (item.text.match(/\[([^\]]*)\]/)?.[1].split(",").filter(Boolean) ??
-            []) as RetrievalProjectionOwnership["sections"],
-      });
-      continue;
-    }
-    if (!nextRole) continue;
-    const entry: ProjectionEntry = entries.get(id) ?? {
-      id,
-      name: item.componentName,
-      path: id.slice(0, id.lastIndexOf("::")),
-      role: nextRole,
-      goal: [],
-      interface: [],
-      state: [],
-      logic: [],
-      constraints: [],
-      decisions: [],
-      cases: [],
-      ownership: [] as RetrievalProjectionOwnership[],
-      links: [],
-      concepts: new Map(),
-    };
-    if (rank(nextRole) < rank(entry.role)) {
-      entry.role = nextRole;
-    }
-    entries.set(id, entry);
-    if (
-      entry.role !== "selected" && entry.role !== "module-context" &&
-      item.sectionName !== "goal" &&
-      item.sectionName !== "interface"
-    ) continue;
-    const value: RetrievalProjectionItem = {
-      text: item.text,
-      path: item.path,
-      range: item.range,
-    };
-    if (item.sectionName === "interface") {
-      const key = item.conceptIdentity ?? "";
-      const concept = entry.concepts.get(key) ??
-        { name: item.conceptIdentity, items: [], ownership: [] };
-      concept.items.push(value);
-      entry.concepts.set(key, concept);
-    } else if (
-      ["goal", "state", "logic", "constraints", "decisions", "cases"].includes(
-        String(item.sectionName),
-      )
-    ) {
-      switch (item.sectionName) {
-        case "goal":
-          entry.goal.push(value);
-          break;
-        case "state":
-          entry.state.push(value);
-          break;
-        case "logic":
-          entry.logic.push(value);
-          break;
-        case "constraints":
-          entry.constraints.push(value);
-          break;
-        case "decisions":
-          entry.decisions.push(value);
-          break;
-        case "cases":
-          entry.cases.push(value);
-          break;
-      }
-    }
-  }
-  for (const entry of entries.values()) {
-    entry.interface = [...entry.concepts.values()];
-  }
-  const nodeIds = new Map(
-    result.graph.nodes.filter((node) => node.componentName).map((
-      node,
-    ) => [node.identity, `${node.path}::${node.componentName}`]),
-  );
-  for (const edge of result.graph.edges) {
-    const source = nodeIds.get(edge.sourceIdentity);
-    const target = nodeIds.get(edge.targetIdentity);
-    const sourceEntry = source ? entries.get(source) : undefined;
-    if (sourceEntry && target && entries.has(target)) {
-      sourceEntry.links.push({
-        relation: edge.relation,
-        target,
-        location: { path: edge.originPath, range: edge.originRange },
-      });
-    }
-  }
-  const compare = (left: string, right: string) =>
-    left < right ? -1 : left > right ? 1 : 0;
-  const components = [...entries.values()].map((
-    { concepts: _concepts, ...entry },
-  ) => ({
-    ...entry,
-    links: entry.links.sort((left, right) =>
-      compare(left.relation, right.relation) ||
-      compare(left.target, right.target) ||
-      compare(left.location?.path ?? "", right.location?.path ?? "") ||
-      compare(
-        JSON.stringify(left.location?.range ?? {}),
-        JSON.stringify(right.location?.range ?? ""),
-      )
-    ),
-  })).sort((a, b) =>
-    rank(a.role) - rank(b.role) || compare(a.path, b.path) ||
-    compare(a.name, b.name) || compare(a.id, b.id)
-  );
-  const base = {
-    schema: "sigil-retrieval-projection/v1" as const,
-    purpose: result.purpose,
-    target: result.target,
-    components,
-    glossary,
-    diagnostics: result.diagnostics,
-  };
-  return { ...base, fingerprint: `sha256:${await sha256Canonical(base)}` };
-}
-
-/**
- * A retrieval closure is bounded by relationship rules, not by size, so a broad
- * boundary still returns everything one hop away. `maxEvidenceBytes` keeps the
- * closest evidence and reports what was withheld instead of truncating
- * silently.
- */
 export interface PurposeRetrievalOptions {
-  /** A finite, non-negative byte budget. Omit for unbounded retrieval. */
   readonly maxEvidenceBytes?: number;
 }
-
 /*
  * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalRequest interface
  * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval logic,constraints,cases
@@ -369,1095 +130,958 @@ export async function retrievePurposeContext(
   implementationEvidence: ImplementationEvidenceInput | null = null,
   options: PurposeRetrievalOptions = {},
 ): Promise<PurposeRetrievalResult> {
-  const requestedPath = target.path;
-  const acceptedPath = validateRelativePath(requestedPath);
-  const targetIdentity = {
+  const accepted = target.path && !target.path.includes("\0")
+    ? normalizeImportPath(target.path)
+    : undefined;
+  const targetIdentity: PurposeRetrievalResult["target"] = {
     kind: target.kind,
     ...(target.kind === "component"
       ? { componentName: target.componentName }
       : {}),
-    pathStatus: acceptedPath === undefined
-      ? "rejected" as const
-      : "accepted" as const,
-    path: acceptedPath ?? requestedPath,
+    pathStatus: accepted === undefined ? "rejected" : "accepted",
+    path: accepted ?? target.path,
   };
-  if (acceptedPath === undefined) {
-    return failure(
-      resolved,
-      targetIdentity,
-      purpose,
-      "SIGIL_RETRIEVAL_TARGET_PATH_INVALID",
-    );
+  const fail = (code: RetrievalErrorCode) =>
+    failure(resolved, targetIdentity, purpose, code);
+  if (accepted === undefined) {
+    return fail("SIGIL_RETRIEVAL_TARGET_PATH_INVALID");
   }
-
-  const relativeComponentPath = (component: ResolvedComponent) =>
-    relativePath(resolved.workspace.root, component.filePath);
+  const provenance = new SourceProvenance(resolved.workspace.root);
+  const path = (value: string) => provenance.path(normalizePath(value));
   let seeds: ResolvedComponent[];
   if (target.kind === "component") {
-    const named = resolved.components.find((component) =>
-      component.name === target.componentName
+    const named = resolved.components.filter((c) =>
+      c.name === target.componentName
     );
-    if (!named) {
-      return failure(
-        resolved,
-        targetIdentity,
-        purpose,
-        "SIGIL_RETRIEVAL_COMPONENT_NOT_FOUND",
-      );
-    }
-    if (relativeComponentPath(named) !== acceptedPath) {
-      return failure(
-        resolved,
-        targetIdentity,
-        purpose,
-        "SIGIL_RETRIEVAL_COMPONENT_IDENTITY_MISMATCH",
-      );
-    }
-    seeds = [named];
+    if (!named.length) return fail("SIGIL_RETRIEVAL_COMPONENT_NOT_FOUND");
+    if (
+      named.length !== 1 || !named[0].identity ||
+      path(named[0].filePath) !== accepted
+    ) return fail("SIGIL_RETRIEVAL_COMPONENT_IDENTITY_MISMATCH");
+    seeds = named;
   } else {
-    const loaded = resolved.workspace.files.find((file) =>
-      relativePath(resolved.workspace.root, file.path) === acceptedPath
-    );
-    if (!loaded) {
-      return failure(
-        resolved,
-        targetIdentity,
-        purpose,
-        "SIGIL_RETRIEVAL_FILE_NOT_FOUND",
-      );
+    if (!resolved.workspace.files.some((f) => path(f.path) === accepted)) {
+      return fail("SIGIL_RETRIEVAL_FILE_NOT_FOUND");
     }
-    seeds = resolved.components.filter((component) =>
-      relativeComponentPath(component) === acceptedPath ||
-      component.expansions.expands.some((expand) =>
-        relativePath(resolved.workspace.root, expand.filePath) === acceptedPath
-      )
-    );
-    if (!seeds.length) {
-      return failure(
-        resolved,
-        targetIdentity,
-        purpose,
-        "SIGIL_RETRIEVAL_FILE_EMPTY",
-      );
-    }
-    seeds = uniqueComponents(seeds);
+    seeds = resolved.components.filter((c) => path(c.filePath) === accepted);
+    if (!seeds.length) return fail("SIGIL_RETRIEVAL_FILE_EMPTY");
   }
+  seeds = [...seeds].sort((a, b) =>
+    compareScalarText(path(a.filePath), path(b.filePath)) ||
+    a.declaration.range.start - b.declaration.range.start ||
+    compareScalarText(a.name, b.name)
+  );
   const snapshot = resolved.workspace.workspaceSnapshotIdentity;
   if (
     glossaryEvidence && glossaryEvidence.workspaceSnapshotIdentity !== snapshot
-  ) {
-    return failure(
-      resolved,
-      targetIdentity,
-      purpose,
-      "SIGIL_RETRIEVAL_EVIDENCE_SNAPSHOT_MISMATCH",
-    );
-  }
+  ) return fail("SIGIL_RETRIEVAL_EVIDENCE_SNAPSHOT_MISMATCH");
   if (
     purpose === "implementation" && implementationEvidence &&
     implementationEvidence.workspaceSnapshotIdentity !== snapshot
-  ) {
-    return failure(
-      resolved,
-      targetIdentity,
-      purpose,
-      "SIGIL_RETRIEVAL_EVIDENCE_SNAPSHOT_MISMATCH",
-    );
-  }
-
-  const nodes = new Map<string, NodeDraft>();
-  const edges = new Map<string, EdgeDraft>();
-  const evidence: EvidenceDraft[] = [];
-  const componentKey = (component: ResolvedComponent) =>
-    `component\0${relativeComponentPath(component)}\0${component.name}`;
-  const addNode = (key: string, draft: NodeDraft) => {
-    const prior = nodes.get(key);
-    if (!prior || draft.classRank < prior.classRank) nodes.set(key, draft);
-    return key;
-  };
-  const requestKey = addNode(
-    `request\0${target.kind}\0${acceptedPath}\0${
-      target.kind === "component" ? target.componentName : ""
-    }`,
-    {
-      kind: "request-target",
-      path: acceptedPath,
-      componentName: target.kind === "component"
-        ? target.componentName
-        : undefined,
-      classRank: 0,
-    },
-  );
-  const selected = new Map<
-    string,
-    {
-      component: ResolvedComponent;
-      role: "seed" | "dependency" | "importer" | "cycle";
-    }
-  >();
-  for (const seed of seeds) {
-    selected.set(componentKey(seed), { component: seed, role: "seed" });
-  }
-
-  const addComponent = (
-    component: ResolvedComponent,
-    role: "seed" | "dependency" | "importer" | "cycle",
-  ) => {
-    const key = componentKey(component);
-    const rank = role === "seed"
-      ? 0
-      : role === "dependency"
-      ? 3
-      : role === "importer"
-      ? 4
-      : 5;
-    addNode(key, {
-      kind: "component-declaration",
-      path: relativeComponentPath(component),
-      componentName: component.name,
-      range: component.declaration.range,
-      classRank: rank,
-    });
-    if (!selected.has(key)) selected.set(key, { component, role });
-    return key;
-  };
-  const addEdge = (draft: EdgeDraft) => {
-    const key = [
-      draft.relation,
-      draft.sourceKey,
-      draft.targetKey,
-      draft.originPath,
-      rangeKey(draft.originRange),
-    ].join("\0");
-    edges.set(key, draft);
-    return key;
-  };
-  for (const seed of seeds) {
-    const seedKey = addComponent(seed, "seed");
-    addEdge({
-      relation: "selected-declaration",
-      sourceKey: requestKey,
-      targetKey: seedKey,
-      originPath: relativeComponentPath(seed),
-      originRange: seed.declaration.range,
-    });
-    addContractEvidence(
-      evidence,
-      seed,
-      "selected-contract",
-      "select-target",
-      seedKey,
-      [],
-      ["goal", "interface"],
-    );
-    for (const expansion of seed.expansions.expands) {
-      const path = relativePath(resolved.workspace.root, expansion.filePath);
-      const expandKey = addNode(
-        `expand\0${path}\0${seed.name}\0${
-          rangeKey(expansion.declaration.range)
-        }`,
-        {
-          kind: "expansion",
-          path,
-          componentName: seed.name,
-          range: expansion.declaration.range,
-          classRank: 2,
-        },
-      );
-      const edgeKey = addEdge({
-        relation: "matching-expansion",
-        sourceKey: seedKey,
-        targetKey: expandKey,
-        originPath: path,
-        originRange: expansion.declaration.range,
-      });
-      addDeclarationEvidence(
-        evidence,
-        expansion.declaration.sections.flatMap((section) => section.units),
-        "selected-expansion",
-        seed.name,
-        "select-seed-expansion",
-        seedKey,
-        [edgeKey],
-      );
-    }
-  }
-
-  const initialSeeds = [...seeds];
-  for (const seed of initialSeeds) {
-    const seedKey = componentKey(seed);
-    for (
-      const resolvedImport of resolved.imports.filter((item) =>
-        item.sourceFile === seed.filePath ||
-        seed.expansions.expands.some((expand) =>
-          expand.filePath === item.sourceFile
-        )
-      )
-    ) {
-      for (const name of resolvedImport.names) {
-        if (
-          !name.componentFile ||
-          !name.uses.some((use) =>
-            use.ownerName === seed.name &&
-            (use.ownerKind === "component" || use.ownerKind === "expand")
-          )
-        ) continue;
-        const dependency = resolved.components.find((component) =>
-          component.name === name.name &&
-          component.filePath === name.componentFile
-        );
-        if (!dependency) continue;
-        const dependencyKey = addComponent(dependency, "dependency");
-        const edgeKey = addEdge({
-          relation: "direct-dependency",
-          sourceKey: seedKey,
-          targetKey: dependencyKey,
-          originPath: relativePath(
-            resolved.workspace.root,
-            resolvedImport.sourceFile,
-          ),
-          originRange: resolvedImport.declaration.range,
-        });
-        addContractEvidence(
-          evidence,
-          dependency,
-          "dependency-contract",
-          "select-direct-dependency",
-          seedKey,
-          [edgeKey],
-          ["goal", "interface"],
-        );
-        for (const expansion of dependency.expansions.expands) {
-          addDeclarationEvidence(
-            evidence,
-            expansion.declaration.sections.filter((section) =>
-              section.name === "decisions"
-            ).flatMap((section) => section.units),
-            "dependency-decision",
-            dependency.name,
-            "select-direct-dependency",
-            seedKey,
-            [edgeKey],
-          );
-        }
-      }
-    }
-    for (const resolvedImport of resolved.imports) {
-      for (
-        const name of resolvedImport.names.filter((item) =>
-          item.name === seed.name && item.componentFile === seed.filePath
-        )
-      ) {
-        const owners = uniqueComponents(
-          name.uses.flatMap((use) =>
-            resolved.components.filter((component) =>
-              component.name === use.ownerName &&
-              (component.filePath === use.filePath ||
-                component.expansions.expands.some((expand) =>
-                  expand.filePath === use.filePath
-                ))
-            )
-          ),
-        );
-        if (!owners.length) {
-          const filePath = relativePath(
-            resolved.workspace.root,
-            resolvedImport.sourceFile,
-          );
-          const fileKey = addNode(`file\0${filePath}`, {
-            kind: "sigil-file",
-            path: filePath,
-            classRank: 4,
-          });
-          addEdge({
-            relation: "direct-importer",
-            sourceKey: seedKey,
-            targetKey: fileKey,
-            originPath: filePath,
-            originRange: resolvedImport.declaration.range,
-          });
-        }
-        for (const importer of owners) {
-          const importerKey = addComponent(importer, "importer");
-          const edgeKey = addEdge({
-            relation: "direct-importer",
-            sourceKey: seedKey,
-            targetKey: importerKey,
-            originPath: relativePath(
-              resolved.workspace.root,
-              resolvedImport.sourceFile,
-            ),
-            originRange: resolvedImport.declaration.range,
-          });
-          addContractEvidence(
-            evidence,
-            importer,
-            "importer-contract",
-            "select-direct-importer",
-            seedKey,
-            [edgeKey],
-            ["goal", "interface"],
-          );
-        }
-      }
-    }
-  }
-
-  if (purpose !== "semantic") {
-    const reached = new Set(selected.keys());
-    for (const group of stronglyConnectedComponentGroups(resolved.graph)) {
-      if (
-        !group.some((identity) =>
-          reached.has(
-            `component\0${
-              relativePath(resolved.workspace.root, identity.declarationPath)
-            }\0${identity.componentName}`,
-          )
-        )
-      ) continue;
-      const members = group.map((identity) =>
-        resolved.components.find((component) =>
-          component.name === identity.componentName &&
-          component.filePath === identity.declarationPath
-        )
-      ).filter((item): item is ResolvedComponent => !!item);
-      const cyclic = members.length > 1 ||
-        resolved.graph.importedComponentEdges.some((edge) =>
-          edge.sourceComponents.some((source) =>
-            source.componentName === members[0]?.name &&
-            source.declarationPath === members[0]?.filePath
-          ) && edge.componentName === members[0]?.name &&
-          edge.targetFile === members[0]?.filePath
-        );
-      if (!cyclic) continue;
-      const memberKeys = new Set(
-        members.map((member) => componentKey(member)),
-      );
-      const anchorKey = componentKey(seeds[0]);
-      const cycleEdges = resolved.graph.importedComponentEdges.flatMap((edge) =>
-        edge.sourceComponents.flatMap((source) => {
-          const sourceComponent = members.find((member) =>
-            member.name === source.componentName &&
-            member.filePath === source.declarationPath
-          );
-          const target = members.find((member) =>
-            member.name === edge.componentName &&
-            member.filePath === edge.targetFile
-          );
-          if (!sourceComponent || !target) return [];
-          const sourceKey = componentKey(sourceComponent);
-          if (!memberKeys.has(sourceKey)) return [];
-          return [{ edge, target, sourceKey }];
-        })
-      );
-      for (const member of members) {
-        const memberKey = addComponent(member, "cycle");
-        for (const expansion of member.expansions.expands) {
-          const path = relativePath(
-            resolved.workspace.root,
-            expansion.filePath,
-          );
-          const expandKey = addNode(
-            `expand\0${path}\0${member.name}\0${
-              rangeKey(expansion.declaration.range)
-            }`,
-            {
-              kind: "expansion",
-              path,
-              componentName: member.name,
-              range: expansion.declaration.range,
-              classRank: 5,
-            },
-          );
-          addEdge({
-            relation: "matching-expansion",
-            sourceKey: memberKey,
-            targetKey: expandKey,
-            originPath: path,
-            originRange: expansion.declaration.range,
-          });
-        }
-      }
-      for (const { edge, target, sourceKey } of cycleEdges) {
-        const targetKey = componentKey(target);
-        const edgeKey = addEdge({
-          relation: "cycle-member",
-          sourceKey,
-          targetKey,
-          originPath: relativePath(
-            resolved.workspace.root,
-            edge.sourceFile,
-          ),
-          originRange: edge.originRange,
-        });
-        addContractEvidence(
-          evidence,
-          target,
-          "cycle-contract",
-          "select-cycle-member",
-          anchorKey,
-          [edgeKey],
-          ["goal", "interface"],
-        );
-        addDeclarationEvidence(
-          evidence,
-          target.expansions.expands.flatMap((expansion) =>
-            expansion.declaration.sections.flatMap((section) => section.units)
-          ),
-          "cycle-contract",
-          target.name,
-          "select-cycle-member",
-          anchorKey,
-          [edgeKey],
-        );
-      }
-    }
-    for (const { component, role } of [...selected.values()]) {
-      const module = containingModuleComponent(resolved, component);
-      if (!module) continue;
-      const sourceKey = componentKey(component);
-      const modulePath = relativeComponentPath(module);
-      const moduleKey = addNode(`module\0${modulePath}\0${module.name}`, {
-        kind: "module-index",
-        path: modulePath,
-        componentName: module.name,
-        range: module.declaration.range,
-        classRank: 6,
-      });
-      const edgeKey = addEdge({
-        relation: "containing-module-index",
-        sourceKey,
-        targetKey: moduleKey,
-        originPath: modulePath,
-        originRange: module.declaration.range,
-      });
-      addContractEvidence(
-        evidence,
-        module,
-        "module-index-summary",
-        "select-module-index",
-        componentKey(seeds[0]),
-        [edgeKey],
-        ["goal", "interface", "constraints", "decisions"],
-      );
-      if (role === "seed") {
-        for (
-          const concept of component.conceptNamespace.accessibleConcepts.filter(
-            (item) => item.isImported && item.isPublic,
-          )
-        ) {
-          const provider = resolved.components.find((candidate) =>
-            candidate.name === concept.identity.componentName &&
-            candidate.filePath === concept.identity.filePath
-          );
-          if (!provider) continue;
-          const providerKey = addComponent(provider, "dependency");
-          const occurrence = concept.occurrences[0];
-          if (!occurrence) continue;
-          const originKey = addNode(
-            `concept\0${concept.identity.filePath}\0${concept.identifier}\0${
-              rangeKey(occurrence.block.range)
-            }`,
-            {
-              kind: "public-concept-origin",
-              path: relativePath(
-                resolved.workspace.root,
-                concept.identity.filePath,
-              ),
-              componentName: provider.name,
-              range: occurrence.block.range,
-              classRank: 7,
-            },
-          );
-          const conceptEdge = addEdge({
-            relation: "public-concept-origin",
-            sourceKey,
-            targetKey: originKey,
-            originPath: relativePath(
-              resolved.workspace.root,
-              concept.identity.filePath,
-            ),
-            originRange: occurrence.block.range,
-          });
-          addContractEvidence(
-            evidence,
-            provider,
-            "public-concept-origin",
-            "select-public-concept-origin",
-            componentKey(component),
-            [conceptEdge],
-            ["goal", "interface"],
-          );
-          void providerKey;
-        }
-      }
-    }
-  }
-
-  let unavailableImplementation = false;
-  const implementationDiagnostics: SigilDiagnostic[] = [];
-  if (purpose === "implementation") {
-    unavailableImplementation = !implementationEvidence ||
-      implementationEvidence.discoveryState === "unavailable";
-    if (!unavailableImplementation) {
-      for (const { component } of selected.values()) {
-        const projection = ownedImplementationTargetsFor(
-          resolved,
-          implementationEvidence!.sources,
-          {
-            componentName: component.name,
-            declarationPath: component.filePath,
-          },
-        );
-        if (!projection) {
-          continue;
-        }
-        implementationDiagnostics.push(...projection.diagnostics);
-        for (const owned of projection.targets) {
-          const range = owned.location ? undefined : owned.annotationRange;
-          const source = implementationEvidence!.sources.find((item) =>
-            normalizePath(item.filePath) === normalizePath(owned.filePath) ||
-            relativePath(resolved.workspace.root, item.filePath) ===
-              owned.filePath
-          );
-          if (!source) continue;
-          const sourcePath = normalizeRelativeSource(resolved, source.filePath);
-          const ownerKey = componentKey(component);
-          const targetKey = addNode(
-            `implementation\0${sourcePath}\0${owned.symbolIdentity ?? ""}\0${`${
-              rangeKey(range)
-            }\0${JSON.stringify(owned.location ?? null)}`}`,
-            {
-              kind: "implementation-target",
-              path: sourcePath,
-              componentName: component.name,
-              range,
-              location: owned.location,
-              classRank: 8,
-            },
-          );
-          const edgeKey = addEdge({
-            relation: "owned-implementation",
-            sourceKey: ownerKey,
-            targetKey,
-            originPath: sourcePath,
-            originRange: owned.annotationRange,
-          });
-          evidence.push({
-            kind: "ownership-projection",
-            path: sourcePath,
-            componentName: component.name,
-            range,
-            location: owned.location,
-            text: `${owned.relation} ${component.name}${
-              owned.symbolIdentity ? ` at ${owned.symbolIdentity}` : ""
-            } [${owned.sections.join(",")}]`,
-            rule: "select-owned-implementation",
-            seedKey: componentKey(seeds[0]),
-            edgeKeys: [edgeKey],
-          });
-        }
-      }
-    }
-  }
-
-  const selectedPaths = selectedEvidencePaths(resolved, nodes, edges, evidence);
-  const scopedGlossary = glossaryEvidence
-    ? glossaryContextForFiles(glossaryEvidence, [...selectedPaths])
-    : undefined;
-  if (scopedGlossary) addGlossaryEvidence(evidence, scopedGlossary);
-  const diagnostics = collectRetrievalDiagnostics(
-    resolved,
-    selectedPaths,
-    scopedGlossary?.diagnostics ?? [],
-    purpose === "implementation"
-      ? [
-        ...implementationDiagnostics,
-        ...(implementationEvidence?.diagnostics ?? []),
-      ]
-      : [],
-    unavailableImplementation
-      ? [
-        retrievalDiagnostic(
-          "SIGIL_RETRIEVAL_IMPLEMENTATION_DISCOVERY_UNAVAILABLE",
-        ),
-      ]
-      : [],
-  );
-  for (const item of diagnostics) {
-    evidence.push({
-      kind: "diagnostic",
-      path: item.filePath
-        ? normalizeRelativeSource(resolved, item.filePath)
-        : undefined,
-      range: item.range,
-      text: `${item.severity} ${item.code}: ${item.message}`,
-      rule: "select-diagnostic",
-      seedKey: componentKey(seeds[0]),
-      edgeKeys: [],
-    });
-  }
-  return await materialize(
-    resolved,
-    targetIdentity,
-    purpose,
-    nodes,
-    edges,
-    evidence,
-    diagnostics,
-    unavailableImplementation,
-    assertEvidenceBudget(options.maxEvidenceBytes),
-  );
-}
-
-/**
- * A negative or non-finite budget would silently withhold every optional unit,
- * or fail later inside canonical JSON, so it is rejected at the boundary.
- */
-function assertEvidenceBudget(value: number | undefined): number | undefined {
-  if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+  ) return fail("SIGIL_RETRIEVAL_EVIDENCE_SNAPSHOT_MISMATCH");
+  const budget = options.maxEvidenceBytes;
+  if (budget !== undefined && (!Number.isInteger(budget) || budget < 0)) {
     throw new TypeError(
       "maxEvidenceBytes must be a non-negative integer when provided.",
     );
   }
-  return value;
-}
-
-/** The budget is a byte budget, so text is measured as encoded UTF-8. */
-function utf8Length(text: string): number {
-  return new TextEncoder().encode(text).length;
-}
-
-function addContractEvidence(
-  out: EvidenceDraft[],
-  component: ResolvedComponent,
-  kind: EvidenceKind,
-  rule: string,
-  seedKey: string,
-  edgeKeys: readonly string[],
-  sections: readonly SigilSectionName[],
-) {
-  addDeclarationEvidence(
-    out,
-    component.declaration.sections.filter((section) =>
-      sections.includes(section.name)
-    ).flatMap((section) => section.units),
-    kind,
-    component.name,
-    rule,
-    seedKey,
-    edgeKeys,
-  );
-}
-// @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::EvidenceUnitConstruction logic
-function addDeclarationEvidence(
-  out: EvidenceDraft[],
-  units: readonly Facet[],
-  kind: EvidenceKind,
-  componentName: string,
-  rule: string,
-  seedKey: string,
-  edgeKeys: readonly string[],
-) {
-  const selected = units.filter((item) => item.prose.trim()).sort((
-    left,
-    right,
-  ) =>
-    left.range.start.line - right.range.start.line ||
-    left.range.start.column - right.range.start.column
-  );
-  for (const unit of selected) {
-    out.push({
-      kind,
-      path: unit.filePath,
-      componentName,
-      sectionName: unit.sectionName,
-      conceptIdentity: unit.conceptIdentifier,
-      range: unit.range,
-      text: unit.prose,
-      rule,
-      seedKey,
-      edgeKeys,
-    });
+  try {
+    return await select();
+  } catch (error) {
+    if (error instanceof RetrievalIdentityCollision) {
+      return fail("SIGIL_RETRIEVAL_IDENTITY_COLLISION");
+    }
+    throw error;
   }
-}
-function addGlossaryEvidence(
-  out: EvidenceDraft[],
-  glossary: GlossaryContextProjection,
-) {
-  const semantic = [...out];
-  for (
-    const occurrence of glossary.occurrences.filter((item) =>
-      item.term.agentContext
-    )
-  ) {
-    const trigger = semantic.find((item) =>
-      item.path === occurrence.filePath && item.range &&
-      overlaps(item.range, occurrence.range)
-    );
-    if (
-      !trigger || out.some((item) =>
-        item.kind === "glossary-definition" &&
-        item.text.startsWith(`${occurrence.term.term}:`)
+
+  async function select(): Promise<PurposeRetrievalResult> {
+    const identities = new RetrievalIdentityRegistry();
+    const nodes = new Map<string, NodeDraft>(),
+      edges = new Map<string, EdgeValue>(),
+      candidates = new Map<string, Candidate>();
+    const componentById = new Map(resolved.components.map((c) => [c.id, c]));
+    const selected = new Map<
+      string,
+      {
+        component: ResolvedComponent;
+        role: "seed" | "dependency" | "importer" | "cycle";
+      }
+    >();
+    const node = (key: string, value: NodeValue, rank: number) => {
+      const previous = nodes.get(key);
+      if (!previous || rank < previous.rank) nodes.set(key, { value, rank });
+      return key;
+    };
+    const componentNode = (
+      component: ResolvedComponent,
+      role: "seed" | "dependency" | "importer" | "cycle",
+    ) => {
+      const rank = { seed: 0, dependency: 2, importer: 3, cycle: 4 }[role];
+      node(component.id, {
+        kind: "component-declaration",
+        path: path(component.filePath),
+        componentName: component.name,
+        range: component.declaration.range,
+      }, rank);
+      if (!selected.has(component.id)) {
+        selected.set(component.id, { component, role });
+      }
+      return component.id;
+    };
+    const edge = (value: EdgeValue) => {
+      const key = canonicalJson({
+        relation: value.relation,
+        source: value.sourceKey,
+        target: value.targetKey,
+        path: value.originPath,
+        range: value.originRange,
+        implementationRange: value.implementationRange,
+      });
+      const previous = edges.get(key);
+      edges.set(
+        key,
+        previous
+          ? {
+            ...previous,
+            useIds: [
+              ...new Set([...(previous.useIds ?? []), ...(value.useIds ?? [])]),
+            ],
+          }
+          : value,
+      );
+      return key;
+    };
+    const request = node("request", {
+      kind: "request-target",
+      path: accepted!,
+      componentName: target.kind === "component"
+        ? target.componentName
+        : undefined,
+    }, 0);
+    const sourceDigests = new Map<string, string>();
+    for (const file of resolved.workspace.files) {
+      if (file.document.source) {
+        sourceDigests.set(
+          file.path,
+          await sha256Bytes(
+            new TextEncoder().encode(file.document.source.text),
+          ),
+        );
+      }
+    }
+    const addFacet = (
+      component: ResolvedComponent,
+      facet: Facet,
+      kind: EvidenceKind,
+      reason: ReasonDraft,
+    ) => {
+      const document =
+        resolved.workspace.files.find((f) => f.path === component.filePath)!
+          .document;
+      const key = facet.id;
+      const previous = candidates.get(key);
+      const value: EvidenceValue = {
+        kind,
+        path: path(component.filePath),
+        componentName: component.name,
+        sectionName: facet.sectionName,
+        range: facet.range,
+        sourceSnapshot: sourceDigests.get(component.filePath),
+        text: document.source!.slice(facet.range),
+        facet: {
+          id: provenance.occurrence(facet.id),
+          componentId: provenance.occurrence(facet.componentId),
+          groupingId: facet.groupingId
+            ? provenance.occurrence(facet.groupingId)
+            : undefined,
+          groupingTag: facet.groupingTag,
+          definitions: facet.definitions,
+          references: component.references.filter((r) => r.facetId === facet.id)
+            .map((r) => provenance.reference(r)),
+          links: facet.links,
+          sourceLines: facet.sourceLines,
+          originalProse: document.source!.slice(facet.proseRange),
+          prose: facet.prose,
+          payload: facet.literalBlocks[0],
+          valid: facet.valid,
+          complete: facet.complete,
+        },
+      };
+      if (!previous) candidates.set(key, { value, reasons: [reason] });
+      else {
+        if (KINDS.indexOf(kind) < KINDS.indexOf(previous.value.kind)) {
+          previous.value = value;
+        }
+        previous.reasons.push(reason);
+      }
+    };
+    const facets = (
+      component: ResolvedComponent,
+      kind: EvidenceKind,
+      reason: ReasonDraft,
+      sections?: readonly string[],
+    ) => {
+      for (const section of component.declaration.sections) {
+        if (!sections || sections.includes(section.name)) {
+          for (const facet of section.units) {
+            addFacet(component, facet, kind, reason);
+          }
+        }
+      }
+    };
+    for (const seed of seeds) {
+      componentNode(seed, "seed");
+      node(`file:${seed.filePath}`, {
+        kind: "sigil-file",
+        path: path(seed.filePath),
+      }, 1);
+      edge({
+        relation: "selected-declaration",
+        sourceKey: request,
+        targetKey: seed.id,
+        originPath: path(seed.filePath),
+        originRange: seed.declaration.range,
+      });
+      facets(seed, "selected-contract", {
+        rule: "select-target",
+        seedKey: seed.id,
+        anchorKey: seed.id,
+      });
+    }
+    for (const seed of seeds) {
+      for (const selection of resolved.graph.importedTagEdges) {
+        const uses = selection.uses.filter((u) => u.componentId === seed.id);
+        const provider = componentById.get(selection.providerComponentId)!;
+        if (uses.length) {
+          componentNode(provider, "dependency");
+          edge({
+            relation: "direct-dependency",
+            sourceKey: seed.id,
+            targetKey: provider.id,
+            originPath: path(selection.sourceFile),
+            originRange: selection.originRange,
+            selectionId: provenance.occurrence(selection.id),
+            tagIdentity: provenance.tag(selection.tagIdentity),
+            useIds: uses.map((u) => provenance.occurrence(u.referenceId)),
+          });
+          const reason = {
+            rule: "select-direct-dependency",
+            seedKey: seed.id,
+            anchorKey: provider.id,
+          };
+          facets(provider, "dependency-contract", reason, [
+            "goal",
+            "interface",
+          ]);
+          facets(provider, "dependency-decision", reason, ["decisions"]);
+          facets(provider, "tag-origin", reason);
+          if (purpose !== "semantic") {
+            const tag = provider.tags.find((t) =>
+              t.identity?.id === selection.tagIdentity.id
+            )!;
+            const origin = node(`tag:${tag.identity!.id}`, {
+              kind: "tag-origin",
+              path: path(provider.filePath),
+              componentName: provider.name,
+              range: tag.introductions[0].nameRange,
+              tag: {
+                identity: provenance.tag(tag.identity!),
+                introductions: tag.introductions.map((i) =>
+                  provenance.introduction(i)
+                ),
+              },
+            }, 5);
+            edge({
+              relation: "tag-origin",
+              sourceKey: seed.id,
+              targetKey: origin,
+              originPath: path(selection.sourceFile),
+              originRange: selection.originRange,
+              selectionId: provenance.occurrence(selection.id),
+              tagIdentity: provenance.tag(selection.tagIdentity),
+              useIds: uses.map((u) => provenance.occurrence(u.referenceId)),
+            });
+            facets(provider, "tag-origin", {
+              rule: "select-tag-origin",
+              seedKey: seed.id,
+              anchorKey: origin,
+            });
+          }
+        }
+        if (provider.id !== seed.id) continue;
+        const consumerIds = [
+          ...new Set(selection.uses.map((u) => u.componentId)),
+        ];
+        if (!consumerIds.length) {
+          const file = node(`file:${selection.sourceFile}`, {
+            kind: "sigil-file",
+            path: path(selection.sourceFile),
+          }, 3);
+          edge({
+            relation: "direct-importer",
+            sourceKey: seed.id,
+            targetKey: file,
+            originPath: path(selection.sourceFile),
+            originRange: selection.originRange,
+            selectionId: provenance.occurrence(selection.id),
+            tagIdentity: provenance.tag(selection.tagIdentity),
+          });
+        }
+        for (const consumerId of consumerIds) {
+          const consumer = componentById.get(consumerId)!;
+          componentNode(consumer, "importer");
+          edge({
+            relation: "direct-importer",
+            sourceKey: seed.id,
+            targetKey: consumer.id,
+            originPath: path(selection.sourceFile),
+            originRange: selection.originRange,
+            selectionId: provenance.occurrence(selection.id),
+            tagIdentity: provenance.tag(selection.tagIdentity),
+            useIds: selection.uses.filter((u) => u.componentId === consumer.id)
+              .map((u) => provenance.occurrence(u.referenceId)),
+          });
+          facets(consumer, "importer-contract", {
+            rule: "select-direct-importer",
+            seedKey: seed.id,
+            anchorKey: consumer.id,
+          }, ["goal", "interface"]);
+        }
+      }
+    }
+    if (purpose !== "semantic") {
+      const reached = new Set(selected.keys());
+      for (const group of stronglyConnectedComponentGroups(resolved.graph)) {
+        if (!group.some((n) => reached.has(n.id))) continue;
+        const members = new Set(group.map((n) => n.id));
+        const cycleEdges = resolved.graph.importedTagEdges.filter((e) =>
+          members.has(e.providerComponentId) &&
+          e.uses.some((u) => members.has(u.componentId))
+        );
+        if (
+          group.length === 1 &&
+          !cycleEdges.some((e) =>
+            e.uses.some((u) => u.componentId === e.providerComponentId)
+          )
+        ) continue;
+        for (const member of group) {
+          componentNode(componentById.get(member.id)!, "cycle");
+        }
+        for (const selection of cycleEdges) {
+          for (
+            const consumer of new Set(
+              selection.uses.filter((u) => members.has(u.componentId)).map(
+                (u) => u.componentId,
+              ),
+            )
+          ) {
+            edge({
+              relation: "cycle-member",
+              sourceKey: consumer,
+              targetKey: selection.providerComponentId,
+              originPath: path(selection.sourceFile),
+              originRange: selection.originRange,
+              selectionId: provenance.occurrence(selection.id),
+              tagIdentity: provenance.tag(selection.tagIdentity),
+              useIds: selection.uses.filter((u) => u.componentId === consumer)
+                .map((u) => provenance.occurrence(u.referenceId)),
+            });
+          }
+        }
+        for (const member of group) {
+          for (const seed of seeds) {
+            facets(componentById.get(member.id)!, "cycle-contract", {
+              rule: "select-cycle-member",
+              seedKey: seed.id,
+              anchorKey: member.id,
+            });
+          }
+        }
+      }
+    }
+    const implementationDiagnostics: SigilDiagnostic[] = [];
+    let unavailable = false;
+    if (purpose === "implementation") {
+      unavailable = !implementationEvidence ||
+        implementationEvidence.discoveryState === "unavailable";
+      if (implementationEvidence) {
+        implementationDiagnostics.push(...implementationEvidence.diagnostics);
+      }
+      if (!unavailable) {
+        unavailable = !validImplementationEvidence(implementationEvidence!);
+      }
+      if (!unavailable) {
+        for (const { component } of selected.values()) {
+          const projection = ownedImplementationTargetsFor(
+            resolved,
+            implementationEvidence!.sources,
+            {
+              componentName: component.name,
+              declarationPath: path(component.filePath),
+            },
+          );
+          if (!projection) continue;
+          implementationDiagnostics.push(...projection.diagnostics);
+          for (const owned of projection.targets) {
+            const nodeValue: NodeValue = {
+              kind: "implementation-target",
+              path: owned.filePath,
+              componentName: component.name,
+              location: owned.location,
+              implementationRange: owned.location
+                ? undefined
+                : owned.annotationRange,
+            };
+            const implementationKey = node(
+              `implementation:${canonicalJson(nodeValue)}`,
+              nodeValue,
+              6,
+            );
+            edge({
+              relation: "owned-implementation",
+              sourceKey: component.id,
+              targetKey: implementationKey,
+              originPath: owned.filePath,
+              implementationRange: owned.annotationRange,
+            });
+            const value: EvidenceValue = {
+              kind: "ownership-projection",
+              path: owned.filePath,
+              componentName: component.name,
+              location: owned.location,
+              implementationRange: owned.location
+                ? undefined
+                : owned.annotationRange,
+              ownership: {
+                ...owned,
+                componentPath: path(component.filePath),
+                tagIdentity: owned.tagIdentity
+                  ? provenance.tag(owned.tagIdentity)
+                  : undefined,
+                facetIds: owned.facetIds.map((id) => provenance.occurrence(id)),
+              },
+              text: `${owned.relation} ${component.name}${
+                owned.tagName === undefined
+                  ? ""
+                  : `::${JSON.stringify(owned.tagName)}`
+              }${owned.symbolIdentity ? ` at ${owned.symbolIdentity}` : ""} [${
+                owned.sections.join(",")
+              }]`,
+            };
+            const key = `ownership:${canonicalJson(value)}`;
+            const previous = candidates.get(key);
+            const reasons = seeds.map((seed) => ({
+              rule: "select-owned-implementation",
+              seedKey: seed.id,
+              anchorKey: implementationKey,
+            }));
+            if (previous) previous.reasons.push(...reasons);
+            else candidates.set(key, { value, reasons });
+          }
+        }
+      }
+      if (unavailable) {
+        implementationDiagnostics.push(
+          diagnostic(
+            "SIGIL_RETRIEVAL_IMPLEMENTATION_DISCOVERY_UNAVAILABLE",
+            ERROR_MESSAGES.SIGIL_RETRIEVAL_IMPLEMENTATION_DISCOVERY_UNAVAILABLE,
+          ),
+        );
+      }
+    }
+    const selectedPaths = new Set([...nodes.values()].map((n) => n.value.path));
+    const scopedGlossary = glossaryEvidence
+      ? glossaryContextForFiles(
+        glossaryEvidence,
+        resolved.workspace.files.filter((f) => selectedPaths.has(path(f.path)))
+          .map((f) => f.path),
       )
-    ) continue;
-    out.push({
-      kind: "glossary-definition",
-      path: glossary.glossaryPath,
-      range: occurrence.term.declarationRange,
-      text: `${occurrence.term.term}: ${occurrence.term.definition}`,
-      rule: "select-glossary-term",
-      seedKey: trigger.seedKey,
-      edgeKeys: trigger.edgeKeys,
-    });
-  }
-}
-
-function selectedEvidencePaths(
-  resolved: ResolvedSigilWorkspace,
-  nodes: ReadonlyMap<string, NodeDraft>,
-  edges: ReadonlyMap<string, EdgeDraft>,
-  evidence: readonly EvidenceDraft[],
-): Set<string> {
-  return new Set(
-    [
-      ...[...nodes.values()].map((item) => item.path),
-      ...[...edges.values()].map((item) => item.originPath),
-      ...evidence.flatMap((item) => item.path ? [item.path] : []),
-    ].map((path) => normalizeRelativeSource(resolved, path)),
-  );
-}
-
-function collectRetrievalDiagnostics(
-  resolved: ResolvedSigilWorkspace,
-  selectedPaths: ReadonlySet<string>,
-  glossaryDiagnostics: readonly SigilDiagnostic[],
-  implementationDiagnostics: readonly SigilDiagnostic[],
-  retrievalDiagnostics: readonly SigilDiagnostic[] = [],
-): readonly SigilDiagnostic[] {
-  const candidates = [
-    ...resolved.diagnostics.filter((item) =>
-      !item.filePath ||
-      selectedPaths.has(normalizeRelativeSource(resolved, item.filePath))
-    ),
-    ...glossaryDiagnostics,
-    ...implementationDiagnostics,
-    ...retrievalDiagnostics,
-  ];
-  const unique = new Map<string, SigilDiagnostic>();
-  for (const item of candidates) {
-    const path = item.filePath
-      ? normalizeRelativeSource(resolved, item.filePath)
       : undefined;
-    const key = JSON.stringify({
-      code: item.code,
-      severity: item.severity,
-      message: item.message,
-      path,
-      range: item.range,
+    if (scopedGlossary) {
+      for (const occurrence of scopedGlossary.occurrences) {
+        if (!occurrence.term.agentContext) continue;
+        const triggers = [...candidates].filter(([, c]) =>
+          c.value.facet && c.value.path === path(occurrence.filePath) &&
+          c.value.range && c.value.range.start < occurrence.range.end &&
+          occurrence.range.start < c.value.range.end
+        );
+        if (!triggers.length) continue;
+        const key = `glossary:${occurrence.term.term}`;
+        const previous = candidates.get(key),
+          reasons = triggers.flatMap(([triggerKey, c]) =>
+            c.reasons.map((r) => ({
+              ...r,
+              rule: "select-glossary-term",
+              triggerKey,
+            }))
+          );
+        if (previous) previous.reasons.push(...reasons);
+        else {candidates.set(key, {
+            value: {
+              kind: "glossary-definition",
+              path: scopedGlossary.glossaryPath
+                ? path(scopedGlossary.glossaryPath)
+                : undefined,
+              range: occurrence.term.declarationRange,
+              text: `${occurrence.term.term}: ${occurrence.term.definition}`,
+            },
+            reasons,
+          });}
+      }
+    }
+    const normalizeDiagnostic = (d: SigilDiagnostic): SigilDiagnostic => ({
+      ...d,
+      filePath: d.filePath ? path(d.filePath) : undefined,
+      related: d.related.map((r) => ({
+        ...r,
+        filePath: r.filePath ? path(r.filePath) : undefined,
+      })),
     });
-    unique.set(
-      key,
-      path === item.filePath ? item : { ...item, filePath: path },
+    const diagnostics = orderDiagnostics([
+      ...resolved.diagnostics.filter((d) =>
+        !d.filePath || selectedPaths.has(path(d.filePath))
+      ),
+      ...(scopedGlossary?.diagnostics ?? []),
+      ...implementationDiagnostics,
+    ].map(normalizeDiagnostic));
+    for (const d of diagnostics) {
+      candidates.set(`diagnostic:${canonicalJson(d)}`, {
+        value: {
+          kind: "diagnostic",
+          path: d.filePath,
+          range: d.range,
+          implementationRange: d.implementationRange,
+          diagnostic: d,
+          text: `${d.severity} ${d.code}: ${d.message}`,
+        },
+        reasons: seeds.map((seed) => ({
+          rule: "select-target",
+          seedKey: seed.id,
+          anchorKey: seed.id,
+        })),
+      });
+    }
+    return await materialize(
+      resolved,
+      targetIdentity,
+      purpose,
+      seeds,
+      nodes,
+      edges,
+      candidates,
+      diagnostics,
+      identities,
+      budget,
     );
   }
-  const severityRank = { error: 0, warning: 1, info: 2 };
-  return [...unique.values()].sort((left, right) =>
-    severityRank[left.severity] - severityRank[right.severity] ||
-    (left.filePath ?? "").localeCompare(right.filePath ?? "") ||
-    (left.range?.start.line ?? 0) - (right.range?.start.line ?? 0) ||
-    (left.range?.start.column ?? 0) - (right.range?.start.column ?? 0) ||
-    left.code.localeCompare(right.code) ||
-    left.message.localeCompare(right.message)
-  );
+}
+
+function nodeIdentity(value: NodeValue) {
+  return {
+    kind: value.kind,
+    path: value.path,
+    componentName: value.componentName,
+    range: value.range,
+    location: value.location,
+    implementationRange: value.implementationRange,
+  };
+}
+function edgeIdentity(
+  value: EdgeValue,
+  sourceIdentity: string,
+  targetIdentity: string,
+) {
+  return {
+    relation: value.relation,
+    sourceIdentity,
+    targetIdentity,
+    originPath: value.originPath,
+    originRange: value.originRange,
+    implementationRange: value.implementationRange,
+  };
+}
+function compareLocation(
+  a: { path?: string; range?: SourceRange; componentName?: string },
+  b: { path?: string; range?: SourceRange; componentName?: string },
+): number {
+  return compareScalarText(a.path ?? "", b.path ?? "") ||
+    Number(!!a.range) - Number(!!b.range) ||
+    (a.range?.start ?? -1) - (b.range?.start ?? -1) ||
+    (a.range?.end ?? -1) - (b.range?.end ?? -1) ||
+    compareScalarText(a.componentName ?? "", b.componentName ?? "");
 }
 
 async function materialize(
   resolved: ResolvedSigilWorkspace,
   target: PurposeRetrievalResult["target"],
   purpose: RetrievalPurpose,
+  seeds: readonly ResolvedComponent[],
   nodeDrafts: Map<string, NodeDraft>,
-  edgeDrafts: Map<string, EdgeDraft>,
-  evidenceDrafts: EvidenceDraft[],
+  edgeDrafts: Map<string, EdgeValue>,
+  candidates: Map<string, Candidate>,
   diagnostics: readonly SigilDiagnostic[],
-  incomplete: boolean,
+  registry: RetrievalIdentityRegistry,
   maxEvidenceBytes?: number,
 ): Promise<PurposeRetrievalResult> {
-  const nodeEntries = await Promise.all(
-    [...nodeDrafts].map(async ([key, draft]) =>
-      [
-        key,
-        {
-          identity: `n:${await sha256Canonical({
-            kind: draft.kind,
-            path: draft.path,
-            componentName: draft.componentName,
-            range: draft.range,
-            location: draft.location,
-          })}`,
-          kind: draft.kind,
-          path: draft.path,
-          componentName: draft.componentName,
-          range: draft.range,
-          location: draft.location,
-        } satisfies RetrievalNode,
-        draft,
-      ] as const
-    ),
+  const distances = new Map<string, number>();
+  const queue = seeds.map((s) => s.id);
+  for (const key of queue) distances.set(key, 0);
+  for (let i = 0; i < queue.length; i++) {
+    for (const edge of edgeDrafts.values()) {
+      if (edge.sourceKey === queue[i] && !distances.has(edge.targetKey)) {
+        distances.set(edge.targetKey, distances.get(queue[i])! + 1);
+        queue.push(edge.targetKey);
+      }
+    }
+  }
+  const nodes = await Promise.all(
+    [...nodeDrafts].map(async ([key, draft]) => ({
+      key,
+      rank: draft.rank,
+      value: {
+        ...draft.value,
+        identity: await registry.identify("n", nodeIdentity(draft.value)),
+      } satisfies RetrievalNode,
+    })),
   );
-  nodeEntries.sort((a, b) =>
-    a[2].classRank - b[2].classRank || compareLocated(a[1], b[1])
+  nodes.sort((a, b) =>
+    a.rank - b.rank ||
+    (distances.get(a.key) ?? 0) - (distances.get(b.key) ?? 0) ||
+    compareLocation(a.value, b.value) ||
+    compareScalarText(a.value.identity, b.value.identity)
   );
-  const nodeByKey = new Map(nodeEntries.map(([key, node]) => [key, node]));
-  const edgeEntries = await Promise.all(
-    [...edgeDrafts].map(async ([key, draft]) =>
-      [
-        key,
-        {
-          identity: `e:${await sha256Canonical({
-            relation: draft.relation,
-            sourceIdentity: nodeByKey.get(draft.sourceKey)!.identity,
-            targetIdentity: nodeByKey.get(draft.targetKey)!.identity,
-            originPath: draft.originPath,
-            originRange: draft.originRange,
-          })}`,
-          relation: draft.relation,
-          sourceIdentity: nodeByKey.get(draft.sourceKey)!.identity,
-          targetIdentity: nodeByKey.get(draft.targetKey)!.identity,
-          originPath: draft.originPath,
-          originRange: draft.originRange,
-        } satisfies RetrievalEdge,
-      ] as const
-    ),
-  );
-  const nodeOrder = new Map(
-    nodeEntries.map(([, node], index) => [node.identity, index]),
-  );
-  edgeEntries.sort((a, b) =>
-    nodeOrder.get(a[1].sourceIdentity)! - nodeOrder.get(b[1].sourceIdentity)! ||
-    RELATION_ORDER.indexOf(a[1].relation) -
-      RELATION_ORDER.indexOf(b[1].relation) ||
-    nodeOrder.get(a[1].targetIdentity)! - nodeOrder.get(b[1].targetIdentity)! ||
-    a[1].identity.localeCompare(b[1].identity)
-  );
-  const edgeByKey = new Map(edgeEntries);
-  const evidenceBase = await Promise.all(evidenceDrafts.map(async (draft) => ({
-    draft,
-    unit: {
-      identity: `v:${await sha256Canonical({
-        kind: draft.kind,
-        path: draft.path,
-        componentName: draft.componentName,
-        sectionName: draft.sectionName,
-        conceptIdentity: draft.conceptIdentity,
-        range: draft.range,
-        location: draft.location,
-      })}`,
-      kind: draft.kind,
-      path: draft.path,
-      componentName: draft.componentName,
-      sectionName: draft.sectionName,
-      conceptIdentity: draft.conceptIdentity,
-      range: draft.range,
-      location: draft.location,
-      text: draft.text,
-      inclusionReasonIdentities: [],
-    } satisfies EvidenceUnit,
-  })));
-  const uniqueEvidence = [
-    ...new Map(evidenceBase.map((item) => [item.unit.identity, item])).values(),
-  ];
-  uniqueEvidence.sort((a, b) =>
-    EVIDENCE_ORDER.indexOf(a.unit.kind) - EVIDENCE_ORDER.indexOf(b.unit.kind) ||
-    compareLocated(a.unit, b.unit)
-  );
-  const reasons: InclusionReason[] = [];
-  for (const item of uniqueEvidence) {
-    const seedIdentity = nodeByKey.get(item.draft.seedKey)?.identity ??
-      nodeEntries[0][1].identity;
-    const edgeIdentities = item.draft.edgeKeys.map((key) =>
-      edgeByKey.get(key)?.identity
-    ).filter((value): value is string => !!value);
-    const reasonObject = {
-      rule: item.draft.rule,
-      seedIdentity,
-      selectedIdentity: item.unit.identity,
-      edgeIdentities,
+  const nodeByKey = new Map(nodes.map((n) => [n.key, n.value]));
+  const nodeOrder = new Map(nodes.map((n, i) => [n.value.identity, i]));
+  const edges = await Promise.all([...edgeDrafts].map(async ([key, draft]) => {
+    const { sourceKey, targetKey, ...value } = draft;
+    const sourceIdentity = nodeByKey.get(sourceKey)!.identity,
+      targetIdentity = nodeByKey.get(targetKey)!.identity;
+    return {
+      key,
+      sourceKey,
+      targetKey,
+      value: {
+        ...value,
+        sourceIdentity,
+        targetIdentity,
+        identity: await registry.identify(
+          "e",
+          edgeIdentity(draft, sourceIdentity, targetIdentity),
+        ),
+      } satisfies RetrievalEdge,
     };
-    reasons.push({
-      identity: `r:${await sha256Canonical(reasonObject)}`,
-      ...reasonObject,
-    });
+  }));
+  edges.sort((a, b) =>
+    nodeOrder.get(a.value.sourceIdentity)! -
+      nodeOrder.get(b.value.sourceIdentity)! ||
+    RELATIONS.indexOf(a.value.relation) - RELATIONS.indexOf(b.value.relation) ||
+    nodeOrder.get(a.value.targetIdentity)! -
+      nodeOrder.get(b.value.targetIdentity)! ||
+    compareScalarText(a.value.identity, b.value.identity)
+  );
+  const edgeOrder = new Map(edges.map((e, i) => [e.value.identity, i]));
+  const paths = new Map<string, Map<string, string[]>>();
+  for (const seed of seeds) {
+    const found = new Map<string, string[]>([[seed.id, []]]),
+      pending = [seed.id];
+    for (let i = 0; i < pending.length; i++) {
+      for (const edge of edges) {
+        if (
+          edge.sourceKey !== pending[i] || found.has(edge.targetKey)
+        ) continue;
+        found.set(edge.targetKey, [
+          ...found.get(pending[i])!,
+          edge.value.identity,
+        ]);
+        pending.push(edge.targetKey);
+      }
+    }
+    paths.set(seed.id, found);
+  }
+  const evidence = await Promise.all(
+    [...candidates].map(async ([key, candidate]) => {
+      const value = candidate.value;
+      const identity = await registry.identify("v", {
+        kind: value.kind,
+        path: value.path,
+        componentName: value.componentName,
+        sectionName: value.sectionName,
+        range: value.range,
+        location: value.location,
+        implementationRange: value.implementationRange,
+        groupingId: value.facet?.groupingId,
+        ownership: value.ownership,
+        diagnostic: value.diagnostic,
+      });
+      return {
+        key,
+        candidate,
+        value: {
+          ...value,
+          identity,
+          inclusionReasonIdentities: [],
+        } as EvidenceUnit,
+      };
+    }),
+  );
+  evidence.sort((a, b) =>
+    KINDS.indexOf(a.value.kind) - KINDS.indexOf(b.value.kind) ||
+    compareLocation(a.value, b.value) ||
+    compareScalarText(a.value.sectionName ?? "", b.value.sectionName ?? "") ||
+    compareScalarText(
+      a.value.facet?.groupingTag ?? "",
+      b.value.facet?.groupingTag ?? "",
+    ) || compareScalarText(a.value.identity, b.value.identity)
+  );
+  const evidenceOrder = new Map(evidence.map((e, i) => [e.value.identity, i]));
+  const evidenceKeyOrder = new Map(evidence.map((e, i) => [e.key, i]));
+  const comparePaths = (a: readonly string[], b: readonly string[]) => {
+    if (a.length !== b.length) return a.length - b.length;
+    for (let i = 0; i < a.length; i++) {
+      const difference = edgeOrder.get(a[i])! - edgeOrder.get(b[i])!;
+      if (difference) return difference;
+    }
+    return 0;
+  };
+  const reasons: InclusionReason[] = [];
+  for (const item of evidence) {
+    const choices = new Map<
+      string,
+      {
+        rule: string;
+        seedIdentity: string;
+        selectedIdentity: string;
+        edgeIdentities: string[];
+        triggerOrder: number;
+      }
+    >();
+    for (const draft of item.candidate.reasons) {
+      const path = paths.get(draft.seedKey)?.get(draft.anchorKey);
+      if (path === undefined) continue;
+      const value = {
+        rule: draft.rule,
+        seedIdentity: nodeByKey.get(draft.seedKey)!.identity,
+        selectedIdentity: item.value.identity,
+        edgeIdentities: path,
+        triggerOrder: draft.triggerKey
+          ? evidenceKeyOrder.get(draft.triggerKey)!
+          : -1,
+      };
+      const key = canonicalJson([value.rule, value.seedIdentity]);
+      const old = choices.get(key);
+      if (
+        !old ||
+        (comparePaths(path, old.edgeIdentities) ||
+            value.triggerOrder - old.triggerOrder) < 0
+      ) {
+        choices.set(key, value);
+      }
+    }
+    let selected = [...choices.values()];
+    if (item.value.kind === "glossary-definition") {
+      selected = selected.sort((a, b) =>
+        comparePaths(a.edgeIdentities, b.edgeIdentities) ||
+        a.triggerOrder - b.triggerOrder ||
+        nodeOrder.get(a.seedIdentity)! - nodeOrder.get(b.seedIdentity)!
+      ).slice(0, 1);
+    }
+    for (const choice of selected) {
+      const { triggerOrder: _triggerOrder, ...value } = choice;
+      reasons.push({ ...value, identity: await registry.identify("r", value) });
+    }
   }
   const uniqueReasons = [
-    ...new Map(reasons.map((reason) => [reason.identity, reason])).values(),
-  ].sort((a, b) =>
-    a.selectedIdentity.localeCompare(b.selectedIdentity) ||
-    a.rule.localeCompare(b.rule) || a.identity.localeCompare(b.identity)
+    ...new Map(reasons.map((r) => [r.identity, r])).values(),
+  ];
+  uniqueReasons.sort((a, b) =>
+    evidenceOrder.get(a.selectedIdentity)! -
+      evidenceOrder.get(b.selectedIdentity)! ||
+    RULES.indexOf(a.rule) - RULES.indexOf(b.rule) ||
+    nodeOrder.get(a.seedIdentity)! - nodeOrder.get(b.seedIdentity)! ||
+    comparePaths(a.edgeIdentities, b.edgeIdentities) ||
+    compareScalarText(a.identity, b.identity)
   );
-  const reasonByEvidence = new Map<string, string[]>();
-  for (const reason of uniqueReasons) {
-    reasonByEvidence.set(reason.selectedIdentity, [
-      ...(reasonByEvidence.get(reason.selectedIdentity) ?? []),
-      reason.identity,
-    ]);
-  }
-  const evidence = uniqueEvidence.map(({ unit }) => ({
-    ...unit,
-    inclusionReasonIdentities: reasonByEvidence.get(unit.identity) ?? [],
+  const uniqueEvidence = [
+    ...new Map(evidence.map((e) => [e.value.identity, e.value])).values(),
+  ].map((value) => ({
+    ...value,
+    inclusionReasonIdentities: uniqueReasons.filter((r) =>
+      r.selectedIdentity === value.identity
+    ).map((r) => r.identity),
   }));
   const exclusions = await exclusionFrontier(
     resolved,
-    nodeEntries.map(([, node]) => node),
-    edgeEntries.map(([, edge]) => edge),
+    nodeDrafts,
+    nodeByKey,
+    nodeOrder,
+    registry,
   );
-  // Evidence is already ordered selected-first, then dependency, importer,
-  // cycle member, and module context, so spending the budget in order keeps
-  // the closest evidence. The selected contract is never dropped: a boundary
-  // returned without its own contract would be useless.
-  const budgeted: typeof evidence = [];
+  const budgeted: EvidenceUnit[] = [];
   let budget: RetrievalBudgetReport | undefined;
-  if (maxEvidenceBytes === undefined) {
-    budgeted.push(...evidence);
-  } else {
+  if (maxEvidenceBytes === undefined) budgeted.push(...uniqueEvidence);
+  else {
     const withheld = new Map<EvidenceKind, number>();
-    let spent = 0;
-    let withheldBytes = 0;
-    // The first optional unit that does not fit ends optional selection.
-    // Continuing would admit later, less relevant evidence over the closer
-    // evidence just withheld.
-    let exhausted = false;
-    for (const unit of evidence) {
-      const required = unit.kind === "selected-contract" ||
-        unit.kind === "selected-expansion";
-      const size = utf8Length(unit.text);
-      if (required || (!exhausted && spent + size <= maxEvidenceBytes)) {
+    let spent = 0, withheldBytes = 0, exhausted = false;
+    for (const unit of uniqueEvidence) {
+      const size = new TextEncoder().encode(unit.text).length;
+      if (
+        unit.kind === "selected-contract" ||
+        (!exhausted && spent + size <= maxEvidenceBytes)
+      ) {
         budgeted.push(unit);
         spent += size;
-        continue;
+      } else {
+        exhausted = true;
+        withheldBytes += size;
+        withheld.set(unit.kind, (withheld.get(unit.kind) ?? 0) + 1);
       }
-      exhausted = true;
-      withheldBytes += size;
-      withheld.set(unit.kind, (withheld.get(unit.kind) ?? 0) + 1);
     }
-    budget = {
-      maxEvidenceBytes,
-      includedBytes: spent,
-      withheldCount: evidence.length - budgeted.length,
-      withheldBytes,
-      withheldByKind: [...withheld]
-        .sort((left, right) =>
-          right[1] - left[1] || left[0].localeCompare(right[0])
-        )
-        .map(([kind, count]) => ({ kind, count })),
-    };
+    if (withheld.size) {
+      budget = {
+        maxEvidenceBytes,
+        includedBytes: spent,
+        withheldCount: [...withheld.values()].reduce((a, b) => a + b, 0),
+        withheldBytes,
+        withheldByKind: [...withheld].map(([kind, count]) => ({ kind, count }))
+          .sort((a, b) =>
+            b.count - a.count || KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind)
+          ),
+      };
+    }
   }
-  // A reason explains why an included unit was selected, so a reason for
-  // withheld evidence is noise rather than explanation.
-  const keptIdentities = new Set(budgeted.map((unit) => unit.identity));
-  const budgetedReasons = maxEvidenceBytes === undefined
-    ? uniqueReasons
-    : uniqueReasons.filter((reason) =>
-      keptIdentities.has(reason.selectedIdentity)
-    );
-  const collision = hasIdentityCollision([
-    ...nodeEntries.map(([, item]) => item),
-    ...edgeEntries.map(([, item]) => item),
-    ...budgeted,
-    ...budgetedReasons,
-    ...exclusions,
-  ]);
-  if (collision) {
-    return failure(
-      resolved,
-      target,
-      purpose,
-      "SIGIL_RETRIEVAL_IDENTITY_COLLISION",
-    );
-  }
+  const included = new Set(budgeted.map((e) => e.identity));
   const base = {
-    schema: "sigil-purpose-retrieval/v1" as const,
-    policyVersion: 1 as const,
+    schema: "sigil-purpose-retrieval/v2" as const,
+    policyVersion: 2 as const,
     workspaceSnapshotIdentity: resolved.workspace.workspaceSnapshotIdentity,
     target,
     purpose,
     graph: {
-      nodes: nodeEntries.map(([, node]) => node),
-      edges: edgeEntries.map(([, edge]) => edge),
+      nodes: nodes.map((n) => n.value),
+      edges: edges.map((e) => e.value),
     },
     evidence: budgeted,
-    inclusionReasons: budgetedReasons,
+    inclusionReasons: uniqueReasons.filter((r) =>
+      included.has(r.selectedIdentity)
+    ),
     exclusions,
-    ...(budget ? { budget } : {}),
     context: {
-      sections: budgeted.map((unit) => ({
-        kind: unit.kind,
-        text: unit.text,
-        evidenceIdentity: unit.identity,
-        inclusionReasonIdentities: unit.inclusionReasonIdentities,
+      sections: budgeted.map((e) => ({
+        kind: e.kind,
+        text: e.text,
+        evidenceIdentity: e.identity,
+        inclusionReasonIdentities: e.inclusionReasonIdentities,
       })),
     },
-    diagnostics: [...diagnostics],
+    diagnostics,
+    ...(budget ? { budget } : {}),
   };
-  return {
-    ...base,
-    fingerprint: `sha256:${await sha256Canonical({ ...base, incomplete })}`,
-  };
+  return { ...base, fingerprint: await sha256Canonical(base) };
 }
 
 async function exclusionFrontier(
   resolved: ResolvedSigilWorkspace,
-  nodes: readonly RetrievalNode[],
-  selectedEdges: readonly RetrievalEdge[],
+  drafts: Map<string, NodeDraft>,
+  nodes: Map<string, RetrievalNode>,
+  order: Map<string, number>,
+  registry: RetrievalIdentityRegistry,
 ): Promise<ExcludedRelation[]> {
-  const selectedComponents = new Set(
-    nodes.filter((node) => node.kind === "component-declaration").map((node) =>
-      `${node.path}\0${node.componentName}`
-    ),
-  );
-  const selectedEdgeOrigins = new Set(
-    selectedEdges.map((edge) => `${edge.originPath}\0${edge.relation}`),
-  );
-  const out: ExcludedRelation[] = [];
-  for (const edge of resolved.graph.importedComponentEdges) {
-    for (const source of edge.sourceComponents) {
-      const sourcePath = relativePath(
-        resolved.workspace.root,
-        source.declarationPath,
-      );
-      const targetPath = relativePath(resolved.workspace.root, edge.targetFile);
-      if (
-        !selectedComponents.has(`${sourcePath}\0${source.componentName}`) ||
-        selectedComponents.has(`${targetPath}\0${edge.componentName}`) ||
-        selectedEdgeOrigins.has(
-          `${
-            relativePath(resolved.workspace.root, edge.sourceFile)
-          }\0direct-dependency`,
-        )
-      ) {
-        continue;
-      }
-      const sourceNode = nodes.find((node) =>
-        node.path === sourcePath && node.componentName === source.componentName
-      );
-      if (!sourceNode) continue;
-      const frontierIdentity = `e:${await sha256Canonical({
-        relation: "direct-dependency",
-        sourceIdentity: sourceNode.identity,
-        targetIdentity: `${targetPath}\0${edge.componentName}`,
-        originPath: relativePath(resolved.workspace.root, edge.sourceFile),
-        originRange: edge.originRange,
-      })}`;
-      const object = {
-        rule: "exclude-transitive-dependency",
-        edgeIdentity: frontierIdentity,
-        sourceIdentity: sourceNode.identity,
-        targetIdentity: `${targetPath}\0${edge.componentName}`,
+  const components = new Map(resolved.components.map((c) => [c.id, c]));
+  const provenance = new SourceProvenance(resolved.workspace.root);
+  const path = (p: string) => provenance.path(p);
+  const found: {
+    value: ExcludedRelation;
+    target: NodeValue;
+    relation: RetrievalRelation;
+  }[] = [];
+  const consider = async (
+    source: string,
+    target: string,
+    targetValue: NodeValue,
+    relation: RetrievalRelation,
+    originPath: string,
+    originRange: SourceRange,
+  ) => {
+    const rank = drafts.get(source)?.rank;
+    if (rank === undefined || nodes.has(target)) return;
+    const rule = rank === 4
+      ? "exclude-cycle-outward"
+      : relation === "direct-dependency" && rank === 2
+      ? "exclude-transitive-dependency"
+      : relation === "direct-importer" && rank === 3
+      ? "exclude-transitive-importer"
+      : undefined;
+    if (!rule) return;
+    const sourceIdentity = nodes.get(source)!.identity,
+      targetIdentity = await registry.identify("n", nodeIdentity(targetValue));
+    const edgeIdentity = await registry.identify("e", {
+      relation,
+      sourceIdentity,
+      targetIdentity,
+      originPath,
+      originRange,
+    });
+    const identity = await registry.identify("x", { rule, edgeIdentity });
+    found.push({
+      value: { identity, rule, edgeIdentity, sourceIdentity, targetIdentity },
+      target: targetValue,
+      relation,
+    });
+  };
+  for (const edge of resolved.graph.importedTagEdges) {
+    const provider = components.get(edge.providerComponentId)!;
+    const providerNode: NodeValue = {
+      kind: "component-declaration",
+      path: path(provider.filePath),
+      componentName: provider.name,
+      range: provider.declaration.range,
+    };
+    const consumerIds = [...new Set(edge.uses.map((u) => u.componentId))];
+    for (const consumerId of consumerIds) {
+      const consumer = components.get(consumerId)!;
+      const consumerNode: NodeValue = {
+        kind: "component-declaration",
+        path: path(consumer.filePath),
+        componentName: consumer.name,
+        range: consumer.declaration.range,
       };
-      out.push({ identity: `x:${await sha256Canonical(object)}`, ...object });
+      await consider(
+        consumerId,
+        provider.id,
+        providerNode,
+        "direct-dependency",
+        path(edge.sourceFile),
+        edge.originRange,
+      );
+      await consider(
+        provider.id,
+        consumerId,
+        consumerNode,
+        "direct-importer",
+        path(edge.sourceFile),
+        edge.originRange,
+      );
+    }
+    if (!consumerIds.length) {
+      await consider(
+        provider.id,
+        `file:${edge.sourceFile}`,
+        { kind: "sigil-file", path: path(edge.sourceFile) },
+        "direct-importer",
+        path(edge.sourceFile),
+        edge.originRange,
+      );
     }
   }
-  return out.sort((a, b) => a.identity.localeCompare(b.identity));
+  found.sort((a, b) =>
+    order.get(a.value.sourceIdentity)! - order.get(b.value.sourceIdentity)! ||
+    compareLocation(a.target, b.target) ||
+    RELATIONS.indexOf(a.relation) - RELATIONS.indexOf(b.relation) ||
+    EXCLUSION_RULES.indexOf(a.value.rule) -
+      EXCLUSION_RULES.indexOf(b.value.rule) ||
+    compareScalarText(a.value.identity, b.value.identity)
+  );
+  return [...new Map(found.map((e) => [e.value.identity, e.value])).values()];
 }
 
 async function failure(
@@ -1467,8 +1091,8 @@ async function failure(
   code: RetrievalErrorCode,
 ): Promise<PurposeRetrievalResult> {
   const base = {
-    schema: "sigil-purpose-retrieval/v1" as const,
-    policyVersion: 1 as const,
+    schema: "sigil-purpose-retrieval/v2" as const,
+    policyVersion: 2 as const,
     workspaceSnapshotIdentity: resolved.workspace.workspaceSnapshotIdentity,
     target,
     purpose,
@@ -1477,105 +1101,43 @@ async function failure(
     inclusionReasons: [],
     exclusions: [],
     context: { sections: [] },
-    diagnostics: [retrievalDiagnostic(code)],
+    diagnostics: [diagnostic(code, ERROR_MESSAGES[code])],
   };
-  return { ...base, fingerprint: `sha256:${await sha256Canonical(base)}` };
+  return { ...base, fingerprint: await sha256Canonical(base) };
 }
-function retrievalDiagnostic(code: RetrievalErrorCode): SigilDiagnostic {
-  return diagnostic(code, ERROR_MESSAGES[code]);
-}
-function validateRelativePath(path: string): string | undefined {
+
+function validImplementationEvidence(
+  input: ImplementationEvidenceInput,
+): boolean {
+  const exactKeys = (object: object, keys: readonly string[]) =>
+    canonicalJson(Object.keys(object).sort()) ===
+      canonicalJson([...keys].sort());
   if (
-    !path || path.includes("\0") || path.startsWith("/") ||
-    /^[A-Za-z]:[\\/]/.test(path)
-  ) return undefined;
-  const raw = path.replaceAll("\\", "/");
-  let depth = 0;
-  for (const part of raw.split("/")) {
-    if (!part || part === ".") continue;
-    if (part === "..") { if (--depth < 0) return undefined; }
-    else depth++;
+    !exactKeys(input, [
+      "workspaceSnapshotIdentity",
+      "discoveryState",
+      "sources",
+      "diagnostics",
+    ]) ||
+    !["complete", "unavailable"].includes(input.discoveryState) ||
+    canonicalJson(input.diagnostics) !==
+      canonicalJson(orderDiagnostics(input.diagnostics))
+  ) return false;
+  if (input.discoveryState === "unavailable") {
+    return input.sources.length === 0 && input.diagnostics.length > 0;
   }
-  const normalized = normalizePath(raw);
-  return normalized === "." || normalized.startsWith("../")
-    ? undefined
-    : normalized;
-}
-function uniqueComponents(
-  items: readonly ResolvedComponent[],
-): ResolvedComponent[] {
-  return [
-    ...new Map(items.map((item) => [`${item.filePath}\0${item.name}`, item]))
-      .values(),
-  ].sort((a, b) =>
-    a.filePath.localeCompare(b.filePath) ||
-    a.declaration.range.start.line - b.declaration.range.start.line ||
-    a.declaration.range.start.column - b.declaration.range.start.column ||
-    a.name.localeCompare(b.name)
-  );
-}
-function containingModuleComponent(
-  resolved: ResolvedSigilWorkspace,
-  component: ResolvedComponent,
-): ResolvedComponent | undefined {
-  let directory = dirname(component.filePath);
-  while (true) {
-    const modulePath = `${directory}/_module.sigil`;
-    const found = resolved.components.find((candidate) =>
-      candidate.filePath === modulePath
-    );
-    if (found) return found;
+  let previous: string | undefined;
+  for (const source of input.sources) {
+    const p = source.filePath;
     if (
-      directory === resolved.workspace.root || directory === "." ||
-      directory === "/"
-    ) return undefined;
-    const parent = dirname(directory);
-    if (parent === directory) return undefined;
-    directory = parent;
+      !exactKeys(source, ["filePath", "text"]) || typeof p !== "string" ||
+      typeof source.text !== "string" ||
+      p.includes("\0") || p.split("/").includes("..") ||
+      normalizePath(p) !== p || p.startsWith("/") ||
+      /^[A-Za-z]:/.test(p) || !isSupportedImplementationSource(p) ||
+      (previous !== undefined && compareScalarText(previous, p) >= 0)
+    ) return false;
+    previous = p;
   }
-}
-function normalizeRelativeSource(
-  resolved: ResolvedSigilWorkspace,
-  path: string,
-): string {
-  const normalized = normalizePath(path);
-  return normalized.startsWith(normalizePath(resolved.workspace.root))
-    ? relativePath(resolved.workspace.root, normalized)
-    : normalized.replace(/^\.\//, "");
-}
-function rangeKey(range?: SourceRange): string {
-  return range
-    ? `${range.start.line}:${range.start.column}-${range.end.line}:${range.end.column}`
-    : "";
-}
-function compareLocated(
-  a: {
-    path?: string;
-    range?: SourceRange;
-    componentName?: string;
-    identity: string;
-  },
-  b: {
-    path?: string;
-    range?: SourceRange;
-    componentName?: string;
-    identity: string;
-  },
-): number {
-  return (a.path ?? "").localeCompare(b.path ?? "") ||
-    Number(!!a.range) - Number(!!b.range) ||
-    (a.range?.start.line ?? 0) - (b.range?.start.line ?? 0) ||
-    (a.range?.start.column ?? 0) - (b.range?.start.column ?? 0) ||
-    (a.componentName ?? "").localeCompare(b.componentName ?? "") ||
-    a.identity.localeCompare(b.identity);
-}
-function overlaps(a: SourceRange, b: SourceRange): boolean {
-  const start = (range: SourceRange) =>
-    range.start.line * 1_000_000 + range.start.column;
-  const end = (range: SourceRange) =>
-    range.end.line * 1_000_000 + range.end.column;
-  return start(a) <= end(b) && start(b) <= end(a);
-}
-function hasIdentityCollision(items: readonly { identity: string }[]): boolean {
-  return new Set(items.map((item) => item.identity)).size !== items.length;
+  return true;
 }

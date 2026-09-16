@@ -1,5 +1,11 @@
-import { diagnostic } from "./diagnostics.ts";
-import { normalizePath } from "./path.ts";
+import { componentFacetsFor } from "./projections.ts";
+import { validTagName } from "./inline-content.ts";
+import {
+  compareScalarText,
+  diagnostic,
+  orderDiagnostics,
+} from "./diagnostics.ts";
+import { normalizeImportPath, normalizePath } from "./path.ts";
 import type {
   ComponentIdentity,
   ImplementationArtifactKind,
@@ -14,7 +20,7 @@ import type {
   ResolvedSigilWorkspace,
 } from "./model/resolution.ts";
 import type { SigilDiagnostic } from "./model/diagnostics.ts";
-import type { SourceRange } from "./model/language.ts";
+import type { ImplementationRange } from "./model/language.ts";
 
 const IMPLEMENTATION_RELATIONS: ReadonlySet<ImplementationRelation> = new Set([
   "implements",
@@ -84,7 +90,7 @@ interface ParsedAnnotation {
   readonly relation: ImplementationRelation;
   readonly sigilPath: string;
   readonly componentName: string;
-  readonly conceptName?: string;
+  readonly tagName?: string;
   readonly sectionNames: readonly string[];
 }
 
@@ -117,7 +123,7 @@ interface SourceRegion {
 
 interface Entrypoint {
   readonly identity: string;
-  readonly range: SourceRange;
+  readonly range: ImplementationRange;
 }
 
 interface EntrypointMatch {
@@ -133,22 +139,22 @@ export function ownedImplementationTargetsFor(
   resolved: ResolvedSigilWorkspace,
   implementationSources: readonly ImplementationSource[],
   componentIdentity: ComponentIdentity,
-  conceptName?: string,
+  tagName?: string,
   sectionName?: ImplementationSection,
 ): OwnedImplementationProjection | undefined {
   const componentName = componentIdentity.componentName;
   const owningComponent = resolved.components.find((component) =>
-    component.name === componentName &&
-    component.filePath === componentIdentity.declarationPath
+    component.identity && component.name === componentName &&
+    relativeToWorkspace(resolved, component.filePath) ===
+      componentIdentity.declarationPath
   );
   if (!owningComponent) return undefined;
-
-  const concept = conceptName
-    ? owningComponent.conceptNamespace.concepts.find((item) =>
-      item.identifier === conceptName
-    )
-    : undefined;
-  if (conceptName && !concept) return undefined;
+  const tag = tagName === undefined
+    ? undefined
+    : owningComponent.accessibleTags.find((t) =>
+      t.name === tagName && t.status === "resolved"
+    )?.tag;
+  if (tagName !== undefined && !tag?.identity) return undefined;
 
   const diagnostics: SigilDiagnostic[] = [];
   const targets: OwnedImplementationTarget[] = [];
@@ -169,8 +175,8 @@ export function ownedImplementationTargetsFor(
     ) {
       if (
         result.annotation.componentName !== componentName ||
-        (conceptName !== undefined &&
-          result.annotation.conceptName !== conceptName) ||
+        (tagName !== undefined &&
+          result.annotation.tagName !== tagName) ||
         (sectionName !== undefined &&
           !result.target.sections.includes(sectionName))
       ) continue;
@@ -183,7 +189,9 @@ export function ownedImplementationTargetsFor(
       ) continue;
       const key = `${result.target.relation}\0${result.target.filePath}\0${
         result.target.symbolIdentity ?? ""
-      }\0${result.target.sections.join(",")}`;
+      }\0${result.target.sections.join(",")}\0${
+        JSON.stringify(result.target.tagName)
+      }`;
       if (seen.has(key)) continue;
       seen.add(key);
       targets.push(result.target);
@@ -191,18 +199,19 @@ export function ownedImplementationTargetsFor(
   }
 
   targets.sort((left, right) =>
-    left.filePath.localeCompare(right.filePath) ||
-    (left.symbolIdentity ?? "").localeCompare(right.symbolIdentity ?? "") ||
-    left.relation.localeCompare(right.relation) ||
-    left.sections.join(",").localeCompare(right.sections.join(","))
+    compareScalarText(left.filePath, right.filePath) ||
+    compareScalarText(left.symbolIdentity ?? "", right.symbolIdentity ?? "") ||
+    compareScalarText(left.relation, right.relation) ||
+    compareScalarText(left.sections.join(","), right.sections.join(","))
   );
 
   return {
     owningComponent,
-    concept,
+    tag,
+    facets: componentFacetsFor(owningComponent, tagName, sectionName),
     sectionName,
     targets,
-    diagnostics,
+    diagnostics: orderDiagnostics(diagnostics),
   };
 }
 
@@ -220,9 +229,7 @@ export function ownershipDiagnosticsFor(
     if (!isSupportedImplementationSource(normalizedSource.filePath)) continue;
     implementationAnnotations(resolved, normalizedSource, diagnostics);
   }
-  return [...new Map(
-    diagnostics.map((item) => [JSON.stringify(item), item] as const),
-  ).values()].sort(compareDiagnostics);
+  return orderDiagnostics(diagnostics);
 }
 
 /*
@@ -312,6 +319,10 @@ function implementationAnnotations(
         ));
         continue;
       }
+      const component = resolved.components.find((c) =>
+        c.identity && c.name === annotation.componentName &&
+        componentMatchesSigilPath(resolved, c, annotation.sigilPath)
+      )!;
       results.push({
         annotation,
         target: {
@@ -319,8 +330,18 @@ function implementationAnnotations(
           artifactKind: inferArtifactKind(source.filePath, annotation.relation),
           filePath: relativeToWorkspace(resolved, source.filePath),
           sections: annotation.sectionNames as readonly ImplementationSection[],
+          tagName: annotation.tagName,
+          tagIdentity: component.accessibleTags.find((t) =>
+            t.name === annotation.tagName && t.status === "resolved"
+          )?.tag?.identity,
+          facetIds: componentFacetsFor(component, annotation.tagName).filter(
+            (f) => annotation.sectionNames.includes(f.sectionName),
+          ).map((f) => f.id),
           symbolIdentity: entrypoint?.identity,
-          location: entrypoint?.range.start,
+          location: entrypoint?.range.start ??
+            (MARKDOWN_EXTENSIONS.includes(fileExtension(source.filePath))
+              ? { line: 1, column: 1 }
+              : undefined),
           annotationRange: rangeForOffsets(
             source.text,
             comment.start,
@@ -336,24 +357,42 @@ function implementationAnnotations(
 function parseImplementationAnnotation(
   line: string,
 ): ParsedAnnotation | undefined {
-  const match = line.trim().match(
-    /^@sigil\s+(implements|uses|tests)\s+(\S+)\s+(\S+)\s*$/i,
-  );
-  if (!match) return undefined;
-  const relation = match[1].toLowerCase() as ImplementationRelation;
+  const prefix =
+    /^@sigil\s+(implements|uses|tests)\s+(\S+?\.sigil)::([A-Za-z][A-Za-z0-9_]*)(.*)$/i
+      .exec(line.trim());
+  if (!prefix) return undefined;
+  const relation = prefix[1].toLowerCase() as ImplementationRelation;
   if (!IMPLEMENTATION_RELATIONS.has(relation)) return undefined;
-  const parts = match[2].split("::");
-  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !part)) {
-    return undefined;
+  const sigilPath = normalizeImportPath(prefix[2]);
+  if (!sigilPath) return undefined;
+  let suffix = prefix[4], tagName: string | undefined;
+  if (suffix.startsWith("::")) {
+    suffix = suffix.slice(2);
+    if (suffix.startsWith('"')) {
+      const quoted = /^"(?:[^"\\]|\\.)*"/.exec(suffix)?.[0];
+      if (!quoted) return undefined;
+      try {
+        tagName = JSON.parse(quoted);
+      } catch {
+        return undefined;
+      }
+      suffix = suffix.slice(quoted.length);
+    } else {
+      const name = /^\S+/.exec(suffix)?.[0];
+      if (!name || name.includes("::")) return undefined;
+      tagName = name;
+      suffix = suffix.slice(name.length);
+    }
+    if (tagName === undefined || !validTagName(tagName)) return undefined;
   }
-  const sigilPath = normalizePath(parts[0]);
-  if (!sigilPath.endsWith(".sigil")) return undefined;
+  const sections = /^\s+(\S+)\s*$/.exec(suffix)?.[1];
+  if (!sections) return undefined;
   return {
     relation,
     sigilPath,
-    componentName: parts[1],
-    conceptName: parts[2],
-    sectionNames: match[3].split(",").map((section) => section.toLowerCase()),
+    componentName: prefix[3],
+    tagName,
+    sectionNames: sections.split(",").map((s) => s.toLowerCase()),
   };
 }
 
@@ -366,19 +405,21 @@ function resolveAnnotationTarget(
   annotation: ParsedAnnotation,
 ): string | undefined {
   const component = resolved.components.find((item) =>
-    item.name === annotation.componentName &&
+    item.identity && item.name === annotation.componentName &&
     componentMatchesSigilPath(resolved, item, annotation.sigilPath)
   );
   if (!component) {
     return `Ownership annotation references unknown Sigil component ${annotation.componentName} in ${annotation.sigilPath}.`;
   }
   if (
-    annotation.conceptName &&
-    !component.conceptNamespace.concepts.some((concept) =>
-      concept.identifier === annotation.conceptName
+    annotation.tagName !== undefined &&
+    !component.accessibleTags.some((t) =>
+      t.name === annotation.tagName && t.status === "resolved"
     )
   ) {
-    return `Ownership annotation references unknown concept ${annotation.conceptName} on ${annotation.componentName}.`;
+    return `Ownership annotation references unknown or ambiguous Tag ${
+      JSON.stringify(annotation.tagName)
+    } on ${annotation.componentName}.`;
   }
   if (
     annotation.sectionNames.length === 0 ||
@@ -398,22 +439,16 @@ function resolveAnnotationTarget(
   if (unsupportedSection) {
     return `Ownership annotation uses unsupported section selector ${unsupportedSection}.`;
   }
-  const availableSections = annotation.conceptName
-    ? component.conceptNamespace.concepts
-      .find((concept) => concept.identifier === annotation.conceptName)
-      ?.occurrences.map((occurrence) => occurrence.sectionName) ?? []
-    : [
-      ...component.declaration.sections.map((section) => section.name),
-      ...component.expansions.expands.flatMap((expansion) =>
-        expansion.declaration.sections.map((section) => section.name)
-      ),
-    ];
+  const availableSections = componentFacetsFor(component, annotation.tagName)
+    .map((f) => f.sectionName);
   const unresolvedSection = annotation.sectionNames.find((section) =>
     !availableSections.includes(section as ImplementationSection)
   );
   if (unresolvedSection) {
-    const target = annotation.conceptName
-      ? `concept ${annotation.conceptName} on ${annotation.componentName}`
+    const target = annotation.tagName
+      ? `Tag ${
+        JSON.stringify(annotation.tagName)
+      } on ${annotation.componentName}`
       : `component ${annotation.componentName}`;
     return `Ownership annotation references section ${unresolvedSection} without a matching occurrence on ${target}.`;
   }
@@ -425,10 +460,7 @@ function componentMatchesSigilPath(
   component: ResolvedComponent,
   sigilPath: string,
 ): boolean {
-  return [
-    component.filePath,
-    ...component.expansions.expands.map((expansion) => expansion.filePath),
-  ].some((filePath) => relativeToWorkspace(resolved, filePath) === sigilPath);
+  return relativeToWorkspace(resolved, component.filePath) === sigilPath;
 }
 
 /*
@@ -989,30 +1021,21 @@ function annotationDiagnostic(
   comment: CommentBlock,
   message: string,
 ): SigilDiagnostic {
-  return diagnostic("SIGIL_PARSE_STRUCTURE", message, {
+  return diagnostic("SIGIL_IMPLEMENTATION_ANNOTATION", message, {
     filePath: source.filePath,
-    range: rangeForOffsets(source.text, comment.start, comment.end),
+    implementationRange: rangeForOffsets(
+      source.text,
+      comment.start,
+      comment.end,
+    ),
   });
-}
-
-function compareDiagnostics(
-  left: SigilDiagnostic,
-  right: SigilDiagnostic,
-): number {
-  const severityRank = { error: 0, warning: 1, info: 2 };
-  return severityRank[left.severity] - severityRank[right.severity] ||
-    (left.filePath ?? "").localeCompare(right.filePath ?? "") ||
-    (left.range?.start.line ?? 0) - (right.range?.start.line ?? 0) ||
-    (left.range?.start.column ?? 0) - (right.range?.start.column ?? 0) ||
-    left.code.localeCompare(right.code) ||
-    left.message.localeCompare(right.message);
 }
 
 function rangeForOffsets(
   source: string,
   start: number,
   end: number,
-): SourceRange {
+): ImplementationRange {
   return { start: positionAt(source, start), end: positionAt(source, end) };
 }
 
@@ -1021,7 +1044,7 @@ function positionAt(
   offset: number,
 ): { readonly line: number; readonly column: number } {
   const prefix = source.slice(0, Math.max(0, offset));
-  const lines = prefix.split(/\r?\n/);
+  const lines = prefix.split(/\r\n|\r|\n/);
   return {
     line: lines.length,
     column: (lines.at(-1)?.length ?? 0) + 1,

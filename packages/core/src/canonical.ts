@@ -30,8 +30,15 @@ export function canonicalJson(value: unknown): string {
  * @sigil implements packages/core/src/context-retrieval.sigil::SigilContextRetrieval::PurposeRetrievalResult interface
  * @sigil implements packages/core/src/workspace.sigil::SigilWorkspaceLoader::WorkspaceSnapshotIdentity logic,constraints
  */
-export async function sha256Canonical(value: unknown): Promise<string> {
+export function sha256Canonical(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(canonicalJson(value));
+  return sha256Bytes(bytes);
+}
+
+/** Digest original bytes, without JSON serialization or text normalization. */
+export async function sha256Bytes(
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte) =>
     byte.toString(16).padStart(2, "0")

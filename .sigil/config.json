@@ -1,12 +1,11 @@
 {
-  "sigilVersion": "0.7.0",
+  "sigilVersion": "0.8.0",
   "workspace": {
     "name": "sigil",
     "members": [
       "packages/cli",
       "packages/core",
       "packages/lsp",
-      "integrations/skills/sigil",
       "integrations/editor/vscode",
       "packages/sigilc"
     ]
@@ -25,7 +24,8 @@
       ".codex-progress/**",
       "repos/**",
       "**/target/**",
-      "examples/**"
+      "examples/**",
+      "integrations/skills/sigil/**"
     ]
   },
   "tools": {}

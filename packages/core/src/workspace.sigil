@@ -1,9 +1,11 @@
-@spec/language.sigil import { SigilWorkspaceConfig, SigilModuleIndex }
-@packages/core/src/model import { SigilSemanticModel }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
-@packages/core/src/filesystem.sigil import { SigilFileSystem }
-@packages/core/src/parser.sigil import { SigilParser }
-@packages/core/src/glossary.sigil import { SigilGlossaryEngine }
+@packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInterpretation }
+@packages/core/src/parser.sigil from SigilParser import { SourceDocumentParsing }
+@packages/core/src/filesystem.sigil from SigilFileSystem import { FileSystemPort, ByteInput }
+@packages/core/src/diagnostics.sigil from SigilDiagnostics import { DiagnosticConstruction }
+@packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { WorkspaceModel }
+@packages/core/config.sigil from SigilConfigurationParser import { ConfigurationParsing }
+@spec/glossary.sigil from SigilWorkspaceGlossary import { GlossaryFile }
+@spec/language.sigil from SigilWorkspaceConfig import { ConfigFile, WorkspaceBoundary, SourceSelection, LocalToolConfiguration }
 
 component SigilWorkspaceLoader {
   goal {
@@ -44,28 +46,119 @@ component SigilWorkspaceLoader {
       SigilWorkspace
     }
   }
-}
 
-expand SigilWorkspaceLoader {
   logic {
-    LocalToolConfiguration {
-      Read and validate optional LocalConfigFile after ConfigFile selects the
-      workspace root, then expose the merged effective configuration.
+
+    SourceIngress {
+      Read Sigil and configuration input as exact bytes through ByteInput. Strictly
+      decode UTF-8 before parser entry, retaining original text, byte offsets, BOM,
+      and newline forms in one source snapshot. Diagnose invalid bytes and retain
+      independently valid loaded sources.
+
+      String editor overlays require explicit scalar validity and source mapping
+      rather than replacement decoding. A complete textual snapshot identity is
+      unavailable for invalid ingress; never hash replacement text as a faithful
+      input.
+    }
+    LocalToolConfigurationLoading {
+      Apply LocalToolConfiguration by reading and validating optional LocalConfigFile
+      after ConfigFile selects the workspace root, then expose the merged effective
+      configuration.
+    }
+
+    WorkspaceSnapshotIdentity {
+      Construct an RFC 8785 canonical object containing one record for the workspace
+      config source when present, one record for the glossary source when present,
+      and one record for every loaded Sigil source. Each record contains kind,
+      normalized workspace-relative POSIX path, and exact decoded source text.
+
+      Order records by normalized path then kind, serialize the object as UTF-8 JSON
+      Canonicalization Scheme output under RFC 8785, compute SHA-256 under FIPS
+      180-4, and encode the digest as 64 lowercase hexadecimal characters.
+    }
+
+    WorkspaceDiscovery {
+      Without an explicit root, walk from the target toward filesystem root and
+      select the nearest eligible ConfigFile.
+
+      With an explicit root, require ConfigFile directly inside that root.
+
+      Use ConfigurationParsing to validate configuration before discovering or
+      parsing Sigil sources.
+
+      Reject a nearer configured workspace when a configured parent does not exclude
+      its subtree.
+    }
+
+    WorkspaceLoading {
+      Derive member roots only from WorkspaceBoundary members.
+
+      Skip excluded independent nested workspaces and diagnose included nested
+      ConfigFile instances.
+
+      Apply SourceSelection includes and then excludes to normalized
+      workspace-relative paths.
+
+      Parse selected source files in stable path order through SourceDocumentParsing.
+    }
+
+    GlossaryInterpretationLoading {
+      Check for GlossaryFile after selecting the workspace boundary and before
+      resolving loaded documents.
+
+      When present, read GlossaryFile through FileSystemPort and delegate its content
+      to GlossaryInterpretation.
+
+      Accumulate glossary diagnostics while keeping invalid definitions inactive.
     }
   }
 
   constraints {
+
     WorkspaceSnapshotIdentity {
       Include LocalConfigFile source when present so a local tools override changes
       the effective workspace snapshot used by native reports and evidence.
     }
 
-    LocalToolConfiguration {
+    LocalToolConfigurationLoading {
       LocalConfigFile is optional, has no workspace-discovery authority, and may
       override only the recursively merged tools configuration.
 
       Local configuration diagnostics prevent reliance on the effective workspace;
       the loader never repairs, rewrites, or ignores invalid local configuration.
+    }
+
+    WorkspaceSnapshotIdentity {
+      Snapshot identity excludes absolute workspace root, filesystem discovery order,
+      parsed objects, and diagnostics. A change to any included path or exact source
+      text is computationally expected to change the identity under SHA-256 collision
+      resistance, not guaranteed to do so absolutely.
+    }
+
+    WorkspaceFileAccess {
+      All filesystem access uses FileSystemPort.
+    }
+
+    RecoverableResults {
+      WorkspaceModel owns partial workspace results; DiagnosticConstruction supplies
+      their accumulated findings.
+
+      Configuration and source problems accumulate as diagnostics with partial
+      workspace results when practical.
+
+      Required filesystem failures propagate to the caller.
+    }
+
+    ModuleIndexFile {
+      Workspace loading treats _module.sigil as an ordinary included source; it has
+      no namespace, re-export, ancestry, or workspace-discovery authority.
+    }
+
+    GlossaryInterpretationLoading {
+      GlossaryFile loading is independent from SourceSelection globs.
+
+      Absence is valid while a filesystem failure reading an existing GlossaryFile
+      propagates to the caller.
     }
   }
 
@@ -94,103 +187,7 @@ expand SigilWorkspaceLoader {
       and each effective workspace snapshot records the local tools selection that
       produced it.
     }
-  }
 
-  cases {
-    LocalToolConfiguration {
-      A valid local tools.compile override is available to native tooling while the
-      same workspace retains its ConfigFile-defined sources and members.
-
-      A malformed local configuration prevents a clean workspace load and preserves
-      both configuration files unchanged.
-    }
-  }
-}
-
-expand SigilWorkspaceLoader {
-  logic {
-    WorkspaceSnapshotIdentity {
-      Construct an RFC 8785 canonical object containing one record for the workspace
-      config source when present, one record for the glossary source when present,
-      and one record for every loaded Sigil source. Each record contains kind,
-      normalized workspace-relative POSIX path, and exact decoded source text.
-
-      Order records by normalized path then kind, serialize the object as UTF-8 JSON
-      Canonicalization Scheme output under RFC 8785, compute SHA-256 under FIPS
-      180-4, and encode the digest as 64 lowercase hexadecimal characters.
-    }
-
-    WorkspaceDiscovery {
-      Without an explicit root, walk from the target toward filesystem root and
-      select the nearest eligible ConfigFile.
-
-      With an explicit root, require ConfigFile directly inside that root.
-
-      Validate configuration before discovering or parsing Sigil sources.
-
-      Reject a nearer configured workspace when a configured parent does not exclude
-      its subtree.
-    }
-
-    WorkspaceLoading {
-      Derive member roots only from WorkspaceBoundary members.
-
-      Skip excluded independent nested workspaces and diagnose included nested
-      ConfigFile instances.
-
-      Apply SourceSelection includes and then excludes to normalized
-      workspace-relative paths.
-
-      Parse selected source files in stable path order through SigilParser.
-    }
-
-    GlossaryInterpretation {
-      Check for GlossaryFile after selecting the workspace boundary and before
-      resolving loaded documents.
-
-      When present, read GlossaryFile through SigilFileSystem and delegate
-      interpretation to SigilGlossaryEngine.
-
-      Accumulate glossary diagnostics while keeping invalid definitions inactive.
-    }
-  }
-
-  constraints {
-    WorkspaceSnapshotIdentity {
-      Snapshot identity excludes absolute workspace root, filesystem discovery order,
-      parsed objects, and diagnostics. A change to any included path or exact source
-      text is computationally expected to change the identity under SHA-256 collision
-      resistance, not guaranteed to do so absolutely.
-    }
-
-    FileSystemPort {
-      All filesystem access uses SigilFileSystem.
-    }
-
-    RecoverableResults {
-      SigilSemanticModel owns partial workspace results and SigilDiagnostics owns
-      their accumulated diagnostics.
-
-      Configuration and source problems accumulate as diagnostics with partial
-      workspace results when practical.
-
-      Required filesystem failures propagate to the caller.
-    }
-
-    ModuleIndexFile {
-      Workspace loading accepts ModuleIndexFile at any included path and assigns it
-      no workspace-discovery authority.
-    }
-
-    GlossaryInterpretation {
-      GlossaryFile loading is independent from SourceSelection globs.
-
-      Absence is valid while a filesystem failure reading an existing GlossaryFile
-      propagates to the caller.
-    }
-  }
-
-  decisions {
     ContentDerivedWorkspaceSnapshotIdentity {
       Decision: Identify one loaded Sigil workspace snapshot with RFC 8785 and
       SHA-256 over its exact selected config, glossary, and Sigil source records.
@@ -223,6 +220,14 @@ expand SigilWorkspaceLoader {
   }
 
   cases {
+    LocalToolConfigurationLoading {
+      A valid local tools.compile override is available to native tooling while the
+      same workspace retains its ConfigFile-defined sources and members.
+
+      A malformed local configuration prevents a clean workspace load and preserves
+      both configuration files unchanged.
+    }
+
     WorkspaceSnapshotIdentity {
       Loading identical selected source records from two absolute roots produces the
       same workspaceSnapshotIdentity.
@@ -247,7 +252,7 @@ expand SigilWorkspaceLoader {
       A filesystem read failure rejects workspace loading.
     }
 
-    GlossaryInterpretation {
+    GlossaryInterpretationLoading {
       A workspace without GlossaryFile loads normally.
 
       A malformed GlossaryFile contributes diagnostics while loaded Sigil documents

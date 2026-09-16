@@ -1,0 +1,108 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": "Changes to Sigil SkillWorkflow and SigilCli SourceFormattingCommand/SourceFormatting/WorkspaceMutationBoundary for mechanical skill validation and multiple fmt targets; other contracts outside scope.",
+  "source_root": "/Users/farhoud/Workspace/sigil",
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/Users/farhoud/Workspace/sigil/_module.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/_module.sigil",
+      "sha256": "3cbfebe495e2128aa6d2d8fb6c4b63d2071bf051066a761663ff2fcb87d861e9"
+    },
+    {
+      "role": "draft",
+      "original_path": "/Users/farhoud/Workspace/sigil/packages/cli/_module.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/packages/cli/_module.sigil",
+      "sha256": "6fb269ac45eecd13ed682a7b0791896bf852b6912f2661b3b259475ad6247401"
+    },
+    {
+      "role": "context",
+      "original_path": "/Users/farhoud/Workspace/sigil/packages/core/src/formatter.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/packages/core/src/formatter.sigil",
+      "sha256": "385134518d41b79d4c6697b2f6d25b4588bff480459039efd97a494a3ab096c7"
+    },
+    {
+      "role": "context",
+      "original_path": "/Users/farhoud/Workspace/sigil/spec/language.sigil",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/spec/language.sigil",
+      "sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c"
+    },
+    {
+      "role": "intent",
+      "original_path": "/Users/farhoud/Workspace/sigil/docs/plans/2026-09-16-1148-feat-skill-mechanical-validation-plan.md",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/docs/plans/2026-09-16-1148-feat-skill-mechanical-validation-plan.md",
+      "sha256": "5e966950fa33d43338960918cefdeb057dd9ceb4012b4b79faf5007e22c5d501"
+    },
+    {
+      "role": "intent",
+      "original_path": "message://user/mechanical-validation",
+      "captured_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/contract-capture/intent.txt",
+      "sha256": "84f8da02be58b0ea78a04b765a46447dbeec3b1ca319f4801f38a1e3335f3347"
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "path": "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-evaluate/SKILL.md",
+      "sha256": "12fb1f58f77845978228b841375d5ac4e9b4b21fa510a8e45f4e450c4952d839"
+    },
+    "language_manifest": {
+      "path": "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-understand/references/language/manifest.json",
+      "sha256": "25c9c782ed5b778faf82b7bdda380756bf55f652fe9cf174e278117a2de45fee",
+      "sigil_version": "0.8.0"
+    },
+    "language_sources_read": [
+      {
+        "path": "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-understand/references/language/sigil-reference.md",
+        "sha256": "6e816aacacbd40d781166227bd8cbbe10d2d05416bbbc151cefdbc4d5054783e",
+        "sections": [
+          "Components and contracts",
+          "Authored units and grouping",
+          "Inline Links",
+          "Tags and references",
+          "Workspaces and imports",
+          "Interpretation boundaries",
+          "Formatting"
+        ]
+      },
+      {
+        "path": "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-understand/references/language/sigil.ebnf",
+        "sha256": "9677dae11e1cb6a906cb0ccc592fbbb0c28c505b6e1050d9988c260256995e49"
+      }
+    ],
+    "guidance_read": [
+      "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-evaluate/references/design-review.md",
+      "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-evaluate/references/review-contract.md",
+      "/Users/farhoud/Workspace/sigil/integrations/skills/sigil-understand/references/understanding.md"
+    ],
+    "verification": "All six captured input hashes, evaluator entrypoint identity, language manifest identity, and language-pack output hashes matched their supplied digests."
+  },
+  "findings": [],
+  "coverage": {
+    "assessment": "No material design contradiction, consequential omission, ownership conflict, or commitment-preserving simplification was identified within the requested scope.",
+    "reviewed_commitments": [
+      "Sigil SkillWorkflow logic and constraints: compatible mechanical tooling, writer check/correction/format/recheck sequence before capture, read-only evaluator commands, continued design work when mechanical validation is unavailable, preservation of diagnostic outcomes, evidence scope and revision matching, and separation from semantic and implementation judgments.",
+      "SigilCli SourceFormattingCommand: multiple file and directory targets, deduplicated selection within one configured workspace, omitted-path selection, workspace-root selection, and the distinction between configuration discovery and selected targets.",
+      "SigilCli SourceFormatting logic, constraints, and cases: deterministic workspace source ordering, combined replacement validation, selected-file mutation, read-only formatting checks, diagnostics, and exit outcomes.",
+      "SigilCli WorkspaceMutationBoundary: whole-invocation target preflight, no writes for invalid targets or unrepairable selected-source errors, and the explicit limit on rollback guarantees.",
+      "Related CLI help and formatting rationale insofar as they clarify the selected command's observable behavior."
+    ],
+    "relationships": [
+      "The CLI owns target selection, workspace validation, preflight, writes, and failure reporting; SigilFormatter retains pure canonical rendering and meaning preservation.",
+      "ConfigFile and SourceSelection retain workspace and inclusion/exclusion authority. Multiple targets do not transfer that authority to paths or ordinary module files.",
+      "The authored scope is consistent with the captured user intent and plan requirements R1–R9. Compact contract wording leaves compatible implementation choices open."
+    ],
+    "additional_project_context": [],
+    "omitted_scope": [
+      "Unrelated root, compiler, CLI, and language contracts.",
+      "Implementation conformance, actual CLI behavior, and planned skill/documentation implementation.",
+      "Exhaustive workspace import validation or saturated coherence."
+    ]
+  },
+  "limitations": [
+    "This was an independent, read-only design assessment of the identified captured bytes. No CLI validation or runtime tests were performed.",
+    "The host restriction was instructions only: filesystem writes and mutating commands were prohibited by the request, without an enforced read-only sandbox. No files were written.",
+    "Coverage is revision-bound. The caller must verify current draft, context, intent, authority, and original-path mapping before reusing this report.",
+    "Existing linked skill implementations were not evaluated for conformance to the proposed workflow; updating those implementations is later work under the supplied plan."
+  ]
+}

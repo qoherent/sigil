@@ -1,4 +1,4 @@
-//! Structural Sigil-language transport; no AST, domain laws or model fields.
+//! Source-faithful Sigil 0.8 structural transport. Semantic interpretation is separate.
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DesignInput {
     pub schema_version: u32,
+    pub language_version: String,
     pub frontend_version: String,
     pub sources: Vec<Source>,
     pub context: Vec<Context>,
@@ -13,15 +14,17 @@ pub struct DesignInput {
     pub imports: Vec<Import>,
     pub entities: Vec<Entity>,
     pub units: Vec<Unit>,
+    pub groups: Vec<Group>,
+    pub introductions: Vec<Introduction>,
+    pub references: Vec<Reference>,
+    pub links: Vec<Link>,
 }
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
     pub path: String,
     pub text: String,
 }
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Context {
@@ -29,19 +32,48 @@ pub struct Context {
     pub text: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Diagnostic {
     pub code: String,
+    pub stage: Stage,
     pub severity: Severity,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub range: Option<Range>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation_range: Option<ImplementationRange>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_digest: Option<String>,
+    pub related: Vec<RelatedLocation>,
 }
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RelatedLocation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<Range>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation_range: Option<ImplementationRange>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_digest: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Stage {
+    Parsing,
+    Structure,
+    Workspace,
+    Resolution,
+    Interpretation,
+    Host,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
     Error,
@@ -50,22 +82,52 @@ pub enum Severity {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Import {
+    pub id: String,
     pub source: String,
     pub target: Option<String>,
+    pub path: String,
+    pub provider: String,
+    pub provider_id: Option<String>,
+    pub range: Range,
+    pub path_range: Range,
+    pub provider_range: Range,
+    pub status: ImportStatus,
+    pub valid: bool,
+    pub complete: bool,
     pub names: Vec<ImportedName>,
 }
-
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImportStatus {
+    Resolved,
+    UnresolvedPath,
+    UnresolvedProvider,
+    Invalid,
+}
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportedName {
+    pub id: String,
     pub name: String,
     pub entity: Option<String>,
+    pub range: Range,
+    pub status: SelectionStatus,
+    pub uses: Vec<String>,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum SelectionStatus {
+    Resolved,
+    Unresolved,
+    Duplicate,
+    Ambiguous,
+    Invalid,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Entity {
     pub id: String,
     #[serde(rename = "type")]
@@ -73,35 +135,35 @@ pub struct Entity {
     pub label: String,
     pub source: String,
     pub owner: Option<String>,
-    pub exported: bool,
+    pub range: Range,
+    pub name_range: Range,
+    pub identity_resolved: bool,
+    pub valid: bool,
+    pub complete: bool,
 }
-
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum EntityType {
     Component,
-    Concept,
+    Tag,
 }
-
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Unit {
     pub id: String,
     pub source: String,
     pub owner: Option<String>,
-    pub form: Form,
     pub section: Section,
-    pub concept: Option<String>,
     pub range: Range,
+    pub prose_range: Range,
+    pub grouping: Option<String>,
+    pub introductions: Vec<String>,
+    pub references: Vec<String>,
+    pub links: Vec<String>,
+    pub payload: Option<Payload>,
+    pub valid: bool,
+    pub complete: bool,
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Form {
-    Component,
-    Expand,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Section {
     Goal,
@@ -112,14 +174,110 @@ pub enum Section {
     Decisions,
     Cases,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Payload {
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    pub body: String,
+    pub raw_body: String,
+    pub source_lines: Vec<String>,
+    pub range: Range,
+    pub body_range: Range,
+    pub opening_range: Range,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closing_range: Option<Range>,
+    pub fence_length: usize,
+    pub indentation: String,
+    pub valid: bool,
+    pub complete: bool,
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Group {
+    pub id: String,
+    pub source: String,
+    pub owner: String,
+    pub name: String,
+    pub tag: Option<String>,
+    pub section: Section,
+    pub range: Range,
+    pub name_range: Range,
+    pub header_range: Range,
+    pub body_range: Range,
+    pub valid: bool,
+    pub complete: bool,
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Introduction {
+    pub id: String,
+    pub kind: IntroductionKind,
+    pub name: String,
+    pub source: String,
+    pub owner: String,
+    pub tag: Option<String>,
+    pub section: Section,
+    pub facet: Option<String>,
+    pub group: Option<String>,
+    pub range: Range,
+    pub name_range: Range,
+    pub valid: bool,
+    pub complete: bool,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum IntroductionKind {
+    Group,
+    Inline,
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Reference {
+    pub id: String,
+    pub source: String,
+    pub owner: String,
+    pub facet: String,
+    pub name: String,
+    pub tag: Option<String>,
+    pub status: ReferenceStatus,
+    pub range: Range,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ReferenceStatus {
+    Resolved,
+    Ambiguous,
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Link {
+    pub id: String,
+    pub source: String,
+    pub owner: String,
+    pub facet: String,
+    pub raw: String,
+    pub label: String,
+    pub destination: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    pub image: bool,
+    pub range: Range,
+    pub destination_range: Range,
+}
+/// Half-open offsets into the original UTF-8 source bytes.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Range {
+    pub start: usize,
+    pub end: usize,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImplementationRange {
     pub start: Position,
     pub end: Position,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Position {
@@ -134,140 +292,21 @@ impl DesignInput {
         input.validate()?;
         Ok(input)
     }
-
     pub fn validate(&self) -> Result<(), String> {
-        ensure(
-            self.schema_version == 1,
-            "unsupported frontend schema version",
-        )?;
-        ensure(
-            !self.frontend_version.is_empty(),
-            "missing frontend version",
-        )?;
-        let sources = unique(self.sources.iter().map(|s| s.path.as_str()), "source path")?;
-        for source in &self.sources {
-            normalized_path(&source.path)?;
-            ensure(
-                source.path.ends_with(".sigil"),
-                "Design source must end in .sigil",
-            )?;
-            ensure(
-                !source.path.starts_with(".sigil/"),
-                "generated Design source",
-            )?;
-        }
-        let context = unique(self.context.iter().map(|c| c.path.as_str()), "context path")?;
-        ensure(
-            context
-                == BTreeSet::from([
-                    ".sigil/config.json",
-                    ".sigil/glossary.json",
-                    ".sigil/local.json",
-                ]),
-            "context must capture config, local config and glossary, including absence",
-        )?;
-        let entities = unique(
-            self.entities.iter().map(|e| e.id.as_str()),
-            "entity identity",
-        )?;
-        let components: BTreeSet<_> = self
-            .entities
-            .iter()
-            .filter(|e| e.kind == EntityType::Component)
-            .map(|e| e.id.as_str())
-            .collect();
-        for entity in &self.entities {
-            ensure(
-                sources.contains(entity.source.as_str()),
-                "entity source is not selected",
-            )?;
-            ensure(!entity.label.trim().is_empty(), "empty entity label")?;
-            ensure(
-                entity.id.starts_with("urn:sigil:component:"),
-                "noncanonical frontend identity",
-            )?;
-            match entity.kind {
-                EntityType::Component => {
-                    ensure(entity.owner.is_none(), "component has an owner")?;
-                    ensure(
-                        entity.id
-                            == format!(
-                                "urn:sigil:component:{}:{}",
-                                encode_identifier(&entity.source),
-                                encode_identifier(&entity.label)
-                            ),
-                        "component identity does not match its source and name",
-                    )?;
-                }
-                EntityType::Concept => ensure(
-                    entity
-                        .owner
-                        .as_deref()
-                        .is_some_and(|o| components.contains(o)),
-                    "Concept owner is not a component",
-                )?,
-            }
-        }
-        let units = unique(self.units.iter().map(|u| u.id.as_str()), "unit identity")?;
-        ensure(
-            units.is_disjoint(&entities),
-            "unit identity collides with domain entity",
-        )?;
-        for unit in &self.units {
-            ensure(
-                sources.contains(unit.source.as_str()),
-                "unit source is not selected",
-            )?;
-            ensure(
-                unit.id.starts_with("urn:sigil:unit:"),
-                "noncanonical unit identity",
-            )?;
-            ensure(
-                unit.owner.as_deref().is_none_or(|o| components.contains(o)),
-                "unit owner is not a component",
-            )?;
-            validate_range(&unit.range)?;
-            ensure(
-                unit.id
-                    == format!(
-                        "urn:sigil:unit:{}:{}:{}",
-                        encode_identifier(&unit.source),
-                        unit.range.start.line,
-                        unit.range.start.column
-                    ),
-                "unit identity does not match its physical source range",
-            )?;
-        }
-        for import in &self.imports {
-            ensure(
-                sources.contains(import.source.as_str()),
-                "import source is not selected",
-            )?;
-            if let Some(target) = &import.target {
-                normalized_path(target)?;
-                ensure(
-                    sources.contains(target.as_str()),
-                    "import target is not selected",
-                )?;
-            }
-            for name in &import.names {
-                ensure(
-                    name.entity
-                        .as_deref()
-                        .is_none_or(|id| components.contains(id)),
-                    "import names an unknown component",
-                )?;
-            }
-        }
-        for diagnostic in &self.diagnostics {
-            if let Some(path) = &diagnostic.file_path {
-                normalized_path(path)?;
-            }
-            if let Some(range) = &diagnostic.range {
-                validate_range(range)?;
-            }
-        }
-        Ok(())
+        super::frontend_validation::validate(self)
+    }
+    /// Every structural relation is carried together through preparation and saturation.
+    pub fn structural_records(&self, paths: &BTreeSet<String>) -> serde_json::Value {
+        serde_json::json!({
+            "schemaVersion": self.schema_version, "languageVersion": self.language_version,
+            "entities": self.entities.iter().filter(|e| paths.contains(&e.source)).collect::<Vec<_>>(),
+            "units": self.units.iter().filter(|u| paths.contains(&u.source)).collect::<Vec<_>>(),
+            "imports": self.imports.iter().filter(|i| paths.contains(&i.source)).collect::<Vec<_>>(),
+            "groups": self.groups.iter().filter(|g| paths.contains(&g.source)).collect::<Vec<_>>(),
+            "introductions": self.introductions.iter().filter(|i| paths.contains(&i.source)).collect::<Vec<_>>(),
+            "references": self.references.iter().filter(|r| paths.contains(&r.source)).collect::<Vec<_>>(),
+            "links": self.links.iter().filter(|l| paths.contains(&l.source)).collect::<Vec<_>>(),
+        })
     }
 }
 
@@ -279,18 +318,7 @@ pub fn normalized_path(path: &str) -> Result<(), String> {
         "expected normalized workspace-relative path",
     )
 }
-
-fn validate_range(range: &Range) -> Result<(), String> {
-    ensure(
-        range.start.line > 0
-            && range.start.column > 0
-            && range.end.column > 0
-            && range.start <= range.end,
-        "invalid source range",
-    )
-}
-
-// Match the frontend's encodeURIComponent for path-qualified structural IDs.
+// Match encodeURIComponent for path-qualified structural IDs.
 pub(crate) fn encode_identifier(value: &str) -> String {
     let mut encoded = String::new();
     for byte in value.bytes() {
@@ -303,8 +331,7 @@ pub(crate) fn encode_identifier(value: &str) -> String {
     }
     encoded
 }
-
-fn unique<'a>(
+pub(crate) fn unique<'a>(
     items: impl Iterator<Item = &'a str>,
     name: &str,
 ) -> Result<BTreeSet<&'a str>, String> {
@@ -314,8 +341,7 @@ fn unique<'a>(
     }
     Ok(set)
 }
-
-fn ensure(condition: bool, message: &str) -> Result<(), String> {
+pub(crate) fn ensure(condition: bool, message: &str) -> Result<(), String> {
     if condition {
         Ok(())
     } else {

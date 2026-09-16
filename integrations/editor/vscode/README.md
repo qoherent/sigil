@@ -2,16 +2,16 @@
 
 Implemented pre-production VS Code extension for Sigil.
 
-Version 0.7 responsibilities:
+Language 0.8 responsibilities:
 
-- provide `.sigil` TextMate syntax highlighting and resolver-backed component
-  concept, and reviewed glossary-term highlighting through LSP semantic tokens;
+- provide `.sigil` TextMate syntax highlighting and resolver-backed component,
+  Tag, and reviewed glossary-term highlighting through LSP semantic tokens;
 - bundle and connect to `sigil-lsp` for diagnostics, symbols, navigation, hover,
   and semantic highlighting;
 - expose `Sigil: Open Preview`, which renders the whole active `.sigil` file to
   Markdown and opens it in VS Code's built-in Markdown preview, available from
   the Command Palette and from a preview button in the editor title toolbar of
-  `.sigil` editors (Markdown-style *Open Preview to the Side*);
+  `.sigil` editors (Markdown-style _Open Preview to the Side_);
 - expose explicit file and workspace compilation through the language CLI and
   standalone native `sigilc`;
 - display native named states and ranged findings while keeping language support
@@ -25,26 +25,32 @@ The obsolete Compile Component command is removed.
 
 Configure these settings on the extension host:
 
-| Setting | Meaning |
-| --- | --- |
-| `sigil.compile.executable` | Native `sigilc` executable; default `sigilc`. |
-| `sigil.compile.languageExecutable` | Language CLI supporting `export design`; default `sigil`. |
-| `sigil.compile.focus` | `ask`, `design`, or `implementation`. |
-| `sigil.compile.selection` | Native Implementation selection JSON path, relative to the workspace or absolute; required for Implementation focus. |
+| Setting                            | Meaning                                                                                                              |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `sigil.compile.executable`         | Native `sigilc` executable; default `sigilc`.                                                                        |
+| `sigil.compile.languageExecutable` | Language CLI supporting `export design`; default `sigil`.                                                            |
+| `sigil.compile.focus`              | `ask`, `design`, or `implementation`.                                                                                |
+| `sigil.compile.selection`          | Native Implementation selection JSON path, relative to the workspace or absolute; required for Implementation focus. |
 
 The workspace folder must contain its `.sigil/config.json`. Multi-root windows
-use the active document's containing folder or prompt for a folder. The extension
-captures structural Design in a temporary directory, invokes `sigilc` directly,
-and cleans the capture after the process exits. Scope and source selection are
-resolved by the native compiler. Design-only file runs explicitly select no
-Implementation sources and make no Implementation claim.
+use the active document's containing folder or prompt for a folder. The
+extension captures structural Design in a temporary directory, invokes `sigilc`
+directly, and cleans the capture after the process exits. Scope and source
+selection are resolved by the native compiler. Design-only file runs explicitly
+select no Implementation sources and make no Implementation claim.
 
 The status bar displays Coherent/Loose/Disjoint or Closed/Converged/Drift as
-returned by the native gate. Green and yellow exit 0, red exits 1; missing current
-Design reconstruction leaves comparison unavailable with exit 3 and no
+returned by the native gate. Green and yellow exit 0, red exits 1; missing
+current Design reconstruction leaves comparison unavailable with exit 3 and no
 Implementation state. The editor validates those pairings and displays native
 findings and truncation counts. It does not interpret eqval tables or infer
 color from absent diagnostics. File-only locations do not invent code ranges.
+
+Native compilation requires language 0.8 Design export schema 2 and native
+report version 2. Old reports are rejected. Ranged findings carry a source
+digest and an explicit coordinate convention; the editor verifies disk bytes and
+maps them to visible UTF-16 text, including hidden BOMs and normalized line
+endings. A stale source cannot publish a successful state or misleading range.
 
 Save workspace documents before compilation. Edits, disk changes and compilation
 settings changes invalidate displayed results; replacement runs cancel previous
@@ -59,15 +65,15 @@ reconstruction and source-selection schemas.
 Open a `.sigil` file and either run **Sigil: Open Preview** from the Command
 Palette or click the preview icon (`$(open-preview)`) in the editor title
 toolbar. The whole file is rendered to Markdown by the language server (every
-component declared in the file, with its collected expansions) and shown in the
-built-in Markdown preview beside the source editor. The preview is not
-cursor-dependent — it always renders the entire file. The toolbar button appears
-only for Sigil editors; if the language server is unavailable or the file has no
-components, an informational message is shown and no preview opens.
+component declared in the file, with all owned contract sections and Facets) and
+shown in the built-in Markdown preview beside the source editor. The preview is
+not cursor-dependent — it always renders the entire file. The toolbar button
+appears only for Sigil editors; if the language server is unavailable or the
+file has no components, an informational message is shown and no preview opens.
 
 This integration should become the first concrete human UI for Sigil.
 
-Version 0.7 targets desktop and remote Node extension hosts with file-backed
+The extension targets desktop and remote Node extension hosts with file-backed
 workspaces. VS Code for the Web, virtual workspaces, telemetry, document
 mutation, and custom LSP methods remain outside the initial version.
 
@@ -82,13 +88,15 @@ SIGIL_TEST_LANGUAGE=/path/to/current/sigil SIGIL_TEST_COMPILER=/path/to/current/
 npm run package
 ```
 
-The extension-host test uses the current built tools for real export, native
-file scope, ranged findings and unavailable comparison. Build the language CLI
-with `deno compile --allow-read --output /tmp/sigil packages/cli/src/main.ts` from
+The extension-host test copies the slotted example into an isolated temporary
+workspace by default. Set `SIGIL_TEST_WORKSPACE` to test an existing workspace.
+It uses the current built tools for real export, native file scope, ranged
+findings and unavailable comparison. Build the language CLI with
+`deno compile --allow-read --output /tmp/sigil packages/cli/src/main.ts` from
 the repository root. `deno task build:cli` produces the default language test
 executable in `build/`; `deno task build:sigilc` produces the native test
-executable. The environment variables above can select other built binaries. On a
-headless Linux host, run the extension test under `xvfb-run -a`.
+executable. The environment variables above can select other built binaries. On
+a headless Linux host, run the extension test under `xvfb-run -a`.
 
 `npm run package` derives the artifact version from `package.json` and creates
 `build/sigil-vscode-<version>.vsix`. The manifest uses the development publisher

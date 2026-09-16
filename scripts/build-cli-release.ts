@@ -119,6 +119,10 @@ async function buildTarget(target: ReleaseTarget): Promise<void> {
       join(stage, "bin", `sigilc${suffix}`),
     );
     await Deno.copyFile(join(root, "LICENSE"), join(stage, "LICENSE"));
+    await Deno.copyFile(
+      join(root, "packages/core/src/data/UNICODE-LICENSE.txt"),
+      join(stage, "UNICODE-LICENSE.txt"),
+    );
     await run([
       Deno.execPath(),
       "compile",

@@ -14,6 +14,15 @@ Record input/skill revisions, model and host when exposed, raw responses, and
 source hashes before/after. A report of no edits is not evidence of unchanged
 files without that check. These scenarios are specifications, not observed passes.
 
+Also run CLI-enabled variants with the shared
+[mechanical guidance](../references/mechanical-validation.md): canonical but
+contradictory source, noncanonical source, an implementation annotation error,
+missing and legacy tooling, and captured/live provider or config mismatch.
+Supply a temporary 0.8 config and actual permitted CLI identity. Record commands,
+outputs, exits, and source/config hashes before and after. Expect mechanical
+results separately from semantic findings, with no evaluator writes. Preserve
+the explicit offline restriction in the cases below.
+
 ## Case A: compact design
 
 ### Request given to the agent

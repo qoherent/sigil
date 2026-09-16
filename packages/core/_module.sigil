@@ -1,21 +1,21 @@
-@spec/language.sigil import { SigilLanguage }
-@packages/core/config.sigil import { SigilConfigurationParser }
-@packages/core/src/model import { SigilSemanticModel }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
-@packages/core/src/filesystem.sigil import { SigilFileSystem }
-@packages/core/src/parser.sigil import { SigilParser }
-@packages/core/src/glossary.sigil import { SigilGlossaryEngine }
-@packages/core/src/formatter.sigil import { SigilFormatter }
-@packages/core/src/path.sigil import { SigilPath }
-@packages/core/src/workspace.sigil import { SigilWorkspaceLoader }
-@packages/core/src/resolver.sigil import { SigilResolver }
-@packages/core/src/graph.sigil import { SigilGraphBuilder }
-@packages/core/src/pipeline.sigil import { SigilWorkspaceResolutionPipeline }
-@packages/core/src/projections.sigil import { SigilProjections }
-@packages/core/src/implementation-ownership.sigil import { SigilImplementationOwnership }
-@packages/core/src/compilation-boundary.sigil import { SigilCompilationBoundary }
-@packages/core/src/context-retrieval.sigil import { SigilContextRetrieval }
-@packages/core/src/design-input.sigil import { SigilDesignInput }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+@packages/core/src/context-retrieval.sigil from SigilContextRetrieval import { PurposeRetrievalRequest }
+@packages/core/src/compilation-boundary.sigil from SigilCompilationBoundary import { BoundarySelection }
+@packages/core/src/implementation-ownership.sigil from SigilImplementationOwnership import { OwnedImplementationLookup }
+@packages/core/src/projections.sigil from SigilProjections import { ContractProjection }
+@packages/core/src/pipeline.sigil from SigilWorkspaceResolutionPipeline import { WorkspaceResolution }
+@packages/core/src/graph.sigil from SigilGraphBuilder import { GraphConstruction }
+@packages/core/src/resolver.sigil from SigilResolver import { RelationshipResolution }
+@packages/core/src/workspace.sigil from SigilWorkspaceLoader import { WorkspaceLoading }
+@packages/core/src/path.sigil from SigilPath import { PathOperations }
+@packages/core/src/formatter.sigil from SigilFormatter import { Formatting }
+@packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInterpretation }
+@packages/core/src/parser.sigil from SigilParser import { SourceDocumentParsing }
+@packages/core/src/filesystem.sigil from SigilFileSystem import { FileSystemPort }
+@packages/core/src/diagnostics.sigil from SigilDiagnostics import { DiagnosticConstruction }
+@packages/core/src/model/_module.sigil from SigilSemanticModel import { DomainModelAssembly }
+@packages/core/config.sigil from SigilConfigurationParser import { ConfigurationParsing }
+@spec/language.sigil from SigilLanguage import { SourceDocument }
 
 component SigilCore {
   goal {
@@ -29,14 +29,14 @@ component SigilCore {
 
   interface {
     CorePackage {
-      SigilCore exports the deterministic Sigil language, configuration, workspace,
-      resolution, graph, glossary, projection, ownership, retrieval, and immutable
-      semantic-model contracts assembled from SigilLanguage,
-      SigilConfigurationParser, SigilSemanticModel, SigilDiagnostics,
-      SigilFileSystem, SigilParser, SigilFormatter, SigilPath, SigilWorkspaceLoader,
-      SigilResolver, SigilGraphBuilder, SigilWorkspaceResolutionPipeline,
-      SigilProjections, SigilGlossaryEngine, SigilImplementationOwnership, and
-      SigilContextRetrieval and SigilDesignInput.
+      SigilCore exports the deterministic APIs that implement SourceDocument through
+      SourceDocumentParsing, ConfigurationParsing, DomainModelAssembly,
+      DiagnosticConstruction, FileSystemPort, Formatting, PathOperations,
+      WorkspaceLoading, RelationshipResolution, GraphConstruction,
+      WorkspaceResolution, ContractProjection, GlossaryInterpretation,
+      OwnedImplementationLookup, BoundarySelection, PurposeRetrievalRequest, and
+      ResolvedDesignInput. Their operations and data remain owned by the selected
+      provider components; package exports do not re-export Sigil Tag identities.
 
       Export structural Design transport through the core package. Parsing and
       resolution remain language operations; the export never invokes sigilc,
@@ -46,16 +46,16 @@ component SigilCore {
       interpretation, workspace rules, relationship resolution, or projections
     }
   }
-}
 
-expand SigilCore {
   constraints {
+
     CorePackageBoundary {
-      The module index is a concise boundary summary and namespace-assembly surface.
+      This ordinary source is a concise documentary package-boundary summary, with no
+      language namespace assembly or re-export.
 
       Operational parsing, formatting, path, configuration, workspace, resolution,
       graph, glossary, projection, ownership, and retrieval behavior remains owned by
-      its imported cohesive component.
+      its selected cohesive provider component.
     }
 
     PackageVersionOwnership {
@@ -100,16 +100,15 @@ expand SigilCore {
 
       SigilContextRetrieval consumes graph, glossary, and ownership evidence.
 
-      SigilCompilationBoundary consumes the resolved import and expand graph to
-      resolve a compilation seed into a covering boundary.
+      SigilCompilationBoundary consumes the resolved Tag-selection and consumer-use
+      graph to resolve a compilation seed into a covering boundary.
 
-      No core operational component imports SigilCore; the module index only
-      assembles the public namespace.
+      Core operational components depend on their focused providers; this summary
+      adds no language namespace or runtime dependency.
 
       Host integrations consume core semantics instead of implementing independent
-      Sigil parsers, workspace rules, resolvers, or concept interpretation.
+      Sigil parsers, workspace rules, resolvers, or Tag interpretation.
     }
-
   }
 
   decisions {

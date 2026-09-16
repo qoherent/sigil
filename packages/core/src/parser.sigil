@@ -1,13 +1,15 @@
-@spec/language.sigil import { SigilLanguage, SigilModuleIndex }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
+@packages/core/src/diagnostics.sigil from SigilDiagnostics import { DiagnosticConstruction }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@spec/language.sigil from SigilLanguage import { SourceDocument, SourceRecovery, ComponentContract, TagIdentity, EmbeddedContent, FormattingStyle, LanguageVersion, ImportSemantics }
 
 component SigilParser {
   goal {
-    Interpret one versioned Sigil source into a source-faithful partial document.
+    Interpret one Sigil 0.8.0 source snapshot into a source-faithful partial
+    document.
 
-    Preserve useful declarations, concepts, Facets, attached literal
-    blocks, original physical lines, and ranges whenever malformed structure
-    permits deterministic recovery.
+    Preserve useful declarations, Tags, Facets, attached literal blocks, original
+    physical lines, and ranges whenever malformed structure permits deterministic
+    recovery.
   }
 
   interface {
@@ -20,56 +22,58 @@ component SigilParser {
     }
 
     ParseResult {
-      ParseResult contains a recovered SigilDocument and structural diagnostics
+      ParseResult contains the recovered SigilDocument and structural diagnostics
+      defined by SourceModel
     }
   }
-}
 
-expand SigilParser {
   logic {
-    SourceDocument {
-      Parse top-level import, component, and expand forms.
+    DocumentParsing {
+      For SourceDocument, parse explicit file/provider Tag imports under
+      ImportSemantics and component declarations; expand and directory-import syntax
+      are invalid.
 
-      Parse sections and flat concept blocks while preserving identifiers and ranges.
+      Parse all seven contracts, flat local grouping Tags, inline Tag definitions,
+      Inline Links, and physical source spans.
 
-      Parse decisions as free-form expand-section content without requiring concept
-      blocks or labeled fields.
+      Parse decisions as free-form component-section content without requiring
+      grouping Tags or labeled fields.
 
-      Combine adjacent prose physical lines into one blank-line-delimited
-      Facet.
+      Combine adjacent prose physical lines into one blank-line-delimited Facet.
 
-      Associate each Facet inside a concept block with that identifier.
+      Associate each Facet inside a Tag block with that identifier.
 
-      Preserve non-empty free Facets outside concept blocks.
+      Preserve non-empty free Facets outside Tag blocks.
 
-      Parse an immediately adjacent backtick fence as a EmbeddedContent attached to its
-      preceding prose Facet.
+      Parse an immediately adjacent backtick fence as a EmbeddedContent attached to
+      its preceding prose Facet.
 
       Dedent literal body lines by the opening-fence indentation when present while
       preserving additional indentation.
 
-      Skip malformed top-level and direct form-body lines, then resume at the same
-      structural level.
+      Recover malformed structure at the normative boundary for its kind, preserving
+      invalid evidence. In particular, retain an unknown contract as an invalid
+      section and skip its balanced body; do not reinterpret nested content as
+      component contracts. Preserve independent later declarations.
 
-      Finalize EOF-unclosed concepts, sections, components, and expands in nesting
-      order while retaining their recovered content.
+      Finalize EOF-unclosed grouping blocks, sections, and components in nesting
+      order, preserving recovered content and validity/completeness markers.
     }
 
-    ComponentContract {
-      Diagnose components missing goal or interface.
+    RequiredContractParsing {
+      For ComponentContract, diagnose missing, empty, or repeated required sections
+      and repeated optional sections under the normative recovery policy.
     }
 
-    ModuleIndexContents {
-      Diagnose a ModuleIndexFile that contains no local component.
-    }
+    TagSyntaxParsing {
+      For TagIdentity, accept Facets directly under every contract without requiring
+      Tag blocks.
 
-    ConceptIdentity {
-      Accept Facets directly under every contract without requiring Concept blocks.
+      Preserve mixed ungrouped and Tag-grouped Facets in source order without a
+      grouping warning.
 
-      Preserve mixed ungrouped and Concept-grouped Facets in source order without
-      a grouping warning.
-
-      Reject invalid identifiers, empty concept blocks, and nested concept blocks.
+      Reject invalid exact Tag names, empty grouping blocks, and nested grouping
+      blocks under the normative recovery policy.
     }
 
     EmbeddedFacet {
@@ -78,44 +82,62 @@ expand SigilParser {
       Ignore braces and apparent Sigil structure inside literal bodies.
     }
 
-    FormattingStyle {
-      Report informational SIGIL_LINE_TOO_LONG when ordinary prose can be canonically
-      wrapped below 79 content characters.
+    WidthChecking {
+      For FormattingStyle, apply the normative width rules and diagnostic catalog;
+      repairable prose width findings retain usable source.
 
-      Report error SIGIL_UNFORMATTABLE_LINE when one indivisible prose token exceeds
-      79 content characters.
+      Report the normative unformattable-width error when an indivisible protected
+      span cannot satisfy the content limit.
     }
 
-    LanguageVersion {
-      Reject an unsupported configured language version before interpreting
-      declarations.
+    VersionChecking {
+      Under LanguageVersion, reject an unsupported configured language version before
+      interpreting declarations.
     }
   }
 
   constraints {
-    SourceDocument {
-      SigilParser performs no filesystem access or workspace resolution.
 
-      Structural recognition follows SigilLanguage SourceGrammar.
+    PhysicalSource {
+      Scan inline content on original physical lines before display joining. Protect
+      complete links and images, including labels and titles, from Tag and brace
+      scanning. Keep their ranges and destinations, and scan Embedded Facet
+      introducing prose normally.
+
+      Retain strict UTF-8 ingress validity, exact bytes/text, BOM and CR/LF/CRLF, and
+      authoritative byte, scalar, and UTF-16 coordinate mappings. Editor string
+      overlays require scalar validation. The shared scanner records structural
+      occurrences; collective resolution owns vocabulary and bare-reference matching.
+    }
+
+    DocumentParsing {
+      For SourceDocument, SigilParser performs no filesystem access or workspace
+      resolution.
+
+      Structural recognition follows [the normative
+      reference](../../../spec/sigil-reference.md) and
+      [grammar](../../../spec/sigil.ebnf); [migration
+      guidance](../../../spec/migrating-to-0.8.md) explains the removed forms.
 
       Warnings preserve a usable partial document and do not make parsing fail.
     }
 
-    SourceRecovery {
-      Parser diagnostics, retained content, resume points, source ranges, and
-      ordering follow SigilLanguage SourceRecovery without host-dependent
-      synchronization.
+    ParserRecovery {
+      Under SourceRecovery, parser diagnostics, retained content, resume points,
+      source ranges, and ordering follow SigilLanguage SourceRecovery without
+      host-dependent synchronization.
     }
 
-    ConceptIdentity {
-      Concept body content remains free-form except for structural brace tracking.
+    TagSyntaxParsing {
+      For TagIdentity, tag body content remains free-form except for structural brace
+      tracking.
     }
 
     Facet {
       Blank lines terminate prose Facets while physical wrapping does not.
 
-      Facet prose joins wrapped physical lines with one normalized space and
-      retains the original lines and complete range.
+      Facet prose joins wrapped physical lines with one normalized space and retains
+      the original lines and complete range.
     }
 
     EmbeddedFacet {
@@ -125,12 +147,14 @@ expand SigilParser {
       diagnostics.
     }
 
-    FormattingStyle {
-      Prose width counts Unicode code points after leading indentation.
+    WidthChecking {
+      For FormattingStyle, prose width counts Unicode scalars after leading
+      indentation, with normative exclusions for structural lines, payloads, and link
+      destinations.
     }
 
-    DiagnosticConstruction {
-      Structural findings are created through SigilDiagnostics.
+    ParserDiagnostics {
+      Structural findings use DiagnosticConstruction from SigilDiagnostics.
     }
   }
 
@@ -143,36 +167,37 @@ expand SigilParser {
       structural diagnostic.
     }
 
-    SourceDocument {
-      A decisions section preserves grouped and ungrouped Facets without a grouping
-      diagnostic.
+    DocumentParsing {
+      For SourceDocument, a decisions section preserves grouped and ungrouped Facets
+      without a grouping diagnostic.
     }
 
-    SourceRecovery {
-      An unexpected top-level line is skipped and a later valid declaration remains
-      available.
+    ParserRecovery {
+      Under SourceRecovery, an unexpected top-level line is skipped and a later valid
+      declaration remains available.
 
-      An EOF-unclosed concept, section, and component are finalized in order and each
+      An EOF-unclosed Tag, section, and component are finalized in order and each
       receives its applicable diagnostic.
     }
 
-    ComponentContract {
-      A component missing goal or interface remains in the partial document with
-      required-section diagnostics.
+    RequiredContractParsing {
+      For ComponentContract, a component missing goal or interface remains in the
+      partial document with required-section diagnostics.
     }
 
-    ConceptIdentity {
-      An interface containing only ungrouped Facets produces no grouping diagnostic.
+    TagSyntaxParsing {
+      For TagIdentity, an interface containing only ungrouped Facets produces no
+      grouping diagnostic.
 
-      An interface mixing ungrouped Facets and Concept blocks preserves both without
+      An interface mixing ungrouped Facets and Tag blocks preserves both without
       requiring additional identifiers.
 
-      A concept block with several blank-line-delimited paragraphs preserves one
-      identity and every Facet.
+      A Tag block with several blank-line-delimited paragraphs preserves one identity
+      and every Facet.
 
       Ungrouped Facets are valid in every contract, including interface.
 
-      Empty and nested concept blocks are invalid.
+      Empty and nested Tag blocks are invalid.
     }
 
     Facet {
@@ -198,20 +223,17 @@ expand SigilParser {
       An unclosed fence produces SIGIL_UNCLOSED_LITERAL_BLOCK.
     }
 
-    FormattingStyle {
-      Six leading spaces do not reduce the 79-character prose-content allowance.
+    WidthChecking {
+      For FormattingStyle, six leading spaces do not reduce the 79-character
+      prose-content allowance.
 
       An indivisible token longer than 79 content characters produces
       SIGIL_UNFORMATTABLE_LINE.
     }
 
-    ModuleIndexContents {
-      An imports-only ModuleIndexFile produces SIGIL_MODULE_WITHOUT_COMPONENT.
-    }
-
-    LanguageVersion {
-      An unsupported version returns an empty partial document with
-      SIGIL_UNSUPPORTED_VERSION.
+    VersionChecking {
+      Under LanguageVersion, an unsupported version returns an empty partial document
+      with SIGIL_UNSUPPORTED_VERSION.
     }
   }
 }

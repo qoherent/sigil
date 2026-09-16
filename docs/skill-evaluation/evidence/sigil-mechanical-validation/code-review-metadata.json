@@ -1,0 +1,89 @@
+{
+  "branch": "",
+  "completed_at": "2026-09-16T10:20:02.294707+00:00",
+  "cost": {
+    "host": "codex",
+    "scope": {
+      "changed_lines": 2431,
+      "depth": "full",
+      "exec_nontest_lines": 80,
+      "size_band": "small",
+      "unclassified_lines": {
+        ".json": 1086,
+        ".md": 471,
+        ".sigil": 50,
+        ".yaml": 344
+      }
+    },
+    "stages": [
+      {
+        "elapsed_seconds": 0.026,
+        "ended_at": "2026-09-16T09:54:58.398306+00:00",
+        "facts": {
+          "changed_lines": 2431,
+          "depth": "full",
+          "exec_nontest_lines": 80,
+          "size_band": "small",
+          "unclassified_lines": {
+            ".json": 1086,
+            ".md": 471,
+            ".sigil": 50,
+            ".yaml": 344
+          }
+        },
+        "stage": "scope",
+        "started_at": "2026-09-16T09:54:58.372198+00:00"
+      },
+      {
+        "elapsed_seconds": 107.228,
+        "ended_at": "2026-09-16T09:56:45.626765+00:00",
+        "reviewers": 7,
+        "stage": "select",
+        "started_at": "2026-09-16T09:54:58.398306+00:00"
+      },
+      {
+        "elapsed_seconds": 930.212,
+        "ended_at": "2026-09-16T10:11:14.831398+00:00",
+        "stage": "peer",
+        "started_at": "2026-09-16T09:55:44.618928+00:00"
+      },
+      {
+        "candidates": 3,
+        "elapsed_seconds": 869.233,
+        "ended_at": "2026-09-16T10:11:14.859404+00:00",
+        "stage": "dispatch",
+        "started_at": "2026-09-16T09:56:45.626765+00:00"
+      },
+      {
+        "candidates": 1,
+        "elapsed_seconds": 140.543,
+        "ended_at": "2026-09-16T10:15:09.345841+00:00",
+        "stage": "merge",
+        "started_at": "2026-09-16T10:12:48.802464+00:00"
+      },
+      {
+        "elapsed_seconds": 82.356,
+        "ended_at": "2026-09-16T10:16:58.567276+00:00",
+        "stage": "validate",
+        "started_at": "2026-09-16T10:15:36.211676+00:00"
+      },
+      {
+        "elapsed_seconds": 84.667,
+        "ended_at": "2026-09-16T10:20:02.319745+00:00",
+        "stage": "report",
+        "started_at": "2026-09-16T10:18:37.652740+00:00"
+      }
+    ],
+    "status": "complete",
+    "totals": {
+      "artifact_bytes": 787782,
+      "candidates": 3,
+      "elapsed_seconds": 2214.265,
+      "reviewers": 7
+    },
+    "truncated_events": 0
+  },
+  "head_sha": "29f9ef355a57a95041eeb5f2dd81702ebc30a0b2",
+  "run_id": "sigil-mechanical-pcvobixl",
+  "verdict": "Ready with fixes"
+}

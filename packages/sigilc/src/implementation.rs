@@ -2,8 +2,8 @@
 use crate::{
     catalog::Catalog,
     design::SourceStatus,
-    inputs::{PROJECTION_FORMAT, implementation_identity},
     eqval::{self, Limits, SaturatedWorld},
+    inputs::{PROJECTION_FORMAT, implementation_identity},
     sources::{Selection, SourceManifest, discover, hash},
     store::{Freshness, LockedStore},
     turtle::{Assertion, ontology_fingerprint},
@@ -130,7 +130,7 @@ impl Assembly {
             .map_err(|e| e.to_string())?,
         );
         Ok(ImplementationReport {
-            version: 1,
+            version: 2,
             input_fingerprint: self.input_fingerprint,
             implementation_fingerprint,
             catalog_fingerprint: self.catalog_fingerprint,

@@ -1,4 +1,4 @@
-@packages/core/src/model/language.sigil import { SigilLanguageModel }
+@packages/core/src/model/language.sigil from SigilLanguageModel import { LanguageModel }
 
 component SigilConfigurationModel {
   goal {
@@ -8,7 +8,7 @@ component SigilConfigurationModel {
 
   interface {
     ConfigurationModel {
-      SigilLanguageModel supplies the versioned language vocabulary. SigilConfig,
+      LanguageModel supplies the versioned language vocabulary. SigilConfig,
       SigilWorkspaceConfig, SigilFileDiscoveryConfig, and SigilConfigParseResult
       represent validated ConfigFile data and diagnostics.
     }

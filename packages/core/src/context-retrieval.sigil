@@ -1,7 +1,10 @@
-@packages/core/src/model/retrieval.sigil import { SigilRetrievalModel }
-@packages/core/src/graph.sigil import { SigilGraphBuilder }
-@packages/core/src/glossary.sigil import { SigilGlossaryEngine }
-@packages/core/src/implementation-ownership.sigil import { SigilImplementationOwnership }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
+@packages/core/src/implementation-ownership.sigil from SigilImplementationOwnership import { ImplementationEvidenceInput, OwnedImplementationLookup }
+@packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInspection }
+@packages/core/src/resolver.sigil from SigilResolver import { ImportUse }
+@packages/core/src/graph.sigil from SigilGraphBuilder import { StronglyConnectedGroups, GraphData }
+@packages/core/src/model/resolution.sigil from SigilResolutionModel import { ResolutionModel }
+@packages/core/src/model/retrieval.sigil from SigilRetrievalModel import { RetrievalModel, RetrievalProjection }
 
 component SigilContextRetrieval {
   goal {
@@ -14,17 +17,24 @@ component SigilContextRetrieval {
   }
 
   interface {
+
+    RetrievalProtocol {
+      The current raw schema identity is sigil-purpose-retrieval/v2 with retrieval
+      policy version 2. Its fingerprint uses that same raw schema identity. The
+      independently versioned agent schema is sigil-retrieval-projection/v2. These
+      current contracts add no v1 compatibility interpretation.
+    }
     EvidenceBudget {
       An optional maxEvidenceBytes bounds how much evidence text one retrieval
       returns, counted as encoded UTF-8 bytes.
 
       Evidence is kept in its existing deterministic order, which places the selected
-      contract before dependencies, importers, cycle members, and module context, so
-      the closest evidence is kept and the furthest is withheld. Optional selection
-      stops at the first unit that does not fit rather than packing later smaller
-      units ahead of closer evidence.
+      contract before dependencies, importers, and cycle members, so the closest
+      evidence is kept and the furthest is withheld. Optional selection stops at the
+      first unit that does not fit rather than packing later smaller units ahead of
+      closer evidence.
 
-      The selected contract and its expansions are always kept, whatever the budget.
+      The complete selected component contract is always kept, whatever the budget.
 
       A withheld unit is summarized rather than itemized: the result reports the
       budget, the included and withheld byte totals, the withheld count, and the
@@ -51,10 +61,10 @@ component SigilContextRetrieval {
 
       purpose is semantic, architecture, or implementation
 
-      glossaryEvidence is a nullable complete SigilGlossaryEngine workspace
-      GlossaryProjection; after graph and Sigil evidence selection, retrieval asks
-      SigilGlossaryEngine for one GlossaryContextProjection scoped to the normalized
-      selected Sigil evidence paths
+      glossaryEvidence is a nullable complete workspace GlossaryProjection from
+      GlossaryInspection; after graph and Sigil evidence selection, retrieval uses
+      that same provider to obtain one GlossaryContextProjection scoped to the
+      normalized selected Sigil evidence paths
 
       implementationEvidence is nullable for semantic and architecture purpose and
       otherwise is the immutable ImplementationEvidenceInput owned by
@@ -77,8 +87,9 @@ component SigilContextRetrieval {
       component name, range, and available location; edge uses relation, endpoint
       identities, and normalized origin path and range; evidence uses EvidenceKind,
       normalized path, component, section, range, and available location, with
-      diagnostic evidence additionally using severity, code, and message; inclusion
-      reason uses rule, seed identity, selected identity, and ordered edge
+      diagnostic evidence additionally using the complete DiagnosticModel record,
+      including stage, severity, code, message, and all related-location evidence;
+      inclusion reason uses rule, seed identity, selected identity, and ordered edge
       identities; exclusion uses rule and edge identity
 
       identity objects omit absent optional fields rather than encoding null
@@ -86,29 +97,31 @@ component SigilContextRetrieval {
 
     RetrievalProjectionDerivation {
       projectRetrieval(result) returns one RetrievalProjection owned by
-      SigilRetrievalModel RetrievalModel without changing result.
+      SigilRetrievalModel under RetrievalProjection without changing result.
 
       projection uses raw selected graph, ordered evidence, inclusion reasons, and
       diagnostics only as deterministic inputs; it does not reload the workspace,
       traverse unselected graph edges, or read implementation files.
 
-      projection groups evidence by exact component identity and optional concept
-      identity before assigning presentational sections.
+      projection groups ordinary Facets by exact consumer component identity and
+      authored local grouping identity only. Annotation Tag scope is separate
+      metadata and never creates a local grouping declaration.
 
-      selected-contract and selected-expansion contribute to the selected component;
-      dependency-contract and dependency-decision contribute to a dependency;
-      importer-contract and cycle-contract contribute to their matching role;
-      module-index-summary contributes only module-context relationship information.
+      selected-contract contributes to the selected component; dependency-contract
+      and dependency-decision contribute to a dependency; importer-contract and
+      cycle-contract contribute to their matching role; Ordinary summaries have no
+      automatically selected module-context role.
 
-      ownership-projection becomes the owning component or concept OwnershipLink.
-      Ownership annotations are advisory links, not implementation-completeness or
-      alignment evidence. Implementation purpose does not emit implementation-source
-      text or source-range slices.
+      ownership-projection becomes a consumer-owned OwnershipLink with optional exact
+      accessible Tag scope and separate originating Tag identity. Preserve imported
+      and inline-only Tag scopes without converting them into whole-component claims
+      or local groupings. Links remain advisory and never embed implementation-source
+      text or prove alignment.
 
       glossary-definition evidence becomes one projection glossary entry using that
       unit's canonical term and definition. It does not create a RetrievedComponent.
 
-      public-concept-origin evidence does not create a selected RetrievedComponent.
+      tag-origin evidence does not create a selected RetrievedComponent.
 
       Projection links derive from selected graph edges and preserve exact target
       component identity and available origin location.
@@ -187,9 +200,7 @@ component SigilContextRetrieval {
       only when target validation and item identity construction succeed.
     }
   }
-}
 
-expand SigilContextRetrieval {
   logic {
     RetrievalTargetResolution {
       Normalize and validate the requested path first. On failure, return only
@@ -211,10 +222,9 @@ expand SigilContextRetrieval {
       Resolve ComponentRetrievalTarget only when component name and declaration path
       identify the same loaded declaration.
 
-      Resolve FileRetrievalTarget to every component declared in that file and every
-      parent component represented by an expand in that file. Deduplicate by exact
-      component identity and order by declaration path, declaration start line,
-      declaration start column, then exact name.
+      Resolve FileRetrievalTarget to every component declared in that file.
+      Deduplicate by exact component identity and order by declaration path,
+      declaration start line, declaration start column, then exact name.
 
       Preserve the resolved target set as immutable seeds for every later rule.
     }
@@ -231,76 +241,70 @@ expand SigilContextRetrieval {
     }
 
     RetrievalRelationInventory {
-      Build only selected-declaration, matching-expansion, direct-dependency,
-      direct-importer, containing-module-index, cycle-member, public-concept-origin,
-      and owned-implementation relations.
+      Build only selected-declaration, direct-dependency, direct-importer,
+      cycle-member, tag-origin, and owned-implementation relations.
 
       selected-declaration connects the normalized request target to each exact seed
       component declaration.
 
-      matching-expansion connects every seed to all of its collected expands. For
-      architecture and implementation purpose it additionally connects every selected
-      cycle member and every local component used as a selected containing
-      module-index summary to all expands of that exact identity. Direct dependency,
-      direct importer, and public-concept-origin provider status alone never selects
-      that component's expands.
+      selected-declaration includes all seven contracts and every owned Facet of a
+      seed. Architecture and implementation selections include complete cycle-member
+      declarations. No separate expansion relation or evidence category exists.
 
-      direct-dependency is an imported-component graph edge with at least one
-      qualifying component-reference, public-concept-reference, or structural-expand
-      ImportUse owned by its exact source component or one of that component's
-      matching expands.
+      direct-dependency is a resolved Tag-selection component edge with at least one
+      qualifying bare-reference ImportUse owned by the exact consumer component.
+      Preserve the selection and actual consumer-use occurrence separately.
 
       A component-owned direct-importer reverses that dependency edge: its source is
-      the imported component declaration, its target is the exact importing component
+      the provider component declaration, its target is the exact importing component
       declaration, and its provenance preserves the original graph edge and
-      qualifying ImportUse. When an imported-component graph edge has no qualifying
-      component-owned ImportUse, its ownerless direct-importer source is the imported
-      component declaration and its target is the sigil-file node for the graph
-      edge's importing source file; provenance is the original graph edge without a
-      fabricated ImportUse.
+      qualifying ImportUse. When an selected-Tag component graph edge has no
+      qualifying component-owned ImportUse, its ownerless direct-importer source is
+      the provider component declaration and its target is the sigil-file node for
+      the graph edge's importing source file; provenance is the original graph edge
+      without a fabricated ImportUse.
 
-      containing-module-index connects a selected component file to the nearest
-      loaded _module.sigil at or above its directory inside the same declared member;
-      a component declared by that module index connects to the file itself.
+      Ordinary project summaries contribute context only when explicitly selected or
+      related through resolved Tag use. A filename or directory ancestry never
+      selects a summary automatically.
 
-      cycle-member consumes SigilGraphBuilder
+      cycle-member consumes StronglyConnectedGroups through
       stronglyConnectedComponentGroups(SigilGraph). For a group of size greater than
       one, or a singleton group with a self-import, build one cycle-member relation
-      for every imported-component graph edge whose source and target are both in
+      for every selected-Tag component graph edge whose source and target are both in
       that group. Preserve that graph edge's direction and exact originating path and
       range. Select the complete group when it contains a seed, direct dependency, or
       direct importer.
 
-      public-concept-origin connects an imported public concept visible in a seed
-      namespace to its exact provider component and declaration occurrence.
+      tag-origin connects a selected imported Tag used in a seed to its exact
+      provider component and introductions, preserving complete provider
+      interpretation context.
 
       owned-implementation connects a selected component to every normalized target
-      returned by SigilImplementationOwnership for that exact component identity.
+      returned by OwnedImplementationLookup for that exact component identity.
     }
 
     SemanticPurposeSelection {
-      Select every seed declaration and matching expansion.
+      Select every seed declaration and all owned contracts.
 
-      For each seed declaration and matching expansion only, select every direct
-      dependency component public goal and interface and every decisions section
-      collected from that dependency. For every direct-importer relation, select only
-      the public goal and interface of component owners named by its
-      component-reference, public-concept-reference, or structural-expand ImportUse
-      evidence. A file-level import without qualifying component-owned use selects
-      importer-edge provenance but no importer component contract.
+      For each seed select direct provider goal/interface contracts and their
+      decisions as labeled rationale, alongside the complete provider interpretation
+      context required for selected Tags. Direct importers contribute goal/interface
+      contracts only when actual consumer-owned ImportUse identifies them. A
+      file-level selection without qualifying component use retains edge provenance
+      without inventing a consumer dependency.
 
       After the complete purpose-specific non-glossary Sigil evidence set reaches a
       fixed point, derive GlossaryContextProjection from its normalized paths. The
       only eligible recognition text is recovered Facet prose represented by
-      selected-contract, selected-expansion, dependency-contract,
-      dependency-decision, importer-contract, cycle-contract, module-index-summary,
-      or public-concept-origin evidence; inline code, URLs, fenced content,
+      selected-contract, dependency-contract, dependency-decision, importer-contract,
+      cycle-contract, or tag-origin evidence; inline code, URLs, fenced content,
       diagnostics, generated context text, and implementation source are ineligible.
 
-      Use only source-ranged occurrences already returned by SigilGlossaryEngine.
+      Use only source-ranged occurrences already returned by GlossaryInspection.
       Select one canonical term and definition when an agentContext true occurrence
-      overlaps the exact source range of an eligible selected Facet. Do not
-      rescan normalized EvidenceUnit text or match whole files. Architecture-specific
+      overlaps the exact source range of an eligible selected Facet. Do not rescan
+      normalized EvidenceUnit text or match whole files. Architecture-specific
       eligible evidence can therefore add glossary terms. Do not serialize glossary
       occurrence records or unrelated bounded-context entries.
     }
@@ -308,20 +312,17 @@ expand SigilContextRetrieval {
     ArchitecturePurposeSelection {
       Begin with the complete semantic selection.
 
-      Select the containing module index for every seed, direct dependency, direct
-      importer component, and cycle member. Select its local component goal and
-      interface plus every constraints and decisions Facet owned by the exact
-      module-index component's matching expand, without following the module index
-      imports as new dependencies. Those exact owned occurrences are the complete
-      boundary-wide set; no semantic classifier or inference narrows them.
+      Do not add _module.sigil ancestry or namespace context. An ordinary explicitly
+      selected summary follows the same ownership and relationship rules as any
+      component.
 
       Select every complete cycle-member group reached from a seed, direct
-      dependency, or direct importer and include each member contract and expansion.
-      Do not follow dependency or importer edges outward from a newly added cycle
+      dependency, or direct importer and include each member complete contract. Do
+      not follow dependency or importer edges outward from a newly added cycle
       member.
 
-      Select every public-concept-origin reachable from a seed namespace and include
-      the provider public contract and originating concept occurrence.
+      Select each tag-origin used by a seed with its exact identity, introductions,
+      and complete provider declaration as interpretation context.
 
       Do not select owned-implementation relation metadata or implementation source
       content.
@@ -346,17 +347,14 @@ expand SigilContextRetrieval {
 
     SelectedRelationMembership {
       Semantic purpose selects every selected-declaration edge to a seed, every
-      matching-expansion edge from a seed, every direct-dependency edge whose source
-      is a seed, and every direct-importer edge whose source is a seed. An ownerless
-      direct-importer remains selected as provenance even when it selects no importer
-      component contract.
+      direct-dependency edge from a seed, and every direct-importer edge from a seed.
+      Ownerless direct-importer provenance remains visible without selecting an
+      importer component contract.
 
-      Architecture purpose includes every semantic edge and additionally selects
-      matching-expansion edges for selected cycle members and selected module-index
-      summary components, containing-module-index edges from selected seed,
-      dependency, importer, and cycle nodes, every cycle-member edge inside each
-      selected complete strongly connected group, and every public-concept-origin
-      edge selected from a seed namespace.
+      Architecture purpose includes every semantic edge, every cycle-member edge
+      inside each selected complete strongly connected group, and each tag-origin
+      edge selected from a seed scope. No summary ancestry or expansion relation is
+      added.
 
       Implementation purpose includes every architecture edge and every owned-
       implementation edge whose target and entrypoint location are selected by
@@ -368,55 +366,46 @@ expand SigilContextRetrieval {
 
     PolicyRuleVocabulary {
       Canonical selecting rule identifiers, in order, are select-target,
-      select-seed-expansion, select-direct-dependency, select-direct-importer,
-      select-module-index, select-cycle-member, select-public-concept-origin,
-      select-owned-implementation, and select-glossary-term.
+      select-direct-dependency, select-direct-importer, select-cycle-member,
+      select-tag-origin, select-owned-implementation, and select-glossary-term.
 
       Canonical excluding rule identifiers, in order, are
-      exclude-transitive-dependency, exclude-transitive-importer,
-      exclude-module-index-import, and exclude-cycle-outward.
+      exclude-transitive-dependency, exclude-transitive-importer, and
+      exclude-cycle-outward.
 
-      Each paragraph of SelectedRelationMembership maps to the selecting identifier
-      with the same relation name; target seeds map to select-target and glossary
-      definitions map to select-glossary-term. no-transitive-dependency maps to
-      exclude-transitive-dependency, no-transitive-importer maps to
-      exclude-transitive-importer, no-module-import maps to
-      exclude-module-index-import, and no-outward-cycle maps to
-      exclude-cycle-outward. A relation matching more than one exclusion uses the
-      first identifier in canonical excluding order. No other policy-rule string is
-      valid in policy version 1.
+      SelectedRelationMembership maps to the selecting identifier with the same
+      relation name; target seeds map to select-target and glossary definitions to
+      select-glossary-term. no-transitive-dependency, no-transitive-importer, and
+      no-outward-cycle map to their corresponding exclusion identifiers. Multiple
+      applicable exclusions use the first identifier in canonical order.
     }
 
     CanonicalWireVocabulary {
       RetrievalNode kind literals are request-target, component-declaration,
-      sigil-file, expansion, module-index, public-concept-origin,
-      implementation-target. seed-declaration-file class applies to the sigil-file
-      node for each exact seed declaration path.
+      sigil-file, tag-origin, and implementation-target. seed-declaration-file
+      applies to the sigil-file node for each exact seed declaration path.
 
-      RetrievalRelation literals are selected-declaration, matching-expansion,
-      direct-dependency, direct-importer, containing-module-index, cycle-member,
-      public-concept-origin, and owned-implementation.
+      RetrievalRelation literals are selected-declaration, direct-dependency,
+      direct-importer, cycle-member, tag-origin, and owned-implementation.
 
-      EvidenceKind literals are selected-contract, selected-expansion,
-      dependency-contract, dependency-decision, importer-contract, cycle-contract,
-      module-index-summary, public-concept-origin, glossary-definition,
-      ownership-projection and diagnostic.
+      EvidenceKind literals are selected-contract, dependency-contract,
+      dependency-decision, importer-contract, cycle-contract, tag-origin,
+      glossary-definition, ownership-projection, and diagnostic.
 
-      Node-class literals are exact-seed, seed-declaration-file, seed-expansion,
-      direct-dependency, direct-importer, cycle-member, containing-module-index,
-      public-concept-origin and owned-implementation-target, in that order.
+      Node-class literals are exact-seed, seed-declaration-file, direct-dependency,
+      direct-importer, cycle-member, tag-origin, and owned-implementation-target, in
+      that order.
 
       Stable identity prefixes are n for RetrievalNode, e for RetrievalEdge, v for
       EvidenceUnit, r for InclusionReason, and x for ExcludedRelation. Each identity
       is the exact prefix, one colon, and its 64-character lowercase SHA-256 digest.
       No aliases, case variants, or additional literals are valid in policy version
-      1.
+      2.
     }
 
     RetrievalOrdering {
-      Assign each graph item the first applicable node class in this order: exact
-      seed, seed declaration file, seed expansion, direct dependency, direct
-      importer, cycle member, containing module index, public concept origin, owned
+      Assign each graph item its first applicable class: exact seed, seed declaration
+      file, direct dependency, direct importer, cycle member, Tag origin, owned
       implementation target, implementation source.
 
       Order equal-class graph items by shortest selected relation count from a seed,
@@ -425,13 +414,13 @@ expand SigilContextRetrieval {
       source-node order, relation order from RetrievalRelationInventory, target-node
       order, then stable identity.
 
-      Assign each evidence unit the first applicable kind in this order: selected
-      contract, selected expansion, dependency contract, dependency decision,
-      importer contract, cycle contract, module-index summary, public concept origin,
-      glossary definition, ownership projection, implementation source, diagnostic.
+      Assign each evidence unit its first applicable kind: selected contract,
+      dependency contract, dependency decision, importer contract, cycle contract,
+      Tag origin, glossary definition, ownership projection, implementation source,
+      diagnostic.
 
       Order equal-kind evidence by normalized path, source start line, source start
-      column, component name, section name, concept identity with absent first, then
+      column, component name, section name, Tag identity with absent first, then
       stable identity.
     }
 
@@ -441,10 +430,10 @@ expand SigilContextRetrieval {
       empty edge path.
 
       A glossary definition is the sole exception to per-seed emission. Collect every
-      inclusion reason for an eligible selected Facet whose exact range
-      overlaps an occurrence of that term. Choose one triggering reason by fewest
-      edges, lexicographically earliest edge sequence under complete RetrievalEdge
-      ordering, triggering EvidenceUnit order, then seed-node order. Emit exactly one
+      inclusion reason for an eligible selected Facet whose exact range overlaps an
+      occurrence of that term. Choose one triggering reason by fewest edges,
+      lexicographically earliest edge sequence under complete RetrievalEdge ordering,
+      triggering EvidenceUnit order, then seed-node order. Emit exactly one
       select-glossary-term reason using that chosen seed, the glossary-definition
       EvidenceUnit identity as selected identity, and the chosen triggering edge
       path. The reused path proves reachability of occurrence-bearing evidence and
@@ -476,9 +465,8 @@ expand SigilContextRetrieval {
       After purpose membership reaches a fixed point, inspect every built relation
       whose source or target is selected. Record it exactly once only when its
       opposite endpoint is stopped by an exact no-transitive-dependency,
-      no-transitive-importer, no-outward-cycle, or no-module-import rule. Do not
-      record a relation merely because its purpose does not select that relation
-      class.
+      no-transitive-importer, no-outward-cycle rule. Do not record a relation merely
+      because its purpose does not select that relation class.
 
       no-transitive-dependency applies to an outgoing direct-dependency relation from
       a selected direct-dependency node when its target is not selected through any
@@ -493,10 +481,9 @@ expand SigilContextRetrieval {
       outside that selected strongly connected group and is not selected through any
       other rule.
 
-      no-module-import applies to an outgoing direct-dependency relation from a
-      component used as a selected containing module-index summary when the relation
-      comes from that module index's own import and its target is not selected
-      through any other rule.
+      An ordinary summary follows the same no-transitive-dependency and
+      no-outward-cycle rules as any other component; it has no special module-import
+      exclusion.
 
       Do not build or record relationships outside RetrievalRelationInventory. Do not
       recursively inspect relations incident only to excluded endpoints. Invalid
@@ -512,8 +499,9 @@ expand SigilContextRetrieval {
       SIGIL_RETRIEVAL_TARGET_PATH_INVALID with the exact vocabulary message and
       identical diagnostic evidence text.
 
-      A dependency-owned diagnostic retains its original severity, code, and message
-      when selected into retrieval evidence.
+      A dependency-owned DiagnosticModel record retains all of its original evidence
+      when selected into retrieval, including stage and related conflicting
+      locations.
     }
 
     RetrievalDiagnostics {
@@ -525,11 +513,10 @@ expand SigilContextRetrieval {
       workspace glossary diagnostics. Include ownership and implementation-source
       discovery diagnostics only for implementation purpose.
 
-      Deduplicate diagnostics by code, severity, message, normalized path, and exact
-      range. Order error before warning before info, then normalized path with an
-      absent path first, source start and end positions with absent range first,
-      code, then message. Diagnostics still equal after those fields are the same
-      diagnostic under the deduplication tuple and therefore occur only once.
+      Coalesce only identical complete DiagnosticModel records, retaining stage and
+      every related location. Use DiagnosticModel ordering and coalescing rules for
+      the raw diagnostic collection. Filtering preserves each included record and
+      its source evidence.
     }
 
     InclusionReasonSelection {
@@ -559,14 +546,15 @@ expand SigilContextRetrieval {
       provenance identities without adding presentation headings.
 
       Deduplicate evidence with the tuple of normalized path, source range, available
-      source location, component identity, section identity, concept identity, and
-      EvidenceKind. For diagnostic evidence extend that tuple with severity, code,
-      and message. Merge and canonically order the inclusion-reason identities of a
+      source location, component identity, section identity, Tag identity, and
+      EvidenceKind. For diagnostic evidence extend that tuple with the complete
+      DiagnosticModel record, including stage and related-location evidence. Merge
+      and canonically order the inclusion-reason identities only for an identical
       duplicated unit.
 
-      Never serialize resolved declaration objects, complete concept namespaces,
-      complete glossary occurrence collections, or implementation sources not
-      selected by implementation purpose.
+      Never serialize resolved declaration objects, complete Tag namespaces, complete
+      glossary occurrence collections, or implementation sources not selected by
+      implementation purpose.
 
       RetrievalProjection is a separate derived result. ContextAggregation remains
       the format-neutral raw evidence projection and does not acquire presentation
@@ -574,29 +562,22 @@ expand SigilContextRetrieval {
     }
 
     EvidenceUnitConstruction {
-      Create one EvidenceUnit for each selected recovered Sigil Facet, never
-      one per whole section or declaration. Use the Facet's exact normalized
-      workspace-relative path, source range, owner component or expand identity,
-      section identity, optional concept identity, normalized prose, and attached
-      embedded-content source content.
+      Create one EvidenceUnit per selected recovered Sigil Facet. Preserve exact
+      workspace-relative path, byte range, source snapshot, component owner, contract
+      role, optional local grouping Tag, all inline definitions and references,
+      links, original physical prose and display text, and attached payload. Never
+      reduce a Facet to one optional Tag identity.
 
-      selected-contract uses each selected goal or interface Facet owned by a
-      seed declaration. selected-expansion uses every Facet owned by a
-      matching expansion of a seed or cycle member. dependency-contract uses each
-      selected goal or interface Facet owned by a direct-dependency
-      declaration, and dependency-decision uses each selected decisions Facet
-      owned by that declaration or its matching expansions. importer-contract uses
-      each selected goal or interface Facet owned by a direct-importer
-      declaration. cycle-contract uses each selected goal or interface Facet
-      owned by a cycle-member declaration that has not already received an earlier
-      kind. module-index-summary uses each selected goal or interface Facet
-      owned by the exact module-index declaration plus each selected constraints or
-      decisions Facet owned by that module-index component's matching expand.
-      public-concept-origin uses each selected Facet inside the exact
-      originating public concept occurrence that has not received an earlier kind.
+      selected-contract uses every Facet owned by a seed across all seven contracts.
+      dependency-contract uses direct-provider goal/interface Facets;
+      dependency-decision uses its decisions. importer-contract uses the actual
+      direct importer goal/interface Facets. cycle-contract uses selected
+      cycle-member Facets not assigned an earlier kind. tag-origin uses
+      provider-context Facets needed to interpret selected Tags that have no earlier
+      kind. Each Facet retains its owner and contract role.
 
-      Construct one unit for a selected Facet even when it has several
-      selection roles, and assign only the first applicable EvidenceKind from
+      Construct one unit for a selected Facet even when it has several selection
+      roles, and assign only the first applicable EvidenceKind from
       RetrievalOrdering. The descriptions above define applicability; they do not
       create a second unit for another role.
 
@@ -607,16 +588,17 @@ expand SigilContextRetrieval {
       location when available, otherwise its annotation range, and normalized target
       metadata. It is advisory link evidence only and does not prove implementation
       completeness or alignment. diagnostic creates one unit per included diagnostic
-      using its optional path and range. Its text is exactly severity, one space,
-      code, colon, one space, then message. Retrieval- owned diagnostics use
+      and retains its complete DiagnosticModel record, including source identity,
+      primary range, stage, and related locations. Its text is exactly severity, one
+      space, code, colon, one space, then message. Retrieval-owned diagnostics use
       RetrievalDiagnosticVocabulary; included dependency-owned diagnostics preserve
       their supplied severity, code, and message without rewriting.
 
-      An empty section emits no EvidenceUnit. A structurally recovered Facet
-      remains eligible when its owning document is loaded; its existing diagnostics
-      remain separate evidence and no missing text or range is inferred. Attached
-      fenced content remain part of their owning Facet and never become
-      independent evidence units.
+      An empty section emits no EvidenceUnit. A structurally recovered Facet remains
+      eligible when its owning document is loaded; its existing diagnostics remain
+      separate evidence and no missing text or range is inferred. Attached fenced
+      content remain part of their owning Facet and never become independent evidence
+      units.
     }
 
     RetrievalFingerprint {
@@ -633,6 +615,20 @@ expand SigilContextRetrieval {
   }
 
   constraints {
+
+    TagContextPreservation {
+      Complete provider interpretation context remains separately attributed even
+      when a compact agent projection displays only goal/interface for non-selected
+      components. Budgets disclose withheld provider context and unavailable link
+      evidence. Selected vocabulary never expands implicitly, and a shared Tag never
+      proves runtime calls or behavioral equivalence.
+
+      This language migration changes the retrieval policy identity where its
+      relation/evidence vocabulary changes; raw evidence and agent projection remain
+      separately versioned. Preserve deterministic identity construction, ordering,
+      inclusion reasons, purposes, budgets, and unavailable-evidence outcomes.
+    }
+
     EvidenceBudget {
       A budget changes how much evidence is returned, never which relationships the
       closure selected; relation exclusions remain reported separately.
@@ -642,14 +638,14 @@ expand SigilContextRetrieval {
 
       An absent budget returns the complete closure. A negative, fractional, or
       non-finite budget is rejected rather than reinterpreted, because silently
-      treating an unusable bound as unbounded returns the whole closure to a
-      caller that asked for a limit.
+      treating an unusable bound as unbounded returns the whole closure to a caller
+      that asked for a limit.
     }
 
     DeterministicRetrieval {
-      SigilContextRetrieval consumes immutable SigilSemanticModel resolution,
-      SigilGraphBuilder relationships, optional SigilGlossaryEngine evidence, and
-      explicit SigilImplementationOwnership evidence without filesystem access.
+      SigilContextRetrieval consumes immutable ResolutionModel records, GraphData
+      relationships, optional GlossaryInspection evidence, and explicit
+      ImplementationEvidenceInput without filesystem access.
 
       The same complete inputs produce byte-identical structured output, aggregated
       context, and fingerprint independently of discovery order, locale, host path
@@ -659,16 +655,21 @@ expand SigilContextRetrieval {
       workspace-relative POSIX form. The path field of a rejected
       RetrievalTargetIdentity is the sole exception: it preserves the exact request
       string for deterministic failure identity and is never interpreted as a
-      workspace path. Every range uses resolved one-based line and column positions.
+      workspace path. Sigil SourceRange uses half-open original UTF-8 byte offsets,
+      with optional one-based scalar locations derived from the captured snapshot.
+      Implementation entrypoint coordinates carry their own explicit encoding and
+      remain distinct from Sigil byte ranges.
 
-      Policy version 1 has no character, token, node, edge, hop, or output budget.
-      Membership is exactly the finite rule union for the selected purpose.
+      Structural relationship membership is the complete finite rule union for the
+      selected purpose, without size, token, node, edge, or hop pruning. The optional
+      evidence-byte budget governs only returned evidence text under EvidenceBudget;
+      it never changes that membership.
     }
 
     RetrievalAuthority {
       Purpose selection is structural interpretation, not semantic approval.
 
-      SigilSemanticModel owns only the immutable public result data shapes.
+      RetrievalModel owns only the immutable public result data shapes.
       SigilContextRetrieval solely owns their construction, policy and schema
       versioning, ordering, collision behavior, fingerprint lifecycle, and
       compatibility rules; the model does not independently evolve those semantics.
@@ -677,18 +678,18 @@ expand SigilContextRetrieval {
       model judgment, natural-language queries, and consumer traversal do not change
       authoritative membership, ordering, context, or fingerprint.
 
-      An advisory rank added by a later policy remains outside policy version 1 and
-      cannot silently alter a version-1 result.
+      An advisory rank added by a later policy remains outside policy version 2 and
+      cannot silently alter a version-2 result.
     }
 
     PublicExposureAndCompatibility {
-      The Core module index exposes SigilContextRetrieval through its imported
-      component identity. Hosts import that focused identity directly; SigilCore does
-      not duplicate retrieve as a facade operation.
+      The core package exports the focused retrieval API. Its ordinary summary
+      selects this owner's retrieval API Tags; no language namespace or re-export is
+      implied, and SigilCore does not own retrieval policy.
 
-      Existing SigilCore and SigilProjections operations remain compatibility and
-      diagnostic primitives. They may render their legacy result shapes, but hosts
-      must not combine them into an authoritative purpose-context result.
+      Existing SigilCore and SigilProjections operations remain inspection and
+      diagnostic primitives. Their separate projections do not acquire authoritative
+      purpose-retrieval membership or its versioned fingerprint.
     }
 
     EvidenceBoundaries {
@@ -784,7 +785,7 @@ expand SigilContextRetrieval {
       Scope: Governs graph membership and evidence selection; excludes evaluator
       judgment, free-form queries, presentation, mutation, and semantic approval.
 
-      Assumptions: Imports, expansions, module indexes, concept origins, glossary
+      Assumptions: Tag selections, component contracts, Tag origins, glossary
       occurrences, and explicit implementation ownership represent the relationships
       required by the initial purposes.
 
@@ -811,7 +812,7 @@ expand SigilContextRetrieval {
       qualifying ImportUse ownership rather than file colocation.
 
       Scope: Governs direct-dependency and direct-importer relevance for files that
-      may contain multiple components or expands.
+      may contain multiple components.
 
       Trade-offs: An ownerless file-level import remains visible as relation
       provenance but does not add a component contract.
@@ -829,20 +830,24 @@ expand SigilContextRetrieval {
     }
 
     UsefulnessFirstPolicy {
-      Decision: Apply no size or cost budget in retrieval policy version 1 and
-      include every item selected by its exact purpose rules.
+      Decision: Preserve complete purpose-selected structural membership and
+      optionally bound returned evidence text with maxEvidenceBytes. Keep the
+      complete selected component contract, deterministic stopping order, and
+      explicit withheld-evidence disclosure.
 
-      Scope: Governs retrieval membership and aggregation; excludes evaluator
-      execution budgets and future presentation limits.
+      Scope: Governs retrieval membership and optional evidence transport; excludes
+      evaluator execution budgets and inferred relevance pruning.
 
       Trade-offs: A genuinely relevant context may remain large, but required
       evidence is not silently discarded to reduce cost.
 
-      Discarded alternatives: Token packing, character limits, top-k pruning, and
-      silent truncation were rejected until relevance completeness is measured.
+      Discarded alternatives: Token packing, top-k membership pruning, and silent
+      truncation were rejected because they hide selected relationships or discard
+      evidence without disclosure.
 
-      Consequences: Evaluation fixtures can establish usefulness before a separate
-      packing policy is proposed.
+      Consequences: Callers can receive bounded optional evidence while retaining
+      complete structural membership, mandatory selected contracts, deterministic
+      ordering, and visible unavailable or withheld context.
     }
 
     DedicatedRetrievalOwnership {
@@ -856,7 +861,7 @@ expand SigilContextRetrieval {
       Trade-offs: Core gains another public component and compatibility boundary.
 
       Design issues addressed: Retrieval policy has independent reasons to change and
-      would make the small direct-projection owner or a module index oversized.
+      would make the small direct-projection owner or a package summary oversized.
 
       Discarded alternatives: Extending SigilProjections and independently selecting
       context in CLI and compiler were rejected as incohesive or inconsistent.
@@ -868,7 +873,7 @@ expand SigilContextRetrieval {
 
     CanonicalRetrievalIdentity {
       Decision: Fingerprint RFC 8785 canonical JSON with SHA-256 and lowercase
-      hexadecimal encoding under schema identity sigil-purpose-context-v1.
+      hexadecimal encoding under schema identity sigil-purpose-retrieval/v2.
 
       Scope: Governs PurposeRetrievalResult reproducibility and cache identity;
       excludes authentication, signing, and hidden evaluator state.
@@ -924,7 +929,7 @@ expand SigilContextRetrieval {
       source identity and range before canonical stable identity as tie-breakers.
 
       Scope: Governs graph, evidence, inclusion-reason, exclusion, and diagnostic
-      ordering under retrieval policy version 1.
+      ordering under retrieval policy version 2.
 
       Trade-offs: The order optimizes target-first compiler reading rather than
       global alphabetical browsing and is part of cache compatibility.
@@ -976,36 +981,36 @@ expand SigilContextRetrieval {
       Adding an applicable direct import changes the selected graph, evidence,
       context, explanation, and fingerprint.
 
-      A file containing two component declarations and one expand whose parent is one
-      of those declarations selects the two exact component identities once;
-      declaration path, declaration start line, declaration start column, then exact
-      name determine their seed order and repeated retrieval preserves that order.
+      A file containing two component declarations selects each exact identity once
+      and retains all seven contracts under their respective owners.
     }
 
     SemanticPurposeSelection {
-      A seed with one direct dependency includes its public contract and every
-      collected decisions section but excludes that dependency's dependencies.
+      A seed with one directly used Tag selection includes the provider
+      goal/interface, decisions as rationale, and complete provider interpretation
+      context without transferring its obligations or importing unselected names.
 
-      An import declared only by a seed's matching expansion contributes its direct
-      dependency contract and decisions without contributing transitive dependencies.
+      An imported Tag used in a seed operational contract contributes the actual
+      consumer-owned direct dependency and the complete provider interpretation
+      context.
 
       A glossary term contributes one definition when an agentContext true,
       source-ranged occurrence returned by SigilGlossaryEngine overlaps eligible
-      recovered prose in a selected Facet. A spelling found only in inline
-      code, a URL, a fenced content, a diagnostic, generated context, or
-      implementation source contributes no definition.
+      recovered prose in a selected Facet. A spelling found only in inline code, a
+      URL, a fenced content, a diagnostic, generated context, or implementation
+      source contributes no definition.
     }
 
     ArchitecturePurposeSelection {
       Reaching one component in an import cycle includes the complete strongly
       connected group without expanding outward from newly added cycle members.
 
-      A selected module index remains boundary context and does not add all of its
-      imported namespace as new dependencies.
+      An explicitly selected ordinary summary follows ordinary component rules and
+      does not import any unnamed namespace or transitive dependency.
 
-      A direct dependency expansion is excluded when that component is neither a
-      selected cycle member nor the local component summarized by a selected module
-      index; a selected cycle member includes all of its matching expansions.
+      A direct provider complete declaration supplies selected-Tag interpretation
+      context; a selected cycle member retains every owned contract. Neither creates
+      a separate expansion or automatic summary relationship.
     }
 
     ImplementationPurposeSelection {
@@ -1091,11 +1096,9 @@ expand SigilContextRetrieval {
       dependency is recorded once as exclude-transitive-dependency, while relations
       incident only to that excluded endpoint are not inspected.
 
-      For architecture purpose, that same transitive-dependency exclusion and a
-      selected module index's imported namespace edge can coexist. The namespace edge
-      is recorded as exclude-module-index-import, and their final order is source
-      node, target node, canonical relation order, canonical excluding-rule order,
-      then exclusion identity.
+      For architecture purpose, transitive-dependency and cycle-frontier exclusions
+      can coexist. Their order is source node, target node, canonical relation order,
+      canonical excluding-rule order, then exclusion identity.
     }
   }
 }

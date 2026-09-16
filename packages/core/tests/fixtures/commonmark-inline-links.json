@@ -1,0 +1,204 @@
+{
+  "source": "https://spec.commonmark.org/0.31.2/spec.json",
+  "sourceSha256": "d431b29d97b6f73e69d547109cf5081578fac931e72afe95639ebe766c1b2a20",
+  "attribution": "CommonMark Spec 0.31.2 by John MacFarlane",
+  "license": "CC-BY-SA-4.0; https://creativecommons.org/licenses/by-sa/4.0/",
+  "adaptation": "Selected inline-link examples; expected HTML reduced to recognized link/image count. Example520 has an image containing link text and is tested separately under Sigil source-retention rules. These fixtures do not cover CommonMark block, emphasis or code-span semantics.",
+  "cases": [
+    {
+      "example": 482,
+      "markdown": "[link](/uri \"title\")\n",
+      "references": 1
+    },
+    {
+      "example": 483,
+      "markdown": "[link](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 484,
+      "markdown": "[](./target.md)\n",
+      "references": 1
+    },
+    {
+      "example": 485,
+      "markdown": "[link]()\n",
+      "references": 1
+    },
+    {
+      "example": 486,
+      "markdown": "[link](<>)\n",
+      "references": 1
+    },
+    {
+      "example": 487,
+      "markdown": "[]()\n",
+      "references": 1
+    },
+    {
+      "example": 488,
+      "markdown": "[link](/my uri)\n",
+      "references": 0
+    },
+    {
+      "example": 489,
+      "markdown": "[link](</my uri>)\n",
+      "references": 1
+    },
+    {
+      "example": 490,
+      "markdown": "[link](foo\nbar)\n",
+      "references": 0
+    },
+    {
+      "example": 491,
+      "markdown": "[link](<foo\nbar>)\n",
+      "references": 0
+    },
+    {
+      "example": 492,
+      "markdown": "[a](<b)c>)\n",
+      "references": 1
+    },
+    {
+      "example": 493,
+      "markdown": "[link](<foo\\>)\n",
+      "references": 0
+    },
+    {
+      "example": 494,
+      "markdown": "[a](<b)c\n[a](<b)c>\n[a](<b>c)\n",
+      "references": 0
+    },
+    {
+      "example": 495,
+      "markdown": "[link](\\(foo\\))\n",
+      "references": 1
+    },
+    {
+      "example": 496,
+      "markdown": "[link](foo(and(bar)))\n",
+      "references": 1
+    },
+    {
+      "example": 497,
+      "markdown": "[link](foo(and(bar))\n",
+      "references": 0
+    },
+    {
+      "example": 498,
+      "markdown": "[link](foo\\(and\\(bar\\))\n",
+      "references": 1
+    },
+    {
+      "example": 499,
+      "markdown": "[link](<foo(and(bar)>)\n",
+      "references": 1
+    },
+    {
+      "example": 500,
+      "markdown": "[link](foo\\)\\:)\n",
+      "references": 1
+    },
+    {
+      "example": 501,
+      "markdown": "[link](#fragment)\n\n[link](https://example.com#fragment)\n\n[link](https://example.com?foo=3#frag)\n",
+      "references": 3
+    },
+    {
+      "example": 502,
+      "markdown": "[link](foo\\bar)\n",
+      "references": 1
+    },
+    {
+      "example": 503,
+      "markdown": "[link](foo%20b&auml;)\n",
+      "references": 1
+    },
+    {
+      "example": 504,
+      "markdown": "[link](\"title\")\n",
+      "references": 1
+    },
+    {
+      "example": 505,
+      "markdown": "[link](/url \"title\")\n[link](/url 'title')\n[link](/url (title))\n",
+      "references": 3
+    },
+    {
+      "example": 506,
+      "markdown": "[link](/url \"title \\\"&quot;\")\n",
+      "references": 1
+    },
+    {
+      "example": 507,
+      "markdown": "[link](/url \"title\")\n",
+      "references": 1
+    },
+    {
+      "example": 508,
+      "markdown": "[link](/url \"title \"and\" title\")\n",
+      "references": 0
+    },
+    {
+      "example": 509,
+      "markdown": "[link](/url 'title \"and\" title')\n",
+      "references": 1
+    },
+    {
+      "example": 510,
+      "markdown": "[link](   /uri\n  \"title\"  )\n",
+      "references": 1
+    },
+    {
+      "example": 511,
+      "markdown": "[link] (/uri)\n",
+      "references": 0
+    },
+    {
+      "example": 512,
+      "markdown": "[link [foo [bar]]](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 513,
+      "markdown": "[link] bar](/uri)\n",
+      "references": 0
+    },
+    {
+      "example": 514,
+      "markdown": "[link [bar](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 515,
+      "markdown": "[link \\[bar](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 516,
+      "markdown": "[link *foo **bar** `#`*](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 517,
+      "markdown": "[![moon](moon.jpg)](/uri)\n",
+      "references": 2
+    },
+    {
+      "example": 518,
+      "markdown": "[foo [bar](/uri)](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 519,
+      "markdown": "[foo *[bar [baz](/uri)](/uri)*](/uri)\n",
+      "references": 1
+    },
+    {
+      "example": 521,
+      "markdown": "*[foo*](/uri)\n",
+      "references": 1
+    }
+  ]
+}

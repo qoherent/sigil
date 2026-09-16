@@ -7,7 +7,9 @@ checkout. For each case, materialize only its raw fenced inputs under a fresh
 temporary workspace, and give a fresh writer the request and source locations.
 Use the installed skill; keep these runner instructions and the observer notes
 out of the writer and evaluator prompts. Do not create repository `.sigil`
-fixtures or use compiled tooling. These cases are specifications, not passes.
+fixtures. Use compiled tooling in the CLI-enabled
+[mechanical cases](mechanical-validation-fixture.md); retain explicit offline
+restrictions in the cases below. These cases are specifications, not passes.
 
 For ordinary cases, record actual separate evaluator invocations, exact captured
 requests, raw reports, current source digests, edits, final response, host/model

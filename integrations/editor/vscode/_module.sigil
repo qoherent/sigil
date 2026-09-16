@@ -1,7 +1,7 @@
-@packages/lsp import { SigilLsp }
-@packages/cli import { SigilCli }
-@packages/sigilc/report.sigil import { SigilGateDiagnostics }
-@packages/sigilc/scope.sigil import { SigilComparisonScope }
+@packages/sigilc/scope.sigil from SigilComparisonScope import { ScopeInput, DesignMembership }
+@packages/sigilc/report.sigil from SigilGateDiagnostics import { ReportSchema, NativeFindings }
+@packages/cli/_module.sigil from SigilCli import { DesignExport }
+@packages/lsp/_module.sigil from SigilLsp import { LspPackage, NavigationAndInspection, DocumentRendering, OwnershipSourceWatching }
 
 component SigilVsCodeExtension {
   goal {
@@ -57,23 +57,20 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Use SigilCli for structural export, SigilComparisonScope for native file
-      membership, and SigilGateDiagnostics for compiler-owned presentation.
+      Use DesignExport for structural export, ScopeInput and DesignMembership for
+      native file membership, and NativeFindings for compiler-owned presentation.
       Contribute Compile File and Compile Workspace with Design or Implementation
-      focus. Export current structure through sigil export design, then invoke
-      native sigilc directly and display its named state and native diagnostics.
-      File focus uses the active physical Sigil file as an ordered native Design
-      root; native scope adds imports and structural owners. Show the effective
-      scope honestly, including wider dependencies, rather than claiming a
-      cursor-selected component was independently compiled.
-      Implementation focus requires an explicit native source-selection JSON path.
-      No model invocation, compiler package, profile or legacy event adapter.
+      focus. Export current structure through sigil export design, then invoke native
+      sigilc directly and display its named state and native diagnostics. File focus
+      uses the active physical Sigil file as an ordered native Design root; native
+      scope adds imports and structural owners. Show the effective scope honestly,
+      including wider dependencies, rather than claiming a cursor-selected component
+      was independently compiled. Implementation focus requires an explicit native
+      source-selection JSON path. No model invocation, compiler package, profile or
+      legacy event adapter.
     }
-
   }
-}
 
-expand SigilVsCodeExtension {
   state {
     EditorLanguageSupport {
       The language client lifecycle is stopped, starting, running, or stopping.
@@ -87,8 +84,8 @@ expand SigilVsCodeExtension {
     CompilationSurface {
       The current operation is starting, running, completed, unavailable, failed,
       cancelled or stale. A replacement cancels and supersedes the previous run.
-      Focus is ask, design or implementation; displayed semantic state comes
-      directly from the completed native gate, never from diagnostic absence.
+      Focus is ask, design or implementation; displayed semantic state comes directly
+      from the completed native gate, never from diagnostic absence.
     }
   }
 
@@ -126,23 +123,42 @@ expand SigilVsCodeExtension {
       Design Workspace invokes compile design. Implementation Workspace invokes
       compile implementation with the configured native selection. File commands
       supply a native scope with that ordered Design root and the Implementation
-      selection. Design-only file scope explicitly excludes all Implementation
-      files; it makes no Implementation comparison claim.
-      Native source selection and dependency closure remain compiler-owned.
-      File compilation uses its containing workspace; multi-root workspace
-      compilation uses the active folder or asks for an eligible folder.
-      Keep stdout as one native JSON report and stderr as operational progress.
-      Display findings at their native locations and retain bounded witnesses in
-      output. Missing code ranges stay file-only. Report omitted finding counts.
-      Use exactly Coherent/Loose/Disjoint and Closed/Converged/Drift with their
-      native green/yellow/red mapping. Unavailable comparison is not a color.
-      Refuse dirty workspace documents before capture. Clear displayed findings
-      and mark stale after workspace document, disk or relevant settings changes.
-      Cancel on replacement or extension deactivation; discard superseded results.
+      selection. Design-only file scope explicitly excludes all Implementation files;
+      it makes no Implementation comparison claim. Native source selection and
+      dependency closure remain compiler-owned. File compilation uses its containing
+      workspace; multi-root workspace compilation uses the active folder or asks for
+      an eligible folder. Keep stdout as one native JSON report and stderr as
+      operational progress. Display findings at their native locations and retain
+      bounded witnesses in output. Missing code ranges stay file-only. Report omitted
+      finding counts. Use exactly Coherent/Loose/Disjoint and Closed/Converged/Drift
+      with their native green/yellow/red mapping. Unavailable comparison is not a
+      color. Refuse dirty workspace documents before capture. Clear displayed
+      findings and mark stale after workspace document, disk or relevant settings
+      changes. Cancel on replacement or extension deactivation; discard superseded
+      results.
     }
   }
 
   constraints {
+
+    CurrentLanguageAndLocations {
+      TextMate grammar, bundled language services, preview, and native commands
+      target the same 0.8 authority. Highlight explicit owner-file/component Tag
+      selections, all seven contracts, local grouping and inline Tags, links, and
+      inert payloads without legacy expand or directory-import fallback.
+
+      Consume ReportSchema native report schema 2 independently of frontend schema 2.
+      Convert every Sigil byte range, including related and destination locations, to
+      UTF-16 using the exact captured source snapshot. If only disk text is
+      available, verify its captured digest first. Never publish stale-source
+      locations; clear obsolete findings through the existing cancellation and
+      freshness lifecycle.
+
+      Compilation exports current Design structure and runs native compile against
+      stored projections. External producers own prepare and ingest; the editor
+      neither reconstructs missing projections nor interprets eqval tables.
+    }
+
     ArtifactVersionOwnership {
       package.json owns the extension artifact version.
 
@@ -162,14 +178,14 @@ expand SigilVsCodeExtension {
     EditorLanguageSupport {
       The extension uses stable public VS Code APIs and vscode-languageclient.
 
-      The extension depends on SigilLsp for language semantics and does not import or
-      duplicate core behavior.
+      The extension bundles LspPackage and uses NavigationAndInspection for language
+      intelligence without importing or duplicating core behavior.
 
-      Document preview renders the whole file through a standard server
+      Document preview uses DocumentRendering through a standard server
       executeCommand and introduces no custom protocol method.
 
-      Ownership file watching is notification-only and does not modify workspace
-      files.
+      Ownership file watching follows OwnershipSourceWatching, is notification-only,
+      and does not modify workspace files.
     }
 
     DocumentPreview {
@@ -197,26 +213,25 @@ expand SigilVsCodeExtension {
     RemovedWorkflowSurface {
       Delete commands, menus, activation hooks, process helpers and workspace-state
       bookkeeping dedicated to beams, accepted worlds, generated-view publication,
-      handoffs and receipts. Those backend concepts are intentionally removed;
-      their frontend needs no replacement or compatibility command.
-      Keep authored-language diagnostics, navigation, highlighting and ordinary
-      document preview. Retained compilation/status feedback has a separate
-      native sigilc integration requirement.
+      handoffs and receipts. Those backend Tags are intentionally removed; their
+      frontend needs no replacement or compatibility command. Keep authored-language
+      diagnostics, navigation, highlighting and ordinary document preview. Retained
+      compilation/status feedback has a separate native sigilc integration
+      requirement.
     }
 
     CompilationSurface {
       Keep bundled language support and ordinary preview independent of installed
-      compiler executables. Compilation needs current sigil and sigilc tools;
-      show actionable settings guidance for missing or incompatible tools.
-      Validate the final native result shape and its exit/state pairing before
-      displaying success. Design Coherent/Loose and Implementation Closed/Converged
-      exit 0; Design Disjoint and Implementation Drift exit 1. Exit 3 with an
-      unavailable report leaves Implementation unset; operational failures and
-      cancellation supply no completed semantic verdict.
-      Bound stdout, stderr and process lifetime. Use argv arrays without a shell
-      and clean temporary capture files after the child exits. Delete the old
-      JSONL lifecycle, profiles, diagnostic history, stage UI and related tests.
-      Do not parse Sigil or interpret eqval tables in the extension.
+      compiler executables. Compilation needs current sigil and sigilc tools; show
+      actionable settings guidance for missing or incompatible tools. Validate the
+      final native result shape and its exit/state pairing before displaying success.
+      Design Coherent/Loose and Implementation Closed/Converged exit 0; Design
+      Disjoint and Implementation Drift exit 1. Exit 3 with an unavailable report
+      leaves Implementation unset; operational failures and cancellation supply no
+      completed semantic verdict. Bound stdout, stderr and process lifetime. Use argv
+      arrays without a shell and clean temporary capture files after the child exits.
+      Delete the old JSONL lifecycle, profiles, diagnostic history, stage UI and
+      related tests. Do not parse Sigil or interpret eqval tables in the extension.
     }
   }
 
@@ -299,18 +314,18 @@ expand SigilVsCodeExtension {
     ExternalCompilerIntegration {
       Decision: Use language CLI structural export and direct native sigilc final
       reports. The editor consumes native states and findings, not old events.
-      Consequences: Both executables are configured independently; ordinary
-      language support still needs neither. Remove compiler package dependencies.
+      Consequences: Both executables are configured independently; ordinary language
+      support still needs neither. Remove compiler package dependencies.
     }
 
     LocationBasedCompilation {
       Decision: Name the focused action Compile File and use native ordered roots.
-      Scope: Physical-file projections and native dependency closure.
-      Design issues addressed: The new compiler scopes physical sources, so a
-      cursor-based component label would misrepresent the compiled boundary.
-      Consequences: File focus may include other components and dependency files;
-      the native result exposes that membership. No duplicate language resolver
-      or legacy component-selection adapter is introduced.
+      Scope: Physical-file projections and native dependency closure. Design issues
+      addressed: The new compiler scopes physical sources, so a cursor-based
+      component label would misrepresent the compiled boundary. Consequences: File
+      focus may include other components and dependency files; the native result
+      exposes that membership. No duplicate language resolver or legacy
+      component-selection adapter is introduced.
     }
 
     ExplicitAgenticCompilation {
@@ -333,11 +348,11 @@ expand SigilVsCodeExtension {
 
       Malformed source displays ranged diagnostics.
 
-      Imported components and concepts support navigation, hover, and semantic
-      highlighting.
+      Explicit Tag selections and resolved Tags support navigation, hover, and
+      semantic highlighting.
 
       Changing an ownership annotation invalidates the server cache and the next
-      component or concept hover shows refreshed links.
+      component or Tag hover shows refreshed links.
 
       A failed bundled server produces visible output and an error without crashing
       VS Code.
@@ -372,18 +387,18 @@ expand SigilVsCodeExtension {
 
     CompilationSurface {
       File compilation passes the workspace-relative active Sigil path as native
-      scope root, independent of cursor position. Expanded-file and duplicate-name
-      cases use the same physical-file boundary, with native ownership closure.
-      Scope output exposes included dependency files and explicit root order.
-      All six state/exit pairings display their native name and correct color;
+      scope root, independent of cursor position. Multi-component-file and invalid
+      duplicate-name cases use the same physical-file boundary, with native ownership
+      closure. Scope output exposes included dependency files and explicit root
+      order. All six state/exit pairings display their native name and correct color;
       unavailable comparison remains unset. Reject malformed or mismatched results.
       The extension-host test exercises current structural export and native
       diagnostic projection, with separate fixed-report fixtures for gate states.
-      Language navigation and ordinary Markdown preview still work. Removed
-      workflow commands and the obsolete Compile Component alias are absent.
-      Dirty documents prevent capture; edits and settings changes invalidate the
-      displayed result. Failed/cancelled/superseded runs never overwrite a newer
-      result. No profile or event-protocol arguments reach sigilc.
+      Language navigation and ordinary Markdown preview still work. Removed workflow
+      commands and the obsolete Compile Component alias are absent. Dirty documents
+      prevent capture; edits and settings changes invalidate the displayed result.
+      Failed/cancelled/superseded runs never overwrite a newer result. No profile or
+      event-protocol arguments reach sigilc.
     }
   }
 }

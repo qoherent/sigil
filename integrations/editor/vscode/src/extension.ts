@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { publishCompilationDiagnostics } from "./diagnostic-projection.ts";
 import path from "node:path";
 import * as vscode from "vscode";
 import {
@@ -201,11 +203,17 @@ export async function activate(
 
   // Compilation invalidation observes all inputs; LSP ownership watching remains
   // independently registered by the server. Ignore native cache writes.
-  const invalidate = (uri: vscode.Uri) => {
+  const invalidate = (
+    uri: vscode.Uri,
+    event: "change" | "create" | "delete",
+  ) => {
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder) return;
     const relative = workspaceRelativeSigilPath(folder.uri, uri);
     if (
+      // Windows reports this parent-directory change when the native cache is
+      // created. Authored configuration changes arrive at their own file paths.
+      (event === "change" && relative === ".sigil") ||
       relative.split("/").some((part) =>
         [".git", "node_modules", "target", "build"].includes(part)
       ) ||
@@ -224,9 +232,9 @@ export async function activate(
   const watcher = vscode.workspace.createFileSystemWatcher("**/*");
   context.subscriptions.push(
     watcher,
-    watcher.onDidChange(invalidate),
-    watcher.onDidCreate(invalidate),
-    watcher.onDidDelete(invalidate),
+    watcher.onDidChange((uri) => invalidate(uri, "change")),
+    watcher.onDidCreate((uri) => invalidate(uri, "create")),
+    watcher.onDidDelete((uri) => invalidate(uri, "delete")),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration("sigil.compile")) return;
       for (const folder of vscode.workspace.workspaceFolders ?? []) {
@@ -351,14 +359,22 @@ async function compileFromEditor(
       markCompilationStale(diagnostics, status, focus);
       return;
     }
-    projectCompilationReport(
+    await projectCompilationReport(
       report,
       diagnostics,
       status,
       folder.uri,
       focus,
       documentUri ? "File and native dependency closure" : "Workspace",
+      () =>
+        activeCompilation === operation &&
+        (workspaceRevisions.get(folderKey) ?? 0) === startingRevision,
     );
+    if (activeCompilation !== operation) return;
+    if ((workspaceRevisions.get(folderKey) ?? 0) !== startingRevision) {
+      markCompilationStale(diagnostics, status, focus);
+      return;
+    }
     output.show(true);
     return report;
   } catch (error) {
@@ -475,35 +491,39 @@ async function selectCompilationFolder(
   return selected?.folder;
 }
 
-function projectCompilationReport(
+async function projectCompilationReport(
   report: NativeReport,
   collection: vscode.DiagnosticCollection,
   status: vscode.StatusBarItem,
   root: vscode.Uri,
   focus: CompilationFocus,
   target: string,
-): void {
-  const byUri = new Map<string, vscode.Diagnostic[]>();
-  for (const group of diagnosticGroups(report)) {
-    for (const item of group.items) {
-      for (const location of item.locations) {
-        const uri = vscode.Uri.joinPath(root, location.source);
-        const r = location.range;
-        const range = r
-          ? new vscode.Range(
-            r.start.line - 1,
-            r.start.column - 1,
-            r.end.line - 1,
-            r.end.column - 1,
-          )
-          : new vscode.Range(0, 0, 0, 0);
+  isCurrent: () => boolean,
+): Promise<void> {
+  await publishCompilationDiagnostics(report, {
+    async loadSource(source) {
+      const uri = vscode.Uri.joinPath(root, source);
+      const bytes = await readFile(uri.fsPath);
+      const document = await vscode.workspace.openTextDocument(uri);
+      return { bytes, document };
+    },
+    isCurrent,
+    publish(projected) {
+      const byUri = new Map<string, vscode.Diagnostic[]>();
+      for (const { source, range, finding: item } of projected) {
+        const uri = vscode.Uri.joinPath(root, source);
         const severity = item.severity === "error"
           ? vscode.DiagnosticSeverity.Error
           : item.severity === "warning"
           ? vscode.DiagnosticSeverity.Warning
           : vscode.DiagnosticSeverity.Information;
         const diagnostic = new vscode.Diagnostic(
-          range,
+          new vscode.Range(
+            range.start.line,
+            range.start.character,
+            range.end.line,
+            range.end.character,
+          ),
           `[${item.side}] ${item.message}`,
           severity,
         );
@@ -512,29 +532,29 @@ function projectCompilationReport(
         const key = uri.toString();
         byUri.set(key, [...(byUri.get(key) ?? []), diagnostic]);
       }
-    }
-  }
-  collection.set(
-    [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),
-  );
-  const state = nativeState(report);
-  const icon = state === "Coherent" || state === "Closed"
-    ? "$(pass-filled)"
-    : state === "Loose" || state === "Converged"
-    ? "$(warning)"
-    : state
-    ? "$(error)"
-    : "$(circle-slash)";
-  status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${
-    state ?? "unavailable"
-  }`;
-  const omitted = diagnosticGroups(report).reduce(
-    (n, group) => n + group.omitted,
-    0,
-  );
-  status.tooltip = `${target}\n${
-    state ?? ("reason" in report ? report.reason : "Unavailable")
-  }\n${omitted} omitted findings. Native scope and witnesses are in Sigil output.`;
+      collection.set(
+        [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),
+      );
+      const state = nativeState(report);
+      const icon = state === "Coherent" || state === "Closed"
+        ? "$(pass-filled)"
+        : state === "Loose" || state === "Converged"
+        ? "$(warning)"
+        : state
+        ? "$(error)"
+        : "$(circle-slash)";
+      status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${
+        state ?? "unavailable"
+      }`;
+      const omitted = diagnosticGroups(report).reduce(
+        (n, group) => n + group.omitted,
+        0,
+      );
+      status.tooltip = `${target}\n${
+        state ?? ("reason" in report ? report.reason : "Unavailable")
+      }\n${omitted} omitted findings. Native scope and witnesses are in Sigil output.`;
+    },
+  });
 }
 
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::DocumentPreview interface,state,logic,constraints,cases

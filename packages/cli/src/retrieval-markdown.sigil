@@ -1,4 +1,4 @@
-@packages/core/src/model/retrieval.sigil import { SigilRetrievalModel }
+@packages/core/src/model/retrieval.sigil from SigilRetrievalModel import { RetrievalProjection }
 
 component SigilRetrievalMarkdown {
   goal {
@@ -23,42 +23,34 @@ component SigilRetrievalMarkdown {
 
       Each selected component renders Goal, Interface, State, Logic, Constraints,
       Decisions, Cases, Ownership, and Links in that order when each section has
-      content. Each Goal, State, Logic, Constraints, Decisions, and Cases
-      Facet is one list entry whose content is that unit's semantic text. Each
-      Interface Facet is one list entry of that unit's semantic text under
-      Interface or under its concept heading.
+      content. Each Goal, State, Logic, Constraints, Decisions, and Cases Facet is
+      one list entry whose content is that unit's semantic text. Each Interface Facet
+      is one list entry of that unit's semantic text under Interface or under its Tag
+      heading.
 
-      Interface content renders under a concept heading only when the projection
-      carries that concept identity. Ungrouped interface content remains directly
-      under Interface.
+      Interface content renders under a Tag heading only when the projection carries
+      an authored local grouping identity. Ungrouped Facets remain directly under
+      Interface, even when they introduce or reference Tags inline.
 
-      Related components render after the selected component in role order:
-      Dependencies, Importers, Cycle members, then Module Context. Each present role
-      uses one group heading. A missing role emits no heading.
+      Related components render after selected components in role order:
+      Dependencies, Importers, then Cycle members. Each present role has one group
+      heading; a missing role emits no heading. Explicit summaries follow these
+      ordinary roles.
 
-      Each related component heading is the component name. Its repository-relative
-      path follows as a Source line whose text is Source, colon, space, then the
-      path. Its stable identity follows as an Identity line whose text is Identity,
-      colon, space, then the identity. It then renders Goal and Interface when those
-      sections have Facets. A module-context component also renders
-      Constraints and Decisions when those summary sections have Facets. Goal,
-      Interface, Constraints, and Decisions use emphasis labels rather than section
-      headings and omit a label when that section is empty. Interface uses the same
-      concept-heading rule as the selected component. Each Goal, Interface,
-      Constraints, or Decisions Facet is one list entry of that unit's
-      semantic text.
+      Each related component heading is its name, followed by its repository-relative
+      Source line and stable Identity line. It renders Goal and Interface with
+      emphasis labels when those sections contain Facets. Each Facet is one list
+      entry; Interface uses the same authored local grouping rule as a selected
+      component.
 
-      Component-owned OwnershipLinks render in the selected Ownership section.
-      Concept-owned OwnershipLinks render only under that concept after that
-      concept's Interface Facets. Ownership uses an advisory implements, uses,
-      or tests link to its repository-relative implementation file at its one-based
-      entrypoint line and column. The link has a start location only, never an end
-      range, and does not promise ownership, completeness, or current alignment. The
-      Ownership list entry is the relation, a Markdown link whose label is path colon
-      line colon column and whose target is path hash L line, then an optional
-      parenthesized symbol, then a colon, space, and the selected section names in
-      projection order separated by comma space when any exist. The Ownership heading
-      is omitted when no component-owned OwnershipLinks remain.
+      OwnershipLinks without Tag scope render in the consumer component Ownership
+      section. A Tag-scoped link renders under a matching authored Interface grouping
+      when present; otherwise it renders in Ownership with explicit Tag and
+      originating-owner labels. Never fabricate an Interface group, duplicate a link,
+      or erase its Tag scope. Each advisory implements, uses, or tests link retains
+      the existing one-way path/line/column Markdown link, optional symbol, and
+      selected sections. That implementation link promises neither completeness nor
+      current alignment. Omit Ownership when no link is assigned there.
 
       Projection diagnostics render after related groups and before Glossary. Each
       diagnostic is one list entry using the stable human text of severity, code, and
@@ -71,14 +63,37 @@ component SigilRetrievalMarkdown {
   }
 
   constraints {
+
+    OwnershipLinkEncoding {
+      Each Ownership list entry uses the relation, a Markdown link labeled path colon
+      line colon column and targeting path hash L line, an optional parenthesized
+      symbol, then colon and selected section names separated by comma space. For a
+      Tag-scoped entry in Ownership append semicolon, space, Tag colon space and the
+      exact Tag name, then semicolon, space, Origin colon space and its source
+      path/component identity. Apply the existing Markdown escaping rules. This label
+      describes annotation scope and does not declare a Tag.
+    }
+
+    AnnotationScopePresentation {
+      Ordinary Interface Facets group only under authored local grouping Tags. Render
+      advisory annotation Tag scope separately under its consumer component when no
+      matching local group exists, preserving exact accessible Tag spelling and
+      originating owner. Imported and inline-only Tags never become fabricated local
+      declarations or whole-component implementation claims.
+
+      Location labels retain the projection one-way line/column display; source
+      navigation uses the corresponding coordinate kind and captured identity, with
+      conversion from Sigil byte ranges against the matching snapshot.
+    }
+
     RetrievalMarkdownProjection {
       Use ATX depth 1 for the document title, depth 2 for each selected component and
-      for Dependencies, Importers, Cycle members, Module Context, Diagnostics, and
-      Glossary, depth 3 for selected section titles and related component names, and
-      depth 4 for concept identities. A selected component heading is the component
-      name. Related emphasis labels are Goal, Interface, Constraints, and Decisions
-      wrapped as Markdown strong emphasis. List entries use a hyphen marker. A Links
-      entry writes source identity, space, two hyphens, relation name, two hyphens,
+      for Dependencies, Importers, Cycle members, Diagnostics, and Glossary, depth 3
+      for selected section titles and related component names, and depth 4 for Tag
+      identities. A selected component heading is the component name. Related
+      emphasis labels are Goal, Interface, Constraints, and Decisions wrapped as
+      Markdown strong emphasis. List entries use a hyphen marker. A Links entry
+      writes source identity, space, two hyphens, relation name, two hyphens,
       greater-than, space, then target identity.
 
       Do not emit a Goal or Interface heading under a related component. Do not emit
@@ -89,9 +104,10 @@ component SigilRetrievalMarkdown {
       declaration relation. Omit the Links heading when no remaining relations exist.
 
       Do not render raw EvidenceKind labels, a matching expansion heading, an
-      implementation-source text or range slice, a duplicate module-index contract,
-      empty-section placeholders, or a separate presentation relationship map. Render
-      a non-duplicate module-context contract under Module Context.
+      implementation-source text or range slice, a duplicate ordinary project summary
+      contract, empty-section placeholders, or a separate presentation relationship
+      map. An ordinary summary uses its ordinary selected or related component role;
+      no Module Context category is inferred.
 
       Preserve projection ordering. Escape only backslash, backtick, asterisk,
       underscore, left square bracket, and right square bracket by prefixing a
@@ -112,10 +128,10 @@ component SigilRetrievalMarkdown {
       renderer becomes small, deterministic, and independent of evidence selection.
 
       Design issues addressed: Raw evidence headings expose retrieval internals and
-      make expansions, module summaries, and implementation source appear as peer
-      human-facing sections.
+      make operational Facets, project summaries, and implementation source appear as
+      peer human-facing sections.
 
-      Consequences: Component and concept ownership is visible directly, while raw
+      Consequences: Component and Tag ownership is visible directly, while raw
       evidence remains available only to consumers that need it.
 
       Revisit when: A projection field cannot express a necessary agent-facing
@@ -123,26 +139,26 @@ component SigilRetrievalMarkdown {
     }
 
     RelatedContractMarkdown {
-      Decision: Render dependency, importer, cycle-member, and module-context
-      contracts with component identity plus Goal and Interface list items, and keep
-      concept headings when the projection supplies a concept identity. A
-      module-context component also exposes its selected summary Constraints and
-      Decisions.
+      Decision: Render dependency, importer, and cycle-member contracts with
+      component identity plus Goal and Interface list items, and keep Tag headings
+      when the projection supplies a Tag identity. An ordinary explicitly selected
+      summary exposes its selected sections using the ordinary component layout.
 
       Scope: Governs related-component Markdown; excludes selected-component section
       depth, raw evidence kinds, and dependency-decision prose.
 
-      Rationale: Related contracts already carry per-unit concept identity.
-      Flattening them hides the public concept boundary that agents need.
+      Rationale: Related contracts already carry per-unit Tag identity. Flattening
+      them hides the component-owned grouping boundary that agents need.
 
       Trade-offs: Related sections grow longer than inline joined prose, while
-      readers keep the same concept structure as the selected component.
+      readers keep the same Tag structure as the selected component.
 
       Discarded alternatives: Joined Goal and Interface paragraphs and omitting
-      related concept headings were rejected after per-unit evidence landed.
+      related Tag headings were rejected after per-unit evidence landed.
 
       Consequences: Importers and cycle members become visible without printing
-      EvidenceKind labels or repeating a module-index already shown elsewhere.
+      EvidenceKind labels or repeating an ordinary project summary already shown
+      elsewhere.
     }
 
     GlossaryMarkdown {
@@ -175,13 +191,14 @@ component SigilRetrievalMarkdown {
 
   cases {
     RetrievalMarkdownProjection {
-      A selected component with MarkdownOutput renders its matching expansion prose
-      under MarkdownOutput and never emits a selected-expansion heading.
+      A selected component with MarkdownOutput renders its owned operational Facets
+      under MarkdownOutput while preserving their contract roles and never creating
+      an expansion heading.
 
-      A component-owned OwnershipLink renders one file-and-position link in the
-      selected Ownership section. A concept-owned OwnershipLink renders only under
-      that concept and does not appear again under Ownership. Ownership never renders
-      implementation source text.
+      An unscoped OwnershipLink renders once in the selected Ownership section. A
+      Tag-scoped link renders once under an existing matching Interface group or in
+      Ownership with explicit scope and origin. Ownership never renders
+      implementation source text or invents a local Tag declaration.
 
       A selected component with no State, Logic, Constraints, Decisions, Cases, or
       component-owned OwnershipLinks omits those headings while retaining Goal,
@@ -192,19 +209,20 @@ component SigilRetrievalMarkdown {
       purpose title and Diagnostics.
 
       A dependency whose interface units carry RetrievalProjection renders those
-      units under that concept heading and does not join them into one paragraph.
+      units under that Tag heading and does not join them into one paragraph.
 
-      A module-index summary whose component is otherwise absent renders once under
-      Module Context; an already represented component does not repeat there.
+      An ordinary project summary renders once through its explicit selected or
+      related component role; its filename does not create another presentation
+      category.
 
-      An empty Importers, Cycle members, Module Context, Diagnostics, or Glossary
-      collection emits no group heading.
+      An empty Importers, Cycle members, Diagnostics, or Glossary collection emits no
+      group heading.
 
       A selected-declaration link does not appear under Links.
 
-      A concept that has OwnershipLinks and no Interface Facets still emits
-      the Interface heading and that concept heading so those OwnershipLinks have a
-      parent.
+      An imported or inline-only Tag with an OwnershipLink and no authored Interface
+      grouping renders in the consumer Ownership section with explicit Tag scope and
+      origin; it creates no Interface heading or local grouping.
     }
   }
 }

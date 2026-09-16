@@ -1,4 +1,4 @@
-@packages/core/src/model import { SigilSemanticModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilDiagnostics {
   goal {
@@ -16,7 +16,8 @@ component SigilDiagnostics {
 
       severity defaults to error when omitted
 
-      options may provide severity, file path, and source range
+      options may provide severity, stage, file path, exact source range, and related
+      source locations with their captured identity
     }
 
     DiagnosticCode {
@@ -24,12 +25,20 @@ component SigilDiagnostics {
       parsing messages
     }
   }
-}
 
-expand SigilDiagnostics {
   constraints {
+
+    NormativeDiagnostics {
+      The 0.8 [diagnostic
+      catalog](../../../spec/sigil-reference.md#diagnostics-and-recovery) owns
+      language codes, stages, severity, suppression, related locations, ordering, and
+      recovery. Preserve independent valid results after errors and retain
+      invalid/incomplete source markers. Host-specific optional enrichment codes
+      remain separate.
+    }
+
     DiagnosticConstruction {
-      Diagnostic construction depends only on SigilSemanticModel data.
+      Diagnostic construction depends only on DiagnosticModel data.
 
       Parsing, configuration, workspace, and resolution problems use diagnostics when
       partial results remain meaningful.
@@ -45,17 +54,17 @@ expand SigilDiagnostics {
       Every diagnostic code has one stable severity-bearing machine-readable
       representation.
 
-      SIGIL_UNUSED_IMPORT is an error for one resolved imported name without
+      SIGIL_UNUSED_TAG_IMPORT is an error for one resolved imported name without
       qualifying local use.
 
-      SIGIL_EXPAND_WITHOUT_COMPONENT is an error when an expand is neither colocated
-      with its component nor connected to it through a resolved named import.
+      Removed expand syntax receives the normative structural diagnostic; it is never
+      attached to another component.
 
       SIGIL_DETACHED_LITERAL_BLOCK is an error when a blank line separates
       introducing prose from an opening fence.
 
       SIGIL_LITERAL_WITHOUT_INTRODUCTION is an error when an opening fence has no
-      preceding prose in its section or concept block.
+      preceding prose in its section or Tag block.
 
       SIGIL_UNCLOSED_LITERAL_BLOCK is an error when no qualifying closing fence
       occurs.
@@ -63,8 +72,9 @@ expand SigilDiagnostics {
       SIGIL_INVALID_LITERAL_TYPE is an error when a literal type does not match
       [A-Za-z][A-Za-z0-9_+.-]*.
 
-      SIGIL_LINE_TOO_LONG is informational when ordinary prose can be canonically
-      wrapped to the 79-character content width.
+      SIGIL_LINE_TOO_LONG has the severity and recovery defined by the normative
+      diagnostic catalog; the formatter may repair eligible width without altering
+      source meaning.
 
       SIGIL_UNFORMATTABLE_LINE is an error when one indivisible prose token exceeds
       the 79-character content width.
@@ -99,36 +109,36 @@ expand SigilDiagnostics {
 
       An unsupported configured language version produces SIGIL_UNSUPPORTED_VERSION.
 
-      An imports-only _module.sigil produces SIGIL_MODULE_WITHOUT_COMPONENT.
+      An imports-only _module.sigil receives only ordinary import/source diagnostics,
+      with no module-without-component requirement.
 
-      Ungrouped and mixed Concept-grouped Facets produce no grouping diagnostic in
-      any contract.
+      Ungrouped and mixed Tag-grouped Facets produce no grouping diagnostic in any
+      contract.
 
-      An identifier outside [A-Za-z][A-Za-z0-9_-]* produces error
-      SIGIL_INVALID_CONCEPT_IDENTIFIER.
+      A Tag candidate with forbidden name content produces SIGIL_INVALID_TAG_NAME
+      without inventing a partial identity.
 
-      An empty concept block produces error SIGIL_EMPTY_CONCEPT_BLOCK.
+      An empty grouping Tag produces SIGIL_EMPTY_TAG_GROUP.
 
-      A nested concept block produces error SIGIL_NESTED_CONCEPT_BLOCK.
+      A nested grouping Tag produces SIGIL_NESTED_TAG_GROUP.
 
-      Two different accessible concepts with identifiers equal without regard to case
-      produce error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER.
+      Different accessible identities with the same exact name produce
+      SIGIL_TAG_NAME_COLLISION; differing case alone is not a collision.
 
-      A valid identifier that is not PascalCase or contains a hyphen or underscore
-      produces informational SIGIL_CONCEPT_IDENTIFIER_STYLE.
+      Valid exact Tag names receive no PascalCase, hyphen, underscore, or
+      normalization style warning.
 
       An optional ownership-source enumeration failure produces warning
       SIGIL_IMPLEMENTATION_SOURCE_DISCOVERY when primary context data remains
       available.
 
       One unused name in a multi-name resolved import produces one
-      SIGIL_UNUSED_IMPORT at that imported name.
+      SIGIL_UNUSED_TAG_IMPORT at that imported name.
 
-      An unimported cross-file expand produces SIGIL_EXPAND_WITHOUT_COMPONENT at the
-      expand declaration.
+      An expand declaration is invalid structure, regardless of any import.
 
-      Apparent imports, components, concepts, or braces inside a LiteralBlock produce
-      no structural or reference diagnostic.
+      Apparent imports, components, Tags, or braces inside a LiteralBlock produce no
+      structural or reference diagnostic.
 
       Leading indentation does not contribute to SIGIL_LINE_TOO_LONG or
       SIGIL_UNFORMATTABLE_LINE.

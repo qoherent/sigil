@@ -1,50 +1,58 @@
-@spec/language.sigil import { SigilLanguage, SigilWorkspaceConfig }
-@packages/core import { SigilCore, SigilContextRetrieval }
-@packages/cli/src/installer.sigil import { SkillInstaller }
-@packages/cli/src/retrieval-markdown.sigil import { SigilRetrievalMarkdown }
+@packages/cli/src/retrieval-markdown.sigil from SigilRetrievalMarkdown import { RetrievalMarkdownProjection }
+@packages/cli/src/installer.sigil from SkillInstaller import { SkillCatalog, SkillInstallation }
+@packages/core/src/implementation-ownership.sigil from SigilImplementationOwnership import { OwnedImplementationLookup, OwnershipDiagnostics }
+@packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInspection }
+@packages/core/src/context-retrieval.sigil from SigilContextRetrieval import { PurposeRetrievalRequest, PurposeRetrievalResult }
+@packages/core/src/formatter.sigil from SigilFormatter import { Formatting }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
+@packages/core/_module.sigil from SigilCore import { CorePackage }
+@spec/glossary.sigil from SigilWorkspaceGlossary import { GlossaryFile }
+@spec/language.sigil from SigilWorkspaceConfig import { ConfigFile, SourceSelection }
+@spec/language.sigil from SigilLanguage import { LanguageVersion }
 
 component SigilCli {
   goal {
     Expose deterministic Sigil language and workspace operations to agents, CI,
     scripts, debugging and review workflows through a non-interactive command line.
 
-    Use SigilCore for language operations and structural Design export. Keep
-    skill installation separate. Models and operators invoke sigilc directly
-    for semantic compilation; this language CLI owns no compiler facade.
+    Use CorePackage for language operations and structural Design export. Keep
+    skill installation separate. Models and operators invoke sigilc directly for
+    semantic compilation; this language CLI owns no compiler facade.
   }
 
   interface {
     DesignExport {
       sigil export design [path] [--root workspace] [--pretty]
 
-      Use the core loadDesignInput operation to export the complete discovered
-      workspace as its closed structural JSON bundle. A path locates a workspace;
-      native sigilc scope selects focused Design roots afterward.
-      Write the raw bundle to stdout without a CLI envelope, semantic lowering,
-      display-path substitution or changes to captured text. Retain diagnostics
-      and return the ordinary language diagnostic exit code. Runtime failures
-      produce no partial bundle. Support only JSON; reject quiet suppression.
-      Never invoke sigilc, a model, a profile or the removed semantic compiler.
+      Use ResolvedDesignInput through the core loadDesignInput operation to export
+      the complete discovered workspace as its closed structural JSON bundle. A path
+      locates a workspace; native sigilc scope selects focused Design roots
+      afterward. Write the raw bundle to stdout without a CLI envelope, semantic
+      lowering, display-path substitution or changes to captured text. Retain
+      diagnostics and return the ordinary language diagnostic exit code. Runtime
+      failures produce no partial bundle. Support only JSON; reject quiet
+      suppression. Never invoke sigilc, a model, a profile or the removed semantic
+      compiler.
     }
 
     SourceDiscovery {
       Host listing skips git metadata and symlinks. Within a Sigil metadata
       directory, list only config.json, local.json and glossary.json so nested
-      workspace configuration remains visible while generated source is excluded.
-      Use core path normalization and joining directly. Do not depend on an
-      obsolete compiler artifact taxonomy or retain duplicate path algorithms.
+      workspace configuration remains visible while generated source is excluded. Use
+      core path normalization and joining directly. Do not depend on an obsolete
+      compiler artifact taxonomy or retain duplicate path algorithms.
     }
 
     RemovedSemanticCommands {
-      Remove semantic, compile, doctor and obsolete config authoring commands,
-      their handlers, compiler adapter dispatch and tests dedicated to
-      beams, accepted worlds, managed views, handoffs, receipts and TS7 verification.
-      An invocation of a removed command returns ordinary invalid usage. No
-      compatibility dispatch or renamed legacy command survives. Export structural
-      Design through core; the model or operator uses native sigilc directly.
-      Retain normal configuration discovery/validation, init and version metadata.
-      No JSONL compiler event stream, compiler history or compiler subprocess
-      belongs in this language command path.
+      Remove semantic, compile, doctor and obsolete config authoring commands, their
+      handlers, compiler adapter dispatch and tests dedicated to beams, accepted
+      worlds, managed views, handoffs, receipts and TS7 verification. An invocation
+      of a removed command returns ordinary invalid usage. No compatibility dispatch
+      or renamed legacy command survives. Export structural Design through core; the
+      model or operator uses native sigilc directly. Retain normal configuration
+      discovery/validation, init and version metadata. No JSONL compiler event
+      stream, compiler history or compiler subprocess belongs in this language
+      command path.
     }
 
     CliInvocation {
@@ -76,8 +84,8 @@ component SigilCli {
     WorkspaceInitialization {
       sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
 
-      init writes an empty tools object. It never seeds model providers,
-      evaluator profiles, compilation stages or runtime configuration.
+      init writes an empty tools object. It never seeds model providers, evaluator
+      profiles, compilation stages or runtime configuration.
     }
 
     WorkspaceInspection {
@@ -99,16 +107,16 @@ component SigilCli {
       context reports a scoped glossary projection for the selected component or file
       and its related sources
 
-      when --file selects a source containing one or more expands, context selects
-      each parent component represented by those expands together with components
-      declared directly in that source
+      when --file selects a source, context selects each component declared in that
+      file with its complete declaration and actual selected-Tag relationships
 
-      context automatically reports public contracts and durable decisions from
-      direct dependencies
+      context reports direct provider goal/interface and decisions as rationale, with
+      complete interpretation context for selected Tags and actual consumer-use
+      provenance
 
       context with --include-dependents reports direct importing files for the
-      selected component and contextual public contracts declared in those files
-      without proving component-level dependency
+      selected component and contextual goal/interface contracts declared in those
+      files without proving component-level dependency
     }
 
     PurposeContextRetrieval {
@@ -117,9 +125,9 @@ component SigilCli {
 
       retrieve supports --format json and --format markdown; JSON is the default
 
-      retrieve returns the complete PurposeRetrievalResult produced by
-      SigilContextRetrieval without changing membership, ordering, explanations,
-      diagnostics, context, or fingerprint
+      retrieve applies PurposeRetrievalRequest and returns the complete
+      PurposeRetrievalResult produced by SigilContextRetrieval without changing
+      membership, ordering, explanations, diagnostics, context, or fingerprint
     }
 
     MarkdownOutput {
@@ -131,26 +139,31 @@ component SigilCli {
       semantic|architecture|implementation --format markdown
 
       render markdown reports workspace metadata, component contracts, collected
-      expansions, and diagnostics as deterministic Markdown.
+      complete owned contracts, and diagnostics as deterministic Markdown.
 
-      context markdown reports selected component contracts, selected expansions,
-      concept namespace details, direct dependency contracts and dependency
-      decisions, owned implementation projections, related files, glossary context,
-      and diagnostics as deterministic Markdown.
+      context markdown reports selected complete component contracts, Tag scope
+      details, direct dependency contracts and dependency decisions, owned
+      implementation projections, related files, glossary context, and diagnostics as
+      deterministic Markdown.
 
       retrieve Markdown delegates component-first retrieval presentation to
-      SigilRetrievalMarkdown.
+      RetrievalMarkdownProjection.
     }
 
     SourceFormattingCommand {
       SourceFormattingCommand adapts SourceFormatting into a CLI command surface.
 
-      sigil fmt [path]
+      sigil fmt [paths...]
 
-      sigil fmt [path] --check
+      sigil fmt [paths...] --check
 
-      a .sigil file selects that file while a directory selects included .sigil
-      sources beneath that path through ConfigFile source-selection rules
+      Each .sigil file selects that file; each directory selects included .sigil
+      sources beneath it through ConfigFile source-selection rules. Multiple paths
+      select their deduplicated union within one configured workspace.
+
+      Omitted paths select the current directory, so invocation at the workspace
+      root selects all included workspace sources. --root anchors configuration
+      discovery without broadening the selected paths.
     }
 
     OwnershipContext {
@@ -167,14 +180,13 @@ component SigilCli {
       selected component with a warning diagnostic.
     }
 
-    OwnershipDiagnostics {
+    CliOwnershipDiagnostics {
       check scans supported implementation sources and reports malformed, detached,
       unknown-target, and unresolved-section ownership diagnostics.
     }
 
     GlossaryInspectionCommand {
-      GlossaryInspectionCommand adapts GlossaryInspectionFacade into a CLI command
-      surface.
+      GlossaryInspectionCommand adapts GlossaryInspection into a CLI command surface.
 
       sigil glossary [path]
 
@@ -204,11 +216,8 @@ component SigilCli {
       fmt explicitly rewrites only selected valid .sigil source while fmt --check
       remains read-only
     }
-
   }
-}
 
-expand SigilCli {
   logic {
     CliInvocation {
       Top-level --help lists supported commands and global options without workspace
@@ -225,14 +234,13 @@ expand SigilCli {
       workspace discovery.
     }
 
-    SkillCatalog {
-      skill list delegates bundled-skill discovery to SkillInstaller and reports
-      valid skills with supported installation targets without changing the
-      filesystem.
+    CliSkillCatalog {
+      skill list delegates bundled-skill discovery to SkillCatalog and reports valid
+      skills with supported installation targets without changing the filesystem.
     }
 
-    SkillInstallation {
-      skill install delegates installation to SkillInstaller.
+    CliSkillInstallation {
+      skill install delegates installation to SkillInstallation.
 
       skill install uses global scope and all supported agents by default.
 
@@ -275,8 +283,7 @@ expand SigilCli {
       context obtains effective terminology for selected and related files from
       SigilCore.
 
-      context resolves a file selection to components declared in that source and
-      parent components represented by expands in that source, deduplicated by exact
+      context resolves a file selection to declared components, deduplicated by exact
       component identity
 
       check reports core warnings, hints, and errors without reinterpreting them.
@@ -299,23 +306,27 @@ expand SigilCli {
       SigilContextRetrieval and performs no independent graph traversal, evidence
       ranking, membership filtering, or context aggregation.
 
-      Legacy context remains a compatibility projection with its existing result
-      shape. It does not claim the schema, policy version, fingerprint, or
-      authoritative membership of a PurposeRetrievalResult.
+      The context command remains a separate inspection projection. It does not claim
+      the schema, policy version, fingerprint, or authoritative membership of a
+      PurposeRetrievalResult.
 
       JSON serializes the structured result. Retrieval Markdown delegates its
       projection structure and rendering policy to SigilRetrievalMarkdown.
 
-      JSON preserves the complete PurposeRetrievalResult v1. A projection-aware JSON
-      representation identifies sigil-retrieval-projection/v1 without changing raw
+      JSON preserves the complete PurposeRetrievalResult v2. A projection-aware JSON
+      representation identifies sigil-retrieval-projection/v2 without changing raw
       retrieval membership, evidence ordering, or the raw fingerprint input.
     }
 
     SourceFormatting {
       fmt resolves selected sources through ConfigFile and delegates in-memory
-      canonical rendering to SigilCore.
+      canonical rendering to Formatting.
 
       fmt parses and validates every selected source before any write.
+
+      fmt validates every requested target and the combined canonical replacements
+      before writing. Duplicate and overlapping targets produce each selected file
+      once, in workspace source order independent of argument order.
 
       fmt writes only selected .sigil files whose canonical source differs.
 
@@ -325,17 +336,14 @@ expand SigilCli {
     }
 
     MarkdownOutput {
-      render markdown delegates component contract projection to SigilCore and
-      renders the resolved expansion projection already carried by each rendered
-      component.
+      render markdown delegates complete component projection to SigilCore, retaining
+      all owned contract sections and Facet boundaries
 
-      context command assembly derives selected contracts, expansions, concept
-      namespaces, and dependency contexts from each exact selected component
-      identity.
+      context command assembly derives selected contracts, Tag scopes, and dependency
+      contexts from each exact selected component identity.
 
-      context markdown renders only selected contracts, expansions, concept
-      namespaces, dependency contexts, and ownership projections that match the
-      selected component identity.
+      context markdown renders only selected contracts, Tag scopes, dependency
+      contexts, and ownership projections that match the selected component identity.
 
       dependency decisions are attached to a dependency contract only when the
       dependency name is unambiguous in the direct dependency context.
@@ -346,7 +354,7 @@ expand SigilCli {
 
     OwnershipContext {
       context loads supported implementation sources once and delegates ownership
-      lookup for each selected component to SigilCore.
+      lookup for each selected component to OwnedImplementationLookup.
 
       context continues scanning when a discovered implementation source disappears
       or cannot be read.
@@ -356,15 +364,14 @@ expand SigilCli {
       continues building structured context.
     }
 
-    OwnershipDiagnostics {
-      check delegates workspace-wide ownership-diagnostic scanning to SigilCore and
-      preserves resolved workspace diagnostics and optional source-discovery
-      warnings.
+    CliOwnershipDiagnostics {
+      check delegates workspace-wide scanning to OwnershipDiagnostics and preserves
+      resolved workspace diagnostics and optional source-discovery warnings.
     }
 
-    GlossaryInspection {
-      glossary delegates loading, context resolution, occurrence matching, and
-      diagnostics to SigilCore.
+    CliGlossaryInspection {
+      glossary delegates context resolution, occurrence matching, and diagnostic
+      projection to GlossaryInspection after core workspace loading.
     }
 
     CheckSourceLocations {
@@ -374,10 +381,27 @@ expand SigilCli {
       Only check accepts --show-locations; other commands reject it as an unsupported
       option.
     }
-
   }
 
   constraints {
+
+    LanguageCutover {
+      All language and workspace commands consume the same 0.8 core rules. Formatting
+      obtains complete provider context before interpreting imports or wrapping
+      prose; validate every selected candidate against the same provider snapshot
+      before the existing all-source write preflight.
+
+      Design export emits frontend schema 2 and explicit languageVersion 0.8.0.
+      Invalid UTF-8 yields a language failure with diagnostics and no faithful JSON
+      bundle; retained partial diagnostics remain available through other language
+      operations. No successful native verdict is inferred from export.
+
+      Catalog and installation output retain all four bundled skills. Label the
+      retained sigil skill as legacy 0.7 with its frozen incompatible tool
+      requirements; do not claim compatibility with the current binaries. Current
+      understand/write/evaluate skills use their shared 0.8 pack.
+    }
+
     ArtifactVersionOwnership {
       packages/cli/deno.json owns the CLI artifact version.
 
@@ -386,8 +410,8 @@ expand SigilCli {
 
     StructuredOutput {
       Workspace-dependent inspection JSON includes workspaceRoot, configPath,
-      sigilVersion, and workspaceName. Design export instead emits the exact
-      closed core bundle, with no CLI envelope.
+      sigilVersion, and workspaceName. Design export instead emits the exact closed
+      core bundle, with no CLI envelope.
 
       Deterministic CLI commands are non-interactive and reproducible from the same
       inputs.
@@ -425,7 +449,7 @@ expand SigilCli {
       path when an exact identity is present in the command result.
 
       Markdown rendering does not use name-only fallback to associate contracts,
-      dependency contexts, dependency decisions, expansions, concept namespaces, or
+      dependency contexts, dependency decisions, complete contracts, Tag scopes, or
       ownership projections with a selected component when duplicate component names
       can exist.
 
@@ -457,8 +481,14 @@ expand SigilCli {
       fmt explicitly mutates only selected .sigil source and never formats ConfigFile
       or GlossaryFile.
 
-      fmt performs no write when any selected source has an error diagnostic or when
-      canonical rendering fails.
+      fmt performs no write when any selected source has an error other than
+      repairable width, canonical rendering fails, or a meaning-preservation check
+      fails. Repairable width passes only through the shared formatter checks before
+      the all-selected write preflight.
+
+      Missing, excluded, unmatched, or foreign-workspace targets abort the whole
+      invocation with exit code 3 before any write. This preflight does not promise
+      rollback after a filesystem failure during replacement.
 
       Skill commands do not require or modify ConfigFile.
 
@@ -482,7 +512,7 @@ expand SigilCli {
       code 3.
     }
 
-    SkillInstallation {
+    CliSkillInstallation {
       Skill installation never overwrites unmanaged files, directories, or links.
     }
 
@@ -494,18 +524,15 @@ expand SigilCli {
 
       Exit code 0 means success or warnings only.
 
-      Exit code 1 means configuration or Sigil error
-      diagnostics.
+      Exit code 1 means configuration or Sigil error diagnostics.
 
       Exit code 2 means invalid command usage.
 
       Exit code 3 means a host or runtime failure.
     }
-
   }
 
   decisions {
-
     CliInvocation {
       Decision: Resolve explicit help and usage-error help against the longest
       recognized path in the command tree.
@@ -528,17 +555,17 @@ expand SigilCli {
     }
 
     StructuredOutput {
-      Decision: Treat deterministic language commands as automation interfaces
-      with JSON as their stable output contract. Native sigilc owns semantic
-      reports and is invoked directly by the model or operator.
+      Decision: Treat deterministic language commands as automation interfaces with
+      JSON as their stable output contract. Native sigilc owns semantic reports and
+      is invoked directly by the model or operator.
 
       Scope: Governs CLI result shaping and transport adaptation; excludes semantic
       interpretation, compilation-status computation, LSP, and editor presentation.
 
       Trade-offs: Rich interactive terminal workflows remain outside the CLI.
 
-      Consequences: Deterministic language commands expose consistent JSON
-      results without compiler events or a second semantic report protocol.
+      Consequences: Deterministic language commands expose consistent JSON results
+      without compiler events or a second semantic report protocol.
 
       Revisit when: A reviewed interactive terminal workflow becomes a primary user
       requirement.
@@ -566,16 +593,16 @@ expand SigilCli {
 
     WorkspaceMutationBoundary {
       Decision: Keep workspace inspection commands read-only, restrict workspace
-      initialization to missing configuration and seed-glossary files, and
-      permit source mutation through explicit fmt invocation.
+      initialization to missing configuration and seed-glossary files, and permit
+      source mutation through explicit fmt invocation.
 
       Scope: Governs version, parse, check, glossary, graph, context, render, init,
-      fmt and fmt --check; excludes
-      explicitly requested skill-installation side effects.
+      fmt and fmt --check; excludes explicitly requested skill-installation side
+      effects.
 
       Trade-offs: Initialization performs bounded metadata creation and formatting
-      performs explicit source rewrites, while inspection provides no
-      automatic repair.
+      performs explicit source rewrites, while inspection provides no automatic
+      repair.
 
       Discarded alternatives: Implicit source repair, inspection-time mutation,
       formatter changes to ConfigFile or GlossaryFile, unbounded ConfigFile editing
@@ -604,9 +631,8 @@ expand SigilCli {
       Design issues addressed: Authors need reproducible prose wrapping and
       structural formatting without host-specific interpretation or partial mutation.
 
-      Discarded alternatives: Formatting during check, render, or editor
-      inspection and independently implementing formatting inside the CLI were
-      rejected.
+      Discarded alternatives: Formatting during check, render, or editor inspection
+      and independently implementing formatting inside the CLI were rejected.
 
       Consequences: Automation can verify canonical source without writes and
       explicit invocation can update only the selected Sigil sources.
@@ -644,8 +670,8 @@ expand SigilCli {
       when workspace resolution already produced meaningful context.
 
       Scope: Governs component and file selections for context and post-resolution
-      ownership enrichment; excludes concept-scoped CLI selection, LSP presentation,
-      and required workspace loading.
+      ownership enrichment; excludes Tag-scoped CLI selection, LSP presentation, and
+      required workspace loading.
 
       Trade-offs: Context performs a workspace implementation-source scan and may
       return incomplete ownership targets after a warning, but preserves resolved
@@ -662,7 +688,7 @@ expand SigilCli {
       files containing multiple components.
     }
 
-    OwnershipDiagnostics {
+    CliOwnershipDiagnostics {
       Decision: Include deterministic ownership diagnostics in check after successful
       workspace resolution while keeping ownership target projections
       component-scoped.
@@ -675,27 +701,6 @@ expand SigilCli {
 
       Consequences: CI and local validation expose malformed ownership links before
       context or compiler consumers attempt to use them.
-    }
-
-    ExpandFileContextSelection {
-      Decision: Resolve context --file selection through both component declarations
-      and expands, mapping each matching expand to its parent component identity.
-
-      Scope: Governs component selection for CLI context by file; excludes
-      --component selection, native scope resolution, and import inference.
-
-      Trade-offs: One file can select multiple components even when it declares no
-      component directly.
-
-      Design issues addressed: Expand-only files otherwise return empty context and
-      hide the parent contract and ownership projection needed to understand them.
-
-      Discarded alternatives: Exact component-declaration file matching was rejected
-      because an expand is operational context for its parent component.
-
-      Consequences: File context reports each selected parent component once and
-      includes its contract, collected expands, dependency context, glossary context,
-      and ownership projection.
     }
 
   }
@@ -716,12 +721,12 @@ expand SigilCli {
       Explicit help succeeds without required operands or workspace discovery.
     }
 
-    SkillCatalog {
+    CliSkillCatalog {
       skill list includes valid bundled skills and excludes directories without
       SKILL.md.
     }
 
-    SkillInstallation {
+    CliSkillInstallation {
       Default installation targets Codex, Claude Code, OpenCode, and Pi.
 
       --project changes only skill destinations inside the current repository.
@@ -741,8 +746,8 @@ expand SigilCli {
 
       init preserves an existing GlossaryFile unchanged.
 
-      init in an empty directory writes an empty tools object with no providers
-      or compiler profiles.
+      init in an empty directory writes an empty tools object with no providers or
+      compiler profiles.
     }
 
     WorkspaceInspection {
@@ -751,33 +756,33 @@ expand SigilCli {
 
       check from a nested directory resolves the nearest eligible ConfigFile.
 
-      Missing interface concept identifiers appear in text and JSON output while
-      check exits successfully when no errors exist.
+      Ungrouped interface Facets remain valid without missing-identifier warnings;
+      check succeeds when there are no errors.
 
-      Invalid or ambiguous concept identities make check exit with code 1.
+      Invalid or ambiguous Tag identities make check exit with code 1.
 
       render JSON includes workspace metadata and Markdown review content.
 
-      context for a component with multiple expands reports every related expansion
-      source.
+      context for a component reports its complete declaration and every owned Facet
+      with source provenance
 
       context for a component with glossary terms reports only terminology effective
-      in or occurring within the component and its related expansion sources.
+      in or occurring within the component and its provider sources.
 
       context without GlossaryFile reports an absent glossary context without error.
 
-      context for a component reports each direct dependency's public contract and
-      decision sections once.
+      context for a component reports each direct dependency's goal/interface
+      contract and decision sections once.
 
-      context excludes transitive dependency decisions and non-decision private
-      dependency sections.
+      context excludes automatic transitive traversal; complete directly selected Tag
+      provider context remains available with role and ownership attribution
 
       context with --include-dependents reports direct importing files and contextual
-      public contracts declared in those files without proving component-level
-      dependency.
+      goal/interface contracts declared in those files without proving
+      component-level dependency.
 
-      context for an expand-only file reports each parent component represented by
-      the file and includes its collected expands and ownership projection.
+      context for an ordinary source with no component reports no selected component;
+      there is no expansion-location fallback
     }
 
     SourceFormatting {
@@ -788,8 +793,19 @@ expand SigilCli {
       fmt rewrites one valid noncanonical selected .sigil file and leaves ConfigFile
       and GlossaryFile unchanged.
 
-      One selected source with an error prevents every selected source from being
-      written.
+      Selecting two files formats both and leaves an unselected third file alone.
+      Repeated paths and overlapping directories produce no duplicate writes.
+      Width repairs in selected providers and consumers validate together.
+
+      Bare fmt at the workspace root selects all included sources; from a nested
+      directory it selects only included sources beneath that directory. Explicit
+      --root does not change this selection boundary.
+
+      A valid first target followed by an invalid target produces no writes.
+
+      One selected source with an error other than repairable width prevents every
+      selected source from being written. Width-only errors permit writes only when
+      every selected candidate passes shared meaning-preservation checks.
 
       Formatting the result of fmt again produces no source change.
     }
@@ -811,12 +827,12 @@ expand SigilCli {
       0.
     }
 
-    OwnershipDiagnostics {
+    CliOwnershipDiagnostics {
       check reports valid ownership annotations without diagnostics and reports each
       malformed or unresolved ownership annotation with its source location.
     }
 
-    GlossaryInspection {
+    CliGlossaryInspection {
       A workspace without GlossaryFile reports an absent glossary and no glossary
       error.
 
@@ -836,6 +852,5 @@ expand SigilCli {
       An unreadable required file produces exit code 3 rather than an
       unresolved-import diagnostic.
     }
-
   }
 }

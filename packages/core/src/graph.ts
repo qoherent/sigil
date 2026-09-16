@@ -1,118 +1,75 @@
-import type { ComponentIdentity } from "./model/ownership.ts";
-import type { SigilGraph } from "./model/graph.ts";
+import type { ComponentNode, SigilGraph } from "./model/graph.ts";
 import type { SigilResolution } from "./model/resolution.ts";
-
 export type { SigilGraph } from "./model/graph.ts";
 
 // @sigil implements packages/core/src/graph.sigil::SigilGraphBuilder::GraphConstruction interface,logic,constraints
 export function buildSigilGraph(resolution: SigilResolution): SigilGraph {
+  const components = new Map(resolution.components.map((c) => [c.id, c]));
   return {
-    componentNodes: resolution.components.map((component) => ({
-      name: component.name,
-      filePath: component.filePath,
+    componentNodes: resolution.components.map((c) => ({
+      id: c.id,
+      identity: c.identity,
+      name: c.name,
+      filePath: c.filePath,
     })),
-    fileEdges: resolution.imports
-      .filter((item) => item.targetFile !== undefined)
-      .map((item) => ({
-        from: item.sourceFile,
-        to: item.targetFile!,
-        importPath: item.declaration.path,
-      })),
-    importedComponentEdges: resolution.imports.flatMap((item) =>
-      item.targetFile === undefined ? [] : item.names
-        .filter((name) =>
-          name.component !== undefined && name.componentFile !== undefined
-        )
-        .map((name) => ({
-          sourceFile: item.sourceFile,
-          targetFile: name.componentFile!,
-          componentName: name.name,
+    fileEdges: resolution.imports.flatMap((item) =>
+      item.targetFile
+        ? [{
+          importId: item.id,
+          from: item.sourceFile,
+          to: item.targetFile,
           importPath: item.declaration.path,
-          sourceComponents: sourceComponentsFor(
-            resolution,
-            item.sourceFile,
-            name.uses,
-          ),
-          originRange: item.declaration.range,
-        }))
+        }]
+        : []
     ),
-    componentExpansionEdges: resolution.components.flatMap((component) =>
-      component.expansions.expands.map((expand) => ({
-        componentName: component.name,
-        componentFile: component.filePath,
-        expandFile: expand.filePath,
-      }))
+    importedTagEdges: resolution.imports.flatMap((item) =>
+      item.names.flatMap((selection) => {
+        if (
+          selection.status !== "resolved" || !selection.tag?.identity ||
+          !item.targetFile || !item.providerId
+        ) return [];
+        const usedComponents = [
+          ...new Set(selection.uses.map((u) => u.componentId)),
+        ];
+        return [{
+          id: selection.id,
+          importId: item.id,
+          sourceFile: item.sourceFile,
+          targetFile: item.targetFile,
+          providerComponentId: item.providerId,
+          tagIdentity: selection.tag.identity,
+          importPath: item.declaration.path,
+          sourceComponents: usedComponents.flatMap((id) =>
+            components.get(id)?.identity ? [components.get(id)!.identity!] : []
+          ),
+          uses: selection.uses,
+          originRange: selection.selection.range,
+        }];
+      })
     ),
   };
-}
-
-function sourceComponentsFor(
-  resolution: SigilResolution,
-  sourceFile: string,
-  uses: readonly { ownerKind?: "component" | "expand"; ownerName?: string }[],
-): readonly ComponentIdentity[] {
-  const keys = new Map<string, ComponentIdentity>();
-  for (const use of uses) {
-    if (
-      !use.ownerName ||
-      (use.ownerKind !== "component" && use.ownerKind !== "expand")
-    ) continue;
-    const component = resolution.components.find((candidate) =>
-      candidate.name === use.ownerName &&
-      (candidate.filePath === sourceFile ||
-        candidate.expansions.expands.some((expand) =>
-          expand.filePath === sourceFile
-        ))
-    );
-    if (!component) continue;
-    const identity = {
-      componentName: component.name,
-      declarationPath: component.filePath,
-    };
-    keys.set(
-      `${identity.declarationPath}\0${identity.componentName}`,
-      identity,
-    );
-  }
-  return [...keys.values()].sort((a, b) =>
-    a.declarationPath.localeCompare(b.declarationPath) ||
-    a.componentName.localeCompare(b.componentName)
-  );
 }
 
 // @sigil implements packages/core/src/graph.sigil::SigilGraphBuilder::StronglyConnectedGroups interface,logic,constraints,cases
 export function stronglyConnectedComponentGroups(
   graph: SigilGraph,
-): readonly (readonly ComponentIdentity[])[] {
-  const nodes = graph.componentNodes.map((node) => ({
-    componentName: node.name,
-    declarationPath: node.filePath,
-  }));
-  const key = (node: ComponentIdentity) =>
-    `${node.declarationPath}\0${node.componentName}`;
-  const nodeOrder = new Map(nodes.map((node, index) => [key(node), index]));
-  const compareNodeOrder = (a: ComponentIdentity, b: ComponentIdentity) =>
-    nodeOrder.get(key(a))! - nodeOrder.get(key(b))!;
-  const byKey = new Map(nodes.map((node) => [key(node), node]));
-  const adjacency = new Map(
-    nodes.map((node) => [key(node), new Set<string>()]),
-  );
-  for (const edge of graph.importedComponentEdges) {
-    const target = nodes.find((node) =>
-      node.componentName === edge.componentName &&
-      node.declarationPath === edge.targetFile
-    );
-    if (!target) continue;
-    for (const source of edge.sourceComponents) {
-      adjacency.get(key(source))?.add(key(target));
+): readonly (readonly ComponentNode[])[] {
+  const nodes = graph.componentNodes;
+  const order = new Map(nodes.map((node, index) => [node.id, index]));
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const adjacency = new Map(nodes.map((node) => [node.id, new Set<string>()]));
+  for (const edge of graph.importedTagEdges) {
+    if (!byId.has(edge.providerComponentId)) continue;
+    for (const use of edge.uses) {
+      adjacency.get(use.componentId)?.add(edge.providerComponentId);
     }
   }
   let nextIndex = 0;
-  const indices = new Map<string, number>();
-  const low = new Map<string, number>();
-  const stack: string[] = [];
-  const onStack = new Set<string>();
-  const groups: ComponentIdentity[][] = [];
+  const indices = new Map<string, number>(), low = new Map<string, number>();
+  const stack: string[] = [], onStack = new Set<string>();
+  const groups: ComponentNode[][] = [];
+  const compare = (a: ComponentNode, b: ComponentNode) =>
+    order.get(a.id)! - order.get(b.id)!;
   const visit = (id: string) => {
     indices.set(id, nextIndex);
     low.set(id, nextIndex++);
@@ -127,16 +84,16 @@ export function stronglyConnectedComponentGroups(
       }
     }
     if (low.get(id) === indices.get(id)) {
-      const group: ComponentIdentity[] = [];
+      const group: ComponentNode[] = [];
       let current: string;
       do {
         current = stack.pop()!;
         onStack.delete(current);
-        group.push(byKey.get(current)!);
+        group.push(byId.get(current)!);
       } while (current !== id);
-      groups.push(group.sort(compareNodeOrder));
+      groups.push(group.sort(compare));
     }
   };
-  for (const node of nodes) if (!indices.has(key(node))) visit(key(node));
-  return groups.sort((a, b) => compareNodeOrder(a[0], b[0]));
+  for (const node of nodes) if (!indices.has(node.id)) visit(node.id);
+  return groups.sort((a, b) => compare(a[0], b[0]));
 }

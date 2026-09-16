@@ -1,4 +1,4 @@
-@packages/core/src/model/language.sigil import { SigilLanguageModel }
+@packages/core/src/model/language.sigil from SigilLanguageModel import { LanguageModel }
 
 component SigilDiagnosticModel {
   goal {
@@ -7,9 +7,18 @@ component SigilDiagnosticModel {
 
   interface {
     DiagnosticModel {
-      SigilLanguageModel supplies the structural and source-position vocabulary;
+      LanguageModel supplies the structural and source-position vocabulary;
       SigilDiagnosticCode, SigilDiagnosticSeverity, and SigilDiagnostic provide
       stable deterministic diagnostic data.
+
+      Diagnostics retain stage, code, severity, explanatory message, original source
+      range when available, and related conflicting locations. The
+      [normative
+      reference](../../../../spec/sigil-reference.md#diagnostics-and-recovery)
+      owns catalog, ordering, coalescing, recovery, and suppression behavior.
+
+      Partial results distinguish invalidity and unknown completeness from valid
+      authored content, so incomplete recovery cannot support absence-based checks.
     }
   }
 }

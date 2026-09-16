@@ -23,6 +23,13 @@ they affect the selected assessment.
 
 ## Admission and restraint
 
+Use [mechanical validation](mechanical-validation.md) for compatible tool
+discovery, workspace scope, nonwriting commands, and exact-revision evidence.
+Preserve completed diagnostics even when they concern unrelated workspace or
+implementation annotation sources. CLI success does not resolve a contradiction;
+CLI failure does not authorize a semantic correction or broader source edits.
+Continue the design assessment when mechanical validation is unavailable.
+
 Evaluate meaning, completeness at the requested scope, consistency, and
 architecture. For **every missing-detail finding**, identify all of:
 

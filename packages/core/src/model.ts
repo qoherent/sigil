@@ -12,3 +12,5 @@ export * from "./model/workspace.ts";
 export * from "./model/resolution.ts";
 export * from "./model/graph.ts";
 export * from "./model/retrieval.ts";
+
+export * from "./model/projections.ts";

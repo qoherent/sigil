@@ -37,8 +37,7 @@ fn required_authored_inventory_cannot_disappear_from_empty_model_output() {
             json!("required-proposition")
         ]]
     );
-    let erased =
-        eqval::design(&facts(":U s:required false ."), &units, Limits::default()).unwrap();
+    let erased = eqval::design(&facts(":U s:required false ."), &units, Limits::default()).unwrap();
     assert_eq!(erased.state, DesignState::Disjoint);
 }
 

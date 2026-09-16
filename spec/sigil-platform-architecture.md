@@ -1,5 +1,11 @@
 # Sigil Platform Architecture
 
+> Historical 0.7 planning context. For current 0.8 authoring and implementation,
+> use the [language guide](sigil-language.md), [reference](sigil-reference.md),
+> [migration guide](migrating-to-0.8.md) and colocated component contracts.
+> Legacy expand, visibility and directory-index descriptions below are not
+> current language rules.
+
 **Status:** Accepted for platform 0.7 **Owner:** Sigil maintainers **Last
 updated:** 2026-07-30
 

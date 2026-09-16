@@ -1,8 +1,13 @@
 component ReleaseFixture {
   goal {
-    Exercise the packaged semantic runtime.
+    Exercise the packaged native runtime.
   }
   interface {
-    Analyze a deterministic fixture.
+    *fixture operation* accepts a deterministic input.
+
+    Use fixture operation with [notes](./notes.md).
+    ```text
+    fixture operation stays literal here.
+    ```
   }
 }

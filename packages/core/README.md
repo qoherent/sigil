@@ -1,63 +1,36 @@
 # sigil-core
 
-Current package version: **0.7.1**. Import with:
+The shared Sigil 0.8 implementation. Artifact version **0.8.0** is prepared in
+this checkout; publication is separate. After publication, import with:
 
 ```ts
-import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.7";
+import { parseSigilDocument } from "jsr:@qoherent/sigil-core@0.8";
 ```
 
 Raw parsing requires an explicit `sigilVersion`. Workspace APIs discover and
-validate mandatory `.sigil/config.json` before loading `.sigil` files.
+validate `.sigil/config.json` before loading sources. Disk adapters supply original
+bytes; editor overlays supply scalar text. Source ranges are half-open UTF-8 byte
+ranges, with scalar and UTF-16 positions derived from the same captured source.
 
-Shared Sigil implementation package.
+Core owns deterministic language behavior used by CLI, LSP and native export:
 
-`sigil-core` is the center of the platform. Every CLI command, editor feature,
-renderer, agent context pack, and host integration should use this package
-instead of reinterpreting Sigil independently.
+- All seven contract sections belong to a component. Preserve Facets, embedded
+  payloads, Inline Links, grouping occurrences and inline Tag introductions.
+- Resolve exact component-owned Tags and explicit file/provider selections.
+  Imported Tags remain provider-owned; using Facets remain consumer-owned. Cycles
+  are valid. `_module.sigil` is an ordinary source, with no re-export behavior.
+- Preserve independent valid results and staged diagnostics when other input is
+  invalid. Reject unsupported configured versions and removed language forms.
+- Format against resolved spans and provider vocabulary, preserving exact Tag
+  recognition, Facet boundaries, payloads and link targets. Repair width errors
+  only when reparsing and resolution preserve meaning.
+- Build graphs, complete contract views, bounded retrieval projections, glossary
+  context, implementation ownership and source-faithful schema-2 Design export.
+- Retain explicit missing evidence, truncation, ambiguity and freshness metadata.
 
-Package docs:
+Core does not own CLI arguments, editor APIs, LSP transport, model prompts or
+semantic interpretation. Native `sigilc` consumes structural export separately.
 
-- [_module.sigil](./_module.sigil): public `SigilCore` contract and
-  package-wide operational decisions.
-- [spec.md](spec.md): version 0.7 product requirements and acceptance scenarios.
-- [architecture.md](architecture.md): architecture style, internal modules,
-  dependency rules, and implementation guidelines.
-
-Platform context lives in
-[../../spec/sigil-platform-architecture.md](../../spec/sigil-platform-architecture.md).
-
-Responsibilities:
-
-- parse `.sigil` files;
-- preserve source locations and Facets;
-- preserve attached typed fenced content outside structural and reference
-  interpretation;
-- report strict per-name unused imports;
-- canonically wrap prose at 79 content characters without counting indentation;
-- parse and validate optional `.sigil/glossary.json`;
-- resolve path-scoped glossary contexts and source-ranged prose occurrences;
-- project only agent-visible glossary terms recognized in selected
-  agent-context files while retaining excluded terms for full glossary and
-  editor consumers;
-- parse concept blocks and resolve flat public/private concept namespaces;
-- parse optional free-form decision-rationale sections;
-- identify the root project and workspace-member roots declared by
-  `workspace.members`;
-- resolve imports;
-- project direct dependencies' public contracts and durable decisions into
-  bounded agent dependency context;
-- resolve `_module.sigil` as an explicit index in any included directory;
-- keep every component public through explicit-file imports;
-- collect component expansions;
-- preserve ungrouped and Concept-grouped Facets, freely mixed in any contract;
-- build the workspace graph;
-- produce diagnostics;
-- expose agent and human projection primitives.
-
-Non-responsibilities:
-
-- parse CLI arguments;
-- know about Codex prompts;
-- know about VS Code APIs;
-- own editor UI;
-- own transport protocols such as LSP or MCP.
+See [_module.sigil](./_module.sigil), [requirements](spec.md),
+[architecture](architecture.md), the [language reference](../../spec/sigil-reference.md)
+and [migration verification](../../docs/verification/sigil-080/).

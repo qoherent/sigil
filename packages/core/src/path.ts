@@ -72,6 +72,17 @@ export function isSigilFile(path: string): boolean {
   return normalizePath(path).endsWith(".sigil");
 }
 
+/** Import paths are root-relative source identities, never directory indexes. */
+export function normalizeImportPath(path: string): string | undefined {
+  if (/^[\\/]|^[A-Za-z]:/.test(path)) return undefined;
+  const normalized = normalizePath(path);
+  if (
+    normalized === ".." || normalized.startsWith("../") ||
+    !normalized.endsWith(".sigil")
+  ) return undefined;
+  return normalized;
+}
+
 export function isModuleFile(path: string): boolean {
   return basename(path) === "_module.sigil";
 }

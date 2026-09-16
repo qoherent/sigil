@@ -1,4 +1,4 @@
-/** Command-line interface for versioned Sigil 0.7 workspaces. @module */
+/** Command-line interface for versioned Sigil 0.8 workspaces. @module */
 import { type HelpTopic, parseArgs } from "./args.ts";
 import { type CommandHandlerOptions, runCommand } from "./commands.ts";
 import { EXIT_RUNTIME, EXIT_USAGE, exitCodeForDiagnostics } from "./exit.ts";
@@ -103,7 +103,13 @@ Options:
   --show-locations  Add file path, line, and column to text diagnostics
   --help            Show this help
 `,
-  fmt: `Usage: sigil fmt [path] [options]
+  fmt: `Usage: sigil fmt [paths...] [options]
+
+Select files or directories in one workspace; overlapping targets are deduplicated.
+With no paths, select the current directory. At the workspace root, this selects
+all included workspace sources. Only changed selected .sigil files are written.
+All targets and combined replacements are validated before writing any file.
+Paths resolve from the current directory; --root only anchors workspace discovery.
 
 Options:
   --check           Report noncanonical source without writing
@@ -202,6 +208,13 @@ export async function runCli(
 
   try {
     const result = await runCommand(parsed.request, options);
+    if (result.command === "export-design" && !result.bundle) {
+      return {
+        exitCode: exitCodeForDiagnostics(result.diagnostics) || 1,
+        stdout: "",
+        stderr: `${JSON.stringify({ diagnostics: result.diagnostics })}\n`,
+      };
+    }
     const formatDifference = result.command === "fmt" && result.check &&
       result.files.some((file) => file.status === "noncanonical");
     return {

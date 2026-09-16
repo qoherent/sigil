@@ -1,26 +1,34 @@
 # Compatibility
 
-| Contract                 | Version | Compatible dependencies                        |
-| ------------------------ | ------- | ---------------------------------------------- |
-| Sigil                    | 0.7.0   | `.sigil/config.json` sigilVersion 0.7.0        |
-| `.sigil/config.json`     | 0.7.0   | core `packages/core/deno.json`                 |
-| `@qoherent/sigil-core`   | 0.7.1   | `.sigil/config.json` sigilVersion 0.7.0        |
-| `@qoherent/sigil`        | 0.7.1   | core `0.7.x`                                   |
-| `@qoherent/sigil-lsp`    | 0.7.1   | core `0.7.x`; LSP 3.18                         |
-| VS Code extension        | 0.7.1   | `@qoherent/sigil-lsp` 0.7.x; VS Code `^1.91.0` |
-| Legacy `sigil` skill | 0.9.0 | CLI `^0.8.0`, core `^0.7.0`, sigilc `^0.1.0`; Sigil 0.7.0 |
+Prepared artifact versions below describe this checkout. Publication is separate;
+no release is published by the 0.8 migration.
+
+| Contract | Version | Compatible dependencies |
+| --- | --- | --- |
+| Sigil language/configuration | 0.8.0 | Explicit `sigilVersion: "0.8.0"` |
+| `@qoherent/sigil-core` | 0.8.0 | Sigil 0.8.0 only |
+| `@qoherent/sigil` CLI | 0.9.0 | Core 0.8.x |
+| `@qoherent/sigil-lsp` | 0.8.0 | Core 0.8.x; UTF-16 LSP |
+| VS Code extension | 0.8.0 | Bundled LSP/core 0.8.x; VS Code `^1.91.0` |
+| Native `sigilc` | 0.2.0 | Design export schema 2, language 0.8.0, report version 2 |
+| Legacy `sigil` skill | 0.9.0 | CLI `^0.8.0`, core `^0.7.0`, native `^0.1.0`, language 0.7.0 |
 | `sigil-understand` | 0.1.0 | Sigil 0.8.0 reference pack; no compiler requirement |
 | `sigil-evaluate` | 0.1.0 | Sigil 0.8.0; sibling `sigil-understand` |
-| `sigil-write` | 0.1.0 | Sigil 0.8.0; siblings `sigil-understand`, `sigil-evaluate` |
+| `sigil-write` | 0.1.0 | Sigil 0.8.0; both sibling skills |
 
-The language contract in `spec/language.sigil` owns the Sigil version. Core
-exposes that supported language version independently from the core artifact
-version owned by `packages/core/deno.json`. A tool must reject a configured
-`sigilVersion` it does not explicitly support.
+The language contract owns the supported language version. Manifests own artifact
+versions independently. Unsupported workspace versions are rejected; no automatic
+converter or 0.7 interpretation is bundled into current tools.
 
-The new design skills' `compatibility.json` files declare `sigilVersion` and
-`requiredSkills`, independently from compiler/package versions. The joint 0.8.0
-authority is `spec/sigil-reference.md` and `spec/sigil.ebnf`; portable copies and
-source digests live in `sigil-understand/references/language`. The installed
-frontend and root workspace still target 0.7.0. A design review does not assert
-compiler conformance or saturated coherence. Install all sibling skills together.
+The retained legacy skill is installed as historical material with its frozen
+requirements, and is excluded from active root discovery. `sigil skill list`
+reports compatibility separately from installation and runtime validation. Its
+normal validation is static. Optional old-tool execution requires both
+`SIGIL_LEGACY_LANGUAGE` and `SIGIL_LEGACY_COMPILER`; current protocol tests use
+separate current binaries and fixed Turtle for all six native states.
+
+Old native captures, bindings, indexes and projections remain stored. Incompatible
+artifacts cannot supply current evidence and must be regenerated explicitly; tools
+do not delete or translate them. The 0.8 skill reference pack is reproduced from
+its recorded sources and digests. Design review is separate from compiler validity
+and implementation conformance. See [verification](docs/verification/sigil-080/).

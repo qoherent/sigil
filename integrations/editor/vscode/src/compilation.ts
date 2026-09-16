@@ -9,7 +9,10 @@ export type ImplementationState = "Closed" | "Converged" | "Drift";
 export interface NativeLocation {
   readonly side: CompilationFocus;
   readonly source: string;
-  readonly range?: {
+  readonly coordinate_system: "utf8-bytes" | "utf16-lines";
+  readonly source_digest?: string;
+  readonly range?: { readonly start: number; readonly end: number };
+  readonly implementation_range?: {
     readonly start: { readonly line: number; readonly column: number };
     readonly end: { readonly line: number; readonly column: number };
   };
@@ -28,13 +31,13 @@ export interface NativeDiagnostics {
   readonly omitted: number;
 }
 export interface DesignReport {
-  readonly version: 1;
+  readonly version: 2;
   readonly world: { readonly state: DesignState };
   readonly diagnostics: NativeDiagnostics;
   readonly scope?: unknown;
 }
 export interface ImplementationReport {
-  readonly version: 1;
+  readonly version: 2;
   readonly design: DesignReport;
   readonly implementation: unknown | null;
   readonly comparison: {
@@ -92,6 +95,14 @@ export function runCompilationProcess(
         );
         throw new Error(
           `Language export failed (exit ${exported.code}); see language diagnostics in Sigil output.`,
+        );
+      }
+      if (
+        !object(exported.value) || exported.value.schemaVersion !== 2 ||
+        exported.value.languageVersion !== "0.8.0"
+      ) {
+        throw new Error(
+          "Incompatible language export; Sigil 0.8 schema 2 is required.",
         );
       }
       await writeFile(frontend, JSON.stringify(exported.value));
@@ -242,12 +253,28 @@ function location(value: unknown): boolean {
     typeof value.source !== "string" || !value.source ||
     path.isAbsolute(value.source) || value.source.split(/[\\/]/).includes("..")
   ) return false;
-  if (value.range === undefined) return true;
-  const range = value.range;
-  return object(range) && position(range.start) && position(range.end) &&
+  if (
+    !["utf8-bytes", "utf16-lines"].includes(String(value.coordinate_system))
+  ) return false;
+  if (
+    value.source_digest !== undefined &&
+    (typeof value.source_digest !== "string" ||
+      !/^[a-f0-9]{64}$/.test(value.source_digest))
+  ) return false;
+  if (value.coordinate_system === "utf8-bytes") {
+    if (value.implementation_range !== undefined) return false;
+    return value.range === undefined || (object(value.range) &&
+      count(value.range.start) && count(value.range.end) &&
+      value.range.end >= value.range.start &&
+      typeof value.source_digest === "string");
+  }
+  if (value.range !== undefined) return false;
+  const range = value.implementation_range;
+  return range === undefined || (typeof value.source_digest === "string" &&
+    object(range) && position(range.start) && position(range.end) &&
     (range.end.line > range.start.line ||
       (range.end.line === range.start.line &&
-        range.end.column >= range.start.column));
+        range.end.column >= range.start.column)));
 }
 function diagnostics(value: unknown): value is NativeDiagnostics {
   return object(value) && count(value.omitted) && Array.isArray(value.items) &&
@@ -262,7 +289,7 @@ function diagnostics(value: unknown): value is NativeDiagnostics {
     );
 }
 function designReport(value: unknown): value is DesignReport {
-  return object(value) && value.version === 1 && object(value.world) &&
+  return object(value) && value.version === 2 && object(value.world) &&
     ["Coherent", "Loose", "Disjoint"].includes(String(value.world.state)) &&
     diagnostics(value.diagnostics);
 }
@@ -278,7 +305,7 @@ export function parseNativeReport(
       designReport(value) && exit === (value.world.state === "Disjoint" ? 1 : 0)
     ) return value;
   } else if (
-    object(value) && value.version === 1 && designReport(value.design) &&
+    object(value) && value.version === 2 && designReport(value.design) &&
     diagnostics(value.diagnostics)
   ) {
     if (

@@ -1,15 +1,14 @@
 # Sigil Language Guide
 
-**Language version:** 0.8.0, unreleased; compiler support is pending.
+**Language version:** 0.8.0; implemented in this checkout, publication separate.
 
 This guide teaches humans and coding agents how to read, write, and revise
 Sigil. The [Language Reference](sigil-reference.md) and its
 [EBNF grammar](sigil.ebnf) define the language. This guide explains their use;
 its examples and authoring advice do not introduce additional language rules.
 
-The repository's installed tools and checked-in `.sigil` contracts still use
-0.7. Do not change a workspace version or claim that these examples pass the
-current compiler. See [Migrating to 0.8](https://github.com/farhoud/sigil/blob/28ff9851a50032c2f6be9140c48a23d9d8f8a9c8/spec/migrating-to-0.8.md).
+The active repository contracts and current core, CLI, LSP and VS Code tools
+use 0.8.0. Historical skill sources remain excluded. See [Migrating to 0.8](https://github.com/farhoud/sigil/blob/28ff9851a50032c2f6be9140c48a23d9d8f8a9c8/spec/migrating-to-0.8.md).
 
 ## Contents
 

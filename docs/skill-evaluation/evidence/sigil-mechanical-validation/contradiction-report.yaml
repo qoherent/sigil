@@ -1,0 +1,264 @@
+protocol: sigil-design-review/v1
+status: complete
+scope:
+  purpose: Direct read-only design review of SearchPanel against supplied intent.
+  selected_files:
+    - /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil
+  design_only: true
+
+source_root: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+
+assessed_inputs:
+  - role: draft
+    original_path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil
+    captured_path: null
+    capture_mode: in_place
+    sha256: fba681678b572e29c032dd39e382f7f35102829ae1986144c9e1f019fc78c6a2
+    bytes: 408
+  - role: intent
+    original_path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/intent.md
+    captured_path: null
+    capture_mode: in_place
+    sha256: 4b912ad8780b1967a46755eb31495a279156cf88392f4cbb40773dc085da7eed
+    bytes: 86
+
+authority:
+  evaluator_skill:
+    path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/SKILL.md
+    sha256: 76487d1ab9c59343217898c0cddf0c2e477cd99d10ce22205429ad1f335db3b4
+  language_pack:
+    manifest_path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/language/manifest.json
+    manifest_sha256: 25c9c782ed5b778faf82b7bdda380756bf55f652fe9cf174e278117a2de45fee
+    sigil_version: 0.8.0
+    upstream_revision: 28ff9851a50032c2f6be9140c48a23d9d8f8a9c8
+  consulted_files:
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/references/design-review.md
+      sha256: 0e350d6bf2b8d96fc36c900942a981d0ffdcbd9e3e86ea660aaa029731a8e2f3
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/references/mechanical-validation.md
+      sha256: d493c5da250e3e2dfafaa3d4fb0d6c3775bbe7d84f9096b13569ecbdf55dc053
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/references/review-contract.md
+      sha256: 13509b3e0d91811ff1fb93b0eee9b035faf82043e4bab267ab2d8f34417d65a3
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/understanding.md
+      sha256: 0042c8f06992c3da9783a0333a67600611edc76ae238f71b11ca95181af6501c
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/language/sigil-reference.md
+      sha256: 6e816aacacbd40d781166227bd8cbbe10d2d05416bbbc151cefdbc4d5054783e
+      relevant_rules:
+        - component.declaration
+        - contract.structure
+        - contract.role
+        - facet.boundary
+        - workspace.discovery
+        - interpretation.owner
+        - interpretation.evidence
+    - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/language/sigil.ebnf
+      sha256: 9677dae11e1cb6a906cb0ccc592fbbb0c28c505b6e1050d9988c260256995e49
+  freshness: All listed authority digests were verified unchanged after validation.
+
+findings:
+  - id: SP-001
+    location:
+      path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil
+      component: SearchPanel
+      contracts: constraints and cases
+      lines: "9-10, 13-14"
+    evidence:
+      - input_sha256: fba681678b572e29c032dd39e382f7f35102829ae1986144c9e1f019fc78c6a2
+        anchor: panel.sigil:9-10
+        quote: |-
+          Only the active request may publish results.
+          Cancelling a request immediately makes it inactive.
+      - input_sha256: fba681678b572e29c032dd39e382f7f35102829ae1986144c9e1f019fc78c6a2
+        anchor: panel.sigil:13-14
+        quote: |-
+          A cancelled request completes after its replacement starts;
+          the cancelled request may publish its results.
+      - input_sha256: 4b912ad8780b1967a46755eb31495a279156cf88392f4cbb40773dc085da7eed
+        anchor: intent.md:1
+        quote: Only the active request may publish. Cancelling immediately makes a request inactive.
+    consequence: >
+      The case permits publication by a request that cancellation has made
+      inactive, directly contradicting the publication invariant. Following
+      that permission could display results from the cancelled search after
+      its replacement starts.
+    priority: high
+    suggestion: >
+      Preserve the late-completion scenario and change its outcome to state
+      that the cancelled request must not publish its results.
+    disposition: determined_correction
+    authorizing_commitment:
+      path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/intent.md
+      sha256: 4b912ad8780b1967a46755eb31495a279156cf88392f4cbb40773dc085da7eed
+      anchor: "line 1"
+      commitment: Only the active request may publish. Cancelling immediately makes a request inactive.
+      preserved_promises:
+        - Publish matching records for the active request.
+        - Cancellation immediately makes the request inactive.
+        - Inactive requests cannot publish.
+        - The case continues to cover cancelled completion after replacement starts.
+
+coverage:
+  semantic:
+    reviewed:
+      - SearchPanel goal of showing the user's current search results.
+      - Interface promise to publish matching records for the active request.
+      - Active-request publication invariant and immediate cancellation transition.
+      - Late completion case against both constraints and supplied intent.
+      - Component ownership and contract roles.
+    relationships: No imports, Tags, or Inline Links occur in the selected design.
+    omitted_scope:
+      - Implementation behavior and conformance.
+      - Saturated coherence.
+    assessment: >
+      The requested design assessment is complete with one consequential
+      contradiction. Supplied intent determines its correction.
+
+  mechanical:
+    tool:
+      executable: /Users/farhoud/.deno/bin/sigil
+      realpath: /Users/farhoud/.deno/bin/sigil
+      sha256: beb2909b4cd469603e80b10e2fcebc2e7a160076e2ee115aa62b4bad8bc4484c
+      bytes: 212
+      executable_kind: Deno shell launcher
+      launcher_content: |
+        #!/bin/sh
+        # generated by deno install
+        exec deno run --allow-read --allow-write --allow-env --config /Users/farhoud/.deno/bin/.sigil/deno.json 'file:///Users/farhoud/Workspace/sigil/packages/cli/src/main.ts' "$@"
+      cli_version: 0.9.0
+      core_version: 0.8.0
+      workspace_language_version: 0.8.0
+      verified_capabilities:
+        - check supports JSON output.
+        - fmt supports multiple explicit paths.
+        - fmt supports nonwriting --check and JSON output.
+      launcher_freshness: SHA-256 unchanged after commands.
+
+    original_workspace_root: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+    cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+    physical_cwd_observed: /private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+
+    input_snapshot:
+      capture_mode: in_place
+      configuration:
+        - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/.sigil/config.json
+          sha256: 7d7669e4167e46373c4012266742889efa8300fe2a69a6b25b61abe8e631501e
+          bytes: 192
+      effective_source_selection:
+        include: ["**/*.sigil"]
+        exclude: ["excluded/**"]
+      discovered_source_membership:
+        - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil
+          sha256: fba681678b572e29c032dd39e382f7f35102829ae1986144c9e1f019fc78c6a2
+          bytes: 408
+      other_workspace_files:
+        - path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/intent.md
+          sha256: 4b912ad8780b1967a46755eb31495a279156cf88392f4cbb40773dc085da7eed
+          bytes: 86
+          role: Semantic intent; not selected as a Sigil source.
+      local_overrides: None present.
+      glossary: None present.
+      implementation_annotation_sources: None present.
+      membership_and_freshness: >
+        Recursive workspace enumeration found exactly the three files above.
+        Membership, byte lengths, and SHA-256 identities matched before probes,
+        after probes, before validation, and after validation.
+
+    command_observations:
+      - argv:
+          - /Users/farhoud/.deno/bin/sigil
+          - version
+          - /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+          - --format
+          - json
+        cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+        stdout: |
+          {"command":"version","cliVersion":"0.9.0","coreVersion":"0.8.0","workspaceRoot":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace","configPath":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/.sigil/config.json","sigilVersion":"0.8.0","workspaceName":"mechanical-evaluation","diagnostics":[]}
+        stderr: ""
+        exit: 0
+
+      - argv: [/Users/farhoud/.deno/bin/sigil, check, --help]
+        cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+        stdout: |
+          Usage: sigil check [path] [options]
+
+          Options:
+            --root <path>     Use an explicit workspace root
+            --format <value>  Output json, text, or markdown
+            --pretty          Pretty-print JSON output
+            --quiet           Suppress command output
+            --show-locations  Add file path, line, and column to text diagnostics
+            --help            Show this help
+        stderr: ""
+        exit: 0
+
+      - argv: [/Users/farhoud/.deno/bin/sigil, fmt, --help]
+        cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+        stdout: |
+          Usage: sigil fmt [paths...] [options]
+
+          Select files or directories in one workspace; overlapping targets are deduplicated.
+          With no paths, select the current directory. At the workspace root, this selects
+          all included workspace sources. Only changed selected .sigil files are written.
+          All targets and combined replacements are validated before writing any file.
+          Paths resolve from the current directory; --root only anchors workspace discovery.
+
+          Options:
+            --check           Report noncanonical source without writing
+            --root <path>     Use an explicit workspace root
+            --format <value>  Output json or text
+            --pretty          Pretty-print JSON output
+            --quiet           Suppress command output
+            --help            Show this help
+        stderr: ""
+        exit: 0
+
+      - argv:
+          - /Users/farhoud/.deno/bin/sigil
+          - check
+          - /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+          - --format
+          - json
+        cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+        stdout: |
+          {"command":"check","workspaceRoot":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace","configPath":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/.sigil/config.json","sigilVersion":"0.8.0","workspaceName":"mechanical-evaluation","diagnostics":[],"diagnosticCounts":{"error":0,"warning":0,"info":0}}
+        stderr: ""
+        exit: 0
+
+      - argv:
+          - /Users/farhoud/.deno/bin/sigil
+          - fmt
+          - /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil
+          - --root
+          - /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+          - --check
+          - --format
+          - json
+        cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace
+        stdout: |
+          {"command":"fmt","workspaceRoot":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace","configPath":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/.sigil/config.json","sigilVersion":"0.8.0","workspaceName":"mechanical-evaluation","check":true,"files":[{"filePath":"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/contradiction/workspace/panel.sigil","status":"unchanged"}],"diagnostics":[]}
+        stderr: ""
+        exit: 0
+
+    result:
+      workspace_check: Completed; zero errors, warnings, or informational diagnostics.
+      formatting_check: Completed; selected panel.sigil reported unchanged.
+      semantic_implication: Mechanical success does not resolve finding SP-001.
+      read_only_verification: Workspace membership and bytes remained unchanged.
+
+limitations:
+  - >
+    Read-only behavior was required by instructions, not enforced by the host.
+    The launcher itself permits writes, but only version, help, check, and
+    fmt --check were invoked. No files, reports, or logs were created by this
+    evaluator; workspace before/after identities establish no persistent
+    workspace changes.
+  - >
+    Executable identity records the installed launcher and observed versions.
+    Its referenced Deno runtime configuration and complete CLI module graph
+    were not independently hashed as a frozen executable artifact.
+  - >
+    In-place evidence identifies the observed revision. Reuse requires checking
+    all assessed input and authority identities again.
+  - >
+    This review does not establish implementation conformance or saturated
+    coherence. No network access, installation, or observer before.json or
+    inputs.json reads were performed.

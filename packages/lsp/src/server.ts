@@ -5,6 +5,7 @@ import {
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
   type SigilFileSystem,
+  type SourceText,
   supportedImplementationSourceGlobPatterns,
 } from "@qoherent/sigil-core";
 import {
@@ -16,6 +17,7 @@ import {
   OwnershipSourceIndex,
   renderDocumentMarkdown,
   semanticTokens,
+  type SourceSnapshots,
 } from "./features.ts";
 import {
   DenoSigilFileSystem,
@@ -48,6 +50,7 @@ const ERROR_INVALID_PARAMS = -32602;
 const ERROR_INTERNAL = -32603;
 const ERROR_SERVER_NOT_INITIALIZED = -32002;
 const ERROR_REQUEST_CANCELLED = -32800;
+const RELOAD_RETRY_DELAY_MS = 1_000;
 const OWNERSHIP_WATCH_REQUEST_ID = "sigil/ownership-watch/request";
 const OWNERSHIP_WATCH_REGISTRATION_ID = "sigil/ownership-watch";
 
@@ -62,6 +65,8 @@ type ServerState =
 export interface SigilLanguageServerOptions {
   readonly fs?: SigilFileSystem;
   readonly currentDirectory?: string;
+  /** Host-specific protocol view; parsing and exported source remain original. */
+  readonly protocolSource?: (source: SourceText) => SourceText;
 }
 
 /**
@@ -69,7 +74,7 @@ export interface SigilLanguageServerOptions {
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::DocumentSynchronization interface,state,logic,cases
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil implements packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::WorkspaceSupport interface,state,constraints,cases
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::ReadOnlyLanguageService interface,constraints
@@ -79,6 +84,7 @@ export interface SigilLanguageServerOptions {
  */
 export class SigilLanguageServer {
   readonly #fs: OverlaySigilFileSystem;
+  readonly #protocolSource?: (source: SourceText) => SourceText;
   readonly #currentDirectory: string;
   readonly #openDocuments = new Map<string, { uri: string; version: number }>();
   readonly #publishedUris = new Set<string>();
@@ -87,6 +93,13 @@ export class SigilLanguageServer {
   #state: ServerState = "uninitialized";
   #workspaceStart: string;
   #resolved?: ResolvedSigilWorkspace;
+  #sources: SourceSnapshots = new Map();
+  #generation = 0;
+  #resolvedGeneration = 0;
+  #recovery?: Promise<boolean>;
+  #loadFailure?: unknown;
+  #reloadRetryAfter = 0;
+  #ownershipConfig?: string;
   #ownershipSourceIndex?: OwnershipSourceIndex;
   #ownershipSourceRoot?: string;
   #ownershipHoverCache?: OwnershipHoverCache;
@@ -95,6 +108,7 @@ export class SigilLanguageServer {
   #exitCode: number | undefined;
 
   constructor(options: SigilLanguageServerOptions = {}) {
+    this.#protocolSource = options.protocolSource;
     this.#fs = new OverlaySigilFileSystem(
       options.fs ?? new DenoSigilFileSystem(),
     );
@@ -153,6 +167,25 @@ export class SigilLanguageServer {
         "Server is shutting down.",
       );
     }
+    const usesWorkspace = request.method !== "initialize" &&
+      request.method !== "shutdown";
+    if (usesWorkspace && this.#resolvedGeneration !== this.#generation) {
+      if (!this.#recovery && this.#loadFailure === undefined) {
+        return failure(request.id, -32801, "Workspace content changed.");
+      }
+      try {
+        if (!await this.#recover()) {
+          return failure(request.id, -32801, "Workspace content changed.");
+        }
+      } catch (error) {
+        return failure(
+          request.id,
+          ERROR_INTERNAL,
+          `Unable to load workspace: ${errorMessage(error)}`,
+        );
+      }
+    }
+    const generation = this.#generation;
     try {
       let result: unknown;
       switch (request.method) {
@@ -186,6 +219,9 @@ export class SigilLanguageServer {
           );
       }
       if (this.#cancelled.delete(request.id)) return cancelled(request.id);
+      if (usesWorkspace && generation !== this.#generation) {
+        return failure(request.id, -32801, "Workspace content changed.");
+      }
       return { jsonrpc: "2.0", id: request.id, result };
     } catch (error) {
       if (error instanceof InvalidParamsError) {
@@ -219,20 +255,36 @@ export class SigilLanguageServer {
           return await this.#didClose(params);
         case "workspace/didChangeWatchedFiles": {
           const value = didChangeWatchedFilesParams(params);
+          const paths = value.changes.map((change) =>
+            fileUriToPath(change.uri)
+          );
+          const implementationChanged = paths.some(
+            isSupportedImplementationSource,
+          );
+          const reloadPending = this.#resolvedGeneration !== this.#generation;
+          if (implementationChanged) {
+            this.#generation++;
+            this.#resolvedGeneration = this.#generation;
+            this.#invalidateOwnershipSourceIndex();
+          }
           if (
-            value.changes.some((change) =>
-              isSupportedImplementationSource(fileUriToPath(change.uri))
+            (implementationChanged && reloadPending) ||
+            paths.some((path) =>
+              path.endsWith(".sigil") ||
+              /\/\.sigil\/(config|glossary|local)\.json$/.test(path)
             )
           ) {
-            this.#invalidateOwnershipSourceIndex();
+            if (await this.#reload()) return this.#diagnosticNotifications();
           }
           return [];
         }
         default:
           return [];
       }
-    } catch {
-      return [];
+    } catch (error) {
+      return this.#loadFailure === error
+        ? this.#loadFailureNotifications(error)
+        : [];
     }
   }
 
@@ -257,7 +309,7 @@ export class SigilLanguageServer {
         hoverProvider: true,
         semanticTokensProvider: {
           legend: {
-            tokenTypes: ["type", "concept", "term"],
+            tokenTypes: ["type", "tag", "term"],
             tokenModifiers: [],
           },
           full: true,
@@ -278,14 +330,14 @@ export class SigilLanguageServer {
       uri: value.textDocument.uri,
       version: value.textDocument.version,
     });
-    await this.#reload();
-    return this.#diagnosticNotifications();
+    return await this.#reload() ? this.#diagnosticNotifications() : [];
   }
 
   async #didChange(params: unknown): Promise<readonly JsonRpcOutgoing[]> {
     const value = didChangeParams(params);
     const path = fileUriToPath(value.textDocument.uri);
-    if (!this.#openDocuments.has(path)) return [];
+    const current = this.#openDocuments.get(path);
+    if (!current || value.textDocument.version <= current.version) return [];
     const change = value.contentChanges.at(-1);
     if (!change) return [];
     this.#fs.set(path, change.text);
@@ -293,8 +345,7 @@ export class SigilLanguageServer {
       uri: value.textDocument.uri,
       version: value.textDocument.version,
     });
-    await this.#reload();
-    return this.#diagnosticNotifications();
+    return await this.#reload() ? this.#diagnosticNotifications() : [];
   }
 
   async #didClose(params: unknown): Promise<readonly JsonRpcOutgoing[]> {
@@ -302,18 +353,19 @@ export class SigilLanguageServer {
     const path = fileUriToPath(value.textDocument.uri);
     this.#fs.delete(path);
     this.#openDocuments.delete(path);
-    await this.#reload();
-    return this.#diagnosticNotifications([value.textDocument.uri]);
+    return await this.#reload()
+      ? this.#diagnosticNotifications([value.textDocument.uri])
+      : [];
   }
 
-  async #documentSymbol(params: unknown): Promise<unknown> {
+  #documentSymbol(params: unknown): unknown {
     const value = documentSymbolParams(params);
     const path = fileUriToPath(value.textDocument.uri);
     const document = this.#resolved?.workspace.files.find((item) =>
       normalizePath(item.path) === path
     )?.document;
     if (!document) return [];
-    return documentSymbols(document, await this.#fs.readTextFile(path));
+    return documentSymbols(document);
   }
 
   async #definition(params: unknown): Promise<unknown> {
@@ -324,6 +376,7 @@ export class SigilLanguageServer {
       this.#fs,
       fileUriToPath(value.textDocument.uri),
       value.position,
+      this.#sources,
     );
   }
 
@@ -336,17 +389,18 @@ export class SigilLanguageServer {
       this.#ownershipHoverCache,
       fileUriToPath(value.textDocument.uri),
       value.position,
+      this.#sources,
     );
   }
 
-  async #semanticTokens(params: unknown): Promise<unknown> {
+  #semanticTokens(params: unknown): unknown {
     const value = semanticTokensParams(params);
     if (!this.#resolved) return { data: [] };
     const path = fileUriToPath(value.textDocument.uri);
     return semanticTokens(
       this.#resolved,
       path,
-      await this.#fs.readTextFile(path),
+      this.#sources,
     );
   }
 
@@ -367,16 +421,74 @@ export class SigilLanguageServer {
       this.#fs,
       this.#ownershipHoverCache,
       fileUriToPath(uri),
+      this.#sources,
     );
   }
 
-  async #reload(): Promise<void> {
-    const workspace = await loadSigilWorkspace(this.#fs, {
+  async #reload(recovery = false): Promise<boolean> {
+    const generation = ++this.#generation;
+    if (!recovery) this.#loadFailure = undefined;
+    const fs = this.#fs.snapshot();
+    const workspace = await loadSigilWorkspace(fs, {
       startPath: this.#workspaceStart,
       currentDirectory: this.#currentDirectory,
+    }).catch((error) => {
+      if (generation === this.#generation) {
+        this.#loadFailure = error;
+        this.#reloadRetryAfter = recovery
+          ? Date.now() + RELOAD_RETRY_DELAY_MS
+          : 0;
+        this.#clearResolvedWorkspace();
+      }
+      throw error;
     });
+    if (generation !== this.#generation) return false;
     this.#resolved = resolveSigilWorkspace(workspace);
+    this.#sources = this.#protocolSource
+      ? new Map(
+        [...fs.sources].map((
+          [path, source],
+        ) => [path, this.#protocolSource!(source)]),
+      )
+      : fs.sources;
+    this.#resolvedGeneration = generation;
+    this.#loadFailure = undefined;
+    this.#reloadRetryAfter = 0;
     this.#rebuildOwnershipProjectionCache();
+    return true;
+  }
+
+  #recover(): Promise<boolean> {
+    if (!this.#recovery) {
+      if (Date.now() < this.#reloadRetryAfter) {
+        return Promise.reject(this.#loadFailure);
+      }
+      const shared = this.#reload(true).finally(() => {
+        if (this.#recovery === shared) this.#recovery = undefined;
+      });
+      this.#recovery = shared;
+    }
+    return this.#recovery;
+  }
+
+  #clearResolvedWorkspace(): void {
+    this.#resolved = undefined;
+    this.#sources = new Map();
+    this.#rebuildOwnershipProjectionCache();
+  }
+
+  #loadFailureNotifications(error: unknown): readonly JsonRpcOutgoing[] {
+    return [
+      ...this.#diagnosticNotifications(),
+      {
+        jsonrpc: "2.0",
+        method: "window/showMessage",
+        params: {
+          type: 1,
+          message: `Unable to load Sigil workspace: ${errorMessage(error)}`,
+        },
+      },
+    ];
   }
 
   #rebuildOwnershipProjectionCache(): void {
@@ -387,8 +499,17 @@ export class SigilLanguageServer {
       return;
     }
     const root = normalizePath(this.#resolved.workspace.root);
-    if (!this.#ownershipSourceIndex || this.#ownershipSourceRoot !== root) {
-      this.#ownershipSourceIndex = new OwnershipSourceIndex(root, this.#fs);
+    const config = JSON.stringify(this.#resolved.workspace.config);
+    if (
+      !this.#ownershipSourceIndex || this.#ownershipSourceRoot !== root ||
+      config !== this.#ownershipConfig
+    ) {
+      this.#ownershipSourceIndex = new OwnershipSourceIndex(
+        root,
+        this.#fs,
+        this.#resolved.workspace.config,
+      );
+      this.#ownershipConfig = config;
       this.#ownershipSourceRoot = root;
     }
     this.#ownershipHoverCache = new OwnershipHoverCache(
@@ -400,7 +521,11 @@ export class SigilLanguageServer {
   #invalidateOwnershipSourceIndex(): void {
     if (!this.#resolved) return;
     const root = normalizePath(this.#resolved.workspace.root);
-    this.#ownershipSourceIndex = new OwnershipSourceIndex(root, this.#fs);
+    this.#ownershipSourceIndex = new OwnershipSourceIndex(
+      root,
+      this.#fs,
+      this.#resolved.workspace.config,
+    );
     this.#ownershipSourceRoot = root;
     this.#ownershipHoverCache = new OwnershipHoverCache(
       this.#resolved,
@@ -428,6 +553,10 @@ export class SigilLanguageServer {
               (globPattern) => ({ globPattern, kind: 7 }),
             ),
           },
+        }, {
+          id: "sigil/language-watch",
+          method: "workspace/didChangeWatchedFiles",
+          registerOptions: { watchers: [{ globPattern: "**/*", kind: 7 }] },
         }],
       },
     }];
@@ -436,7 +565,10 @@ export class SigilLanguageServer {
   #diagnosticNotifications(
     extraUris: readonly string[] = [],
   ): readonly JsonRpcOutgoing[] {
-    const grouped = diagnosticsByUri(this.#resolved?.diagnostics ?? []);
+    const grouped = diagnosticsByUri(
+      this.#resolved?.diagnostics ?? [],
+      this.#sources,
+    );
     const currentUris = new Set<string>([
       ...grouped.keys(),
       ...[...this.#openDocuments.values()].map((item) => item.uri),
@@ -459,6 +591,10 @@ export class SigilLanguageServer {
 }
 
 class InvalidParamsError extends Error {}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function failure(
   id: JsonRpcId | null,
@@ -612,6 +748,8 @@ function textDocumentPositionParams(
   const value = requiredRecord(params, "text document position params");
   const position = requiredRecord(value.position, "position");
   if (
+    !Number.isInteger(position.line) ||
+    !Number.isInteger(position.character) ||
     typeof position.line !== "number" ||
     typeof position.character !== "number" ||
     position.line < 0 || position.character < 0

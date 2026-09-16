@@ -1,7 +1,7 @@
-@spec/language.sigil import { SigilLanguage }
-@packages/core/src/model import { SigilSemanticModel }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
-@packages/core/src/parser.sigil import { SigilParser }
+@packages/core/src/diagnostics.sigil from SigilDiagnostics import { DiagnosticConstruction }
+@packages/core/src/parser.sigil from SigilParser import { SourceDocumentParsing }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@spec/language.sigil from SigilLanguage import { FormattingStyle }
 
 component SigilFormatter {
   goal {
@@ -14,7 +14,9 @@ component SigilFormatter {
 
   interface {
     Formatting {
-      formatSigilDocument(sourceDocument, source) returns FormatResult
+      formatSigilDocument(sourceDocument, source, providerContext) returns
+      FormatResult; the context supplies the same resolved accessible vocabulary and
+      provider snapshot used to interpret the source.
 
       FormatResult contains optional formatted source, changed status, and
       diagnostics
@@ -23,50 +25,62 @@ component SigilFormatter {
       when formatted source is absent
     }
   }
-}
 
-expand SigilFormatter {
   logic {
-    Formatting {
-      Validate that SigilParser produced no error diagnostics before formatting.
 
-      Wrap Facet prose at 79 content characters without counting leading
-      indentation.
+    MeaningPreservation {
+      Render candidates against authoritative resolved spans. Preserve local grouping
+      boundaries, Inline Link destinations, labels and titles, and exact fenced
+      payload content. Reparse and resolve the candidate against the identical
+      provider snapshot; compare meaning signatures for Facets, definitions,
+      references, links, and payloads before accepting it.
+
+      Single-file hosts obtain required workspace/provider context before calling the
+      pure formatter. Unavailable or ambiguous context fails without rewriting
+      recovered invalid source as valid.
+    }
+    Formatting {
+      Accept only source with valid recovered structure and resolved relationships,
+      allowing repairable width diagnostics; reject every other error before
+      formatting.
+
+      Wrap Facet prose at 79 content characters without counting leading indentation.
 
       Retain one blank line between distinct prose Facets.
 
       Place an attached opening fence directly after its introducing prose without an
       intervening blank line.
 
-      Preserve EmbeddedContent source lines, internal blank lines, trailing whitespace,
-      and relative indentation.
+      Preserve EmbeddedContent source lines, internal blank lines, trailing
+      whitespace, and relative indentation.
 
       Compare the rendered source with the input to derive changed status.
     }
   }
 
   constraints {
-    DeterministicFormatting {
-      Formatting is deterministic and idempotent.
 
-      Formatting requires a recovered source document with no error diagnostics.
+    DeterministicFormatting {
+      Formatting follows FormattingStyle and is deterministic and idempotent.
+
+      Formatting requires complete valid structure and resolution with no errors
+      other than repairable width diagnostics.
 
       Formatting does not repair unresolved imports, invalid structure, or semantic
       problems.
 
       Formatting removes trailing whitespace outside EmbeddedContent bodies.
 
-      Prose wrapping occurs only at whitespace boundaries and never changes
-      Facet identity.
+      Prose wrapping occurs only at safe whitespace boundaries and preserves exact
+      Tag recognition, definitions, names, references, and each Facet boundary.
 
-      Structural lines, fence delimiters, and EmbeddedContent bodies are excluded from
-      prose-width wrapping.
+      Structural lines, fence delimiters, and EmbeddedContent bodies are excluded
+      from prose-width wrapping.
 
       Formatting does not normalize structural indentation.
 
-      An indivisible token longer than 79 content characters remains retained in the
-      parsed source, produces SIGIL_UNFORMATTABLE_LINE, returns no formatted source,
-      and returns changed false.
+      An indivisible protected span that cannot fit the normative width is retained
+      with the applicable diagnostic, no formatted source, and changed false.
 
       Formatting preserves the input source's final-newline presence.
     }
@@ -80,8 +94,8 @@ expand SigilFormatter {
     }
 
     DependencyDirection {
-      SigilFormatter consumes source structures from SigilSemanticModel, parse
-      validity from SigilParser, and diagnostic construction from SigilDiagnostics.
+      SigilFormatter consumes SourceModel structures, parse validity from
+      SourceDocumentParsing, and DiagnosticConstruction for findings.
     }
   }
 
@@ -125,7 +139,9 @@ expand SigilFormatter {
       Formatting the result of a successful formatting operation produces the same
       result.
 
-      A source with any error diagnostic returns no writable formatted result.
+      A source with an error other than repairable width returns no writable result.
+      A source with only repairable width errors can produce a writable result only
+      after the existing structural, resolution, and meaning-preservation checks.
 
       An unformattable indivisible token returns no formatted source, changed false,
       and SIGIL_UNFORMATTABLE_LINE.

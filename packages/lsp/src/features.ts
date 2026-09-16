@@ -1,27 +1,31 @@
-import type {
-  ComponentIdentity,
-  ConceptIdentity,
-  GlossaryTerm,
-  ImplementationSection,
-  ImplementationSource,
-  OwnedImplementationProjection,
-  OwnedImplementationTarget,
-  ResolvedComponent,
-  ResolvedConcept,
-  ResolvedSigilWorkspace,
-  Section,
-  Facet,
-  SigilDiagnostic,
-  SigilDocument,
-  SigilFileSystem,
-  SigilSectionName,
-  SourceRange,
-} from "@qoherent/sigil-core";
 import {
+  componentFacetsFor,
+  type ComponentIdentity,
+  type Facet,
+  type GlossaryTerm,
+  type ImplementationRange,
+  type ImplementationSection,
+  type ImplementationSource,
+  isExcludedPath,
   isSupportedImplementationSource,
+  joinPath,
+  normalizePath,
+  type OwnedImplementationProjection,
+  type OwnedImplementationTarget,
   ownedImplementationTargetsFor,
+  relativePath,
+  type ResolvedComponent,
+  type ResolvedSigilWorkspace,
+  type ResolvedTag,
+  type ResolvedTagReference,
+  type Section,
+  type SigilConfig,
+  type SigilDiagnostic,
+  type SigilDocument,
+  type SigilFileSystem,
+  type SourceRange,
+  type SourceText,
 } from "@qoherent/sigil-core";
-import { normalizePath, relativePath } from "@qoherent/sigil-core";
 import { pathToFileUri } from "./filesystem.ts";
 import type {
   DocumentSymbol,
@@ -32,38 +36,22 @@ import type {
   Range,
   SemanticTokens,
 } from "./types.ts";
-
-const SYMBOL_NAMESPACE = 3;
-const SYMBOL_CLASS = 5;
-const SYMBOL_PROPERTY = 7;
-const SEMANTIC_TOKEN_COMPONENT = 0;
-const SEMANTIC_TOKEN_CONCEPT = 1;
-const SEMANTIC_TOKEN_TERM = 2;
-
-interface ComponentReference {
+export type SourceSnapshots = ReadonlyMap<string, SourceText>;
+interface TagOccurrence {
+  readonly tag: ResolvedTag;
+  readonly contexts: readonly ResolvedComponent[];
+  readonly sectionName?: string;
+  readonly range: SourceRange;
+}
+interface ComponentOccurrence {
   readonly component: ResolvedComponent;
-  readonly range: Range;
-  readonly includeExpansions: boolean;
+  readonly range: SourceRange;
 }
-
-interface ConceptReference {
-  readonly concept: ResolvedConcept;
-  readonly context: ResolvedComponent;
-  readonly sectionName: SigilSectionName;
-  readonly range: Range;
-}
-
 interface GlossaryReference {
   readonly term: GlossaryTerm;
   readonly matchedSpelling: string;
   readonly range: Range;
 }
-
-interface SemanticReference {
-  readonly range: Range;
-  readonly tokenType: number;
-}
-
 // @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipSourceIndex state,logic,constraints
 export class OwnershipSourceIndex {
   readonly #sources: Promise<readonly ImplementationSource[]>;
@@ -71,8 +59,9 @@ export class OwnershipSourceIndex {
   constructor(
     workspaceRoot: string,
     fs: SigilFileSystem,
+    config?: SigilConfig,
   ) {
-    this.#sources = implementationSources(workspaceRoot, fs);
+    this.#sources = implementationSources(workspaceRoot, fs, config);
   }
 
   sources(): Promise<readonly ImplementationSource[]> {
@@ -99,12 +88,12 @@ export class OwnershipHoverCache {
 
   projection(
     componentIdentity: ComponentIdentity,
-    conceptName?: string,
+    tagName?: string,
     sectionName?: ImplementationSection,
   ): Promise<OwnedImplementationProjection | undefined> {
     const key =
       `${componentIdentity.declarationPath}\0${componentIdentity.componentName}\0${
-        conceptName ?? ""
+        tagName ?? ""
       }\0${sectionName ?? ""}`;
     let projection = this.#projections.get(key);
     if (!projection) {
@@ -113,7 +102,7 @@ export class OwnershipHoverCache {
           this.#resolved,
           sources,
           componentIdentity,
-          conceptName,
+          tagName,
           sectionName,
         )
       );
@@ -123,31 +112,63 @@ export class OwnershipHoverCache {
   }
 }
 
-export function sourceRangeToLsp(range?: SourceRange): Range {
+export function sourceRangeToLsp(
+  range: SourceRange | undefined,
+  source?: SourceText,
+): Range | undefined {
   if (!range) return zeroRange();
+  const start = source?.utf16PositionAtByte(range.start),
+    end = source?.utf16PositionAtByte(range.end);
+  return start && end ? { start, end } : undefined;
+}
+function implementationRangeToLsp(range: ImplementationRange): Range {
   return {
-    start: {
-      line: Math.max(0, range.start.line - 1),
-      character: Math.max(0, range.start.column - 1),
-    },
-    end: {
-      line: Math.max(0, range.end.line - 1),
-      character: Math.max(0, range.end.column - 1),
-    },
+    start: { line: range.start.line - 1, character: range.start.column - 1 },
+    end: { line: range.end.line - 1, character: range.end.column - 1 },
   };
 }
-
+function sourceFor(
+  resolved: ResolvedSigilWorkspace,
+  path: string,
+  snapshots?: SourceSnapshots,
+): SourceText | undefined {
+  const normalized = normalizePath(path);
+  return snapshots?.get(normalized) ??
+    resolved.workspace.files.find((f) => normalizePath(f.path) === normalized)
+      ?.document.source;
+}
 // @sigil implements packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
 export function diagnosticsByUri(
   diagnostics: readonly SigilDiagnostic[],
+  snapshots: SourceSnapshots = new Map(),
 ): ReadonlyMap<string, PublishDiagnosticsParams["diagnostics"]> {
   const grouped = new Map<string, PublishDiagnosticsParams["diagnostics"]>();
   for (const item of diagnostics) {
     if (!item.filePath) continue;
     const uri = pathToFileUri(item.filePath);
-    const entries = [...(grouped.get(uri) ?? [])];
-    entries.push({
-      range: sourceRangeToLsp(item.range),
+    const locationRange = item.implementationRange
+      ? implementationRangeToLsp(item.implementationRange)
+      : sourceRangeToLsp(
+        item.range,
+        snapshots.get(normalizePath(item.filePath)),
+      );
+    const relatedInformation = item.related.flatMap((related) => {
+      if (!related.filePath) return [];
+      const range = related.implementationRange
+        ? implementationRangeToLsp(related.implementationRange)
+        : sourceRangeToLsp(
+          related.range,
+          snapshots.get(normalizePath(related.filePath)),
+        );
+      return range
+        ? [{
+          location: { uri: pathToFileUri(related.filePath), range },
+          message: related.message ?? item.message,
+        }]
+        : [];
+    });
+    grouped.set(uri, [...(grouped.get(uri) ?? []), {
+      range: locationRange ?? zeroRange(),
       severity: item.severity === "error"
         ? 1
         : item.severity === "warning"
@@ -156,165 +177,287 @@ export function diagnosticsByUri(
       code: item.code,
       source: "sigil",
       message: item.message,
-    });
-    grouped.set(uri, entries);
+      relatedInformation,
+      data: {
+        stage: item.stage,
+        originalRange: item.range,
+        coordinateSystem: item.implementationRange
+          ? "utf16-lines"
+          : "utf8-bytes",
+        locationAvailable: !!locationRange,
+        related: item.related,
+      },
+    }]);
   }
   return grouped;
 }
-
 // @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
 export function documentSymbols(
   document: SigilDocument,
-  source: string,
 ): readonly DocumentSymbol[] {
-  return [
-    ...document.components.map((declaration) => ({
-      name: declaration.name,
-      detail: "component",
-      kind: SYMBOL_CLASS,
-      range: sourceRangeToLsp(declaration.range),
-      selectionRange: declarationNameRange(
-        source,
-        declaration.range.start.line,
-        declaration.name,
-      ),
-      children: declaration.sections.map((section) =>
-        sectionSymbol(section, source)
-      ),
-    })),
-    ...document.expands.map((declaration) => ({
-      name: declaration.name,
-      detail: "expand",
-      kind: SYMBOL_NAMESPACE,
-      range: sourceRangeToLsp(declaration.range),
-      selectionRange: declarationNameRange(
-        source,
-        declaration.range.start.line,
-        declaration.name,
-      ),
-      children: declaration.sections.map((section) =>
-        sectionSymbol(section, source)
-      ),
-    })),
-  ];
-}
-
-// @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
-export async function definitionAt(
-  resolved: ResolvedSigilWorkspace,
-  fs: SigilFileSystem,
-  filePath: string,
-  position: Position,
-): Promise<Location | null> {
-  const normalized = normalizePath(filePath);
-  const source = await fs.readTextFile(normalized);
-  const token = tokenAt(source, position);
-  if (!token) return null;
-
-  const importEntry = resolved.imports.find((item) =>
-    normalizePath(item.sourceFile) === normalized &&
-    contains(sourceRangeToLsp(item.declaration.range), position)
-  );
-  if (importEntry) {
-    const imported = importEntry.names.find((item) => item.name === token.text);
-    if (imported?.component && imported.componentFile) {
-      return location(imported.componentFile, imported.component.range);
-    }
-    if (
-      importEntry.targetFile &&
-      token.text.includes(importEntry.declaration.path)
-    ) {
-      const target = resolved.workspace.files.find((item) =>
-        normalizePath(item.path) === normalizePath(importEntry.targetFile!)
-      );
-      const declaration = target?.document.components[0] ??
-        target?.document.expands[0];
-      return location(importEntry.targetFile, declaration?.range);
-    }
-  }
-
-  const conceptReference = conceptReferences(
-    resolved,
-    normalized,
-    source,
-  ).find((item) => contains(item.range, position));
-  if (conceptReference) {
-    return await conceptDefinition(resolved, fs, conceptReference.concept);
-  }
-
-  const glossaryReference = glossaryReferences(resolved, normalized).find(
-    (item) => contains(item.range, position),
-  );
-  if (glossaryReference && resolved.glossary.glossaryPath) {
-    return location(
-      resolved.glossary.glossaryPath,
-      glossaryReference.term.declarationRange,
+  const source = document.source;
+  if (!source) return [];
+  const symbol = (
+    name: string,
+    detail: string,
+    range: SourceRange,
+    nameRange: SourceRange,
+    children: readonly DocumentSymbol[] = [],
+  ): DocumentSymbol => ({
+    name,
+    detail,
+    kind: detail === "component" ? 5 : 7,
+    range: sourceRangeToLsp(range, source)!,
+    selectionRange: sourceRangeToLsp(nameRange, source)!,
+    children,
+  });
+  const sectionSymbol = (section: Section) =>
+    symbol(
+      section.name,
+      "section",
+      section.range,
+      section.nameRange,
+      [
+        ...section.groups.map((group) =>
+          symbol(group.name, "Tag group", group.range, group.nameRange)
+        ),
+        ...section.units.flatMap((f) =>
+          f.definitions.filter((d) => d.valid).map((d) =>
+            symbol(d.name, "inline Tag", d.range, d.nameRange)
+          )
+        ),
+      ].sort((a, b) => compare(a.range.start, b.range.start)),
     );
-  }
-
-  const reference = componentReferences(resolved, normalized, source).find(
-    (item) => contains(item.range, position),
+  return document.components.map((c) =>
+    symbol(
+      c.name,
+      "component",
+      c.range,
+      c.nameRange,
+      c.sections.map(sectionSymbol),
+    )
   );
-  return reference
+}
+function componentOccurrences(
+  resolved: ResolvedSigilWorkspace,
+  filePath: string,
+): ComponentOccurrence[] {
+  const local = resolved.components.filter((c) =>
+    c.filePath === filePath && c.identity
+  ).map((component) => ({ component, range: component.declaration.nameRange }));
+  for (
+    const item of resolved.imports.filter((i) =>
+      i.sourceFile === filePath && i.status === "resolved"
+    )
+  ) {
+    const component = resolved.components.find((c) =>
+      c.id === item.providerId && c.identity
+    );
+    if (component) {
+      local.push({ component, range: item.declaration.providerRange });
+    }
+  }
+  return local;
+}
+function tagOccurrences(
+  resolved: ResolvedSigilWorkspace,
+  filePath: string,
+): TagOccurrence[] {
+  const tags = new Map(
+    resolved.components.flatMap((c) =>
+      c.tags.filter((t) => t.identity && t.status === "resolved").map((t) =>
+        [t.identity!.id, t] as const
+      )
+    ),
+  );
+  const items: TagOccurrence[] = [];
+  for (
+    const component of resolved.components.filter((c) =>
+      c.filePath === filePath && c.identity
+    )
+  ) {
+    for (const tag of component.tags) {
+      if (!tag.identity || tag.status !== "resolved") continue;
+      for (
+        const introduction of tag.introductions.filter((i) =>
+          i.valid && i.complete
+        )
+      ) {
+        items.push({
+          tag,
+          contexts: [component],
+          sectionName: introduction.sectionName,
+          range: introduction.nameRange,
+        });
+      }
+    }
+    for (const reference of component.references) {
+      const tag = reference.tagIdentity && tags.get(reference.tagIdentity.id);
+      if (tag && reference.status === "resolved") {
+        items.push({
+          tag,
+          contexts: [component],
+          sectionName: reference.sectionName,
+          range: reference.range,
+        });
+      }
+    }
+  }
+  for (
+    const item of resolved.imports.filter((i) => i.sourceFile === filePath)
+  ) {
+    for (const selection of item.names) {
+      if (selection.status !== "resolved" || !selection.tag?.identity) continue;
+      const contexts = resolved.components.filter((c) =>
+        selection.uses.some((u) => u.componentId === c.id)
+      );
+      items.push({
+        tag: selection.tag,
+        contexts,
+        range: selection.selection.range,
+      });
+    }
+  }
+  return items;
+}
+function at(range: SourceRange, byte: number): boolean {
+  return byte >= range.start && byte < range.end;
+}
+function tagDefinition(
+  resolved: ResolvedSigilWorkspace,
+  tag: ResolvedTag,
+  snapshots?: SourceSnapshots,
+): Location | null {
+  const valid = tag.introductions.filter((i) => i.valid && i.complete);
+  const introduction = valid.find((i) => i.kind === "inline") ??
+    valid.sort((a, b) => a.range.start - b.range.start)[0];
+  return introduction
     ? location(
-      reference.component.filePath,
-      reference.component.declaration.range,
+      resolved,
+      introduction.filePath,
+      introduction.nameRange,
+      snapshots,
     )
     : null;
 }
-
-/*
- * @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil implements packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
- * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
- */
+function location(
+  resolved: ResolvedSigilWorkspace,
+  path: string,
+  range: SourceRange,
+  snapshots?: SourceSnapshots,
+): Location | null {
+  const converted = sourceRangeToLsp(
+    range,
+    sourceFor(resolved, path, snapshots),
+  );
+  return converted ? { uri: pathToFileUri(path), range: converted } : null;
+}
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::SourceCoordinates logic
+export function definitionAt(
+  resolved: ResolvedSigilWorkspace,
+  _fs: SigilFileSystem,
+  filePath: string,
+  position: Position,
+  snapshots?: SourceSnapshots,
+): Location | null {
+  const path = normalizePath(filePath),
+    source = sourceFor(resolved, path, snapshots),
+    byte = source?.byteOffsetAtUtf16Position(position);
+  if (byte === undefined) return null;
+  const tag = tagOccurrences(resolved, path).find((i) => at(i.range, byte));
+  if (tag) return tagDefinition(resolved, tag.tag, snapshots);
+  const component = componentOccurrences(resolved, path).find((i) =>
+    at(i.range, byte)
+  );
+  if (component) {
+    return location(
+      resolved,
+      component.component.filePath,
+      component.component.declaration.nameRange,
+      snapshots,
+    );
+  }
+  const imported = resolved.imports.find((i) =>
+    i.sourceFile === path && i.targetFile && at(i.declaration.pathRange, byte)
+  );
+  if (imported?.targetFile) {
+    const provider = resolved.components.find((c) =>
+      c.id === imported.providerId
+    );
+    return location(
+      resolved,
+      imported.targetFile,
+      provider?.declaration.nameRange ?? { start: 0, end: 0 },
+      snapshots,
+    );
+  }
+  const glossary = glossaryReferences(resolved, path, snapshots).find((i) =>
+    contains(i.range, position)
+  );
+  return glossary && resolved.glossary.glossaryPath
+    ? location(
+      resolved,
+      resolved.glossary.glossaryPath,
+      glossary.term.declarationRange,
+      snapshots,
+    )
+    : null;
+}
+// @sigil implements packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
 export async function hoverAt(
   resolved: ResolvedSigilWorkspace,
-  fs: SigilFileSystem,
+  _fs: SigilFileSystem,
   ownership: OwnershipHoverCache,
   filePath: string,
   position: Position,
+  snapshots?: SourceSnapshots,
 ): Promise<Hover | null> {
-  const source = await fs.readTextFile(filePath);
-  const normalized = normalizePath(filePath);
-  const markdown = new HoverMarkdownRenderer(resolved, fs, ownership);
-  const conceptReference = conceptReferences(
-    resolved,
-    normalized,
-    source,
-  ).find((item) => contains(item.range, position));
-  const glossaryOccurrence = glossaryReferences(resolved, normalized).find(
-    (item) => contains(item.range, position),
+  const path = normalizePath(filePath),
+    source = sourceFor(resolved, path, snapshots),
+    byte = source?.byteOffsetAtUtf16Position(position);
+  if (byte === undefined) return null;
+  const renderer = new HoverMarkdownRenderer(resolved, ownership, snapshots);
+  const tag = tagOccurrences(resolved, path).find((i) => at(i.range, byte));
+  const glossaryOccurrence = glossaryReferences(resolved, path, snapshots).find(
+    (i) => contains(i.range, position),
   );
-  if (conceptReference) {
-    const glossaryReference = glossaryOccurrence ??
-      glossaryReferenceForConcept(resolved, normalized, conceptReference);
-    const concept = await conceptMarkdown(conceptReference, markdown);
-    const identity = conceptReference.concept.identity;
-    const owningComponent = markdown.component(
-      identity.componentName,
-      identity.filePath,
+  if (tag) {
+    const identity = tag.tag.identity!;
+    const provider = resolved.components.find((c) =>
+      c.identity?.componentName === identity.owner.componentName &&
+      c.filePath === identity.owner.declarationPath
     );
-    const ownedImplementationLines = owningComponent
-      ? await markdown.ownedImplementationLines(
-        owningComponent,
-        identity.identifier,
-        implementationSection(conceptReference.sectionName),
-      )
-      : [];
-    const sections = [
-      concept,
-      ...(glossaryReference ? [glossaryMarkdown(glossaryReference)] : []),
-      ...(ownedImplementationLines.length
-        ? [ownedImplementationLines.join("\n")]
-        : []),
+    if (!provider) return null;
+    const lines = [
+      `### Tag ${renderer.tagLink(tag.tag)}`,
+      "",
+      `Origin: ${renderer.componentLink(provider)} in \`${
+        renderer.displayPath(provider.filePath)
+      }\``,
+      "",
+      ...renderer.component(provider),
     ];
+    for (const consumer of tag.contexts.filter((c) => c.id !== provider.id)) {
+      lines.push("", `**Consumer: ${renderer.componentLink(consumer)}**`);
+      for (const facet of componentFacetsFor(consumer, tag.tag.name)) {
+        lines.push(`**${facet.sectionName}**`, renderer.facet(facet));
+      }
+    }
+    const glossary = glossaryOccurrence ??
+      glossaryForTag(resolved, path, tag, source!);
+    if (glossary) lines.push("", glossaryMarkdown(glossary));
+    for (const consumer of tag.contexts) {
+      lines.push(
+        ...await renderer.ownedImplementationLines(
+          consumer,
+          tag.tag.name,
+          implementationSection(tag.sectionName),
+        ),
+      );
+    }
     return {
-      contents: {
-        kind: "markdown",
-        value: sections.join("\n\n---\n\n"),
-      },
-      range: conceptReference.range,
+      contents: { kind: "markdown", value: lines.join("\n") },
+      range: sourceRangeToLsp(tag.range, source),
     };
   }
   if (glossaryOccurrence) {
@@ -326,73 +469,60 @@ export async function hoverAt(
       range: glossaryOccurrence.range,
     };
   }
-  const reference = componentReferences(resolved, normalized, source).find(
-    (item) => contains(item.range, position),
+  const component = componentOccurrences(resolved, path).find((i) =>
+    at(i.range, byte)
   );
-  if (!reference) return null;
+  if (!component) return null;
   return {
     contents: {
       kind: "markdown",
-      value: await componentMarkdown(
-        reference.component,
-        reference.includeExpansions,
-        markdown,
-      ),
+      value: [
+        ...renderer.component(component.component),
+        ...await renderer.ownedImplementationLines(component.component),
+      ].join("\n"),
     },
-    range: reference.range,
+    range: sourceRangeToLsp(component.range, source),
   };
 }
-
-// @sigil implements packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
 export function semanticTokens(
   resolved: ResolvedSigilWorkspace,
   filePath: string,
-  source: string,
+  snapshots?: SourceSnapshots,
 ): SemanticTokens {
-  const byRange = new Map<string, SemanticReference>();
-  const components = componentReferences(resolved, filePath, source);
-  const concepts = conceptReferences(resolved, filePath, source);
-  const structuredRanges = [
-    ...components.map((item) => item.range),
-    ...concepts.map((item) => item.range),
+  const path = normalizePath(filePath),
+    source = sourceFor(resolved, path, snapshots);
+  if (!source) return { data: [] };
+  const structured = [
+    ...componentOccurrences(resolved, path).map((i) => ({
+      range: sourceRangeToLsp(i.range, source)!,
+      type: 0,
+    })),
+    ...tagOccurrences(resolved, path).map((i) => ({
+      range: sourceRangeToLsp(i.range, source)!,
+      type: 1,
+    })),
   ];
-  for (const item of glossaryReferences(resolved, filePath)) {
-    if (structuredRanges.some((range) => overlaps(range, item.range))) continue;
-    byRange.set(rangeKey(item.range), {
-      range: item.range,
-      tokenType: SEMANTIC_TOKEN_TERM,
-    });
-  }
-  for (const item of components) {
-    byRange.set(rangeKey(item.range), {
-      range: item.range,
-      tokenType: SEMANTIC_TOKEN_COMPONENT,
-    });
-  }
-  for (const item of concepts) {
-    byRange.set(rangeKey(item.range), {
-      range: item.range,
-      tokenType: SEMANTIC_TOKEN_CONCEPT,
-    });
-  }
-  const references = [...byRange.values()].sort((left, right) =>
-    compareRanges(left.range, right.range)
+  const glossary = glossaryReferences(resolved, path, snapshots).filter((g) =>
+    !structured.some((s) => overlaps(s.range, g.range))
+  ).map((i) => ({ range: i.range, type: 2 }));
+  const unique = new Map(
+    [...structured, ...glossary].map((i) => [JSON.stringify(i.range), i]),
   );
+  const ordered = [...unique.values()].sort((a, b) =>
+    compare(a.range.start, b.range.start)
+  );
+  let previousLine = 0, previousCharacter = 0;
   const data: number[] = [];
-  let previousLine = 0;
-  let previousCharacter = 0;
-  for (const reference of references) {
-    const range = reference.range;
+  for (const { range, type } of ordered) {
     if (range.start.line !== range.end.line) continue;
     const deltaLine = range.start.line - previousLine;
-    const deltaCharacter = deltaLine === 0
-      ? range.start.character - previousCharacter
-      : range.start.character;
     data.push(
       deltaLine,
-      deltaCharacter,
+      deltaLine === 0
+        ? range.start.character - previousCharacter
+        : range.start.character,
       range.end.character - range.start.character,
-      reference.tokenType,
+      type,
       0,
     );
     previousLine = range.start.line;
@@ -400,853 +530,276 @@ export function semanticTokens(
   }
   return { data };
 }
-
 function glossaryReferences(
   resolved: ResolvedSigilWorkspace,
-  filePath: string,
-): readonly GlossaryReference[] {
-  const normalized = normalizePath(filePath);
-  return resolved.glossary.occurrences
-    .filter((occurrence) => normalizePath(occurrence.filePath) === normalized)
-    .map((occurrence) => ({
-      term: occurrence.term,
-      matchedSpelling: occurrence.matchedSpelling,
-      range: sourceRangeToLsp(occurrence.range),
-    }));
+  path: string,
+  snapshots?: SourceSnapshots,
+): GlossaryReference[] {
+  const source = sourceFor(resolved, path, snapshots);
+  return resolved.glossary.occurrences.filter((o) =>
+    normalizePath(o.filePath) === path
+  ).flatMap((o) => {
+    const range = sourceRangeToLsp(o.range, source);
+    return range
+      ? [{ term: o.term, matchedSpelling: o.matchedSpelling, range }]
+      : [];
+  });
 }
-
-function glossaryReferenceForConcept(
+function glossaryForTag(
   resolved: ResolvedSigilWorkspace,
-  filePath: string,
-  conceptReference: ConceptReference,
+  path: string,
+  occurrence: TagOccurrence,
+  source: SourceText,
 ): GlossaryReference | undefined {
-  const relativeFilePath = relativePath(resolved.workspace.root, filePath);
-  const context = resolved.glossary.resolvedContexts.find((item) =>
-    normalizePath(item.filePath) === normalizePath(relativeFilePath)
+  const context = resolved.glossary.resolvedContexts.find((c) =>
+    normalizePath(c.filePath) === relativePath(resolved.workspace.root, path)
   );
-  const identifier = conceptReference.concept.identity.identifier;
-  const normalizedIdentifier = identifier.toLowerCase();
-  const term = context?.entries.find((entry) =>
-    [entry.term, ...entry.aliases].some(
-      (spelling) => spelling.toLowerCase() === normalizedIdentifier,
+  const term = context?.entries.find((t) =>
+    [t.term, ...t.aliases].some((s) =>
+      s.toLowerCase() === occurrence.tag.name.toLowerCase()
     )
   );
   return term
     ? {
       term,
-      matchedSpelling: identifier,
-      range: conceptReference.range,
+      matchedSpelling: occurrence.tag.name,
+      range: sourceRangeToLsp(occurrence.range, source)!,
     }
     : undefined;
 }
-
-function componentReferences(
-  resolved: ResolvedSigilWorkspace,
-  filePath: string,
-  source: string,
-): readonly ComponentReference[] {
-  const normalized = normalizePath(filePath);
-  const document = resolved.workspace.files.find((item) =>
-    normalizePath(item.path) === normalized
-  )?.document;
-  if (!document) return [];
-
-  const references: ComponentReference[] = [];
-  const visible = new Map<string, ResolvedComponent | null>();
-  const localComponents = resolved.components.filter((item) =>
-    normalizePath(item.filePath) === normalized
-  );
-  for (const component of localComponents) {
-    addVisibleComponent(visible, component);
-    references.push({
-      component,
-      includeExpansions: true,
-      range: declarationNameRange(
-        source,
-        component.declaration.range.start.line,
-        component.name,
-      ),
-    });
-  }
-
-  for (
-    const imported of resolved.imports.filter((item) =>
-      normalizePath(item.sourceFile) === normalized
-    )
-  ) {
-    const namesRange = importNamesRange(source, imported.declaration.range);
-    for (const name of imported.names) {
-      if (!name.component || !name.componentFile) continue;
-      const component = resolved.components.find((item) =>
-        item.declaration === name.component &&
-        normalizePath(item.filePath) === normalizePath(name.componentFile!)
-      );
-      if (!component) continue;
-      addVisibleComponent(visible, component);
-      for (const range of identifierRanges(source, name.name, namesRange)) {
-        references.push({ component, range, includeExpansions: false });
-      }
-    }
-  }
-
-  for (const expand of document.expands) {
-    const matches = resolved.components.filter((item) =>
-      item.name === expand.name
-    );
-    if (matches.length !== 1) continue;
-    references.push({
-      component: matches[0],
-      includeExpansions: true,
-      range: declarationNameRange(
-        source,
-        expand.range.start.line,
-        expand.name,
-      ),
-    });
-  }
-
-  const facets = [
-    ...document.components,
-    ...document.expands,
-  ].flatMap((declaration) =>
-    declaration.sections.flatMap((section) => section.units)
-  );
-  const sourceLines = source.split(/\r?\n/);
-  for (const unit of facets) {
-    for (let offset = 0; offset < unit.sourceLines.length; offset++) {
-      const sourceLine = sourceLines[unit.range.start.line - 1 + offset] ?? "";
-      const lineRange = {
-        start: { line: unit.range.start.line - 1 + offset, character: 0 },
-        end: {
-          line: unit.range.start.line - 1 + offset,
-          character: sourceLine.length,
-        },
-      };
-      for (const [name, component] of visible) {
-        if (!component) continue;
-        for (const range of identifierRanges(source, name, lineRange)) {
-          references.push({
-            component,
-            range,
-            includeExpansions: normalizePath(component.filePath) === normalized,
-          });
-        }
-      }
-    }
-  }
-
-  return deduplicateReferences(references);
-}
-
-function conceptReferences(
-  resolved: ResolvedSigilWorkspace,
-  filePath: string,
-  source: string,
-): readonly ConceptReference[] {
-  const normalized = normalizePath(filePath);
-  const document = resolved.workspace.files.find((item) =>
-    normalizePath(item.path) === normalized
-  )?.document;
-  if (!document) return [];
-
-  const references: ConceptReference[] = [];
-  for (const declaration of [...document.components, ...document.expands]) {
-    const context = componentContext(
-      resolved,
-      normalized,
-      declaration.kind,
-      declaration.name,
-    );
-    if (!context) continue;
-    for (const section of declaration.sections) {
-      for (const block of section.concepts) {
-        const localConcept = context.conceptNamespace.concepts.find((item) =>
-          item.occurrences.some((occurrence) => occurrence.block === block)
-        );
-        const concept = localConcept &&
-          (context.conceptNamespace.accessibleConcepts.find((item) =>
-            conceptIdentityKey(item.identity) ===
-              conceptIdentityKey(localConcept.identity)
-          ) ?? localConcept);
-        if (concept) {
-          references.push({
-            concept: conceptForHover(concept, context),
-            context,
-            sectionName: section.name,
-            range: declarationNameRange(
-              source,
-              block.range.start.line,
-              block.identifier,
-            ),
-          });
-        }
-      }
-    }
-  }
-
-  for (const context of resolved.components) {
-    for (const reference of context.conceptNamespace.references) {
-      if (normalizePath(reference.filePath) !== normalized) continue;
-      const concept = context.conceptNamespace.accessibleConcepts.find(
-        (candidate) =>
-          conceptIdentityKey(candidate.identity) ===
-            conceptIdentityKey(reference.conceptIdentity),
-      );
-      if (concept) {
-        references.push({
-          concept: conceptForHover(concept, context),
-          context,
-          sectionName: reference.sectionName,
-          range: sourceRangeToLsp(reference.range),
-        });
-      }
-    }
-  }
-  return deduplicateConceptReferences(references);
-}
-
-function conceptForHover(
-  concept: ResolvedConcept,
-  context: ResolvedComponent,
-): ResolvedConcept {
-  const isContextualReuse = concept.identity.componentName !== context.name ||
-    normalizePath(concept.identity.filePath) !==
-      normalizePath(context.filePath);
-  return isContextualReuse
-    ? {
-      ...concept,
-      occurrences: concept.occurrences.filter((occurrence) =>
-        occurrence.sectionName === "interface"
-      ),
-    }
-    : concept;
-}
-
-function componentContext(
-  resolved: ResolvedSigilWorkspace,
-  filePath: string,
-  kind: "component" | "expand",
-  name: string,
-): ResolvedComponent | undefined {
-  const matches = resolved.components.filter((component) => {
-    if (component.name !== name) return false;
-    if (kind === "component") {
-      return normalizePath(component.filePath) === filePath;
-    }
-    return component.expansions.expands.some((expansion) =>
-      normalizePath(expansion.filePath) === filePath &&
-      expansion.declaration.name === name
-    );
-  });
-  return matches.length === 1 ? matches[0] : undefined;
-}
-
-function addVisibleComponent(
-  visible: Map<string, ResolvedComponent | null>,
-  component: ResolvedComponent,
-): void {
-  const existing = visible.get(component.name);
-  if (existing === undefined) visible.set(component.name, component);
-  else if (existing !== component) visible.set(component.name, null);
-}
-
-function importNamesRange(source: string, range: SourceRange): Range {
-  const lineNumber = range.start.line - 1;
-  const line = source.split(/\r?\n/)[lineNumber] ?? "";
-  const start = line.indexOf("{");
-  const end = start < 0 ? -1 : line.indexOf("}", start + 1);
-  return start >= 0 && end >= 0
-    ? {
-      start: { line: lineNumber, character: start + 1 },
-      end: { line: lineNumber, character: end },
-    }
-    : sourceRangeToLsp(range);
-}
-
-function identifierRanges(
-  source: string,
-  name: string,
-  within: Range,
-): readonly Range[] {
-  if (within.start.line !== within.end.line) return [];
-  const line = source.split(/\r?\n/)[within.start.line] ?? "";
-  const ranges: Range[] = [];
-  let start = within.start.character;
-  while (start <= within.end.character - name.length) {
-    const found = line.indexOf(name, start);
-    if (found < 0 || found + name.length > within.end.character) break;
-    const before = line[found - 1];
-    const after = line[found + name.length];
-    if (!isIdentifierCharacter(before) && !isIdentifierCharacter(after)) {
-      ranges.push({
-        start: { line: within.start.line, character: found },
-        end: { line: within.start.line, character: found + name.length },
-      });
-    }
-    start = found + name.length;
-  }
-  return ranges;
-}
-
-function isIdentifierCharacter(value: string | undefined): boolean {
-  return value !== undefined && /[A-Za-z0-9_-]/.test(value);
-}
-
-function deduplicateReferences(
-  references: readonly ComponentReference[],
-): readonly ComponentReference[] {
-  const unique = new Map<string, ComponentReference>();
-  for (const reference of references) {
-    const key =
-      `${reference.range.start.line}:${reference.range.start.character}:${reference.range.end.line}:${reference.range.end.character}`;
-    if (!unique.has(key)) unique.set(key, reference);
-  }
-  return [...unique.values()];
-}
-
-function deduplicateConceptReferences(
-  references: readonly ConceptReference[],
-): readonly ConceptReference[] {
-  const unique = new Map<string, ConceptReference>();
-  for (const reference of references) {
-    const key = `${rangeKey(reference.range)}:${
-      conceptIdentityKey(reference.concept.identity)
-    }`;
-    if (!unique.has(key)) unique.set(key, reference);
-  }
-  return [...unique.values()];
-}
-
-function rangeKey(range: Range): string {
-  return `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}`;
-}
-
-function conceptIdentityKey(identity: ConceptIdentity): string {
-  return `${
-    normalizePath(identity.filePath)
-  }::${identity.componentName}::${identity.normalizedIdentifier}`;
-}
-
-function compareRanges(left: Range, right: Range): number {
-  return compare(left.start, right.start) || compare(left.end, right.end);
-}
-
-function sectionSymbol(section: Section, source: string): DocumentSymbol {
-  return {
-    name: section.name,
-    kind: SYMBOL_PROPERTY,
-    range: sourceRangeToLsp(section.range),
-    selectionRange: {
-      start: {
-        line: section.range.start.line - 1,
-        character: section.range.start.column - 1,
-      },
-      end: {
-        line: section.range.start.line - 1,
-        character: section.range.start.column - 1 + section.name.length,
-      },
-    },
-    children: section.concepts.map((concept) => ({
-      name: concept.identifier,
-      detail: "concept",
-      kind: SYMBOL_PROPERTY,
-      range: sourceRangeToLsp(concept.range),
-      selectionRange: declarationNameRange(
-        source,
-        concept.range.start.line,
-        concept.identifier,
-      ),
-    })),
-  };
-}
-
-function declarationNameRange(
-  source: string,
-  oneBasedLine: number,
-  name: string,
-): Range {
-  const line = source.split(/\r?\n/)[oneBasedLine - 1] ?? "";
-  const character = Math.max(0, line.indexOf(name));
-  return {
-    start: { line: oneBasedLine - 1, character },
-    end: { line: oneBasedLine - 1, character: character + name.length },
-  };
-}
-
-function tokenAt(
-  source: string,
-  position: Position,
-): { readonly text: string; readonly range: Range } | null {
-  const line = source.split(/\r?\n/)[position.line];
-  if (
-    line === undefined || position.character < 0 ||
-    position.character > line.length
-  ) {
-    return null;
-  }
-  const isToken = (char: string): boolean => /[\p{L}\p{N}_@./#-]/u.test(char);
-  let start = position.character;
-  let end = position.character;
-  while (start > 0 && isToken(line[start - 1])) start--;
-  while (end < line.length && isToken(line[end])) end++;
-  const text = line.slice(start, end).replace(/^@/, "");
-  const range = {
-    start: { line: position.line, character: start },
-    end: { line: position.line, character: end },
-  };
-  return text && contains(range, position) ? { text, range } : null;
-}
-
-async function componentMarkdown(
-  component: ResolvedComponent,
-  includeExpansions: boolean,
-  markdown: HoverMarkdownRenderer,
-): Promise<string> {
-  const goal = component.declaration.sections.find((item) =>
-    item.name === "goal"
-  );
-  const iface = component.declaration.sections.find((item) =>
-    item.name === "interface"
-  );
-  const componentLink = await markdown.componentLink(component);
-  const lines = [
-    `### component ${componentLink}`,
-    "",
-    `Source: \`${markdown.displayPath(component.filePath)}\``,
-    "",
-    "**Goal**",
-    ...markdownList(await markdown.facets(goal?.units ?? [])),
-    "",
-    "**Interface**",
-    ...markdownList(await markdown.facets(iface?.units ?? [])),
-  ];
-  if (includeExpansions && component.expansions.expands.length) {
-    lines.push("", "**Collected expansions**");
-    for (const expansion of component.expansions.expands) {
-      lines.push("", `\`${markdown.displayPath(expansion.filePath)}\``);
-      for (const section of expansion.declaration.sections) {
-        const facets = await markdown.facets(section.units);
-        lines.push(
-          `- **${section.name}:** ${facets.join(" ")}`,
-        );
-      }
-    }
-  }
-  const ownedImplementationLines = await markdown.ownedImplementationLines(
-    component,
-  );
-  if (ownedImplementationLines.length) {
-    lines.push("", ...ownedImplementationLines);
-  }
-  return lines.join("\n");
-}
-
 export async function renderDocumentMarkdown(
   resolved: ResolvedSigilWorkspace,
-  fs: SigilFileSystem,
+  _fs: SigilFileSystem,
   ownership: OwnershipHoverCache,
   filePath: string,
+  snapshots?: SourceSnapshots,
 ): Promise<string> {
-  const normalized = normalizePath(filePath);
-  const renderer = new HoverMarkdownRenderer(resolved, fs, ownership);
-  const components = resolved.components
-    .filter((component) => normalizePath(component.filePath) === normalized)
-    .sort((left, right) =>
-      left.declaration.range.start.line - right.declaration.range.start.line
+  const renderer = new HoverMarkdownRenderer(resolved, ownership, snapshots),
+    sections: string[] = [];
+  for (
+    const component of resolved.components.filter((c) =>
+      c.filePath === normalizePath(filePath)
+    )
+  ) {
+    sections.push(
+      [
+        ...renderer.component(component),
+        ...await renderer.ownedImplementationLines(component),
+      ].join("\n"),
     );
-  const sections: string[] = [];
-  for (const component of components) {
-    sections.push(await componentMarkdown(component, true, renderer));
   }
   return sections.join("\n\n---\n\n");
 }
-
-async function conceptDefinition(
-  resolved: ResolvedSigilWorkspace,
-  fs: SigilFileSystem,
-  concept: ResolvedConcept,
-): Promise<Location | null> {
-  const origin = resolved.components.find((component) =>
-    component.name === concept.identity.componentName &&
-    normalizePath(component.filePath) ===
-      normalizePath(concept.identity.filePath)
-  );
-  const resolvedConcept = origin?.conceptNamespace.concepts.find((item) =>
-    conceptIdentityKey(item.identity) === conceptIdentityKey(concept.identity)
-  );
-  const occurrence =
-    resolvedConcept?.occurrences.find((item) =>
-      item.sectionName === "interface"
-    ) ?? resolvedConcept?.occurrences[0];
-  if (!occurrence) return null;
-  const source = await fs.readTextFile(occurrence.filePath);
-  return {
-    uri: pathToFileUri(occurrence.filePath),
-    range: declarationNameRange(
-      source,
-      occurrence.block.range.start.line,
-      occurrence.block.identifier,
-    ),
-  };
-}
-
-async function conceptMarkdown(
-  reference: ConceptReference,
-  markdown: HoverMarkdownRenderer,
-): Promise<string> {
-  const identity = reference.concept.identity;
-  const conceptLink = await markdown.conceptLink(reference.concept);
-  const origin = reference.context.name === identity.componentName &&
-      normalizePath(reference.context.filePath) ===
-        normalizePath(identity.filePath)
-    ? reference.context
-    : markdown.component(identity.componentName, identity.filePath);
-  const originLink = origin
-    ? await markdown.componentLink(origin)
-    : `\`${identity.componentName}\``;
-  const lines = [
-    `### concept ${conceptLink}`,
-    "",
-    `Origin: ${originLink} in \`${markdown.displayPath(identity.filePath)}\``,
-  ];
-  for (const occurrence of reference.concept.occurrences) {
-    const facets = await markdown.facets(occurrence.block.units);
-    const occurrenceComponent = markdown.component(
-      occurrence.componentName,
-      occurrence.filePath,
-    );
-    const occurrenceComponentLink = occurrenceComponent
-      ? await markdown.componentLink(occurrenceComponent)
-      : `\`${occurrence.componentName}\``;
-    lines.push(
-      "",
-      `**${occurrence.sectionName}** — ${occurrenceComponentLink} in \`${
-        markdown.displayPath(occurrence.filePath)
-      }\``,
-      ...markdownList(facets),
-    );
-  }
-  return lines.join("\n");
-}
-
-interface HoverLinkReference {
-  readonly range: Range;
-  readonly target: Location;
-}
-
 class HoverMarkdownRenderer {
-  readonly #resolved: ResolvedSigilWorkspace;
-  readonly #fs: SigilFileSystem;
-  readonly #ownership: OwnershipHoverCache;
-  readonly #sources = new Map<string, Promise<string>>();
-  readonly #references = new Map<
-    string,
-    Promise<readonly HoverLinkReference[]>
-  >();
-
+  readonly #tags = new Map<string, ResolvedTag>();
+  readonly #references = new Map<string, ResolvedTagReference[]>();
   constructor(
-    resolved: ResolvedSigilWorkspace,
-    fs: SigilFileSystem,
-    ownership: OwnershipHoverCache,
+    readonly resolved: ResolvedSigilWorkspace,
+    readonly ownership: OwnershipHoverCache,
+    readonly snapshots?: SourceSnapshots,
   ) {
-    this.#resolved = resolved;
-    this.#fs = fs;
-    this.#ownership = ownership;
+    for (const component of resolved.components) {
+      for (const tag of component.tags) {
+        if (tag.identity && !this.#tags.has(tag.identity.id)) {
+          this.#tags.set(tag.identity.id, tag);
+        }
+      }
+      for (const reference of component.references) {
+        if (reference.status !== "resolved") continue;
+        const references = this.#references.get(reference.facetId) ?? [];
+        references.push(reference);
+        this.#references.set(reference.facetId, references);
+      }
+    }
   }
-
-  displayPath(filePath: string): string {
-    return relativePath(this.#resolved.workspace.root, filePath);
+  displayPath(path: string): string {
+    return relativePath(this.resolved.workspace.root, path);
   }
-
-  component(
-    name: string,
-    filePath: string,
-  ): ResolvedComponent | undefined {
-    const normalized = normalizePath(filePath);
-    return this.#resolved.components.find((component) =>
-      component.name === name &&
-      (
-        normalizePath(component.filePath) === normalized ||
-        component.expansions.expands.some((expansion) =>
-          normalizePath(expansion.filePath) === normalized
-        )
-      )
+  componentLink(component: ResolvedComponent): string {
+    const target = location(
+      this.resolved,
+      component.filePath,
+      component.declaration.nameRange,
+      this.snapshots,
     );
-  }
-
-  async componentLink(component: ResolvedComponent): Promise<string> {
-    const source = await this.#source(component.filePath);
-    return markdownLink(component.name, {
-      uri: pathToFileUri(component.filePath),
-      range: declarationNameRange(
-        source,
-        component.declaration.range.start.line,
-        component.name,
-      ),
-    });
-  }
-
-  async conceptLink(concept: ResolvedConcept): Promise<string> {
-    const target = await conceptDefinition(this.#resolved, this.#fs, concept);
     return target
-      ? markdownLink(concept.identifier, target)
-      : `\`${concept.identifier}\``;
+      ? markdownLink(component.name, target)
+      : escapeMarkdown(component.name);
   }
-
-  // @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
-  async ownedImplementationLines(
-    component: ResolvedComponent,
-    conceptName?: string,
-    sectionName?: ImplementationSection,
-  ): Promise<string[]> {
-    if (conceptName && !sectionName) return [];
-    const projection = await this.#ownership.projection(
-      { componentName: component.name, declarationPath: component.filePath },
-      conceptName,
-      sectionName,
-    );
-    if (!projection || projection.targets.length === 0) return [];
-
-    const lines = ["**Owned implementations**"];
-    for (const target of projection.targets) {
-      lines.push(`- ${this.#ownedImplementationTargetLine(target)}`);
+  tagLink(tag: ResolvedTag): string {
+    const target = tagDefinition(this.resolved, tag, this.snapshots);
+    return target ? markdownLink(tag.name, target) : escapeMarkdown(tag.name);
+  }
+  component(component: ResolvedComponent): string[] {
+    const lines = [
+      `### component ${this.componentLink(component)}`,
+      "",
+      `Source: \`${this.displayPath(component.filePath)}\``,
+    ];
+    for (const section of component.declaration.sections) {
+      lines.push(
+        "",
+        `**${section.name[0].toUpperCase()}${section.name.slice(1)}**`,
+      );
+      for (const facet of section.units) lines.push(this.facet(facet));
     }
     return lines;
   }
-
-  async facets(units: readonly Facet[]): Promise<string[]> {
-    return await Promise.all(units.map((unit) => this.facet(unit)));
-  }
-
-  async facet(unit: Facet): Promise<string> {
-    const allReferences = await this.#referencesFor(unit.filePath);
-    const rendered: string[] = [];
-    for (let offset = 0; offset < unit.sourceLines.length; offset++) {
-      const sourceLine = unit.sourceLines[offset];
-      const content = sourceLine.trim();
-      const contentColumn = sourceLine.indexOf(content);
-      const lineNumber = unit.range.start.line - 1 + offset;
-      const lineRange = {
-        start: { line: lineNumber, character: contentColumn },
-        end: { line: lineNumber, character: contentColumn + content.length },
-      };
-      const references = allReferences
-        .filter((reference) => containsRange(lineRange, reference.range))
-        .sort((left, right) => compareRanges(right.range, left.range));
-      let result = content;
-      for (const reference of references) {
-        const start = reference.range.start.character -
-          lineRange.start.character;
-        const end = reference.range.end.character - lineRange.start.character;
-        if (start < 0 || end > result.length || start >= end) continue;
-        const label = result.slice(start, end);
-        result = `${result.slice(0, start)}${
-          markdownLink(label, reference.target)
-        }${result.slice(end)}`;
+  facet(facet: Facet): string {
+    const source = sourceFor(this.resolved, facet.filePath, this.snapshots);
+    if (!source) return facet.prose;
+    const references = this.#references.get(facet.id) ?? [];
+    const start = source.utf16OffsetAtByte(facet.proseRange.start)!;
+    let prose = source.slice(facet.proseRange);
+    const replacements: { range: SourceRange; text: string }[] = [];
+    for (const reference of references) {
+      const tag = reference.tagIdentity
+        ? this.#tags.get(reference.tagIdentity.id)
+        : undefined;
+      if (tag) {
+        replacements.push({ range: reference.range, text: this.tagLink(tag) });
       }
-      rendered.push(result);
     }
-    for (const embedded of unit.literalBlocks) {
-      rendered.push(
-        `\n\`\`\`${embedded.type ?? ""}\n${embedded.body}\n\`\`\``,
-      );
-    }
-    return rendered.join(" ");
-  }
-
-  #source(filePath: string): Promise<string> {
-    const normalized = normalizePath(filePath);
-    let source = this.#sources.get(normalized);
-    if (!source) {
-      source = this.#fs.readTextFile(normalized);
-      this.#sources.set(normalized, source);
-    }
-    return source;
-  }
-
-  #referencesFor(filePath: string): Promise<readonly HoverLinkReference[]> {
-    const normalized = normalizePath(filePath);
-    let references = this.#references.get(normalized);
-    if (!references) {
-      references = this.#resolveReferences(normalized);
-      this.#references.set(normalized, references);
-    }
-    return references;
-  }
-
-  async #resolveReferences(
-    filePath: string,
-  ): Promise<readonly HoverLinkReference[]> {
-    const source = await this.#source(filePath);
-    const byRange = new Map<string, HoverLinkReference>();
-    for (
-      const reference of componentReferences(
-        this.#resolved,
-        filePath,
-        source,
-      )
-    ) {
-      const targetSource = await this.#source(reference.component.filePath);
-      byRange.set(rangeKey(reference.range), {
-        range: reference.range,
-        target: {
-          uri: pathToFileUri(reference.component.filePath),
-          range: declarationNameRange(
-            targetSource,
-            reference.component.declaration.range.start.line,
-            reference.component.name,
-          ),
-        },
-      });
-    }
-    for (
-      const reference of conceptReferences(
-        this.#resolved,
-        filePath,
-        source,
-      )
-    ) {
-      const target = await conceptDefinition(
-        this.#resolved,
-        this.#fs,
-        reference.concept,
-      );
-      if (target) {
-        byRange.set(rangeKey(reference.range), {
-          range: reference.range,
-          target,
+    for (const link of facet.links) {
+      try {
+        const target = new URL(link.destination, pathToFileUri(facet.filePath))
+          .href
+          .replaceAll("(", "%28").replaceAll(")", "%29").replaceAll(">", "%3E");
+        replacements.push({
+          range: link.destinationRange,
+          text: `<${target}>`,
         });
+      } catch {
+        /* Preserve destinations that cannot be represented as URLs. */
       }
     }
-    return [...byRange.values()];
+    for (
+      const replacement of replacements.sort((a, b) =>
+        b.range.start - a.range.start
+      )
+    ) {
+      const from = source.utf16OffsetAtByte(replacement.range.start)! - start,
+        to = source.utf16OffsetAtByte(replacement.range.end)! - start;
+      prose = prose.slice(0, from) + replacement.text + prose.slice(to);
+    }
+    const lines = [`- ${prose.trim()}`];
+    for (const payload of facet.literalBlocks) {
+      const fence = "`".repeat(Math.max(3, payload.fenceLength));
+      lines.push(
+        "",
+        `${fence}${payload.type ?? ""}\n${payload.rawBody}${
+          /[\r\n]$/.test(payload.rawBody) ? "" : "\n"
+        }${fence}`,
+      );
+    }
+    return lines.join("\n");
   }
-
-  #ownedImplementationTargetLine(
-    target: OwnedImplementationTarget,
-  ): string {
-    const absoluteFilePath = workspaceRelativeToAbsolute(
-      this.#resolved.workspace.root,
-      target.filePath,
+  async ownedImplementationLines(
+    component: ResolvedComponent,
+    tagName?: string,
+    sectionName?: ImplementationSection,
+  ): Promise<string[]> {
+    const projection = await this.ownership.projection(
+      {
+        componentName: component.name,
+        declarationPath: this.displayPath(component.filePath),
+      },
+      tagName,
+      sectionName,
     );
-    const fileLabel = relativePath(
-      this.#resolved.workspace.root,
-      absoluteFilePath,
-    );
+    if (!projection?.targets.length) return [];
+    return [
+      "",
+      "**Owned implementations**",
+      ...projection.targets.map((target) => `- ${this.ownedTarget(target)}`),
+    ];
+  }
+  ownedTarget(target: OwnedImplementationTarget): string {
+    const path = joinPath(this.resolved.workspace.root, target.filePath),
+      position = target.location ?? target.annotationRange.start;
+    const point = { line: position.line - 1, character: position.column - 1 };
     const label = target.symbolIdentity
-      ? `${target.symbolIdentity} · ${fileLabel}`
-      : fileLabel;
+      ? `${target.symbolIdentity} · ${target.filePath}`
+      : target.filePath;
+    const origin = target.tagIdentity?.owner;
     return `${target.relation} ${
-      markdownLink(label, location(absoluteFilePath, target.location))
-    } (${target.sections.join(", ")})`;
+      markdownLink(label, {
+        uri: pathToFileUri(path),
+        range: { start: point, end: point },
+      })
+    } (${target.sections.join(", ")})${
+      target.tagName
+        ? `; Tag: ${escapeMarkdown(target.tagName)}; Origin: ${
+          origin
+            ? `${origin.declarationPath}::${origin.componentName}`
+            : "unresolved"
+        }`
+        : ""
+    }`;
   }
 }
-
 function implementationSection(
-  sectionName: SigilSectionName,
+  name?: string,
 ): ImplementationSection | undefined {
-  return sectionName === "interface" ||
-      sectionName === "state" ||
-      sectionName === "logic" ||
-      sectionName === "constraints" ||
-      sectionName === "cases"
-    ? sectionName
+  return name === "interface" || name === "state" || name === "logic" ||
+      name === "constraints" || name === "cases"
+    ? name
     : undefined;
 }
-
 async function implementationSources(
-  workspaceRoot: string,
+  root: string,
   fs: SigilFileSystem,
+  config?: SigilConfig,
 ): Promise<readonly ImplementationSource[]> {
-  const paths = (await fs.listFiles(workspaceRoot))
-    .filter(isSupportedImplementationSource);
-  const sources: ImplementationSource[] = [];
-  for (const filePath of paths) {
-    try {
-      sources.push({ filePath, text: await fs.readTextFile(filePath) });
-    } catch {
-      // A file can disappear between listing and hover; omit that stale entry.
+  try {
+    const paths = (await fs.listFiles(root)).filter(
+      isSupportedImplementationSource,
+    ).filter((path) =>
+      !config || !isExcludedPath(relativePath(root, path), config)
+    );
+    const sources: ImplementationSource[] = [];
+    for (const path of paths) {
+      try {
+        sources.push({ filePath: path, text: await fs.readTextFile(path) });
+      } catch { /* Optional ownership evidence can disappear. */ }
     }
+    return sources;
+  } catch {
+    return [];
   }
-  return sources;
 }
-
-function locationMarkdownUri(location: Location): string {
-  return `${location.uri}#L${location.range.start.line + 1},${
-    location.range.start.character + 1
-  }`;
+function markdownLink(label: string, target: Location): string {
+  return `[${escapeMarkdown(label)}](${target.uri}#L${
+    target.range.start.line + 1
+  },${target.range.start.character + 1})`;
 }
-
-function markdownLink(label: string, location: Location): string {
-  return `[${label}](${locationMarkdownUri(location)})`;
+function escapeMarkdown(text: string): string {
+  return text.replace(/([\\`*_\[\]])/g, "\\$1");
 }
-
 function glossaryMarkdown(reference: GlossaryReference): string {
-  const scope = reference.term.scope.kind === "context"
-    ? `Bounded context: \`${reference.term.scope.id}\``
-    : "Scope: workspace";
-  const lines = [
+  return [
     `### term ${reference.term.term}`,
     "",
     reference.term.definition,
     "",
-    scope,
-  ];
-  if (reference.matchedSpelling !== reference.term.term) {
-    lines.push(
-      "",
-      `Matched alias: \`${reference.matchedSpelling}\``,
-    );
-  }
-  return lines.join("\n");
+    reference.term.scope.kind === "context"
+      ? `Bounded context: \`${reference.term.scope.id}\``
+      : "Scope: workspace",
+    ...(reference.matchedSpelling !== reference.term.term
+      ? ["", `Matched alias: \`${reference.matchedSpelling}\``]
+      : []),
+  ].join("\n");
 }
-
-function markdownList(lines: readonly string[]): string[] {
-  return lines.length ? lines.map((line) => `- ${line}`) : ["- none"];
+function compare(a: Position, b: Position): number {
+  return a.line - b.line || a.character - b.character;
 }
-
-function location(
-  filePath: string,
-  range?: SourceRange | { readonly line: number; readonly column: number },
-): Location {
-  const sourceRange = range && "start" in range
-    ? range
-    : range && { start: range, end: range };
-  return { uri: pathToFileUri(filePath), range: sourceRangeToLsp(sourceRange) };
-}
-
-function workspaceRelativeToAbsolute(
-  workspaceRoot: string,
-  filePath: string,
-): string {
-  const normalized = normalizePath(filePath);
-  if (/^(?:[A-Za-z]:[\\/]|\/)/.test(normalized)) return normalized;
-  return normalizePath(`${normalizePath(workspaceRoot)}/${normalized}`);
-}
-
 function contains(range: Range, position: Position): boolean {
   return compare(range.start, position) <= 0 &&
     compare(position, range.end) < 0;
 }
-
-function containsRange(outer: Range, inner: Range): boolean {
-  return compare(outer.start, inner.start) <= 0 &&
-    compare(inner.end, outer.end) <= 0;
+function overlaps(a: Range, b: Range): boolean {
+  return compare(a.start, b.end) < 0 && compare(b.start, a.end) < 0;
 }
-
-function overlaps(left: Range, right: Range): boolean {
-  return compare(left.start, right.end) < 0 &&
-    compare(right.start, left.end) < 0;
-}
-
-function compare(left: Position, right: Position): number {
-  return left.line === right.line
-    ? left.character - right.character
-    : left.line - right.line;
-}
-
 function zeroRange(): Range {
-  return {
-    start: { line: 0, character: 0 },
-    end: { line: 0, character: 0 },
-  };
+  return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
 }

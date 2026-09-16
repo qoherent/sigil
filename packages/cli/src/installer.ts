@@ -1,3 +1,4 @@
+import { SIGIL_VERSION } from "@qoherent/sigil-core";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,7 +32,23 @@ export interface InstalledSkill {
   readonly status: SkillInstallStatus;
 }
 
+export interface SkillCatalogEntry {
+  readonly name: string;
+  readonly compatibility: {
+    readonly requirements: {
+      readonly sigilVersion?: string;
+      readonly cliVersion?: string;
+      readonly coreVersion?: string;
+      readonly sigilcVersion?: string;
+      readonly requiredSkills?: readonly string[];
+    };
+    readonly languageCompatible: boolean | null;
+    readonly runtimeValidation: "not-run";
+  };
+}
+
 export interface InstallSkillsResult {
+  readonly catalog: readonly SkillCatalogEntry[];
   readonly scope: SkillInstallScope;
   readonly agents: readonly SkillAgent[];
   readonly sourceDirectory: string;
@@ -67,7 +84,11 @@ interface PlannedInstall {
 export async function listInstalledSkills(
   sourceDirectory?: string,
 ): Promise<
-  { readonly sourceDirectory: string; readonly skills: readonly string[] }
+  {
+    readonly sourceDirectory: string;
+    readonly skills: readonly string[];
+    readonly catalog: readonly SkillCatalogEntry[];
+  }
 > {
   const source = resolve(
     sourceDirectory ?? await resolveInstalledSkillsDirectory(),
@@ -76,7 +97,11 @@ export async function listInstalledSkills(
   if (skills.length === 0) {
     throw new Error(`No valid skill directories found in ${source}.`);
   }
-  return { sourceDirectory: source, skills };
+  return {
+    sourceDirectory: source,
+    skills,
+    catalog: await readCatalog(source, skills),
+  };
 }
 
 // @sigil implements packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
@@ -92,6 +117,7 @@ export async function installSkills(
   if (sourceEntries.length === 0) {
     throw new Error(`No valid skill directories found in ${sourceDirectory}.`);
   }
+  const catalog = await readCatalog(sourceDirectory, sourceEntries);
   const base = scope === "global"
     ? resolve(options.userHome ?? homeDirectory())
     : resolve(options.targetRoot ?? Deno.cwd());
@@ -156,7 +182,7 @@ export async function installSkills(
       );
     }
   }
-  return { scope, agents, sourceDirectory, skills: results };
+  return { scope, agents, sourceDirectory, skills: results, catalog };
 }
 
 // @sigil implements packages/cli/src/installer.sigil::SkillInstaller::SkillSourceDiscovery interface,logic,cases
@@ -415,4 +441,44 @@ function samePath(left: string, right: string): boolean {
 
 function unique<T>(values: readonly T[]): T[] {
   return [...new Set(values)];
+}
+
+async function readCatalog(
+  directory: string,
+  names: readonly string[],
+): Promise<SkillCatalogEntry[]> {
+  return await Promise.all(names.map(async (name) => {
+    let requirements: SkillCatalogEntry["compatibility"]["requirements"] = {};
+    try {
+      const value: unknown = JSON.parse(
+        await Deno.readTextFile(join(directory, name, "compatibility.json")),
+      );
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`Invalid compatibility metadata for ${name}.`);
+      }
+      for (const [key, item] of Object.entries(value)) {
+        if (
+          key === "requiredSkills"
+            ? !Array.isArray(item) || item.some((s) => typeof s !== "string")
+            : !["sigilVersion", "cliVersion", "coreVersion", "sigilcVersion"]
+              .includes(key) || typeof item !== "string"
+        ) {
+          throw new Error(`Invalid compatibility field ${key} for ${name}.`);
+        }
+      }
+      requirements = value;
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+    return {
+      name,
+      compatibility: {
+        requirements,
+        languageCompatible: requirements.sigilVersion
+          ? requirements.sigilVersion === SIGIL_VERSION
+          : null,
+        runtimeValidation: "not-run",
+      },
+    };
+  }));
 }

@@ -1,5 +1,5 @@
-@packages/core/src/model/source.sigil import { SigilSourceModel }
-@packages/core/src/model/diagnostics.sigil import { SigilDiagnosticModel }
+@packages/core/src/model/source.sigil from SigilSourceModel import { SourceModel }
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
 
 component SigilImplementationOwnershipModel {
   goal {
@@ -9,7 +9,7 @@ component SigilImplementationOwnershipModel {
 
   interface {
     OwnershipModel {
-      SigilSourceModel supplies annotation ranges and SigilDiagnosticModel supplies
+      SourceModel supplies annotation ranges and DiagnosticModel supplies
       diagnostics. ImplementationSource, ImplementationEvidenceInput, ownership
       relations, sections, artifacts, targets, and projections preserve annotation
       evidence.

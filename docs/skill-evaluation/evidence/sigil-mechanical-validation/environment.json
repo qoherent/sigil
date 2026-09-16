@@ -1,0 +1,18 @@
+{
+  "commit": "3e8208d73795f9ddd8f24e91456d3d712a94a46f",
+  "executable": "/Users/farhoud/.deno/bin/sigil",
+  "executable_sha256": "beb2909b4cd469603e80b10e2fcebc2e7a160076e2ee115aa62b4bad8bc4484c",
+  "version": {
+    "command": "version",
+    "cliVersion": "0.9.0",
+    "coreVersion": "0.8.0",
+    "workspaceRoot": ".",
+    "configPath": ".sigil/config.json",
+    "sigilVersion": "0.8.0",
+    "workspaceName": "sigil",
+    "diagnostics": []
+  },
+  "host": "Codex native agents",
+  "served_model": "not independently verified",
+  "read_only": "instructions only"
+}

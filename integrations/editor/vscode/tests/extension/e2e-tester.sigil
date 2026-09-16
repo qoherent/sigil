@@ -35,6 +35,17 @@ component SigilVsCodeE2ETester {
   }
 
   cases {
+
+    TagAndCoordinateNavigation {
+      Navigate a real selected provider Tag, preserving consumer hover context and
+      owner definition. Exercise supplementary Unicode and CRLF in both LSP positions
+      and native schema 2 byte-range diagnostics, including related locations; stale
+      source digest prevents location publication.
+
+      Current native fixtures use schema 2 and compatible prepared projections
+      produced outside the editor command. The retained legacy skill fixture remains
+      a separately selected 0.7 check.
+    }
     ExtensionHostLifecycle {
       the tester starts the extension host, discovers the Sigil extension, waits
       until hover and definition providers respond for the fixture, and exits with a
@@ -50,21 +61,21 @@ component SigilVsCodeE2ETester {
     }
 
     FileCompilationCommand {
-      Compile File uses the active physical Sigil path as an ordered native root,
-      and the result exposes import and ownership dependencies.
-      Language export and sigilc produce native ranged findings that appear in
-      editor diagnostics. Missing Design reconstruction keeps Implementation
-      comparison unavailable. The obsolete component alias is not registered.
+      Compile File uses the active physical Sigil path as an ordered native root, and
+      the result exposes import and ownership dependencies. Language export and
+      sigilc produce native ranged findings that appear in editor diagnostics.
+      Missing Design reconstruction keeps Implementation comparison unavailable. The
+      obsolete component alias is not registered.
     }
 
     ExternalCompilerFailure {
-      a missing native executable returns no successful report, writes the failure
-      to Sigil output, clears previous findings and shows actionable error text
+      a missing native executable returns no successful report, writes the failure to
+      Sigil output, clears previous findings and shows actionable error text
     }
 
     DirtyDocument {
-      invoking Compile File for an unsaved Sigil document does not start the
-      external compiler and shows a warning asking the user to save the document
+      invoking Compile File for an unsaved Sigil document does not start the external
+      compiler and shows a warning asking the user to save the document
     }
 
     DocumentPreview {

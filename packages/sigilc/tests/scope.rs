@@ -7,31 +7,14 @@ use sigilc::{
 };
 use support::Workspace;
 
-const PATHS: &[&str] = &["a.sigil", "b.sigil", "exp.sigil", "unrelated.sigil"];
+const PATHS: &[&str] = &["a.sigil", "b.sigil", "c.sigil", "unrelated.sigil"];
 fn workspace() -> Workspace {
-    let root = Workspace::new();
-    for path in PATHS {
-        root.write(path, b"// captured authored source");
-    }
+    let root = support::cycle_workspace();
     root.write("source.any", b"arbitrary implementation bytes");
     root
 }
 fn input(root: &Workspace) -> DesignInput {
-    let mut value = serde_json::to_value(root.input(
-        PATHS,
-        json!([
-            {"source":"a.sigil","target":"b.sigil","names":[]},
-            {"source":"b.sigil","target":"a.sigil","names":[]}
-        ]),
-    ))
-    .unwrap();
-    value["entities"] = json!([
-        {"id":"urn:sigil:component:a.sigil:A","type":"Component","label":"A","source":"a.sigil","owner":null,"exported":true}
-    ]);
-    value["units"] = json!([
-        {"id":"urn:sigil:unit:exp.sigil:1:1","source":"exp.sigil","owner":"urn:sigil:component:a.sigil:A","form":"expand","section":"goal","concept":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":4}}}
-    ]);
-    DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap()
+    support::cycle_input(root)
 }
 fn definition(paths: &[&str]) -> Value {
     json!({"version":1,"design":{"paths":paths},"implementation":{"paths":["source.any"]}})
@@ -48,10 +31,10 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
     let root = workspace();
     let full = DesignSnapshot::capture(&root.0, input(&root), 10_000).unwrap();
     let mut first_input = input(&root);
-    let first = resolve(&root, &mut first_input, &["exp.sigil", "b.sigil"]);
+    let first = resolve(&root, &mut first_input, &["c.sigil", "b.sigil"]);
     assert_eq!(
         first.report.design.focus_order,
-        ["exp.sigil", "b.sigil", "a.sigil"]
+        ["c.sigil", "b.sigil", "a.sigil"]
     );
     assert_eq!(first.report.design.sources.len(), 3);
     assert!(
@@ -60,9 +43,10 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
             .design
             .dependencies
             .iter()
-            .any(|d| d.source == "exp.sigil" && d.target == "a.sigil" && d.reason == "owner")
+            .any(|d| d.source == "c.sigil" && d.target == "a.sigil" && d.reason == "import")
     );
-    assert_eq!(first_input.units.len(), 1);
+    assert_eq!(first_input.units.len(), 9);
+    assert_eq!(first_input.references.len(), 3);
     let scoped = DesignSnapshot::capture(&root.0, first_input, 10_000).unwrap();
     for path in &first.report.design.sources {
         assert_eq!(full.binding(path).unwrap(), scoped.binding(path).unwrap());
@@ -70,10 +54,10 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
     let mut second_input = input(&root);
     second_input.sources.reverse();
     second_input.imports.reverse();
-    let second = resolve(&root, &mut second_input, &["b.sigil", "exp.sigil"]);
+    let second = resolve(&root, &mut second_input, &["b.sigil", "c.sigil"]);
     assert_eq!(
         second.report.design.focus_order,
-        ["b.sigil", "exp.sigil", "a.sigil"]
+        ["b.sigil", "c.sigil", "a.sigil"]
     );
     assert_eq!(
         first.report.membership_fingerprint,
@@ -89,16 +73,20 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
         reordered.fingerprint().unwrap()
     );
     let mut again_input = input(&root);
-    let again = resolve(&root, &mut again_input, &["b.sigil", "exp.sigil"]);
+    let again = resolve(&root, &mut again_input, &["b.sigil", "c.sigil"]);
     assert_eq!(
         second.report.order_fingerprint,
         again.report.order_fingerprint
     );
-    root.write("a.sigil", b"// changed owner declaration");
+    let text = std::fs::read_to_string(root.0.join("a.sigil")).unwrap();
+    root.write(
+        "a.sigil",
+        format!("{text}\n// changed provider declaration").as_bytes(),
+    );
     let changed = DesignSnapshot::capture(&root.0, input(&root), 10_000).unwrap();
     assert_ne!(
-        full.binding("exp.sigil").unwrap(),
-        changed.binding("exp.sigil").unwrap()
+        full.binding("c.sigil").unwrap(),
+        changed.binding("c.sigil").unwrap()
     );
     assert_eq!(
         full.binding("unrelated.sigil").unwrap(),
@@ -109,23 +97,22 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
 #[test]
 fn unresolved_graph_widens_visibly_and_diagnostics_remain_attributable() {
     let root = workspace();
-    let mut value = serde_json::to_value(input(&root)).unwrap();
-    value["imports"][0]["target"] = Value::Null;
-    value["diagnostics"] = json!([
-        {"code":"UNRESOLVED","severity":"error","message":"missing import","filePath":"a.sigil"},
-        {"code":"GLOBAL","severity":"error","message":"global"},
-        {"code":"CONFIG","severity":"warning","message":"config","filePath":".sigil/config.json"}
+    let mut value = support::missing_cycle_provider();
+    value["diagnostics"].as_array_mut().unwrap().extend([
+        json!({"code":"GLOBAL","stage":"workspace","severity":"error","message":"global","related":[]}),
+        json!({"code":"CONFIG","stage":"workspace","severity":"warning","message":"config","filePath":".sigil/config.json","related":[]})
     ]);
-    let mut input = DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
-    let result = resolve(&root, &mut input, &["exp.sigil"]);
+    let mut partial = DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+    let result = resolve(&root, &mut partial, &["c.sigil"]);
     assert!(result.report.design.conservative_full_bundle);
-    assert_eq!(result.report.design.sources.len(), PATHS.len());
-    assert_eq!(input.diagnostics.len(), 3);
-    value["imports"][0]["target"] = json!("b.sigil");
+    assert_eq!(result.report.design.sources.len(), PATHS.len() - 1);
+    assert_eq!(partial.diagnostics.len(), 3);
+    let mut valid = support::cycle_value();
     value["diagnostics"][0]["filePath"] = json!("unrelated.sigil");
-    let mut input = DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
-    resolve(&root, &mut input, &["exp.sigil"]);
-    assert_eq!(input.diagnostics.len(), 2); // Excluded file only; globals/config stay.
+    valid["diagnostics"] = value["diagnostics"].clone();
+    let mut scoped = DesignInput::parse(&serde_json::to_vec(&valid).unwrap()).unwrap();
+    resolve(&root, &mut scoped, &["c.sigil"]);
+    assert_eq!(scoped.diagnostics.len(), 2);
 }
 
 #[test]

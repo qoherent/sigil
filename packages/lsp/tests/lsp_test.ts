@@ -30,7 +30,7 @@ Deno.test("file URI conversion preserves Sigil paths", () => {
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::ProtocolSession interface,state,logic,constraints,cases
-Deno.test("initializes with the approved 0.7 capabilities and lifecycle", async () => {
+Deno.test("initializes with the approved 0.8 capabilities and lifecycle", async () => {
   const server = makeServer();
   const before = await server.handle(request(1, "shutdown"));
   assertEquals(errorCode(before), -32002);
@@ -48,7 +48,7 @@ Deno.test("initializes with the approved 0.7 capabilities and lifecycle", async 
   assert(
     JSON.stringify(capabilities.semanticTokensProvider) === JSON.stringify({
       legend: {
-        tokenTypes: ["type", "concept", "term"],
+        tokenTypes: ["type", "tag", "term"],
         tokenModifiers: [],
       },
       full: true,
@@ -92,7 +92,12 @@ Deno.test("dynamically registers ownership-source workspace watchers", async () 
   assertEquals(registration.id, "sigil/ownership-watch/request");
   const params = registration.params as Record<string, unknown>;
   const registrations = params.registrations as Array<Record<string, unknown>>;
-  assertEquals(registrations.length, 1);
+  assertEquals(registrations.length, 2);
+  assertEquals(registrations[1].id, "sigil/language-watch");
+  assertEquals(
+    JSON.stringify(registrations[1].registerOptions),
+    JSON.stringify({ watchers: [{ globPattern: "**/*", kind: 7 }] }),
+  );
   assertEquals(registrations[0].id, "sigil/ownership-watch");
   assertEquals(
     registrations[0].method,
@@ -162,12 +167,12 @@ Deno.test("publishes and clears diagnostics from open document overlays", async 
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
-Deno.test("publishes concept ambiguity for module indexes and ordinary files", async () => {
+Deno.test("publishes Tag collisions for ordinary module and consumer files", async () => {
   const modulePath = `${root}/_module.sigil`;
   const workspacePath = `${root}/workspace.sigil`;
   const providerPath = `${root}/glossary.sigil`;
   const consumer = (name: string) =>
-    `@glossary.sigil import { SigilGlossaryEngine }
+    `@glossary.sigil from SigilGlossaryEngine import { GlossaryInspection }
 
 component ${name} {
   goal {
@@ -218,172 +223,79 @@ component ${name} {
   for (const path of [modulePath, workspacePath]) {
     const diagnostics = diagnosticsFor(published, pathToFileUri(path));
     assert(
-      diagnostics.some((item) =>
-        item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
-      ),
+      diagnostics.some((item) => item.code === "SIGIL_TAG_NAME_COLLISION"),
     );
   }
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
-Deno.test("returns hierarchical symbols, definitions, and component hover", async () => {
+Deno.test("returns hierarchical symbols, provider definitions and complete component hover", async () => {
   const server = makeServer();
   await initialize(server);
-
   const symbols = responseResult(
-    await server.handle(request(
-      2,
-      "textDocument/documentSymbol",
-      { textDocument: { uri: contractUri } },
-    )),
-  ) as Array<Record<string, unknown>>;
-  assertEquals(symbols[0].name, "Thing");
-  assertEquals(symbols[0].detail, "component");
-  assert((symbols[0].children as unknown[]).length === 2);
-  const interfaceSymbol =
-    (symbols[0].children as Array<Record<string, unknown>>)
-      .find((item) => item.name === "interface");
-  assert(interfaceSymbol);
-  assertEquals(
-    (interfaceSymbol.children as Array<Record<string, unknown>>)[0].name,
-    "Execution",
-  );
-  assertEquals(symbols[1].detail, "expand");
-
-  const definition = responseResult(
-    await server.handle(request(
-      3,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 0, character: 26 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  assertEquals(definition.uri, contractUri);
-  assertEquals(
-    ((definition.range as Record<string, unknown>).start as Record<
-      string,
-      unknown
-    >).line,
-    0,
-  );
-
-  const importLine = "@contract.sigil import { Thing }";
-  const afterImportedName = responseResult(
-    await server.handle(request(
-      31,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: {
-          line: 0,
-          character: importLine.indexOf("Thing") + "Thing".length,
-        },
-      },
-    )),
-  );
-  assertEquals(afterImportedName, null);
-
-  const expandDefinition = responseResult(
-    await server.handle(request(
-      4,
-      "textDocument/definition",
-      {
+    await server.handle(
+      request(2, "textDocument/documentSymbol", {
         textDocument: { uri: contractUri },
-        position: { line: 12, character: 9 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  assertEquals(expandDefinition.uri, contractUri);
-  assertEquals(
-    ((expandDefinition.range as Record<string, unknown>).start as Record<
-      string,
-      unknown
-    >).line,
-    0,
-  );
-
+      }),
+    ),
+  ) as Array<{ name: string; detail: string; children: { name: string }[] }>;
+  assertEquals(symbols.length, 1);
+  assertEquals(symbols[0].name, "Thing");
+  assertEquals(symbols[0].children.length, 3);
+  for (const needle of ["Thing", "Execution"]) {
+    const definition = responseResult(
+      await server.handle(
+        request(3, "textDocument/definition", {
+          textDocument: { uri: consumerUri },
+          position: positionOf(consumerSource, needle),
+        }),
+      ),
+    ) as {
+      uri: string;
+      range: {
+        start: { line: number; character: number };
+        end: { line: number; character: number };
+      };
+    };
+    assertEquals(definition.uri, contractUri);
+    assertEquals(selectedText(contractSource, definition.range), needle);
+    const end = {
+      ...positionOf(consumerSource, needle),
+      character: positionOf(consumerSource, needle).character + needle.length,
+    };
+    assertEquals(
+      responseResult(
+        await server.handle(
+          request(4, "textDocument/definition", {
+            textDocument: { uri: consumerUri },
+            position: end,
+          }),
+        ),
+      ),
+      null,
+    );
+  }
   const hover = responseResult(
-    await server.handle(request(
-      5,
-      "textDocument/hover",
-      {
+    await server.handle(
+      request(5, "textDocument/hover", {
         textDocument: { uri: consumerUri },
-        position: { line: 0, character: 26 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  const contents = hover.contents as Record<string, unknown>;
-  assert(
-    String(contents.value).includes(
-      "component [Thing](file:///workspace/contract.sigil#L1,11)",
+        position: positionOf(consumerSource, "Thing"),
+      }),
     ),
-  );
-  assert(!String(contents.value).includes("Collected expansions"));
-
-  const proseDefinition = responseResult(
-    await server.handle(request(
-      6,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 4, character: 14 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  assertEquals(proseDefinition.uri, contractUri);
-
-  const proseHover = responseResult(
-    await server.handle(request(
-      7,
-      "textDocument/hover",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 4, character: 14 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  assert(
-    String((proseHover.contents as Record<string, unknown>).value).includes(
-      "component [Thing](file:///workspace/contract.sigil#L1,11)",
+  ) as { contents: { value: string } };
+  assert(hover.contents.value.includes("Running succeeds."));
+  assert(!hover.contents.value.includes("Collected expansions"));
+  assertEquals(
+    responseResult(
+      await server.handle(
+        request(6, "textDocument/definition", {
+          textDocument: { uri: consumerUri },
+          position: positionOf(consumerSource, "Consume the provider"),
+        }),
+      ),
     ),
+    null,
   );
-
-  const ordinaryProseDefinition = responseResult(
-    await server.handle(request(
-      8,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 4, character: 6 },
-      },
-    )),
-  );
-  assertEquals(ordinaryProseDefinition, null);
-
-  const ordinaryProseHover = responseResult(
-    await server.handle(request(
-      9,
-      "textDocument/hover",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 4, character: 6 },
-      },
-    )),
-  );
-  assertEquals(ordinaryProseHover, null);
-
-  const tokens = responseResult(
-    await server.handle(request(
-      10,
-      "textDocument/semanticTokens/full",
-      { textDocument: { uri: consumerUri } },
-    )),
-  ) as Record<string, unknown>;
-  const decoded = decodeSemanticTokens(tokens.data as number[]);
-  assert(decoded.some((item) => item.tokenType === 0));
-  assert(decoded.some((item) => item.tokenType === 1));
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
@@ -398,12 +310,10 @@ Deno.test("component hover includes clickable owned implementation links", async
       Own code, tests, and workflow instructions.
     }
   }
-}
 
-expand Thing {
   cases {
     OwnedTargets {
-      Ownership links remain visible after collected expansions.
+      Ownership links remain visible after complete contracts.
     }
   }
 }
@@ -447,7 +357,7 @@ expand Thing {
   );
   assert(
     markdown.includes(
-      "tests [implementationTargets · packages/core/tests/core_test.ts](file:///workspace/packages/core/tests/core_test.ts#L2,10) (cases)",
+      "tests [implementationTargets · packages/core/tests/core\\_test.ts](file:///workspace/packages/core/tests/core_test.ts#L2,10) (cases)",
     ),
   );
   assert(
@@ -465,7 +375,7 @@ expand Thing {
   assert(!markdown.includes("(markdown)"));
   assert(
     markdown.indexOf("**Owned implementations**") >
-      markdown.indexOf("**Collected expansions**"),
+      markdown.indexOf("**Cases**"),
   );
 
   const conceptHover = responseResult(
@@ -486,7 +396,7 @@ expand Thing {
   const casesHover = responseResult(
     await server.handle(request(4, "textDocument/hover", {
       textDocument: { uri: contractUri },
-      position: { line: 14, character: 8 },
+      position: positionOf(source, "OwnedTargets", 1),
     })),
   ) as Record<string, unknown>;
   const casesMarkdown = String(
@@ -588,149 +498,68 @@ Deno.test("ownership hover cache shares scans and invalidates on watched changes
   assertEquals(fs.implementationReads, readsAfterConcurrentHovers + 4);
 });
 
-// @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
-Deno.test("navigates and hovers contextual imported concepts", async () => {
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
+Deno.test("navigates imported Tags with full provider and consumer contracts", async () => {
   const server = makeServer();
   await initialize(server);
-
+  const position = positionOf(consumerSource, "Execution", 1);
   const definition = responseResult(
-    await server.handle(request(
-      2,
-      "textDocument/definition",
-      {
+    await server.handle(
+      request(2, "textDocument/definition", {
         textDocument: { uri: consumerUri },
-        position: { line: 9, character: 19 },
-      },
-    )),
-  ) as Record<string, unknown>;
+        position,
+      }),
+    ),
+  ) as {
+    uri: string;
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+  };
   assertEquals(definition.uri, contractUri);
-  assertEquals(
-    ((definition.range as Record<string, unknown>).start as Record<
-      string,
-      unknown
-    >).line,
-    6,
-  );
-
+  assertEquals(selectedText(contractSource, definition.range), "Execution");
   const hover = responseResult(
-    await server.handle(request(
-      3,
-      "textDocument/hover",
-      {
+    await server.handle(
+      request(3, "textDocument/hover", {
         textDocument: { uri: consumerUri },
-        position: { line: 9, character: 19 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  const markdown = String(
-    (hover.contents as Record<string, unknown>).value,
-  );
-  assert(
-    markdown.includes(
-      "concept [Execution](file:///workspace/contract.sigil#L7,5)",
+        position,
+      }),
     ),
-  );
+  ) as { contents: { value: string } };
+  const markdown = hover.contents.value;
+  assert(markdown.includes("### Tag [Execution]"));
+  assert(markdown.includes("Origin: [Thing]"));
+  assert(markdown.includes("**Consumer: [Consumer]"));
+  assert(markdown.includes("Running succeeds."));
+  assert(markdown.includes("Consumer retries preserve"));
   assert(
-    markdown.includes(
-      "Origin: [Thing](file:///workspace/contract.sigil#L1,11)",
-    ),
+    markdown.includes("[Execution](file:///workspace/contract.sigil#L7,5)"),
   );
-  assert(
-    markdown.includes(
-      "**interface** — [Thing](file:///workspace/contract.sigil#L1,11) in `contract.sigil`",
-    ),
-  );
-  assert(markdown.includes("run()"));
-  assert(
-    markdown.includes(
-      "**interface** — [Consumer](file:///workspace/consumer.sigil#L3,11) in `consumer.sigil`",
-    ),
-  );
-  assert(markdown.includes("Re-expose "));
-  assert(!markdown.includes("Running succeeds."));
-  assert(!markdown.includes("Consumer retries are private."));
-
-  const declarationHover = responseResult(
-    await server.handle(request(
-      31,
-      "textDocument/hover",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 19, character: 6 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  const declarationMarkdown = String(
-    (declarationHover.contents as Record<string, unknown>).value,
-  );
-  assert(
-    declarationMarkdown.includes(
-      "concept [Execution](file:///workspace/contract.sigil#L7,5)",
-    ),
-  );
-  assert(declarationMarkdown.includes("run()"));
-  assert(declarationMarkdown.includes("Re-expose "));
-  assert(!declarationMarkdown.includes("Running succeeds."));
-  assert(!declarationMarkdown.includes("Consumer retries are private."));
-
-  const componentHover = responseResult(
-    await server.handle(request(
-      32,
-      "textDocument/hover",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 2, character: 11 },
-      },
-    )),
-  ) as Record<string, unknown>;
-  const componentMarkdown = String(
-    (componentHover.contents as Record<string, unknown>).value,
-  );
-  assert(
-    componentMarkdown.includes(
-      "component [Consumer](file:///workspace/consumer.sigil#L3,11)",
-    ),
-  );
-  assert(
-    componentMarkdown.includes(
-      "Consume [Thing](file:///workspace/contract.sigil#L1,11).",
-    ),
-  );
-
-  const caseMismatch = responseResult(
-    await server.handle(request(
-      4,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 10, character: 8 },
-      },
-    )),
-  );
-  assertEquals(caseMismatch, null);
-
-  const substring = responseResult(
-    await server.handle(request(
-      5,
-      "textDocument/definition",
-      {
-        textDocument: { uri: consumerUri },
-        position: { line: 10, character: 22 },
-      },
-    )),
-  );
-  assertEquals(substring, null);
-
+  for (const needle of ["execution", "ExecutionCache"]) {
+    assertEquals(
+      responseResult(
+        await server.handle(
+          request(4, "textDocument/definition", {
+            textDocument: { uri: consumerUri },
+            position: positionOf(consumerSource, needle),
+          }),
+        ),
+      ),
+      null,
+    );
+  }
   const tokens = responseResult(
-    await server.handle(request(
-      6,
-      "textDocument/semanticTokens/full",
-      { textDocument: { uri: consumerUri } },
-    )),
-  ) as Record<string, unknown>;
+    await server.handle(
+      request(5, "textDocument/semanticTokens/full", {
+        textDocument: { uri: consumerUri },
+      }),
+    ),
+  ) as { data: number[] };
   assert(
-    !decodeSemanticTokens(tokens.data as number[]).some((item) =>
-      item.line === 10 && item.tokenType === 1
+    !decodeSemanticTokens(tokens.data).some((t) =>
+      t.line === positionOf(consumerSource, "execution").line &&
+      t.tokenType === 1
     ),
   );
 });
@@ -827,10 +656,10 @@ Deno.test("highlights, explains, and navigates reviewed glossary terms", async (
 
 /*
  * @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
  * @sigil tests packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
  */
-Deno.test("combines concept and glossary hover while preserving concept navigation", async () => {
+Deno.test("combines Tag and glossary hover while preserving Tag navigation", async () => {
   const glossaryPath = `${root}/.sigil/glossary.json`;
   const source = `component Thing {
   goal {
@@ -884,7 +713,7 @@ Deno.test("combines concept and glossary hover while preserving concept navigati
     (hover.contents as Record<string, unknown>).value,
   );
   const conceptHeading = markdown.indexOf(
-    "### concept [Execution](file:///workspace/contract.sigil#L7,5)",
+    "### Tag [Execution](file:///workspace/contract.sigil#L7,5)",
   );
   const termHeading = markdown.indexOf("### term execution model");
   const ownershipHeading = markdown.indexOf("**Owned implementations**");
@@ -922,7 +751,7 @@ Deno.test("combines concept and glossary hover while preserving concept navigati
   );
   assert(
     declarationMarkdown.includes(
-      "### concept [Execution](file:///workspace/contract.sigil#L7,5)",
+      "### Tag [Execution](file:///workspace/contract.sigil#L7,5)",
     ),
   );
   assert(declarationMarkdown.includes("### term execution model"));
@@ -971,7 +800,7 @@ Deno.test("publishes invalid glossary diagnostics without crashing", async () =>
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::DiagnosticPublishing interface
-Deno.test("publishes concept style information as an LSP hint", async () => {
+Deno.test("accepts exact Tag spelling without legacy identifier-style hints", async () => {
   const source = contractSource.replaceAll("Execution", "session-lifecycle");
   const server = new SigilLanguageServer({
     currentDirectory: root,
@@ -987,15 +816,12 @@ Deno.test("publishes concept style information as an LSP hint", async () => {
   });
   await server.handle(request(1, "initialize", { rootUri }));
   const notifications = await server.handle(notification("initialized"));
-  const hint = diagnosticsFor(notifications, contractUri).find((item) =>
-    item.code === "SIGIL_CONCEPT_IDENTIFIER_STYLE"
-  );
-  assert(hint);
-  assertEquals(hint.severity, 4);
+  const diagnostics = diagnosticsFor(notifications, contractUri);
+  assertEquals(diagnostics.length, 0);
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
-Deno.test("directory-index definitions navigate to the original declaration", async () => {
+Deno.test("explicit file imports navigate to the original provider declaration", async () => {
   const modulePath = `${root}/module/_module.sigil`;
   const indexedContractPath = `${root}/module/contract.sigil`;
   const indexedConsumerPath = `${root}/indexed-consumer.sigil`;
@@ -1009,10 +835,10 @@ Deno.test("directory-index definitions navigate to the original declaration", as
         files: { include: ["**/*.sigil"], exclude: [] },
         tools: {},
       }),
-      [modulePath]: "@module/contract.sigil import { Thing }\n",
+      [modulePath]: "",
       [indexedContractPath]: contractSource,
       [indexedConsumerPath]:
-        "@module import { Thing }\n\ncomponent Consumer {\n  goal {\n    Consume Thing.\n  }\n\n  interface {\n    run()\n  }\n}\n",
+        "@module/contract.sigil from Thing import { Execution }\n\ncomponent Consumer {\n  goal {\n    Consume Execution.\n  }\n\n  interface {\n    run()\n  }\n}\n",
     }),
   });
   await initialize(server);
@@ -1023,7 +849,7 @@ Deno.test("directory-index definitions navigate to the original declaration", as
       "textDocument/definition",
       {
         textDocument: { uri: indexedConsumerUri },
-        position: { line: 0, character: 18 },
+        position: { line: 0, character: 28 },
       },
     )),
   ) as Record<string, unknown>;
@@ -1035,7 +861,7 @@ Deno.test("directory-index definitions navigate to the original declaration", as
       "textDocument/hover",
       {
         textDocument: { uri: indexedConsumerUri },
-        position: { line: 0, character: 18 },
+        position: { line: 0, character: 28 },
       },
     )),
   ) as Record<string, unknown>;
@@ -1064,7 +890,8 @@ Deno.test("renders a whole document to Markdown through executeCommand", async (
   ) as string;
   assert(rendered.includes("### component"));
   assert(rendered.includes("Thing"));
-  assert(rendered.includes("**Collected expansions**"));
+  assert(rendered.includes("**Cases**"));
+  assert(rendered.includes("Running succeeds."));
 
   // A file with no declared component renders to an empty result.
   const empty = responseResult(
@@ -1083,7 +910,7 @@ Deno.test("renders a whole document to Markdown through executeCommand", async (
 });
 
 // @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
-Deno.test("renders component and collected-expansion source paths relative to the workspace root", async () => {
+Deno.test("renders complete component source paths relative to the workspace root", async () => {
   const server = makeServer();
   await initialize(server);
 
@@ -1100,9 +927,8 @@ Deno.test("renders component and collected-expansion source paths relative to th
   const value = String((hover.contents as Record<string, unknown>).value);
 
   assert(value.includes("Source: `contract.sigil`"));
-  assert(value.includes("**Collected expansions**"));
-  // The collected-expansion path is displayed relative, not as `/workspace/...`.
-  assert(value.includes("\n`contract.sigil`"));
+  assert(value.includes("**Cases**"));
+  assert(!value.includes("Collected expansions"));
   assert(!value.includes("Source: `/workspace"));
   assert(!value.includes("`/workspace/contract.sigil`"));
 });
@@ -1280,9 +1106,6 @@ const contractSource = `component Thing {
       run()
     }
   }
-}
-
-expand Thing {
   cases {
     Execution {
       Running succeeds.
@@ -1291,11 +1114,11 @@ expand Thing {
 }
 `;
 
-const consumerSource = `@contract.sigil import { Thing }
+const consumerSource = `@contract.sigil from Thing import { Execution }
 
 component Consumer {
   goal {
-    Consume Thing.
+    Consume the provider contract.
   }
 
   interface {
@@ -1305,20 +1128,8 @@ component Consumer {
       execution and ExecutionCache remain prose.
     }
   }
-
-}
-
-expand Consumer {
-  interface {
-    Execution {
-      Re-expose Execution to Consumer dependents.
-    }
-  }
-
   constraints {
-    Execution {
-      Consumer retries are private.
-    }
+    Consumer retries preserve Execution.
   }
 }
 `;
@@ -1340,6 +1151,9 @@ function makeServer(): SigilLanguageServer {
 }
 
 class CountingSigilFileSystem implements SigilFileSystem {
+  readSourceFile(path: string) {
+    return this.#base.readSourceFile(path);
+  }
   readonly #base: SigilFileSystem;
   implementationReads = 0;
 
@@ -1476,4 +1290,31 @@ function assertEquals(actual: unknown, expected: unknown): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
+}
+
+function positionOf(
+  source: string,
+  needle: string,
+  occurrence = 0,
+): { line: number; character: number } {
+  let index = -1;
+  for (let i = 0; i <= occurrence; i++) {
+    index = source.indexOf(needle, index + 1);
+  }
+  assert(index >= 0);
+  const lines = source.slice(0, index).split(/\r\n|\r|\n/);
+  return { line: lines.length - 1, character: lines.at(-1)!.length };
+}
+function selectedText(
+  source: string,
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  },
+): string {
+  assertEquals(range.start.line, range.end.line);
+  return source.split(/\r\n|\r|\n/)[range.start.line].slice(
+    range.start.character,
+    range.end.character,
+  );
 }

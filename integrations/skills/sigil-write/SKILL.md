@@ -15,6 +15,10 @@ or require a functioning compiler.
 Read [the writing loop](references/writing-loop.md) before drafting. It consumes
 the evaluator-owned [review contract](../sigil-evaluate/references/review-contract.md);
 read that contract before preparing any review request or using a report.
+Use the shared [mechanical validation](../sigil-evaluate/references/mechanical-validation.md)
+guidance to check, apply supported fixes, format only authored files, and recheck
+before capture. Use compatible available tooling; otherwise continue and report
+mechanical validation as unavailable.
 After a new draft or semantic revision, invoke a fresh read-only sub-agent using
 the sibling [evaluator](../sigil-evaluate/SKILL.md) and exact captured inputs.
 The host supplies delegation; this skill adds no model runtime or service.

@@ -1,9 +1,8 @@
+import { orderDiagnostics } from "@qoherent/sigil-core";
 import type {
-  AgentDependencyContext,
   ComponentContractView,
   OwnedImplementationProjection,
   ResolvedComponent,
-  ResolvedSigilWorkspace,
 } from "@qoherent/sigil-core";
 import type { CommandRequest, ContextRequest } from "./args.ts";
 import { CoreAdapter } from "./core-adapter.ts";
@@ -26,13 +25,13 @@ export interface CommandHandlerOptions {
 
 /**
  * @sigil implements packages/cli/_module.sigil::SigilCli::SkillCatalogCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillCatalog logic,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillCatalog logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillInstallation logic,constraints,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInitialization interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil implements packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::SourceFormattingCommand interface
  * @sigil implements packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
  */
@@ -42,11 +41,14 @@ export async function runCommand(
 ): Promise<CommandResult> {
   const core = options.core ?? new CoreAdapter();
   if (request.command === "export-design") {
-    const { bundle } = await core.exportDesign(request.path, request.root);
+    const { bundle, diagnostics } = await core.exportDesign(
+      request.path,
+      request.root,
+    );
     return {
       command: "export-design",
       bundle,
-      diagnostics: bundle.diagnostics,
+      diagnostics,
     };
   }
   if (request.command === "skill-list") {
@@ -103,7 +105,7 @@ export async function runCommand(
   }
   if (request.command === "fmt") {
     const formatted = await core.formatSources(
-      request.path,
+      request.paths,
       request.root,
       request.check,
     );
@@ -127,11 +129,17 @@ export async function runCommand(
       resolved,
       implementationSourceDiscovery.sources,
     );
-    const diagnostics = [
+    const diagnostics = orderDiagnostics([
       ...resolved.diagnostics,
       ...implementationSourceDiscovery.diagnostics,
       ...ownershipDiagnostics,
-    ];
+    ]).map((diagnostic) => ({
+      ...diagnostic,
+      sourceLocation: diagnostic.range
+        ? resolved.workspace.files.find((f) => f.path === diagnostic.filePath)
+          ?.document.source?.locationAtByte(diagnostic.range.start)
+        : diagnostic.implementationRange?.start,
+    }));
     return {
       command: "check",
       ...workspaceMetadata(resolved.workspace),
@@ -148,7 +156,12 @@ export async function runCommand(
       terms: resolved.glossary.terms,
       contexts: resolved.glossary.contexts,
       resolvedContexts: resolved.glossary.resolvedContexts,
-      occurrences: resolved.glossary.occurrences,
+      occurrences: resolved.glossary.occurrences.map((occurrence) => ({
+        ...occurrence,
+        sourceLocation: resolved.workspace.files.find((f) =>
+          f.path === occurrence.filePath
+        )?.document.source?.locationAtByte(occurrence.range.start),
+      })),
       diagnostics: resolved.diagnostics,
     };
   }
@@ -230,24 +243,18 @@ async function contextCommand(
   const selectedComponents = resolved.components.filter((component) =>
     request.component
       ? component.name === request.component
-      : component.filePath === selectedFile ||
-        component.expansions.expands.some((expansion) =>
-          expansion.filePath === selectedFile
-        )
+      : component.filePath === selectedFile
   );
   const allContracts = core.componentContracts(resolved);
   const contracts = selectedComponents.map((component) =>
     contractForComponent(allContracts, component)
   ).filter((item) => item !== undefined);
-  const expansions = selectedComponents.map((component) =>
-    component.expansions
-  );
-  const conceptNamespaces = selectedComponents.map((component) =>
-    component.conceptNamespace
-  );
+  const tagNamespaces = selectedComponents.map((component) =>
+    core.tagNamespaceFor(resolved, component.name)
+  ).filter((item) => item !== undefined);
   const agentDependencyContexts = selectedComponents.map((component) =>
-    agentDependencyContextForComponent(resolved, component, allContracts)
-  );
+    core.agentDependencyContextFor(resolved, component.name)
+  ).filter((item) => item !== undefined);
   const agentDependentContexts = request.includeDependents
     ? selectedComponents.map((component) =>
       core.agentDependentContextFor(resolved, component.name)
@@ -261,7 +268,13 @@ async function contextCommand(
     core.ownedImplementationTargetsFor(
       resolved,
       implementationSourceDiscovery.sources,
-      { componentName: component.name, declarationPath: component.filePath },
+      {
+        componentName: component.name,
+        declarationPath: workspaceRelative(
+          resolved.workspace.root,
+          component.filePath,
+        ),
+      },
     )
   ).filter((item): item is OwnedImplementationProjection =>
     item !== undefined &&
@@ -289,76 +302,17 @@ async function contextCommand(
     ...workspaceMetadata(resolved.workspace),
     selectedComponents,
     componentContracts: contracts,
-    conceptNamespaces,
-    collectedExpansions: expansions,
+    tagNamespaces,
     agentDependencyContexts,
     ...(agentDependentContexts ? { agentDependentContexts } : {}),
     ownedImplementationProjections,
     relatedFilePaths,
     glossaryContext: glossaryContext.glossaryPath ? glossaryContext : null,
-    diagnostics: [
+    diagnostics: orderDiagnostics([
       ...resolved.diagnostics,
       ...implementationSourceDiscovery.diagnostics,
       ...ownershipDiagnostics,
-    ],
-  };
-}
-
-function agentDependencyContextForComponent(
-  resolved: ResolvedSigilWorkspace,
-  selectedComponent: ResolvedComponent,
-  contracts: readonly ComponentContractView[],
-): AgentDependencyContext {
-  const dependencies: ResolvedComponent[] = [];
-  const seen = new Set<string>();
-  for (
-    const resolvedImport of resolved.imports.filter((item) =>
-      item.sourceFile === selectedComponent.filePath
-    )
-  ) {
-    for (const importedName of resolvedImport.names) {
-      if (!importedName.componentFile) continue;
-      const key = `${importedName.componentFile}\0${importedName.name}`;
-      if (seen.has(key)) continue;
-      const dependency = resolved.components.find((component) =>
-        component.name === importedName.name &&
-        component.filePath === importedName.componentFile
-      );
-      if (!dependency) continue;
-      seen.add(key);
-      dependencies.push(dependency);
-    }
-  }
-
-  const dependencyContracts = dependencies.map((dependency) =>
-    contractForComponent(contracts, dependency)
-  ).filter((item) => item !== undefined);
-  const dependencyDecisions = dependencies.flatMap((dependency) =>
-    dependency.expansions.expands.flatMap((expansion) =>
-      expansion.declaration.sections
-        .filter((section) => section.name === "decisions")
-        .map((section) => ({
-          componentName: dependency.name,
-          filePath: expansion.filePath,
-          section,
-        }))
-    )
-  );
-  const relatedFilePaths = [
-    ...new Set([
-      selectedComponent.filePath,
-      ...selectedComponent.expansions.expands.map((item) => item.filePath),
-      ...dependencyContracts.map((contract) => contract.filePath),
-      ...dependencyDecisions.map((decision) => decision.filePath),
     ]),
-  ].sort();
-
-  return {
-    selectedComponent,
-    collectedExpansion: selectedComponent.expansions,
-    dependencyContracts,
-    dependencyDecisions,
-    relatedFilePaths,
   };
 }
 

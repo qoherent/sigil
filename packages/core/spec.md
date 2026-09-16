@@ -1,282 +1,80 @@
-# sigil-core Requirements
+# sigil-core requirements
 
-**Status:** Accepted for 0.7.1 **Last updated:** 2026-08-04
+**Implemented language:** 0.8.0. Artifact and release status are recorded in
+`deno.json` and [COMPATIBILITY.md](../../COMPATIBILITY.md). The normative
+[reference](../../spec/sigil-reference.md), [grammar](../../spec/sigil.ebnf) and
+colocated Sigil contracts govern detailed language behavior.
 
-This document defines the 0.7 product requirements for `sigil-core`.
-Architecture style, module boundaries, and dependency rules live in
-[architecture.md](architecture.md).
+## Source and structure
 
-## 1. Purpose
+Accept explicit language versions. Disk input is original UTF-8 bytes, strictly
+decoded; text overlays must contain Unicode scalar values. Preserve BOMs, physical
+line endings, exact names, links and literal bodies. Half-open byte ranges derive
+scalar/UTF-16 coordinates without replacement decoding or source rereads.
 
-`sigil-core` is the shared semantic engine for the Sigil platform.
+Parse Tag imports and components. Each component owns its Goal, Interface and
+optional State, Logic, Constraints, Decisions and Cases. Retain ordered Facets,
+local grouping occurrences, inline introductions and embedded content. Protect
+complete links/images and fenced payloads from Tag interpretation. Apply the
+normative staged diagnostics, recovery and suppression rules; partial results
+must not imply validity or completeness that was not established.
 
-It must give CLI, LSP, editor integrations, renderers, agent context builders,
-and tests one consistent way to understand Sigil.
+## Workspace and resolution
 
-## 2. Version 0.7 Scope
+Require strict `.sigil/config.json`. Discover the nearest eligible ancestor or
+accept an explicit root. Parent workspaces must exclude independent nested
+workspaces. Apply include/exclude globs and declared member metadata. A member
+root does not create a namespace or import surface. `_module.sigil` is ordinary.
 
-Version 0.7 extends the parser and resolver foundation with reviewed glossary
-authority, scoped terminology projections, reusable concept identifiers, and
-public/private concept visibility, and optional decision rationale.
+Resolve root-relative explicit source imports, optional provider component
+selection and exact Tag names. A Tag's identity includes its owner component and
+declaration source. Imports select provider-owned Tags without re-export,
+visibility classes, normalization, aliases or wildcard selection. Duplicate or
+ambiguous identities have no arbitrary winner. Valid cycles terminate and remain
+valid. Qualifying uses belong to the consumer's eligible Facet prose; grouping
+headings are local introductions, and protected text does not satisfy import use.
 
-It must:
+## Formatting and projections
 
-- parse `.sigil` files using an explicit supported Sigil version;
-- parse and validate strict `.sigil/config.json` using the canonical Sigil
-  version;
-- parse and validate optional strict `.sigil/glossary.json` schema version 1;
-- preserve source locations and Facets;
-- preserve attached fenced content as uninterpreted content;
-- diagnose every resolved imported name without qualifying local use;
-- provide deterministic in-memory formatting at 79 prose content characters;
-- resolve non-overlapping path-glob glossary contexts;
-- match reviewed canonical terms and aliases in eligible Sigil prose using
-  case-insensitive whole-phrase, longest-first rules;
-- preserve glossary declaration and occurrence source ranges;
-- parse flat, nonempty concept blocks and retain each line's concept identifier;
-- parse optional `decisions` sections as free-form grouped or ungrouped semantic
-  content;
-- discover the nearest eligible ancestor config or use an explicit configured
-  root;
-- apply include and exclude globs and permit independent workspaces only inside
-  excluded subtrees;
-- load workspace files through an abstract filesystem boundary;
-- resolve `@path import { Name }` declarations from the workspace root;
-- read additional project roots exclusively from `workspace.members` in
-  `.sigil/config.json`;
-- allow `_module.sigil` in any included directory and resolve its local and
-  independently resolved imported names through converged directory imports;
-- preserve explicit-file import access to every public component regardless of
-  module-index membership;
-- identify public components and matching expansions;
-- collect all matching `expand Name` blocks without override or shadowing
-  semantics;
-- share one case-insensitively unique concept namespace across each component
-  and all matching expands;
-- expose imported public interface concepts without making private expansion
-  details part of the dependent-facing contract;
-- project direct dependencies' public contracts and `decisions` sections as
-  bounded agent rationale while excluding transitive and other private
-  dependency sections by default;
-- preserve an imported concept's originating identity through contextual reuse
-  and downstream interface re-exposure;
-- build graph primitives for files, imports, components, and expansions;
-- return partial models plus diagnostics when source is malformed;
-- expose stable machine-readable diagnostic codes.
+Wrap prose at 79 content characters according to the language width policy.
+Keep exact Tag references on one line and protect inline content/payloads. Obtain
+provider vocabulary before formatting import-dependent prose. Reject recovered
+or non-width-invalid input. Verify proposed text by reparsing, resolution and a
+meaning signature before exposing it to a writing host.
 
-## 3. Out Of Scope
+Graphs preserve declarations, imports, selections and actual uses without
+inferring runtime calls. Context includes complete provider declarations, while
+consumer Facets and implementation ownership retain their owner. Retrieval keeps
+purpose, direct dependency behavior, budget/truncation, inclusion reasons,
+frontiers, evidence outcomes and versioned canonical bindings.
 
-Version 0.7 must not implement:
+Optional `.sigil/glossary.json` remains a separately reviewed vocabulary policy:
+validate schema/context overlap, use case-insensitive longest phrase matching,
+retain source occurrences and agent visibility, and never rename a Tag to match
+a glossary spelling. Core does not infer or mutate glossary definitions.
 
-- CLI argument parsing;
-- LSP transport;
-- VS Code APIs;
-- Codex prompt behavior;
-- editor UI;
-- Markdown rendering;
-- full agent context ranking;
-- embeddings or semantic search;
-- anchors or code/spec synchronization;
-- generated diagrams;
-- export forms, import aliases, or wildcard imports;
-- dotted concept notation, concept aliases, shadowing, or nested concept blocks;
-- concept-based anchoring behavior.
-- inferred glossary definitions or automatic glossary mutation.
+Implementation annotations select component/Tag sections and retain source
+locations under their explicit UTF-16 convention. Validate supported source kinds,
+selectors and evidence availability. A provider Tag reference does not transfer
+consumer obligations or code ownership to its provider.
 
-Anchors remain outside `sigil-core`. The historical design in ADR-011 described
-them through a separate deterministic `sigil-indexer` package that consumes core
-Facet and workspace models.
+Schema-2 Design export retains original sources/context, identities, Facets,
+groups, introductions, imports/selections, references, links, payloads, diagnostics
+and validity/completeness. Invalid UTF-8 prevents export of a misleading bundle;
+representable structural errors can accompany a partial bundle. Structural export
+is not semantic proof. Native consumers own reconstruction, saturation and states.
 
-## 4. Public Interface Requirements
+## API and verification
 
-`sigil-core` should expose a typed Deno TypeScript library API.
+Expose typed immutable models and a filesystem port for source reads, text reads,
+existence and listing. Keep parser/resolver logic host-independent. Return stable
+machine-readable diagnostics rather than losing unrelated results on failure.
 
-Exact function names may evolve during implementation, but the public API must
-provide these capabilities:
+Tests cover strict ingress, Unicode boundaries, all contract roles, protected
+content, exact ownership, cycles, duplicate/ambiguous resolution, width repair,
+partial recovery, workspace boundaries, glossary/ownership context, retrieval
+budgets/freshness and native transport parity. Cross-host acceptance is recorded
+in [migration verification](../../docs/verification/sigil-080/).
 
-- parse one Sigil source file;
-- discover or accept a workspace root;
-- load a workspace through an abstract filesystem;
-- resolve imports, components, expansions, and graph relationships;
-- format a valid parsed document deterministically without filesystem access;
-- return diagnostics with stable codes;
-- expose primitive structured projections over resolved models.
-
-The public API should be usable by:
-
-- `sigil-cli`;
-- `sigil-lsp`;
-- editor integrations;
-- tests with an in-memory filesystem;
-- future host integrations.
-
-## 5. Required Types
-
-The model should include typed concepts equivalent to:
-
-- `SourceRange`;
-- `SourceLocation`;
-- `SigilDocument`;
-- `ImportDeclaration`;
-- `ComponentDeclaration`;
-- `ExpandDeclaration`;
-- `Section`;
-- `Facet`;
-- `EmbeddedFacet`;
-- `EmbeddedContent`;
-- `ConceptBlock`;
-- `WorkspaceGlossary`;
-- `GlossaryTerm`;
-- `GlossaryContext`;
-- `GlossaryOccurrence`;
-- `GlossaryProjection`;
-- `GlossaryContextProjection`;
-- `ResolvedConceptReference`;
-- `ResolvedConceptNamespace`;
-- `SigilWorkspace`;
-- `SigilConfig`;
-- `ResolvedComponent`;
-- `CollectedExpansion`;
-- `AgentDependencyContext`;
-- `DependencyDecisionView`;
-- `SigilGraph`;
-- `SigilDiagnostic`;
-- `SigilFileSystem`.
-
-`glossaryContextForFiles` must preserve deterministic declaration and source
-order while returning only accepted terms and occurrences recognized in the
-selected source files.
-
-`Facet` must include:
-
-- file path;
-- source range;
-- owner kind;
-- owner name;
-- section name;
-- optional concept identifier;
-- normalized prose;
-- original physical lines;
-- attached fenced content.
-
-An `EmbeddedFacet` includes introducing prose and nonempty `EmbeddedContent`.
-The fenced payload alone is not the native Facet. Existing serialized `units`
-and `literalBlocks` field names remain stable; they do not define language
-primitives. `isEmbeddedFacet` narrows the complete content-bearing Facet.
-
-`SigilDiagnostic` must include:
-
-- stable code;
-- severity;
-- message;
-- file path when available;
-- source range when available.
-
-## 6. Filesystem Boundary
-
-`sigil-core` must use an abstract filesystem port.
-
-Core logic must not call Deno filesystem APIs directly.
-
-The filesystem boundary must support:
-
-- reading text files;
-- checking whether paths exist;
-- listing workspace files needed for discovery and loading;
-- normalizing paths consistently enough for cross-platform behavior.
-
-Concrete filesystem adapters belong outside core logic or in thin adapter layers
-that do not leak into parser and resolver modules.
-
-## 7. Error And Diagnostic Policy
-
-Malformed Sigil should produce partial models plus diagnostics.
-
-`sigil-core` should fail only when the host-provided filesystem boundary itself
-cannot satisfy an operation required by the requested API.
-
-Version 0.7 diagnostics must include stable codes for:
-
-- parse structure errors;
-- unknown section;
-- missing `goal`;
-- missing `interface`;
-- unresolved import path;
-- unresolved imported component;
-- expand without matching component;
-- duplicate component ambiguity;
-- missing, malformed, invalid, unsupported, existing, or nested config;
-- import cycle protection.
-- missing, invalid, empty, nested, ambiguous, and non-preferred concept
-  identifiers.
-
-## 8. Workspace And Import Requirements
-
-The workspace root contains mandatory `.sigil/config.json` with the canonical
-Sigil version. Without an explicit root, the nearest ancestor config owns the
-target when every higher configured workspace excludes that nearer root. An
-explicit root must contain the config directly. Nested configs inside included
-paths are errors; excluded nested subtrees are independent workspaces and are
-skipped by parents.
-
-Import paths begin with `@` and resolve from the workspace root.
-
-A directory import resolves to `_module.sigil` in the target directory. The
-directory-import surface contains components declared locally in that index and
-components named by its independently resolved imports. Chained and cyclic
-surfaces converge by declaration identity; repeated identities deduplicate and
-names with distinct identities remain absent. Diagnostics on one import or the
-local-component requirement do not discard unaffected names. Workspace members
-do not grant or restrict module-index locations. A nested directory with its
-own `.sigil/config.json` is an excluded independent workspace rather than a
-member project.
-
-A file import resolves to the exact `.sigil` file.
-The legacy `#module.sigil` basename is an ordinary source and has no
-directory-index behavior.
-
-Imported names must resolve to matching public `component Name` declarations.
-Components omitted from a module index remain importable through explicit file
-paths.
-
-Every resolved imported name must have qualifying local use in `interface`,
-`state`, `logic`, `constraints`, or `cases`, through a matching local `expand`,
-or through direct `_module.sigil` surface exposure. Documentary mentions in
-`goal`, `decisions`, fenced content, comments, and annotations do not count.
-
-## 9. Acceptance Scenarios
-
-Version 0.7 is acceptable when tests demonstrate that `sigil-core` can:
-
-- parse `examples/promise/promise.sigil`;
-- preserve Facets with owner, section, normalized prose, original
-  physical lines, attached fenced content, file, and source range;
-- discover the repository `.sigil/config.json` from nested targets that remain
-  in the root workspace;
-- discover Promise and Slotted through their independent example configs;
-- treat `examples/slotted/_module.sigil` as the Slotted workspace summary;
-- diagnose imports-only module indexes with `SIGIL_MODULE_WITHOUT_COMPONENT`;
-- preserve original declaration paths through module indexes for graphs and
-  editors;
-- keep omitted components importable through explicit `.sigil` paths;
-- resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;
-- diagnose each resolved imported name without qualifying use;
-- exclude embedded-content content from import, concept, and glossary references;
-- format prose idempotently at 79 content characters while preserving literal
-  bodies and structural indentation;
-- collect matching expansions for resolved components;
-- preserve ungrouped and Concept-grouped Facets in source order without grouping
-  diagnostics in any contract;
-- resolve public imported concepts as bare identifiers and keep private concepts
-  inaccessible to dependents;
-- project each direct dependency contract and decision section once for agent
-  context while excluding transitive decisions and non-decision private
-  sections;
-- resolve exact-case whole-word concept references into contextual namespaces
-  with originating identities and source ranges;
-- exclude ambiguous identities, case mismatches, substrings, and unmatched words
-  from contextual references without producing unresolved-concept diagnostics;
-- diagnose case-insensitive ambiguity and invalid, empty, or nested blocks;
-- return partial models plus diagnostics for malformed files;
-- emit stable diagnostic codes;
-- run core tests with an in-memory filesystem implementation.
+CLI/LSP protocols, editor UI, automatic migration, model calls, inferred behavior
+and the eqval algebra are outside this package's language implementation scope.

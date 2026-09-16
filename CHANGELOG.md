@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Support language 0.8 across core, CLI, LSP, and VS Code, including exact
+  component-owned Tags, explicit provider imports, and preserved Facet ownership.
+  Activate the root workspace on 0.8; migrate older source using the
+  [migration guide](spec/migrating-to-0.8.md).
+- Preserve original UTF-8 source ranges through navigation, hover, formatting,
+  and native diagnostic projection, including Unicode, BOM, and CRLF input.
+  Reject stale editor results and recover from failed workspace reloads.
+- Use schema 2 for structural Design export and native reports. Retain the legacy
+  0.7 skill outside active discovery and reject incompatible stored evidence.
+  Package the CLI and VS Code extension with their Unicode data license.
 - Add separately callable Sigil 0.8 understanding, advisory design evaluation, and
   compact writing skills. The writer delegates fresh review, applies corrections
   supported by established intent, and preserves unresolved human decisions.

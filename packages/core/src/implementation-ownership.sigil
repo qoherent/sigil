@@ -1,3 +1,5 @@
+@packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { DiagnosticModel }
+
 component SigilImplementationOwnership {
   goal {
     Provide the shared core query that returns implementation targets linked to a
@@ -19,8 +21,8 @@ component SigilImplementationOwnership {
 
       sources is an immutable ordered collection of ImplementationSourceRecord values
 
-      diagnostics is an immutable ordered collection of SigilDiagnostic values owned
-      by SigilSemanticModel
+      diagnostics is an immutable ordered collection of complete SigilDiagnostic
+      records from DiagnosticModel, owned by SigilDiagnosticModel
 
       ImplementationSourceRecord contains exactly filePath and text; filePath is one
       normalized workspace-relative path accepted by isSupportedImplementationSource,
@@ -33,13 +35,13 @@ component SigilImplementationOwnership {
       unavailable requires an empty source collection and at least one discovery
       diagnostic
 
-      discovery diagnostics are ordered by severity, path with absent first, range
-      with absent first, code, then message
+      discovery diagnostics follow DiagnosticModel ordering and coalescing;
+      preserve stage and related locations as part of each complete record
     }
 
     OwnedImplementationLookup {
       ownedImplementationTargetsFor(resolvedWorkspace, implementationSources,
-      componentIdentity, conceptName?, sectionName?) returns an owned-implementation
+      componentIdentity, tagName?, sectionName?) returns an owned-implementation
       projection or undefined
 
       implementationSources is exactly the ordered immutable source collection from
@@ -50,15 +52,14 @@ component SigilImplementationOwnership {
       normalized workspace-relative declarationPath of one resolved component
 
       returns undefined only when componentIdentity identifies no exact resolved
-      component or conceptName is supplied and identifies no concept in that
-      component
+      component or tagName is supplied and identifies no Tag in that component
 
       returns a projection with an empty targets collection when the component and
-      optional concept resolve but no annotation matches the optional section scope
+      optional Tag resolve but no annotation matches the optional section scope
 
       The query scans implementation comments that link entrypoint definitions or
-      agent-facing Markdown back to the selected Sigil component and optional concept
-      and section scopes.
+      agent-facing Markdown back to the selected Sigil component and optional Tag and
+      section scopes.
     }
 
     OwnershipDiagnostics {
@@ -71,7 +72,7 @@ component SigilImplementationOwnership {
     }
 
     OwnedImplementationProjection {
-      includes the owning contract, optional concept and section scopes, normalized
+      includes the owning contract, optional Tag and section scopes, normalized
       implementation targets, and diagnostics
     }
 
@@ -124,21 +125,21 @@ component SigilImplementationOwnership {
 
     ImplementationAnnotation {
       identifies a relation, repository-relative Sigil path, component name, optional
-      concept name, and one or more selected sections
+      Tag name, and one or more selected sections
 
       the containing implementation file and adjacent entrypoint definition identify
       the owned implementation target
 
-      uses @sigil <relation> <file>::<component>[::<concept>]
-      <section>[,<section>...]
+      uses @sigil <relation> <file>::<component>[::<Tag>] <section>[,<section>...]
 
       file is a repository-relative Sigil path
 
-      file may identify either the component declaration source or a source
-      containing a matching expand for the named component
+      file identifies the source declaring the named component; removed expansion
+      locations require the migration locator mapping, not runtime fallback.
 
-      an annotation through a matching expand resolves to the parent component
-      identity
+      The optional Tag suffix accepts an existing simple unquoted name or one
+      JSON-quoted string after the file/component locator. Parse a quoted suffix
+      atomically, preserving spaces, quotes, backslashes, and embedded :: exactly.
 
       implements links an artifact that implements the selected section occurrences.
 
@@ -147,9 +148,7 @@ component SigilImplementationOwnership {
       tests links an artifact that tests the selected section occurrences.
     }
   }
-}
 
-expand SigilImplementationOwnership {
   logic {
     OwnedImplementationProjection {
       scan supplied implementation sources for supported ownership comments
@@ -157,7 +156,7 @@ expand SigilImplementationOwnership {
       resolve each annotation target against the selected Sigil workspace
 
       resolve each annotation's selected sections against the targeted component or
-      concept occurrences
+      Tag occurrences
 
       normalize code, tests, and agent-facing workflow Markdown into one shared
       result shape
@@ -168,8 +167,8 @@ expand SigilImplementationOwnership {
       preserve the exact entrypoint location and annotationRange in every normalized
       target
 
-      return undefined before scanning when the component or supplied concept does
-      not resolve; otherwise return one projection after scanning even when it has no
+      return undefined before scanning when the component or supplied Tag does not
+      resolve; otherwise return one projection after scanning even when it has no
       targets
     }
 
@@ -192,8 +191,8 @@ expand SigilImplementationOwnership {
       scan every supported implementation source once and collect diagnostics from
       malformed or unresolved ownership annotations without selecting targets.
 
-      deduplicate and order diagnostics by severity, source location, code, and
-      message.
+      order diagnostics according to DiagnosticModel and coalesce only identical
+      complete records, retaining distinct stage and related-location evidence.
     }
   }
 
@@ -211,7 +210,7 @@ expand SigilImplementationOwnership {
       source.
 
       Each annotation points from an implementation artifact to a repository-relative
-      Sigil path, component, optional concept, and selected sections.
+      Sigil path, component, optional Tag, and selected sections.
     }
 
     SectionSelection {
@@ -220,11 +219,14 @@ expand SigilImplementationOwnership {
 
       Goal and decisions sections cannot be ownership targets.
 
-      For a component target, each selector resolves to an existing section
-      occurrence on the component or one of its matching expands.
+      For a component target, each selector resolves to that component own Facets in
+      the selected existing section.
 
-      For a concept target, each selector resolves to an occurrence of that concept
-      in the selected section.
+      For a Tag target, resolve the exact accessible Tag in the named component
+      scope. Select only that component own Facets associated with the Tag through
+      local grouping, inline introduction, or bare reference in the named sections.
+      Keep the originating Tag owner separate; an imported Tag never creates a local
+      grouping.
 
       Empty, repeated, unknown, or unresolved section selectors produce diagnostics
       instead of an inferred relationship.
@@ -297,24 +299,24 @@ expand SigilImplementationOwnership {
 
       Resolve agent-facing Markdown annotations at file level.
 
-      Treat an annotation's Sigil path as governing the named component when it is
-      either the component declaration source or a matching expand source.
+      Require the annotation Sigil path to declare the exact named component; no
+      former expand-only source redirects ownership.
 
-      Do not infer ownership from an expand for a different component in the same
-      file.
+      An imported reference never transfers a consumer implementation claim or
+      consumer-owned Facet to the provider.
 
       Ignore ambiguous or detached annotations and return diagnostics rather than
       inferring ownership.
     }
 
     LookupAbsenceSemantics {
-      An unresolved exact component identity or supplied concept returns undefined.
+      An unresolved exact component identity or supplied Tag returns undefined.
 
       Name-only fallback is forbidden; duplicate component names remain
       distinguishable by declarationPath.
 
       A resolved lookup with zero matching targets returns an empty projection and
-      preserves its owning component, optional concept, optional section scope, and
+      preserves its owning component, optional Tag, optional section scope, and
       diagnostics.
     }
   }
@@ -352,7 +354,7 @@ expand SigilImplementationOwnership {
 
     AnnotationStorage {
       Decision: Store ownership links in implementation comments that point back to
-      governing Sigil components and concepts.
+      governing Sigil components and Tags.
 
       Scope: Governs shared CLI and LSP ownership discovery for source code, tests,
       and agent-facing Markdown; excludes annotations inside Sigil and JSON support.
@@ -373,20 +375,20 @@ expand SigilImplementationOwnership {
 
     AnnotationGrammar {
       Decision: Encode each ownership link as @sigil <relation>
-      <file>::<component>[::<concept>] <section>[,<section>...] and allow only
+      <file>::<component>[::<Tag>] <section>[,<section>...] and allow only
       implements, uses, or tests.
 
       Scope: Governs payloads parsed from supported implementation comments; file is
-      a repository-relative Sigil path, component is required, concept is optional,
-      and one or more sections are required.
+      a repository-relative Sigil path, component is required, Tag is optional, and
+      one or more sections are required.
 
       Trade-offs: A small fixed vocabulary and required occurrence selectors keep
       ownership queries precise and deterministic, but existing sectionless
       annotations require reviewed migration.
 
-      Design issues addressed: Component-level and concept-level links otherwise
-      cannot identify which contract occurrences the implementation uses, implements,
-      or tests.
+      Design issues addressed: Component-level and Tag-level links otherwise cannot
+      identify which contract occurrences the implementation uses, implements, or
+      tests.
 
       Discarded alternatives: follows, validates, related, goal and decisions
       selectors, and sectionless annotations do not provide the selected
@@ -417,43 +419,43 @@ expand SigilImplementationOwnership {
     }
 
     ScopeSelection {
-      Decision: Allow optional concept and section scopes so a contract can return
-      all owned targets, one concept's targets, or only targets selecting one section
+      Decision: Allow optional Tag and section scopes so a contract can return all
+      owned targets, one Tag's targets, or only targets selecting one section
       occurrence.
 
       Scope: Governs query scoping within one contract; section scope filters
       selected annotation sections and excludes cross-contract aggregation and
       transitive ownership inference.
 
-      Trade-offs: Concept and section scoping increase precision without forcing
-      separate query shapes, but callers must supply the occurrence scope when they
-      need a narrower view.
+      Trade-offs: Tag and section scoping increase precision without forcing separate
+      query shapes, but callers must supply the occurrence scope when they need a
+      narrower view.
 
-      Consequences: The same API serves whole-contract, concept-specific, and
+      Consequences: The same API serves whole-contract, Tag-specific, and
       section-specific ownership views.
 
-      Revisit when: Component, concept, and section scoping prove too coarse or too
-      fine for routine use.
+      Revisit when: Component, Tag, and section scoping prove too coarse or too fine
+      for routine use.
     }
 
     SectionSelection {
-      Decision: Resolve component-target selectors against component and
-      matching-expand sections, and resolve concept-target selectors only against
-      sections containing that concept.
+      Decision: Resolve component selectors against the named component own sections
+      and Tag selectors against its own Facets associated through local grouping,
+      inline introduction, or bare reference in those sections.
 
       Scope: Governs annotation validation, projection metadata, and optional
       section-scoped lookup; excludes goal, decisions, and semantic-unit-level
       selectors.
 
       Trade-offs: Occurrence validation detects stale or impossible links, but moving
-      a concept between sections requires its annotations to be reconciled.
+      a Tag between sections requires its annotations to be reconciled.
 
       Design issues addressed: A section name has different precision when the
-      annotation targets an entire component versus one concept.
+      annotation targets an entire component versus one Tag.
 
-      Consequences: Component annotations may select implementation-related component
-      or expand sections, while concept annotations may select only
-      implementation-related sections where that concept occurs.
+      Consequences: Both selectors preserve the named component as consumer owner.
+      Provider Tag origin is separate and never moves an implementation claim
+      upstream.
 
       Revisit when: Ownership needs semantic-unit-level or cross-component occurrence
       selection.
@@ -496,30 +498,9 @@ expand SigilImplementationOwnership {
       requires section-level targets.
     }
 
-    ExpandPathOwnershipResolution {
-      Decision: Accept either the component declaration path or a matching expand
-      path in an ownership annotation and normalize both to the parent component
-      identity.
-
-      Scope: Governs ownership annotation target resolution; excludes component-name
-      inference, imports, and unrelated expands in the same file.
-
-      Trade-offs: One component can have multiple valid annotation paths.
-
-      Design issues addressed: Implementation beside an expand should link to that
-      local rationale without losing the parent component's ownership projection.
-
-      Discarded alternatives: Requiring every annotation to name the component
-      declaration file was rejected because it breaks colocation with
-      implementation-specific expands.
-
-      Consequences: Context collects locally linked implementation under the parent
-      component while preserving exact component-name validation.
-    }
-
     LookupAbsenceSemantics {
       Decision: Require exact component name and declaration-path identity, reserve
-      undefined for an unresolved exact component or supplied concept, and return an
+      undefined for an unresolved exact component or supplied Tag, and return an
       empty projection for every resolved lookup with zero matching targets.
 
       Scope: Governs OwnedImplementationLookup result presence; excludes annotation
@@ -602,6 +583,23 @@ expand SigilImplementationOwnership {
   }
 
   cases {
+
+    FacetTagAssociation {
+      A Facet under a local grouping matches that Tag selector even when its prose
+      does not repeat the name. An inline-only Tag and an imported Tag referenced in
+      consumer prose also support exact selectors without inventing grouping
+      declarations. Each resulting link retains the consumer owner, selected
+      sections, exact Tag scope, and separate origin.
+    }
+
+    QuotedTagSelectors {
+      A JSON-quoted Tag suffix containing spaces, an escaped quote, a backslash, or
+      :: resolves its exact name atomically. Existing simple unquoted names and
+      implements, uses, and tests relations remain valid.
+
+      A Tag with no consumer-owned Facet in the selected section yields the existing
+      unresolved-section diagnostic, even when the provider has a matching section.
+    }
     ImplementationEvidenceInput {
       Complete discovery with zero records is valid evidence and differs from
       unavailable discovery with zero records and at least one diagnostic.
@@ -650,22 +648,22 @@ expand SigilImplementationOwnership {
 
     OwnedImplementationLookup {
       A TypeScript line comment immediately before one function links that function
-      to a Sigil component or concept.
+      to a Sigil component or Tag.
 
       A language multiline comment contains multiple ownership annotations for one
       class, method, interface, struct, or equivalent entrypoint.
 
       An HTML comment links an agent-facing Markdown workflow file to a Sigil
-      component or concept.
+      component or Tag.
 
       A component annotation can implement logic and constraints occurrences without
-      naming a concept.
+      naming a Tag.
 
-      A concept annotation can use the interface occurrence of that concept.
+      A Tag annotation can use the interface occurrence of that Tag.
 
       JSON content is ignored.
 
-      An unknown exact component identity or supplied concept returns undefined.
+      An unknown exact component identity or supplied Tag returns undefined.
 
       Two components with the same name but different declaration paths are queried
       independently and never share ownership targets through name-only fallback.
@@ -688,11 +686,11 @@ expand SigilImplementationOwnership {
       A detached or ambiguous annotation produces a diagnostic instead of an inferred
       target.
 
-      A concept annotation naming a section where the concept does not occur produces
-      a diagnostic.
+      A Tag annotation naming a section where the Tag does not occur produces a
+      diagnostic.
 
-      An annotation naming an expand-only source and its expanded component resolves
-      to the parent component's ownership projection.
+      A consumer annotation selecting an imported Tag points to consumer-owned Facets
+      in selected sections while retaining the separate provider Tag identity.
     }
   }
 }

@@ -1,7 +1,7 @@
+import type { SkillCatalogEntry } from "./installer.ts";
 import type {
   AgentDependencyContext,
   AgentDependentContext,
-  CollectedExpansion,
   ComponentContractView,
   DesignInput,
   GlossaryContext,
@@ -11,12 +11,13 @@ import type {
   OwnedImplementationProjection,
   PurposeRetrievalResult,
   ResolvedComponent,
-  ResolvedConceptNamespace,
   ResolvedGlossaryContext,
   SigilConfig,
   SigilDiagnostic,
   SigilDocument,
   SigilGraph,
+  SourceLocation,
+  TagNamespace,
 } from "@qoherent/sigil-core";
 
 export type CommandResult =
@@ -35,8 +36,8 @@ export type CommandResult =
   | RenderCommandResult;
 export interface ExportDesignCommandResult {
   readonly command: "export-design";
-  readonly bundle: DesignInput;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly bundle: DesignInput | null;
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface DiagnosticCounts {
   readonly error: number;
@@ -44,13 +45,15 @@ export interface DiagnosticCounts {
   readonly info: number;
 }
 export interface SkillListCommandResult {
+  readonly catalog: readonly SkillCatalogEntry[];
   readonly command: "skill-list";
   readonly sourceDirectory: string;
   readonly skills: readonly string[];
   readonly supportedAgents: readonly string[];
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface SkillInstallCommandResult {
+  readonly catalog: readonly SkillCatalogEntry[];
   readonly command: "skill-install";
   readonly scope: "global" | "project";
   readonly agents: readonly string[];
@@ -66,7 +69,7 @@ export interface SkillInstallCommandResult {
       | "existing"
       | "copied";
   }[];
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface WorkspaceMetadata {
   readonly workspaceRoot: string;
@@ -77,22 +80,22 @@ export interface WorkspaceMetadata {
 export interface InitCommandResult extends WorkspaceMetadata {
   readonly command: "init";
   readonly config: SigilConfig | null;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface VersionCommandResult extends WorkspaceMetadata {
   readonly command: "version";
   readonly cliVersion: string;
   readonly coreVersion: string;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface ParseCommandResult extends WorkspaceMetadata {
   readonly command: "parse";
   readonly document: SigilDocument | null;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface CheckCommandResult extends WorkspaceMetadata {
   readonly command: "check";
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
   readonly diagnosticCounts: DiagnosticCounts;
 }
 export interface FmtCommandResult extends WorkspaceMetadata {
@@ -102,7 +105,7 @@ export interface FmtCommandResult extends WorkspaceMetadata {
     readonly filePath: string;
     readonly status: "formatted" | "unchanged" | "noncanonical" | "failed";
   }[];
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface GlossaryCommandResult extends WorkspaceMetadata {
   readonly command: "glossary";
@@ -111,28 +114,28 @@ export interface GlossaryCommandResult extends WorkspaceMetadata {
   readonly terms: readonly GlossaryTerm[];
   readonly contexts: readonly GlossaryContext[];
   readonly resolvedContexts: readonly ResolvedGlossaryContext[];
-  readonly occurrences: readonly GlossaryOccurrence[];
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly occurrences:
+    readonly (GlossaryOccurrence & { sourceLocation?: SourceLocation })[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface GraphCommandResult extends WorkspaceMetadata {
   readonly command: "graph";
   readonly graph: SigilGraph;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 // @sigil implements packages/cli/_module.sigil::SigilCli::OwnershipContext interface,logic,constraints,cases
 export interface ContextCommandResult extends WorkspaceMetadata {
   readonly command: "context";
   readonly selectedComponents: readonly ResolvedComponent[];
   readonly componentContracts: readonly ComponentContractView[];
-  readonly conceptNamespaces: readonly ResolvedConceptNamespace[];
-  readonly collectedExpansions: readonly CollectedExpansion[];
+  readonly tagNamespaces: readonly TagNamespace[];
   readonly agentDependencyContexts: readonly AgentDependencyContext[];
   readonly agentDependentContexts?: readonly AgentDependentContext[];
   readonly ownedImplementationProjections:
     readonly OwnedImplementationProjection[];
   readonly relatedFilePaths: readonly string[];
   readonly glossaryContext: GlossaryContextProjection | null;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 export type RetrieveCommandResult = PurposeRetrievalResult & {
   readonly command: "retrieve";
@@ -140,7 +143,7 @@ export type RetrieveCommandResult = PurposeRetrievalResult & {
 export interface RenderCommandResult extends WorkspaceMetadata {
   readonly command: "render";
   readonly markdown: string;
-  readonly diagnostics: readonly SigilDiagnostic[];
+  readonly diagnostics: readonly CliDiagnostic[];
 }
 
 // @sigil implements packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
@@ -161,11 +164,16 @@ export function workspaceMetadata(
 
 // @sigil implements packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
 export function diagnosticCounts(
-  diagnostics: readonly SigilDiagnostic[],
+  diagnostics: readonly CliDiagnostic[],
 ): DiagnosticCounts {
   return {
     error: diagnostics.filter((item) => item.severity === "error").length,
     warning: diagnostics.filter((item) => item.severity === "warning").length,
     info: diagnostics.filter((item) => item.severity === "info").length,
   };
+}
+
+/** Display coordinates are derived from captured source, never reinterpreted byte ranges. */
+export interface CliDiagnostic extends SigilDiagnostic {
+  readonly sourceLocation?: SourceLocation;
 }

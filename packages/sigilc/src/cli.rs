@@ -1,10 +1,10 @@
 //! The deterministic command boundary. No process launchers or model options.
 use crate::{
     catalog, comparison, design,
+    eqval::{DesignState, Limits},
     frontend::DesignInput,
     implementation,
     inputs::{self, DesignSnapshot},
-    eqval::{DesignState, Limits},
     scope::{ResolvedScope, Scope},
     sources::{self, Selection},
     store::{Freshness, LockedStore, PreparedBinding, StoreLimits},
@@ -30,7 +30,7 @@ pub fn run(args: &[&str]) -> Output {
         };
         return json(
             0,
-            &serde_json::json!({"version":1,"removed":crate::store::clean(Path::new(root)).map_err(runtime)?}),
+            &serde_json::json!({"version":2,"removed":crate::store::clean(Path::new(root)).map_err(runtime)?}),
         );
     }
     let (command, side, tail) = match args {
@@ -47,13 +47,7 @@ pub fn run(args: &[&str]) -> Output {
     let allowed: &[&str] = match command {
         "scope" => &["--root", "--frontend", "--format"],
         "prepare" => &["--root", "--frontend", "--source", "--out"],
-        "ingest" => &[
-            "--root",
-            "--frontend",
-            "--source",
-            "--binding",
-            "--turtle",
-        ],
+        "ingest" => &["--root", "--frontend", "--source", "--binding", "--turtle"],
         _ => &[
             "--root",
             "--frontend",
@@ -198,7 +192,7 @@ pub fn run(args: &[&str]) -> Output {
         return json(
             0,
             &serde_json::json!({
-                "version":1,"scope":scope.report,
+                "version":2,"scope":scope.report,
                 "design_input_fingerprint":snapshot.fingerprint().map_err(runtime)?,
                 "implementation_source_fingerprint":scope.implementation.fingerprint,
                 "diagnostics":snapshot.input().diagnostics,
@@ -240,7 +234,7 @@ pub fn run(args: &[&str]) -> Output {
                 write_new(&out.join("binding.json"), &binding).map_err(runtime)?;
                 json(
                     0,
-                    &serde_json::json!({"version":1,"binding":out.join("binding.json"),"inputs":[out.join("design.json"),out.join("ontology.json")],"input_fingerprint":binding.binding.fingerprint()}),
+                    &serde_json::json!({"version":2,"binding":out.join("binding.json"),"inputs":[out.join("design.json"),out.join("ontology.json")],"input_fingerprint":binding.binding.fingerprint()}),
                 )
             }
             "ingest" => {
@@ -248,10 +242,14 @@ pub fn run(args: &[&str]) -> Output {
                 let source = source.unwrap();
                 let binding_ref = binding_path.unwrap();
                 let turtle_ref = turtle_path.unwrap();
-                let binding: PreparedBinding = serde_json::from_slice(&read(binding_ref, 16_000_000).map_err(runtime)?)
-                    .map_err(|e| runtime(e.to_string()))?;
+                let binding: PreparedBinding =
+                    serde_json::from_slice(&read(binding_ref, 16_000_000).map_err(runtime)?)
+                        .map_err(|e| runtime(e.to_string()))?;
                 if binding.binding.side() != "design" || binding.binding.source.path != source {
-                    return Err((2, "binding does not bind the requested Design source".into()));
+                    return Err((
+                        2,
+                        "binding does not bind the requested Design source".into(),
+                    ));
                 }
                 let facts = turtle::parse(
                     &read(
@@ -264,12 +262,10 @@ pub fn run(args: &[&str]) -> Output {
                 .map_err(runtime)?;
                 catalog::validate_design(source, snapshot.input(), &facts).map_err(runtime)?;
                 let current = snapshot.binding(source).map_err(runtime)?;
-                let generation = store
-                    .publish(&binding, &current, &facts)
-                    .map_err(runtime)?;
+                let generation = store.publish(&binding, &current, &facts).map_err(runtime)?;
                 json(
                     0,
-                    &serde_json::json!({"version":1,"source":source,"generation":generation,"assertions":facts.len()}),
+                    &serde_json::json!({"version":2,"source":source,"generation":generation,"assertions":facts.len()}),
                 )
             }
             "stale" => {
@@ -284,7 +280,7 @@ pub fn run(args: &[&str]) -> Output {
                 };
                 json(
                     code,
-                    &serde_json::json!({"version":1,"side":"design","input_fingerprint":snapshot.fingerprint().map_err(runtime)?,"sources":rows}),
+                    &serde_json::json!({"version":2,"side":"design","input_fingerprint":snapshot.fingerprint().map_err(runtime)?,"sources":rows}),
                 )
             }
             _ => {
@@ -300,7 +296,7 @@ pub fn run(args: &[&str]) -> Output {
                         Some(catalog) => json(0, &catalog),
                         None => json(
                             1,
-                            &serde_json::json!({"version":1,"design":report.world.state,"all_fresh":report.all_fresh,"catalog":null}),
+                            &serde_json::json!({"version":2,"design":report.world.state,"all_fresh":report.all_fresh,"catalog":null}),
                         ),
                     }
                 } else {
@@ -346,7 +342,7 @@ fn run_implementation(
     let Some(frozen) = &design.catalog else {
         return json(
             3,
-            &serde_json::json!({"version":1,"design":design,"implementation":null,"comparison":null,"reason":"current Design catalog unavailable","diagnostics":crate::report::unavailable_comparison()}),
+            &serde_json::json!({"version":2,"design":design,"implementation":null,"comparison":null,"reason":"current Design catalog unavailable","diagnostics":crate::report::unavailable_comparison()}),
         );
     };
     let catalog = &frozen.catalog;
@@ -366,13 +362,14 @@ fn run_implementation(
             write_new(&out.join("binding.json"), &prepared).map_err(runtime)?;
             return json(
                 0,
-                &serde_json::json!({"version":1,"binding":out.join("binding.json"),"inputs":[out.join("source"),out.join("ontology.json"),out.join("catalog.json")],"input_fingerprint":prepared.binding.fingerprint()}),
+                &serde_json::json!({"version":2,"binding":out.join("binding.json"),"inputs":[out.join("source"),out.join("ontology.json"),out.join("catalog.json")],"input_fingerprint":prepared.binding.fingerprint()}),
             );
         }
         let binding_ref = options["--binding"];
         let turtle_ref = options["--turtle"];
-        let prepared: PreparedBinding = serde_json::from_slice(&read(binding_ref, 16_000_000).map_err(runtime)?)
-            .map_err(|e| runtime(e.to_string()))?;
+        let prepared: PreparedBinding =
+            serde_json::from_slice(&read(binding_ref, 16_000_000).map_err(runtime)?)
+                .map_err(|e| runtime(e.to_string()))?;
         if prepared.binding.side() != "implementation" || prepared.binding.source.path != source {
             return Err((
                 2,
@@ -394,7 +391,7 @@ fn run_implementation(
             .map_err(runtime)?;
         return json(
             0,
-            &serde_json::json!({"version":1,"source":source,"generation":generation,"assertions":facts.len()}),
+            &serde_json::json!({"version":2,"source":source,"generation":generation,"assertions":facts.len()}),
         );
     }
     let assembly = if let Some(scope) = scope {
@@ -441,7 +438,7 @@ fn run_implementation(
         };
         return json(
             code,
-            &serde_json::json!({"version":1,"side":"implementation","input_fingerprint":assembly.input_fingerprint,"intentional_empty":assembly.intentional_empty,"sources":assembly.sources}),
+            &serde_json::json!({"version":2,"side":"implementation","input_fingerprint":assembly.input_fingerprint,"intentional_empty":assembly.intentional_empty,"sources":assembly.sources}),
         );
     }
     let implementation = assembly.compile(limits).map_err(runtime)?;
@@ -466,7 +463,7 @@ fn run_implementation(
         crate::report::implementation(snapshot.input(), &design, &implementation, &comparison);
     json(
         code,
-        &serde_json::json!({"version":1,"design":design,"implementation":implementation,"comparison":comparison,"diagnostics":diagnostics}),
+        &serde_json::json!({"version":2,"design":design,"implementation":implementation,"comparison":comparison,"diagnostics":diagnostics}),
     )
 }
 
@@ -529,7 +526,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message == "unknown Sigil class" {
         return Some(
-            "use rdf:type with one class IRI from ontology.json (for example sigil:Component, sigil:Concept or sigil:Contract); do not invent class names",
+            "use rdf:type with one class IRI from ontology.json (for example sigil:Component, sigil:Tag or sigil:Contract); do not invent class names",
         );
     }
     if message.starts_with("frontend source changed:")
@@ -546,19 +543,19 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
             "run prepare again and submit the returned Turtle with its new caller-held binding.json",
         );
     }
-    if message.starts_with("foreign or changed reserved declaration: urn:sigil:unit:") {
+    if message.starts_with("foreign or changed reserved declaration: facet:") {
         return Some(
             "reserved authored units must have exactly one rdf:type sigil:Contract; preserve the prepared ID, attach section/description to that Contract resource, and do not add Goal, Interface, Constraint or Case",
         );
     }
     if message.starts_with("foreign or changed reserved declaration: urn:sigil:component:") {
         return Some(
-            "emit reserved Component/Concept declarations only for the requested source; dependency identities are foreign references and must not be redeclared",
+            "emit reserved Component/Tag declarations only for the requested source; dependency identities are foreign references and must not be redeclared",
         );
     }
     if message == "unknown predicate or literal expected: owner" {
         return Some(
-            "use ontology predicates: sigil:from for unit ownership, sigil:owns for component-to-Concept links, and sigil:hasContract for component-to-unit links; sigil:owner is not valid",
+            "use ontology predicates: sigil:from for unit ownership, sigil:owns for component-to-Tag links, and sigil:hasContract for component-to-unit links; sigil:owner is not valid",
         );
     }
     if message == "unknown predicate namespace" {
@@ -573,7 +570,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message.starts_with("interpretation unit is not a domain endpoint:") {
         return Some(
-            "target a prepared domain Component, Concept or entity, never another interpretation unit",
+            "target a prepared domain Component, Tag or entity, never another interpretation unit",
         );
     }
     if message.starts_with("interpretation unit has conflicting relations:") {
@@ -588,7 +585,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message.starts_with("unknown domain identity:") {
         return Some(
-            "reference only the exact prepared Component, Concept and entity IDs; do not derive nested or renamed IDs from a label",
+            "reference only the exact prepared Component, Tag and entity IDs; do not derive nested or renamed IDs from a label",
         );
     }
     if message.starts_with("unknown source-bound unit identity:") {
@@ -606,9 +603,9 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
             "encode sigil:relation as a plain string literal containing one fixed entity predicate; use IRIs for the subject and other entity-valued predicates",
         );
     }
-    if message == "Component and Concept identities are reserved by the frontend" {
+    if message == "Component and Tag identities are reserved by the frontend" {
         return Some(
-            "preserve prepared Component and Concept declarations instead of redeclaring them as domain entities",
+            "preserve prepared Component and Tag declarations instead of redeclaring them as domain entities",
         );
     }
     if message.starts_with("entity requires one type and label:") {
@@ -619,13 +616,20 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     None
 }
 
+fn json(code: u8, value: &impl Serialize) -> Output {
+    Ok((
+        code,
+        serde_json::to_string_pretty(value).map_err(|e| runtime(e.to_string()))? + "\n",
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::ingest_hint;
 
     #[test]
     fn source_bound_unit_hint_allows_zero_fact_repair() {
-        let hint = ingest_hint("unknown source-bound unit identity: urn:sigil:unit:bad")
+        let hint = ingest_hint("unknown source-bound unit identity: facet:bad")
             .expect("source-bound unit failures have an actionable repair hint");
         assert!(hint.contains("prepared source/catalog"));
         assert!(hint.contains("zero-fact Turtle"));
@@ -633,15 +637,8 @@ mod tests {
 
     #[test]
     fn conflicting_unit_relations_have_an_actionable_hint() {
-        let hint = ingest_hint("interpretation unit has conflicting relations: urn:sigil:unit:a")
+        let hint = ingest_hint("interpretation unit has conflicting relations: facet:a")
             .expect("conflicting unit relations have an actionable repair hint");
         assert!(hint.contains("at most one sigil:relation"));
     }
-
-}
-fn json(code: u8, value: &impl Serialize) -> Output {
-    Ok((
-        code,
-        serde_json::to_string_pretty(value).map_err(|e| runtime(e.to_string()))? + "\n",
-    ))
 }

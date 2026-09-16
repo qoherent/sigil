@@ -1,0 +1,2117 @@
+{
+  "baseline_capture": "/tmp/sigil080-execution/u2-reviews/20260915-184232-649813",
+  "changed_paths": [
+    ".github/release.sigil",
+    "_module.sigil",
+    "integrations/editor/vscode/_module.sigil",
+    "packages/cli/_module.sigil",
+    "packages/cli/src/retrieval-markdown.sigil",
+    "packages/core/_module.sigil",
+    "packages/core/config.sigil",
+    "packages/core/src/context-retrieval.sigil",
+    "packages/core/src/diagnostics.sigil",
+    "packages/core/src/filesystem.sigil",
+    "packages/core/src/formatter.sigil",
+    "packages/core/src/glossary.sigil",
+    "packages/core/src/graph.sigil",
+    "packages/core/src/implementation-ownership.sigil",
+    "packages/core/src/model/_module.sigil",
+    "packages/core/src/parser.sigil",
+    "packages/core/src/pipeline.sigil",
+    "packages/core/src/projections.sigil",
+    "packages/core/src/resolver.sigil",
+    "packages/core/src/workspace.sigil",
+    "packages/lsp/_module.sigil",
+    "packages/sigilc/_module.sigil",
+    "spec/glossary.sigil"
+  ],
+  "imports_added": [
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/language.sigil",
+      "provider_component": "SigilLanguageModel",
+      "tags": [
+        "LanguageModel"
+      ],
+      "provider_sha256": "9fee0f67578ae4b7cd3926da44499e7963c37864f9bd74cda12fbaef1c3902f8",
+      "import_line": 10
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/configuration.sigil",
+      "provider_component": "SigilConfigurationModel",
+      "tags": [
+        "ConfigurationModel"
+      ],
+      "provider_sha256": "0e42138fa65fcd76ba253608b0f1a0132ef5be0f64d0dc0da5594d7aa8cd7b6b",
+      "import_line": 9
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/diagnostics.sigil",
+      "provider_component": "SigilDiagnosticModel",
+      "tags": [
+        "DiagnosticModel"
+      ],
+      "provider_sha256": "2b4ec270a5832b6f4a99785564e65d9056f40502e256169de5faaf5f875495bc",
+      "import_line": 8
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/source.sigil",
+      "provider_component": "SigilSourceModel",
+      "tags": [
+        "SourceModel"
+      ],
+      "provider_sha256": "2653029a12401f613db0242421b8cd0e317c9b20698d01345b8a4b738a84362f",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/glossary.sigil",
+      "provider_component": "SigilGlossaryModel",
+      "tags": [
+        "GlossaryModel"
+      ],
+      "provider_sha256": "c4a42254f6093d5cb490d83509d7bc8a25855dda3c2119a8a3ea34c14c6b3f94",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/ownership.sigil",
+      "provider_component": "SigilImplementationOwnershipModel",
+      "tags": [
+        "OwnershipModel"
+      ],
+      "provider_sha256": "b49e16306c300636210f679c434dff62c18476375c7cfbdbfb207d562f518861",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/workspace.sigil",
+      "provider_component": "SigilWorkspaceModel",
+      "tags": [
+        "WorkspaceModel"
+      ],
+      "provider_sha256": "837225ab4559bad9e0130fa88beacc2934a69de58e2e473a82866a80ee3e0b6c",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/resolution.sigil",
+      "provider_component": "SigilResolutionModel",
+      "tags": [
+        "ResolutionModel"
+      ],
+      "provider_sha256": "9787510506e65cf21561a4709148c318222b5ca764c0dd484ac12b83565ec99c",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/graph.sigil",
+      "provider_component": "SigilGraphModel",
+      "tags": [
+        "GraphModel"
+      ],
+      "provider_sha256": "5f89475ff6dca1db6915a76f52f24144c46c383c444b57177b13f0e86257ff8c",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/model/_module.sigil",
+      "provider_path": "packages/core/src/model/retrieval.sigil",
+      "provider_component": "SigilRetrievalModel",
+      "tags": [
+        "RetrievalModel"
+      ],
+      "provider_sha256": "a3a422ec63dee538c20418ab1d3ebbb63c58287284edebff42ece2bf123ff618",
+      "import_line": 1
+    },
+    {
+      "consumer": "spec/glossary.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "TagIdentity"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/config.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/diagnostics.sigil",
+      "provider_path": "packages/core/src/model/diagnostics.sigil",
+      "provider_component": "SigilDiagnosticModel",
+      "tags": [
+        "DiagnosticModel"
+      ],
+      "provider_sha256": "2b4ec270a5832b6f4a99785564e65d9056f40502e256169de5faaf5f875495bc",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/filesystem.sigil",
+      "provider_path": "packages/core/src/model/workspace.sigil",
+      "provider_component": "SigilWorkspaceModel",
+      "tags": [
+        "WorkspaceModel"
+      ],
+      "provider_sha256": "837225ab4559bad9e0130fa88beacc2934a69de58e2e473a82866a80ee3e0b6c",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/parser.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "SourceDocument",
+        "SourceRecovery",
+        "ComponentContract",
+        "TagIdentity",
+        "EmbeddedContent",
+        "FormattingStyle",
+        "LanguageVersion",
+        "ImportSemantics"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/parser.sigil",
+      "provider_path": "packages/core/src/model/source.sigil",
+      "provider_component": "SigilSourceModel",
+      "tags": [
+        "SourceModel"
+      ],
+      "provider_sha256": "2653029a12401f613db0242421b8cd0e317c9b20698d01345b8a4b738a84362f",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/parser.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/formatter.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "FormattingStyle"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/formatter.sigil",
+      "provider_path": "packages/core/src/model/source.sigil",
+      "provider_component": "SigilSourceModel",
+      "tags": [
+        "SourceModel"
+      ],
+      "provider_sha256": "2653029a12401f613db0242421b8cd0e317c9b20698d01345b8a4b738a84362f",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/formatter.sigil",
+      "provider_path": "packages/core/src/parser.sigil",
+      "provider_component": "SigilParser",
+      "tags": [
+        "SourceDocumentParsing"
+      ],
+      "provider_sha256": "4e24e26b2f0b6e854f7a02036b361821ec2e5610494a19bd22342feae1fd35ed",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/formatter.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/glossary.sigil",
+      "provider_path": "spec/glossary.sigil",
+      "provider_component": "SigilWorkspaceGlossary",
+      "tags": [
+        "GlossaryFile",
+        "GlossarySchema",
+        "ContextResolution",
+        "TermRecognition"
+      ],
+      "provider_sha256": "a87da6c3e5d2e0139b1cea221cf4f296c1f0edc7fd2f870668dc2612d4902905",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/glossary.sigil",
+      "provider_path": "packages/core/src/model/glossary.sigil",
+      "provider_component": "SigilGlossaryModel",
+      "tags": [
+        "GlossaryModel"
+      ],
+      "provider_sha256": "c4a42254f6093d5cb490d83509d7bc8a25855dda3c2119a8a3ea34c14c6b3f94",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/glossary.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/graph.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "ImportSemantics"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/graph.sigil",
+      "provider_path": "packages/core/src/model/graph.sigil",
+      "provider_component": "SigilGraphModel",
+      "tags": [
+        "GraphModel"
+      ],
+      "provider_sha256": "5f89475ff6dca1db6915a76f52f24144c46c383c444b57177b13f0e86257ff8c",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/graph.sigil",
+      "provider_path": "packages/core/src/resolver.sigil",
+      "provider_component": "SigilResolver",
+      "tags": [
+        "RelationshipResolution"
+      ],
+      "provider_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilWorkspaceConfig",
+      "tags": [
+        "ConfigFile",
+        "WorkspaceBoundary",
+        "SourceSelection",
+        "LocalToolConfiguration"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 8
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "spec/glossary.sigil",
+      "provider_component": "SigilWorkspaceGlossary",
+      "tags": [
+        "GlossaryFile"
+      ],
+      "provider_sha256": "a87da6c3e5d2e0139b1cea221cf4f296c1f0edc7fd2f870668dc2612d4902905",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/config.sigil",
+      "provider_component": "SigilConfigurationParser",
+      "tags": [
+        "ConfigurationParsing"
+      ],
+      "provider_sha256": "5d10dea279d831ad264253dab1d6518f827ce0a319f7aba083bf85c5cdfdc443",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/src/model/workspace.sigil",
+      "provider_component": "SigilWorkspaceModel",
+      "tags": [
+        "WorkspaceModel"
+      ],
+      "provider_sha256": "837225ab4559bad9e0130fa88beacc2934a69de58e2e473a82866a80ee3e0b6c",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/src/filesystem.sigil",
+      "provider_component": "SigilFileSystem",
+      "tags": [
+        "FileSystemPort",
+        "ByteInput"
+      ],
+      "provider_sha256": "41fa4a8b3c925df2c45419a0ae37ed10391e35705333170d097d1cb4346c4101",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/src/parser.sigil",
+      "provider_component": "SigilParser",
+      "tags": [
+        "SourceDocumentParsing"
+      ],
+      "provider_sha256": "4e24e26b2f0b6e854f7a02036b361821ec2e5610494a19bd22342feae1fd35ed",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/workspace.sigil",
+      "provider_path": "packages/core/src/glossary.sigil",
+      "provider_component": "SigilGlossaryEngine",
+      "tags": [
+        "GlossaryInterpretation"
+      ],
+      "provider_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/resolver.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "ImportSemantics",
+        "TagIdentity",
+        "SourceRecovery"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/resolver.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/model/workspace.sigil",
+      "provider_component": "SigilWorkspaceModel",
+      "tags": [
+        "WorkspaceModel"
+      ],
+      "provider_sha256": "837225ab4559bad9e0130fa88beacc2934a69de58e2e473a82866a80ee3e0b6c",
+      "import_line": 8
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/model/resolution.sigil",
+      "provider_component": "SigilResolutionModel",
+      "tags": [
+        "ResolutionModel"
+      ],
+      "provider_sha256": "9787510506e65cf21561a4709148c318222b5ca764c0dd484ac12b83565ec99c",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/model/graph.sigil",
+      "provider_component": "SigilGraphModel",
+      "tags": [
+        "GraphModel"
+      ],
+      "provider_sha256": "5f89475ff6dca1db6915a76f52f24144c46c383c444b57177b13f0e86257ff8c",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/model/glossary.sigil",
+      "provider_component": "SigilGlossaryModel",
+      "tags": [
+        "GlossaryModel"
+      ],
+      "provider_sha256": "c4a42254f6093d5cb490d83509d7bc8a25855dda3c2119a8a3ea34c14c6b3f94",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/model/diagnostics.sigil",
+      "provider_component": "SigilDiagnosticModel",
+      "tags": [
+        "DiagnosticModel"
+      ],
+      "provider_sha256": "2b4ec270a5832b6f4a99785564e65d9056f40502e256169de5faaf5f875495bc",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/resolver.sigil",
+      "provider_component": "SigilResolver",
+      "tags": [
+        "RelationshipResolution"
+      ],
+      "provider_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/graph.sigil",
+      "provider_component": "SigilGraphBuilder",
+      "tags": [
+        "GraphConstruction"
+      ],
+      "provider_sha256": "6e60dcd29777626832a4da7468e08efc2e7904ec46d33aba60cef6912d2b1937",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/pipeline.sigil",
+      "provider_path": "packages/core/src/glossary.sigil",
+      "provider_component": "SigilGlossaryEngine",
+      "tags": [
+        "GlossaryInspection"
+      ],
+      "provider_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/projections.sigil",
+      "provider_path": "packages/core/src/model/resolution.sigil",
+      "provider_component": "SigilResolutionModel",
+      "tags": [
+        "ResolutionModel"
+      ],
+      "provider_sha256": "9787510506e65cf21561a4709148c318222b5ca764c0dd484ac12b83565ec99c",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/projections.sigil",
+      "provider_path": "packages/core/src/model/graph.sigil",
+      "provider_component": "SigilGraphModel",
+      "tags": [
+        "GraphModel"
+      ],
+      "provider_sha256": "5f89475ff6dca1db6915a76f52f24144c46c383c444b57177b13f0e86257ff8c",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/projections.sigil",
+      "provider_path": "packages/core/src/resolver.sigil",
+      "provider_component": "SigilResolver",
+      "tags": [
+        "TagResolution"
+      ],
+      "provider_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/src/projections.sigil",
+      "provider_path": "packages/core/src/graph.sigil",
+      "provider_component": "SigilGraphBuilder",
+      "tags": [
+        "GraphConstruction"
+      ],
+      "provider_sha256": "6e60dcd29777626832a4da7468e08efc2e7904ec46d33aba60cef6912d2b1937",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/model/retrieval.sigil",
+      "provider_component": "SigilRetrievalModel",
+      "tags": [
+        "RetrievalModel",
+        "RetrievalProjection"
+      ],
+      "provider_sha256": "a3a422ec63dee538c20418ab1d3ebbb63c58287284edebff42ece2bf123ff618",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/model/resolution.sigil",
+      "provider_component": "SigilResolutionModel",
+      "tags": [
+        "ResolutionModel"
+      ],
+      "provider_sha256": "9787510506e65cf21561a4709148c318222b5ca764c0dd484ac12b83565ec99c",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/graph.sigil",
+      "provider_component": "SigilGraphBuilder",
+      "tags": [
+        "StronglyConnectedGroups",
+        "GraphData"
+      ],
+      "provider_sha256": "6e60dcd29777626832a4da7468e08efc2e7904ec46d33aba60cef6912d2b1937",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/resolver.sigil",
+      "provider_component": "SigilResolver",
+      "tags": [
+        "ImportUse"
+      ],
+      "provider_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/glossary.sigil",
+      "provider_component": "SigilGlossaryEngine",
+      "tags": [
+        "GlossaryInspection"
+      ],
+      "provider_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/implementation-ownership.sigil",
+      "provider_component": "SigilImplementationOwnership",
+      "tags": [
+        "ImplementationEvidenceInput",
+        "OwnedImplementationLookup"
+      ],
+      "provider_sha256": "9ed37dd94ea923bcbd601e3d6a924dd5dee491f343860d65256409fc44570eb1",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/cli/src/retrieval-markdown.sigil",
+      "provider_path": "packages/core/src/model/retrieval.sigil",
+      "provider_component": "SigilRetrievalModel",
+      "tags": [
+        "RetrievalProjection"
+      ],
+      "provider_sha256": "a3a422ec63dee538c20418ab1d3ebbb63c58287284edebff42ece2bf123ff618",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/sigilc/_module.sigil",
+      "provider_path": "packages/core/src/design-input.sigil",
+      "provider_component": "SigilDesignInput",
+      "tags": [
+        "ResolvedDesignInput"
+      ],
+      "provider_sha256": "bcce656de7b61db337b2ff3d50b812747d3860632958ea5f56890a746ffa9078",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "SourceDocument"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 18
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/config.sigil",
+      "provider_component": "SigilConfigurationParser",
+      "tags": [
+        "ConfigurationParsing"
+      ],
+      "provider_sha256": "5d10dea279d831ad264253dab1d6518f827ce0a319f7aba083bf85c5cdfdc443",
+      "import_line": 17
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/model/_module.sigil",
+      "provider_component": "SigilSemanticModel",
+      "tags": [
+        "DomainModelAssembly"
+      ],
+      "provider_sha256": "0b7253e5a3205e3b88124f1d7b3b4d4d4c5078cd8945bfab7706657ffa5119aa",
+      "import_line": 16
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/diagnostics.sigil",
+      "provider_component": "SigilDiagnostics",
+      "tags": [
+        "DiagnosticConstruction"
+      ],
+      "provider_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18",
+      "import_line": 15
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/filesystem.sigil",
+      "provider_component": "SigilFileSystem",
+      "tags": [
+        "FileSystemPort"
+      ],
+      "provider_sha256": "41fa4a8b3c925df2c45419a0ae37ed10391e35705333170d097d1cb4346c4101",
+      "import_line": 14
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/parser.sigil",
+      "provider_component": "SigilParser",
+      "tags": [
+        "SourceDocumentParsing"
+      ],
+      "provider_sha256": "4e24e26b2f0b6e854f7a02036b361821ec2e5610494a19bd22342feae1fd35ed",
+      "import_line": 13
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/glossary.sigil",
+      "provider_component": "SigilGlossaryEngine",
+      "tags": [
+        "GlossaryInterpretation"
+      ],
+      "provider_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af",
+      "import_line": 12
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/formatter.sigil",
+      "provider_component": "SigilFormatter",
+      "tags": [
+        "Formatting"
+      ],
+      "provider_sha256": "385134518d41b79d4c6697b2f6d25b4588bff480459039efd97a494a3ab096c7",
+      "import_line": 11
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/path.sigil",
+      "provider_component": "SigilPath",
+      "tags": [
+        "PathOperations"
+      ],
+      "provider_sha256": "2f8d3a7bfa2e2c2c153b53a9d7860ed048bfd1846702988995f0a7001a25def4",
+      "import_line": 10
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/workspace.sigil",
+      "provider_component": "SigilWorkspaceLoader",
+      "tags": [
+        "WorkspaceLoading"
+      ],
+      "provider_sha256": "7bfda2f2015c7f5c62530a54bf3f055aeb8b2f7ee555c02dad98305d9dbf1ad3",
+      "import_line": 9
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/resolver.sigil",
+      "provider_component": "SigilResolver",
+      "tags": [
+        "RelationshipResolution"
+      ],
+      "provider_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9",
+      "import_line": 8
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/graph.sigil",
+      "provider_component": "SigilGraphBuilder",
+      "tags": [
+        "GraphConstruction"
+      ],
+      "provider_sha256": "6e60dcd29777626832a4da7468e08efc2e7904ec46d33aba60cef6912d2b1937",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/pipeline.sigil",
+      "provider_component": "SigilWorkspaceResolutionPipeline",
+      "tags": [
+        "WorkspaceResolution"
+      ],
+      "provider_sha256": "df629a4026bc9cfee89246c1c690bbcd170499db2c9b256cb02ed79b1b66840f",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/projections.sigil",
+      "provider_component": "SigilProjections",
+      "tags": [
+        "ContractProjection"
+      ],
+      "provider_sha256": "0d3c93d8bcc3c15961e42091b657e9269d24327b9135f0d8b642b8792c5c40f3",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/implementation-ownership.sigil",
+      "provider_component": "SigilImplementationOwnership",
+      "tags": [
+        "OwnedImplementationLookup"
+      ],
+      "provider_sha256": "9ed37dd94ea923bcbd601e3d6a924dd5dee491f343860d65256409fc44570eb1",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/compilation-boundary.sigil",
+      "provider_component": "SigilCompilationBoundary",
+      "tags": [
+        "BoundarySelection"
+      ],
+      "provider_sha256": "2012d349c524de556a475ee2610fbb17466787b486f0def3d8ab2ccd61ae76bf",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/context-retrieval.sigil",
+      "provider_component": "SigilContextRetrieval",
+      "tags": [
+        "PurposeRetrievalRequest"
+      ],
+      "provider_sha256": "1e2733b56a928b24e79f0b8befe0a6b73a138d8ca5f45c6540cdd2ab57188505",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/core/_module.sigil",
+      "provider_path": "packages/core/src/design-input.sigil",
+      "provider_component": "SigilDesignInput",
+      "tags": [
+        "ResolvedDesignInput"
+      ],
+      "provider_sha256": "bcce656de7b61db337b2ff3d50b812747d3860632958ea5f56890a746ffa9078",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "LanguageVersion"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 11
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilWorkspaceConfig",
+      "tags": [
+        "ConfigFile",
+        "SourceSelection"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 10
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "spec/glossary.sigil",
+      "provider_component": "SigilWorkspaceGlossary",
+      "tags": [
+        "GlossaryFile"
+      ],
+      "provider_sha256": "a87da6c3e5d2e0139b1cea221cf4f296c1f0edc7fd2f870668dc2612d4902905",
+      "import_line": 9
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/_module.sigil",
+      "provider_component": "SigilCore",
+      "tags": [
+        "CorePackage"
+      ],
+      "provider_sha256": "52d00a9c1a7c0e9303dda340a6c0e30addbbf8b9a0dd72245726193fdd108d21",
+      "import_line": 8
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/src/design-input.sigil",
+      "provider_component": "SigilDesignInput",
+      "tags": [
+        "ResolvedDesignInput"
+      ],
+      "provider_sha256": "bcce656de7b61db337b2ff3d50b812747d3860632958ea5f56890a746ffa9078",
+      "import_line": 7
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/src/formatter.sigil",
+      "provider_component": "SigilFormatter",
+      "tags": [
+        "Formatting"
+      ],
+      "provider_sha256": "385134518d41b79d4c6697b2f6d25b4588bff480459039efd97a494a3ab096c7",
+      "import_line": 6
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/src/context-retrieval.sigil",
+      "provider_component": "SigilContextRetrieval",
+      "tags": [
+        "PurposeRetrievalRequest",
+        "PurposeRetrievalResult"
+      ],
+      "provider_sha256": "1e2733b56a928b24e79f0b8befe0a6b73a138d8ca5f45c6540cdd2ab57188505",
+      "import_line": 5
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/src/glossary.sigil",
+      "provider_component": "SigilGlossaryEngine",
+      "tags": [
+        "GlossaryInspection"
+      ],
+      "provider_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/core/src/implementation-ownership.sigil",
+      "provider_component": "SigilImplementationOwnership",
+      "tags": [
+        "OwnedImplementationLookup",
+        "OwnershipDiagnostics"
+      ],
+      "provider_sha256": "9ed37dd94ea923bcbd601e3d6a924dd5dee491f343860d65256409fc44570eb1",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/cli/src/installer.sigil",
+      "provider_component": "SkillInstaller",
+      "tags": [
+        "SkillCatalog",
+        "SkillInstallation"
+      ],
+      "provider_sha256": "65bcee2ec623e97da3191d4736bc7efba920f69696ed188a89841d3851cb2dfc",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/cli/_module.sigil",
+      "provider_path": "packages/cli/src/retrieval-markdown.sigil",
+      "provider_component": "SigilRetrievalMarkdown",
+      "tags": [
+        "RetrievalMarkdownProjection"
+      ],
+      "provider_sha256": "51b2754c0e0ed7ac80d6bc522e4c58de47e5d6b78070c57a0642189423869d9b",
+      "import_line": 1
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "LanguageVersion",
+        "ComponentContract",
+        "TagIdentity"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 7
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilWorkspaceConfig",
+      "tags": [
+        "WorkspaceBoundary",
+        "ConfigFile"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 6
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "packages/core/_module.sigil",
+      "provider_component": "SigilCore",
+      "tags": [
+        "CorePackage"
+      ],
+      "provider_sha256": "52d00a9c1a7c0e9303dda340a6c0e30addbbf8b9a0dd72245726193fdd108d21",
+      "import_line": 5
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "packages/cli/_module.sigil",
+      "provider_component": "SigilCli",
+      "tags": [
+        "CliInvocation",
+        "DesignExport"
+      ],
+      "provider_sha256": "8b1a6c69376710b93496364e82de43a165e19216e9fe43055ae72383cb75376a",
+      "import_line": 4
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "packages/sigilc/_module.sigil",
+      "provider_component": "SigilSemanticCompiler",
+      "tags": [
+        "FrontendBoundary"
+      ],
+      "provider_sha256": "2f8ad1bedc27569a8163f8b2eb6e12f5665d14741180d0f3a5449153dd9279dd",
+      "import_line": 3
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "packages/lsp/_module.sigil",
+      "provider_component": "SigilLsp",
+      "tags": [
+        "LspPackage"
+      ],
+      "provider_sha256": "64a4750b51fad7cc4ec86adf8b4b97812ecd70ff0fd73e653e5d8824c70f5388",
+      "import_line": 2
+    },
+    {
+      "consumer": "_module.sigil",
+      "provider_path": "integrations/editor/vscode/_module.sigil",
+      "provider_component": "SigilVsCodeExtension",
+      "tags": [
+        "ExtensionPackage"
+      ],
+      "provider_sha256": "2dbe5ca7b3bcf5e9167d7dde20c0db38b84c1bb04ad835cea27eba7f64aaa54f",
+      "import_line": 1
+    },
+    {
+      "consumer": "integrations/editor/vscode/_module.sigil",
+      "provider_path": "packages/lsp/_module.sigil",
+      "provider_component": "SigilLsp",
+      "tags": [
+        "LspPackage",
+        "NavigationAndInspection",
+        "DocumentRendering",
+        "OwnershipSourceWatching"
+      ],
+      "provider_sha256": "64a4750b51fad7cc4ec86adf8b4b97812ecd70ff0fd73e653e5d8824c70f5388",
+      "import_line": 4
+    },
+    {
+      "consumer": "integrations/editor/vscode/_module.sigil",
+      "provider_path": "packages/cli/_module.sigil",
+      "provider_component": "SigilCli",
+      "tags": [
+        "DesignExport"
+      ],
+      "provider_sha256": "8b1a6c69376710b93496364e82de43a165e19216e9fe43055ae72383cb75376a",
+      "import_line": 3
+    },
+    {
+      "consumer": "integrations/editor/vscode/_module.sigil",
+      "provider_path": "packages/sigilc/report.sigil",
+      "provider_component": "SigilGateDiagnostics",
+      "tags": [
+        "ReportSchema",
+        "NativeFindings"
+      ],
+      "provider_sha256": "f0649a40584e1e70aab639d2ac3c26320c8a446e423c5ca0fcd39ffa4cdb14ee",
+      "import_line": 2
+    },
+    {
+      "consumer": "integrations/editor/vscode/_module.sigil",
+      "provider_path": "packages/sigilc/scope.sigil",
+      "provider_component": "SigilComparisonScope",
+      "tags": [
+        "ScopeInput",
+        "DesignMembership"
+      ],
+      "provider_sha256": "3249bf6aedb608d2b5851fb17c1e6fc9b43f7400bd53748d75970b0b4602627b",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/lsp/_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilLanguage",
+      "tags": [
+        "SourceDocument",
+        "TagIdentity",
+        "EmbeddedContent"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 4
+    },
+    {
+      "consumer": "packages/lsp/_module.sigil",
+      "provider_path": "spec/language.sigil",
+      "provider_component": "SigilWorkspaceConfig",
+      "tags": [
+        "WorkspaceBoundary",
+        "ConfigFile"
+      ],
+      "provider_sha256": "d946960460533826793c35b85151f1b03ef193a88c0c0af75e895b5c66f5062c",
+      "import_line": 3
+    },
+    {
+      "consumer": "packages/lsp/_module.sigil",
+      "provider_path": "spec/glossary.sigil",
+      "provider_component": "SigilWorkspaceGlossary",
+      "tags": [
+        "GlossaryFile",
+        "ContextResolution",
+        "TermRecognition"
+      ],
+      "provider_sha256": "a87da6c3e5d2e0139b1cea221cf4f296c1f0edc7fd2f870668dc2612d4902905",
+      "import_line": 2
+    },
+    {
+      "consumer": "packages/lsp/_module.sigil",
+      "provider_path": "packages/core/_module.sigil",
+      "provider_component": "SigilCore",
+      "tags": [
+        "CorePackage"
+      ],
+      "provider_sha256": "52d00a9c1a7c0e9303dda340a6c0e30addbbf8b9a0dd72245726193fdd108d21",
+      "import_line": 1
+    },
+    {
+      "consumer": ".github/release.sigil",
+      "provider_path": "packages/cli/_module.sigil",
+      "provider_component": "SigilCli",
+      "tags": [
+        "ArtifactVersionOwnership",
+        "CliInvocation"
+      ],
+      "provider_sha256": "8b1a6c69376710b93496364e82de43a165e19216e9fe43055ae72383cb75376a",
+      "import_line": 4
+    },
+    {
+      "consumer": ".github/release.sigil",
+      "provider_path": "packages/sigilc/_module.sigil",
+      "provider_component": "SigilSemanticCompiler",
+      "tags": [
+        "FrontendBoundary"
+      ],
+      "provider_sha256": "2f8ad1bedc27569a8163f8b2eb6e12f5665d14741180d0f3a5449153dd9279dd",
+      "import_line": 3
+    },
+    {
+      "consumer": ".github/release.sigil",
+      "provider_path": "packages/cli/src/installer.sigil",
+      "provider_component": "SkillInstaller",
+      "tags": [
+        "SkillCatalog",
+        "SkillCompatibility"
+      ],
+      "provider_sha256": "65bcee2ec623e97da3191d4736bc7efba920f69696ed188a89841d3851cb2dfc",
+      "import_line": 2
+    },
+    {
+      "consumer": ".github/release.sigil",
+      "provider_path": "integrations/editor/vscode/_module.sigil",
+      "provider_component": "SigilVsCodeExtension",
+      "tags": [
+        "ExtensionPackage"
+      ],
+      "provider_sha256": "2dbe5ca7b3bcf5e9167d7dde20c0db38b84c1bb04ad835cea27eba7f64aaa54f",
+      "import_line": 1
+    },
+    {
+      "consumer": "packages/core/src/context-retrieval.sigil",
+      "provider_path": "packages/core/src/model/diagnostics.sigil",
+      "provider_component": "SigilDiagnosticModel",
+      "tags": [
+        "DiagnosticModel"
+      ],
+      "provider_sha256": "2b4ec270a5832b6f4a99785564e65d9056f40502e256169de5faaf5f875495bc",
+      "import_line": 1,
+      "reason": "Verified diagnostic preservation correction uses shared provider vocabulary"
+    },
+    {
+      "consumer": "packages/core/src/implementation-ownership.sigil",
+      "provider_path": "packages/core/src/model/diagnostics.sigil",
+      "provider_component": "SigilDiagnosticModel",
+      "tags": [
+        "DiagnosticModel"
+      ],
+      "provider_sha256": "2b4ec270a5832b6f4a99785564e65d9056f40502e256169de5faaf5f875495bc",
+      "import_line": 1
+    }
+  ],
+  "local_tag_renames": [
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "SourceDocument",
+      "new_local_tag": "DocumentParsing",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "SourceDocument",
+          "line": 26
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "SourceDocument",
+          "line": 110
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "SourceDocument",
+          "line": 164
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "DocumentParsing",
+          "line": 31
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "DocumentParsing",
+          "line": 114
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "DocumentParsing",
+          "line": 171
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "SourceRecovery",
+      "new_local_tag": "ParserRecovery",
+      "occurrences": 2,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "SourceRecovery",
+          "line": 121
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "SourceRecovery",
+          "line": 169
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "ParserRecovery",
+          "line": 126
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "ParserRecovery",
+          "line": 176
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "ComponentContract",
+      "new_local_tag": "RequiredContractParsing",
+      "occurrences": 2,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "ComponentContract",
+          "line": 57
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "ComponentContract",
+          "line": 177
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "RequiredContractParsing",
+          "line": 63
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "RequiredContractParsing",
+          "line": 184
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "TagIdentity",
+      "new_local_tag": "TagSyntaxParsing",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "TagIdentity",
+          "line": 63
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "TagIdentity",
+          "line": 127
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "TagIdentity",
+          "line": 182
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "TagSyntaxParsing",
+          "line": 69
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "TagSyntaxParsing",
+          "line": 132
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "TagSyntaxParsing",
+          "line": 189
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "FormattingStyle",
+      "new_local_tag": "WidthChecking",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "FormattingStyle",
+          "line": 79
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "FormattingStyle",
+          "line": 145
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "FormattingStyle",
+          "line": 219
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "WidthChecking",
+          "line": 86
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "WidthChecking",
+          "line": 151
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "WidthChecking",
+          "line": 227
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "LanguageVersion",
+      "new_local_tag": "VersionChecking",
+      "occurrences": 2,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "LanguageVersion",
+          "line": 87
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "LanguageVersion",
+          "line": 227
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "logic",
+          "name": "VersionChecking",
+          "line": 94
+        },
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "cases",
+          "name": "VersionChecking",
+          "line": 236
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "old_local_tag": "DiagnosticConstruction",
+      "new_local_tag": "ParserDiagnostics",
+      "occurrences": 1,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "DiagnosticConstruction",
+          "line": 150
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilParser",
+          "section": "constraints",
+          "name": "ParserDiagnostics",
+          "line": 157
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/glossary.sigil",
+      "old_local_tag": "ContextResolution",
+      "new_local_tag": "ContextResolutionEngine",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "logic",
+          "name": "ContextResolution",
+          "line": 61
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "constraints",
+          "name": "ContextResolution",
+          "line": 112
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "cases",
+          "name": "ContextResolution",
+          "line": 142
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "interface",
+          "name": "ContextResolutionEngine",
+          "line": 30
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "logic",
+          "name": "ContextResolutionEngine",
+          "line": 65
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "constraints",
+          "name": "ContextResolutionEngine",
+          "line": 113
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "cases",
+          "name": "ContextResolutionEngine",
+          "line": 143
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/glossary.sigil",
+      "old_local_tag": "TermRecognition",
+      "new_local_tag": "TermRecognitionEngine",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "logic",
+          "name": "TermRecognition",
+          "line": 71
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "constraints",
+          "name": "TermRecognition",
+          "line": 118
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "cases",
+          "name": "TermRecognition",
+          "line": 147
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "interface",
+          "name": "TermRecognitionEngine",
+          "line": 38
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "logic",
+          "name": "TermRecognitionEngine",
+          "line": 75
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "constraints",
+          "name": "TermRecognitionEngine",
+          "line": 119
+        },
+        {
+          "form": "group",
+          "component": "SigilGlossaryEngine",
+          "section": "cases",
+          "name": "TermRecognitionEngine",
+          "line": 148
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/workspace.sigil",
+      "old_local_tag": "LocalToolConfiguration",
+      "new_local_tag": "LocalToolConfigurationLoading",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "logic",
+          "name": "LocalToolConfiguration",
+          "line": 54
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "LocalToolConfiguration",
+          "line": 118
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "cases",
+          "name": "LocalToolConfiguration",
+          "line": 218
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "logic",
+          "name": "LocalToolConfigurationLoading",
+          "line": 63
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "LocalToolConfigurationLoading",
+          "line": 123
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "cases",
+          "name": "LocalToolConfigurationLoading",
+          "line": 223
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/workspace.sigil",
+      "old_local_tag": "FileSystemPort",
+      "new_local_tag": "WorkspaceFileAccess",
+      "occurrences": 1,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "FileSystemPort",
+          "line": 133
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "WorkspaceFileAccess",
+          "line": 138
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/core/src/workspace.sigil",
+      "old_local_tag": "GlossaryInterpretation",
+      "new_local_tag": "GlossaryInterpretationLoading",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "logic",
+          "name": "GlossaryInterpretation",
+          "line": 94
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "GlossaryInterpretation",
+          "line": 152
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "cases",
+          "name": "GlossaryInterpretation",
+          "line": 250
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "interface",
+          "name": "GlossaryInterpretationLoading",
+          "line": 41
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "logic",
+          "name": "GlossaryInterpretationLoading",
+          "line": 105
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "constraints",
+          "name": "GlossaryInterpretationLoading",
+          "line": 157
+        },
+        {
+          "form": "group",
+          "component": "SigilWorkspaceLoader",
+          "section": "cases",
+          "name": "GlossaryInterpretationLoading",
+          "line": 255
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/cli/_module.sigil",
+      "old_local_tag": "SkillCatalog",
+      "new_local_tag": "CliSkillCatalog",
+      "occurrences": 2,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "SkillCatalog",
+          "line": 220
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "SkillCatalog",
+          "line": 708
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "CliSkillCatalog",
+          "line": 232
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "CliSkillCatalog",
+          "line": 711
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/cli/_module.sigil",
+      "old_local_tag": "SkillInstallation",
+      "new_local_tag": "CliSkillInstallation",
+      "occurrences": 3,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "SkillInstallation",
+          "line": 226
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "constraints",
+          "name": "SkillInstallation",
+          "line": 499
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "SkillInstallation",
+          "line": 713
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "CliSkillInstallation",
+          "line": 237
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "constraints",
+          "name": "CliSkillInstallation",
+          "line": 502
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "CliSkillInstallation",
+          "line": 716
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/cli/_module.sigil",
+      "old_local_tag": "GlossaryInspection",
+      "new_local_tag": "CliGlossaryInspection",
+      "occurrences": 2,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "GlossaryInspection",
+          "line": 353
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "GlossaryInspection",
+          "line": 809
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "CliGlossaryInspection",
+          "line": 363
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "CliGlossaryInspection",
+          "line": 812
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "packages/cli/_module.sigil",
+      "old_local_tag": "OwnershipDiagnostics",
+      "new_local_tag": "CliOwnershipDiagnostics",
+      "occurrences": 4,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "interface",
+          "name": "OwnershipDiagnostics",
+          "line": 165
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "OwnershipDiagnostics",
+          "line": 347
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "decisions",
+          "name": "OwnershipDiagnostics",
+          "line": 675
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "OwnershipDiagnostics",
+          "line": 804
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "interface",
+          "name": "CliOwnershipDiagnostics",
+          "line": 178
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "logic",
+          "name": "CliOwnershipDiagnostics",
+          "line": 358
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "decisions",
+          "name": "CliOwnershipDiagnostics",
+          "line": 678
+        },
+        {
+          "form": "group",
+          "component": "SigilCli",
+          "section": "cases",
+          "name": "CliOwnershipDiagnostics",
+          "line": 807
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "_module.sigil",
+      "old_local_tag": "LanguageVersion",
+      "new_local_tag": "RootLanguageVersion",
+      "occurrences": 1,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "LanguageVersion",
+          "line": 112
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "RootLanguageVersion",
+          "line": 111
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "_module.sigil",
+      "old_local_tag": "ComponentContract",
+      "new_local_tag": "RootComponentContract",
+      "occurrences": 1,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "ComponentContract",
+          "line": 122
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "RootComponentContract",
+          "line": 121
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    },
+    {
+      "path": "_module.sigil",
+      "old_local_tag": "ConfigFile",
+      "new_local_tag": "RootWorkspaceConfiguration",
+      "occurrences": 1,
+      "treatment": "same consumer component and same contract roles; provider Tag referenced in prose",
+      "old_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "ConfigFile",
+          "line": 128
+        }
+      ],
+      "new_occurrences": [
+        {
+          "form": "group",
+          "component": "Sigil",
+          "section": "constraints",
+          "name": "RootWorkspaceConfiguration",
+          "line": 127
+        }
+      ],
+      "annotation_action": "Retarget old local Tag selector to the new local Tag in the same component and selected sections; imported Tag selectors have distinct provider identity."
+    }
+  ],
+  "identities": [
+    {
+      "path": ".github/release.sigil",
+      "before_sha256": "81064225e0d62d5fb157534453684e95b3a85e0013e0a6d310f256ff83a0bf99",
+      "after_sha256": "ab3f97bc33b7d4aa425406dc91aabfd46659acb6986c57eefc6a87efcba67c40"
+    },
+    {
+      "path": "_module.sigil",
+      "before_sha256": "f2f78c36601da3ffa6b189bab39940ae9500daadeb0470f33da34ac48c6b662c",
+      "after_sha256": "83e6f8ca038bb2cd7cd912c02b25be2a25b0149ae664333a6043173a23de8706"
+    },
+    {
+      "path": "integrations/editor/vscode/_module.sigil",
+      "before_sha256": "b4ecfeeb1ed5adb40bac34c2d8e5ac9ca3ebcc9d40b1d871bd9de01353f305b4",
+      "after_sha256": "2dbe5ca7b3bcf5e9167d7dde20c0db38b84c1bb04ad835cea27eba7f64aaa54f"
+    },
+    {
+      "path": "packages/cli/_module.sigil",
+      "before_sha256": "46d3fd6f549b1f3d8252e8384324af3d934a9cf9f046d2bd0b379cf3b134aefe",
+      "after_sha256": "8b1a6c69376710b93496364e82de43a165e19216e9fe43055ae72383cb75376a"
+    },
+    {
+      "path": "packages/cli/src/retrieval-markdown.sigil",
+      "before_sha256": "e01ba0a5ce93ca85dab3a991f22f2bf20cb35c7d7c32c556d0629a31f37b0de7",
+      "after_sha256": "51b2754c0e0ed7ac80d6bc522e4c58de47e5d6b78070c57a0642189423869d9b"
+    },
+    {
+      "path": "packages/core/_module.sigil",
+      "before_sha256": "f371d4ef7de44f36ab42f06ba106513f8ed0bff14266dcf89091100a6cffa9f2",
+      "after_sha256": "52d00a9c1a7c0e9303dda340a6c0e30addbbf8b9a0dd72245726193fdd108d21"
+    },
+    {
+      "path": "packages/core/config.sigil",
+      "before_sha256": "bada8239d4052d2bc57d8dd3d8a4ea6220243717da51ec737bc755358a892dd2",
+      "after_sha256": "5d10dea279d831ad264253dab1d6518f827ce0a319f7aba083bf85c5cdfdc443"
+    },
+    {
+      "path": "packages/core/src/context-retrieval.sigil",
+      "before_sha256": "b0a490e05a7b7ddde7c70a35f64bcbb8cd23fb5f62fa3f14f9915afa5a5095e0",
+      "after_sha256": "1e2733b56a928b24e79f0b8befe0a6b73a138d8ca5f45c6540cdd2ab57188505"
+    },
+    {
+      "path": "packages/core/src/diagnostics.sigil",
+      "before_sha256": "c128c6ef0dbe1b0c173deaec2b9396cb3313b2f5d86696ac98374e03e1eb5fb2",
+      "after_sha256": "cd4f342dcdf4dbd5ced519f6db18392894ce27db2852403ad098e361e77fef18"
+    },
+    {
+      "path": "packages/core/src/filesystem.sigil",
+      "before_sha256": "5ea1ae10828f86ad904b2294c614584a70e5704188eb906a0f3701cebc0b6c85",
+      "after_sha256": "41fa4a8b3c925df2c45419a0ae37ed10391e35705333170d097d1cb4346c4101"
+    },
+    {
+      "path": "packages/core/src/formatter.sigil",
+      "before_sha256": "4e392e417163070caa6ff35b372219ce1cd8d29f4ac161785425094068cbba7d",
+      "after_sha256": "385134518d41b79d4c6697b2f6d25b4588bff480459039efd97a494a3ab096c7"
+    },
+    {
+      "path": "packages/core/src/glossary.sigil",
+      "before_sha256": "a5dd4a8cd8693582916f69bff59895cf0af64d66154317fec338c63ea831294d",
+      "after_sha256": "dcd98892b6f959b242258bde559d7e7df450d6acb33b9e0089dee3dbb6a1a7af"
+    },
+    {
+      "path": "packages/core/src/graph.sigil",
+      "before_sha256": "9e519ac01c53a530135d9729514f61e7ae6f2a0594456d0c5fd490ca6e2fd500",
+      "after_sha256": "6e60dcd29777626832a4da7468e08efc2e7904ec46d33aba60cef6912d2b1937"
+    },
+    {
+      "path": "packages/core/src/implementation-ownership.sigil",
+      "before_sha256": "41568afec15ad04d39d5b0c30c3a563d651548d9302c8d01a171a22250b9d39c",
+      "after_sha256": "9ed37dd94ea923bcbd601e3d6a924dd5dee491f343860d65256409fc44570eb1"
+    },
+    {
+      "path": "packages/core/src/model/_module.sigil",
+      "before_sha256": "0824d7c9b749447ecb6cf286872301da6726f3e6f4c5cf8ef3391838a1d989ac",
+      "after_sha256": "0b7253e5a3205e3b88124f1d7b3b4d4d4c5078cd8945bfab7706657ffa5119aa"
+    },
+    {
+      "path": "packages/core/src/parser.sigil",
+      "before_sha256": "c54e429dcc2ecb7442810a9a23130cf6049ee7ad7b0d448afc5ee0ae75317e61",
+      "after_sha256": "4e24e26b2f0b6e854f7a02036b361821ec2e5610494a19bd22342feae1fd35ed"
+    },
+    {
+      "path": "packages/core/src/pipeline.sigil",
+      "before_sha256": "b7976d05046ee13f5378e02c261e7eaf72d56db1a12741eef37d77b215413579",
+      "after_sha256": "df629a4026bc9cfee89246c1c690bbcd170499db2c9b256cb02ed79b1b66840f"
+    },
+    {
+      "path": "packages/core/src/projections.sigil",
+      "before_sha256": "98021af3b30418bd237ed044552ae542ed4384887ff3764e1717db1eaf53c895",
+      "after_sha256": "0d3c93d8bcc3c15961e42091b657e9269d24327b9135f0d8b642b8792c5c40f3"
+    },
+    {
+      "path": "packages/core/src/resolver.sigil",
+      "before_sha256": "e8602e2058adef1259e464c496323e0e76f6b568a96715296255e067d5c451e1",
+      "after_sha256": "c13409cf888cf9f34cb815989f471dccb5459c864d54293e76f12836894e23c9"
+    },
+    {
+      "path": "packages/core/src/workspace.sigil",
+      "before_sha256": "6f5d63f76db5d29922c295fa2a651ec895f45685dd0f1886e3df3d2a4844decf",
+      "after_sha256": "7bfda2f2015c7f5c62530a54bf3f055aeb8b2f7ee555c02dad98305d9dbf1ad3"
+    },
+    {
+      "path": "packages/lsp/_module.sigil",
+      "before_sha256": "9ef9783060f2491ab4de7a1c4eb3332ffcd1be8010c565231bfb382236adaa7d",
+      "after_sha256": "64a4750b51fad7cc4ec86adf8b4b97812ecd70ff0fd73e653e5d8824c70f5388"
+    },
+    {
+      "path": "packages/sigilc/_module.sigil",
+      "before_sha256": "6e446da9a81515fa0b66996d866a43b62c2ca1c7c36d40b5523445838511c733",
+      "after_sha256": "2f8ad1bedc27569a8163f8b2eb6e12f5665d14741180d0f3a5449153dd9279dd"
+    },
+    {
+      "path": "spec/glossary.sigil",
+      "before_sha256": "ba4463ffa8df61a06f30efd5bea7c7d542f8935e50c91ee8a8fbc6238fb2008a",
+      "after_sha256": "a87da6c3e5d2e0139b1cea221cf4f296c1f0edc7fd2f870668dc2612d4902905"
+    }
+  ],
+  "source_root": "/Users/farhoud/Workspace/sigil",
+  "intent": "/tmp/sigil080-execution/U2-user-import-correction-intent.md",
+  "evidence_limits": "Source/locator inventory only; independent current design assessment is recorded in design-review.md. No compiler or implementation conformance.",
+  "subsequent_corrections": [
+    "/tmp/sigil080-execution/u2-diagnostic-identity-correction.json",
+    "/tmp/sigil080-execution/u2-ownership-diagnostic-correction.json"
+  ]
+}

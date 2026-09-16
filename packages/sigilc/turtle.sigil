@@ -5,11 +5,11 @@ component SigilTurtleInput {
 
   interface {
     RestrictedAssertions {
-      Encode normalized facts as assert-iri and assert-literal forms containing
-      only literal strings. Parse cached files with egglog's AST reader and reject
-      every other command, rule, include, expression argument, or arity. Revalidate
-      the decoded RDF against the same fixed ontology before using any assertion.
-      Cached files are data and are never executed as egglog programs.
+      Encode normalized facts as assert-iri and assert-literal forms containing only
+      literal strings. Parse cached files with egglog's AST reader and reject every
+      other command, rule, include, expression argument, or arity. Revalidate the
+      decoded RDF against the same fixed ontology before using any assertion. Cached
+      files are data and are never executed as egglog programs.
     }
 
     AssertionValidation {
@@ -22,30 +22,28 @@ component SigilTurtleInput {
     FixedOntology {
       Export the compiler-owned vocabulary for external workers. Text, boolean,
       number and entity predicates have fixed ranges. Numbers are finite and
-      nonnegative, at most the largest exactly representable integer; risk is
-      between zero and one. Integer literals cannot round across that bound.
-      Receipt and mechanical-evidence vocabulary is absent.
+      nonnegative, at most the largest exactly representable integer; risk is between
+      zero and one. Integer literals cannot round across that bound. Receipt and
+      mechanical-evidence vocabulary is absent.
     }
   }
-}
 
-expand SigilTurtleInput {
   constraints {
     AssertionValidation {
-      Bound bytes and assertion count per Turtle document. Aggregate world limits
-      are separate. Empty Turtle is valid data and makes no completeness claim.
-      Reject malformed input without repairing wrappers or inventing facts.
-      Models do not supply rules, semantic verdicts or production metadata.
-      Resource ownership and frozen-catalog checks remain additional ingestion
-      constraints; parsing alone does not prove source fidelity or freshness.
+      Bound bytes and assertion count per Turtle document. Aggregate world limits are
+      separate. Empty Turtle is valid data and makes no completeness claim. Reject
+      malformed input without repairing wrappers or inventing facts. Models do not
+      supply rules, semantic verdicts or production metadata. Resource ownership and
+      frozen-catalog checks remain additional ingestion constraints; parsing alone
+      does not prove source fidelity or freshness.
     }
   }
 
   cases {
     AssertionValidation {
       Equivalent ordering, prefixes and boolean spellings produce identical
-      normalized assertions. Preserve text, datatype and language tags.
-      Reject NaN, infinity, negative cost, out-of-range risk and invented laws.
+      normalized assertions. Preserve text, datatype and language tags. Reject NaN,
+      infinity, negative cost, out-of-range risk and invented laws.
     }
   }
 }

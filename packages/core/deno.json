@@ -1,9 +1,10 @@
 {
   "name": "@qoherent/sigil-core",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "exports": "./src/mod.ts",
   "imports": {
-    "ajv-2020": "npm:ajv@8/dist/2020.js"
+    "ajv-2020": "npm:ajv@8/dist/2020.js",
+    "entities/decode": "npm:entities@7.0.0/decode"
   },
   "publish": {
     "include": [
@@ -11,7 +12,8 @@
       "LICENSE",
       "architecture.md",
       "spec.md",
-      "src/**/*.ts"
+      "src/**/*.ts",
+      "src/data/UNICODE-LICENSE.txt"
     ],
     "exclude": [
       "tests/"

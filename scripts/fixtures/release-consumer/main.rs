@@ -102,6 +102,12 @@ fn run() -> Result<(), String> {
             output_text(&exported)
         ));
     }
+    let structural = compact(&stdout_text(&exported));
+    if !structural.contains("\"schemaVersion\":2")
+        || !structural.contains("\"languageVersion\":\"0.8.0\"")
+    {
+        return Err("expected Sigil 0.8 schema-2 structural export".into());
+    }
     let frontend = unrelated.join("frontend.json");
     fs::write(&frontend, &exported.stdout).map_err(io_error)?;
     let frontend_text = path_string(&frontend);

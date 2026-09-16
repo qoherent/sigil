@@ -75,7 +75,7 @@ export interface CheckRequest extends GlobalOptions {
 }
 export interface FmtRequest extends GlobalOptions {
   readonly command: "fmt";
-  readonly path?: string;
+  readonly paths: readonly string[];
   readonly check: boolean;
 }
 export interface GlossaryRequest extends GlobalOptions {
@@ -445,18 +445,21 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       request: { command: "parse", file: positional[0], ...base },
     };
   }
+  if (commandName === "fmt") {
+    if (format && !["json", "text"].includes(format)) {
+      return usage("--format must be text or json for fmt.", "fmt");
+    }
+    return {
+      kind: "ok",
+      request: { command: "fmt", paths: positional, check, ...base },
+    };
+  }
   if (
-    commandName === "check" || commandName === "fmt" ||
+    commandName === "check" ||
     commandName === "glossary" ||
     commandName === "graph" ||
     commandName === "render"
   ) {
-    if (
-      commandName === "fmt" && format &&
-      !["json", "text"].includes(format)
-    ) {
-      return usage("--format must be text or json for fmt.", "fmt");
-    }
     if (positional.length > 1) {
       return usage(
         `${commandName} accepts at most one path.`,
@@ -468,12 +471,10 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       request: {
         command: commandName,
         path: positional[0],
-        ...(commandName === "fmt" ? { check } : {}),
         ...base,
         ...(commandName === "check" ? { showLocations } : {}),
       } as
         | CheckRequest
-        | FmtRequest
         | GlossaryRequest
         | GraphRequest
         | RenderRequest,

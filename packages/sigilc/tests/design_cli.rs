@@ -5,10 +5,11 @@ use support::Workspace;
 
 fn workspace() -> Workspace {
     let root = Workspace::new();
-    root.write("a.sigil", b"component A { goal { Describe A. } }");
+    let source = "component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}";
+    root.write("a.sigil", source.as_bytes());
     let mut input = serde_json::to_value(root.input(&["a.sigil"], json!([]))).unwrap();
-    input["entities"] = json!([{"id":"urn:sigil:component:a.sigil:A","type":"Component","label":"A","source":"a.sigil","owner":null,"exported":true}]);
-    input["units"] = json!([{"id":"urn:sigil:unit:a.sigil:1:1","source":"a.sigil","owner":"urn:sigil:component:a.sigil:A","form":"component","section":"goal","concept":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":35}}}]);
+    input["entities"] = json!([support::component("a.sigil", "A", source)]);
+    input["units"] = json!([support::unit("a.sigil", "A", source, "Describe A.")]);
     root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
     root
 }
@@ -69,7 +70,26 @@ fn design_cli_distinguishes_missing_empty_interpreted_and_disjoint_worlds() {
         .unwrap();
     assert_eq!(unresolved["severity"], "warning");
     assert_eq!(unresolved["locations"][0]["source"], "a.sigil");
-    assert_eq!(unresolved["locations"][0]["range"]["end"]["column"], 35);
+    assert_eq!(unresolved["locations"][0]["range"]["end"], 32);
+    assert_eq!(
+        unresolved["locations"][0]["coordinate_system"],
+        "utf8-bytes"
+    );
+    assert_eq!(
+        unresolved["locations"][0]["source_digest"]
+            .as_str()
+            .unwrap()
+            .len(),
+        64
+    );
+    assert_eq!(missing["version"], 2);
+    assert_eq!(
+        missing["world"]["structure"]["units"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
     assert_eq!(unresolved["witness"]["table"], "design-unresolved");
     assert!(missing["catalog"].is_null());
     let stale = result(&root, &["stale", "design"], 1);
@@ -88,7 +108,7 @@ fn design_cli_distinguishes_missing_empty_interpreted_and_disjoint_worlds() {
         &root,
         "second",
         &format!(
-            "{PREFIX}<urn:sigil:unit:a.sigil:1:1> s:from a:A; s:relation \"uses\"; s:target a:A; s:expected false ."
+            "{PREFIX}<facet:a.sigil:21> s:from a:A; s:relation \"uses\"; s:target a:A; s:expected false ."
         ),
     );
     let interpreted = result(&root, &["compile", "design"], 0);
@@ -134,7 +154,9 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
     let root = workspace();
     result(
         &root,
-        &["prepare", "design", "--source", "a.sigil", "--out", "binding"],
+        &[
+            "prepare", "design", "--source", "a.sigil", "--out", "binding",
+        ],
         0,
     );
     root.write(
@@ -159,7 +181,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        format!("{PREFIX}<urn:sigil:unit:a.sigil:1:1> a s:Case .").as_bytes(),
+        format!("{PREFIX}<facet:a.sigil:21> a s:Case .").as_bytes(),
     );
     let reserved = run(
         &root,
@@ -182,7 +204,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        format!("{PREFIX}<urn:sigil:unit:a.sigil:1:1> s:owner a:A .").as_bytes(),
+        format!("{PREFIX}<facet:a.sigil:21> s:owner a:A .").as_bytes(),
     );
     let owner = run(
         &root,
@@ -224,7 +246,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        b"@prefix s: <https://sigil.dev/ontology/1#> . <urn:sigil:unit:a.sigil:1:1> s:from <urn:sigil:component:a.sigil:A> ;",
+        b"@prefix s: <https://sigil.dev/ontology/1#> . <facet:a.sigil:21> s:from <urn:sigil:component:a.sigil:A> ;",
     );
     let malformed = run(
         &root,
@@ -249,7 +271,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        b"@prefix s: <https://sigil.dev/ontology/1#> . <urn:sigil:unit:a.sigil:1:1> s:from <urn:sigil:component:a.sigil:A B> .",
+        b"@prefix s: <https://sigil.dev/ontology/1#> . <facet:a.sigil:21> s:from <urn:sigil:component:a.sigil:A B> .",
     );
     let invalid_iri = run(
         &root,
@@ -369,7 +391,9 @@ fn preparation_omits_unbound_design_files_and_never_overwrites_a_directory() {
     root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
     result(
         &root,
-        &["prepare", "design", "--source", "a.sigil", "--out", "binding"],
+        &[
+            "prepare", "design", "--source", "a.sigil", "--out", "binding",
+        ],
         0,
     );
     let prepared = std::fs::read_to_string(root.0.join("binding/design.json")).unwrap();
@@ -381,7 +405,9 @@ fn preparation_omits_unbound_design_files_and_never_overwrites_a_directory() {
     assert_eq!(
         run(
             &root,
-            &["prepare", "design", "--source", "a.sigil", "--out", "binding"]
+            &[
+                "prepare", "design", "--source", "a.sigil", "--out", "binding"
+            ]
         )
         .status
         .code(),

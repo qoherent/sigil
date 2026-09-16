@@ -1,0 +1,220 @@
+{
+  "protocol": "sigil-design-review/v1",
+  "status": "complete",
+  "scope": {
+    "purpose": "Direct read-only evaluation of notes.sigil for consequential design problems.",
+    "selected_components": [
+      "Notes"
+    ],
+    "selected_contracts": [
+      "goal",
+      "interface"
+    ],
+    "capture_mode": "in_place",
+    "established_intent": "The authored Notes goal and interface.",
+    "unresolved_questions": []
+  },
+  "source_root": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+  "assessed_inputs": [
+    {
+      "role": "draft",
+      "original_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil",
+      "captured_path": null,
+      "capture_mode": "in_place",
+      "sha256": "0db521202957584e145f12b316b51c12a622bf94ecae153ada94d265cc42213f",
+      "bytes": 256
+    }
+  ],
+  "authority": {
+    "evaluator_skill": {
+      "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/SKILL.md",
+      "sha256": "76487d1ab9c59343217898c0cddf0c2e477cd99d10ce22205429ad1f335db3b4"
+    },
+    "language_pack": {
+      "manifest_path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/language/manifest.json",
+      "sha256": "25c9c782ed5b778faf82b7bdda380756bf55f652fe9cf174e278117a2de45fee",
+      "sigil_version": "0.8.0",
+      "upstream_revision": "28ff9851a50032c2f6be9140c48a23d9d8f8a9c8",
+      "reference_sha256": "6e816aacacbd40d781166227bd8cbbe10d2d05416bbbc151cefdbc4d5054783e",
+      "grammar_sha256": "9677dae11e1cb6a906cb0ccc592fbbb0c28c505b6e1050d9988c260256995e49"
+    },
+    "guidance_read": [
+      "sigil-evaluate/references/design-review.md",
+      "sigil-evaluate/references/mechanical-validation.md",
+      "sigil-evaluate/references/review-contract.md",
+      "sigil-understand/references/understanding.md",
+      "sigil-understand/references/language/sigil-reference.md",
+      "sigil-understand/references/language/sigil.ebnf"
+    ],
+    "applicable_rules": [
+      "contract.structure",
+      "contract.role",
+      "facet.boundary",
+      "interpretation.evidence",
+      "format.width"
+    ],
+    "entrypoint_and_manifest_unchanged_after_commands": true
+  },
+  "findings": [],
+  "coverage": {
+    "semantic": {
+      "assessment": "No consequential contradiction, ownership conflict, material omission, or useful commitment-preserving simplification was established.",
+      "anchors": [
+        {
+          "location": "notes.sigil:3, Notes.goal",
+          "text": "Keep the user notes accessible while preserving their recorded content for later reading and allowing the user to return to the same saved notes whenever needed."
+        },
+        {
+          "location": "notes.sigil:6, Notes.interface",
+          "text": "Return the saved notes on request."
+        }
+      ],
+      "reasoning": "Notes owns both the preservation/accessibility goal and the saved-note retrieval interaction. These commitments are compatible. No imports, Tags, linked policy, or competing owners require additional semantic context. The supplied scope does not establish an obligation to specify saving operations, storage technology, or additional optional contracts.",
+      "implementation_reviewed": false
+    },
+    "mechanical": {
+      "result": "Completed checks with mechanical findings; not clean.",
+      "tool": {
+        "executable": "/Users/farhoud/.deno/bin/sigil",
+        "sha256_before_and_after": "beb2909b4cd469603e80b10e2fcebc2e7a160076e2ee115aa62b4bad8bc4484c",
+        "cli_version": "0.9.0",
+        "core_version": "0.8.0",
+        "workspace_language_version": "0.8.0",
+        "check_json_supported": true,
+        "formatter_check_supported": true,
+        "formatter_multiple_paths_supported": true,
+        "launcher": "Deno shell launcher for /Users/farhoud/Workspace/sigil/packages/cli/src/main.ts",
+        "additional_tool_identities_observed_after_commands": [
+          {
+            "path": "/Users/farhoud/.deno/bin/.sigil/deno.json",
+            "sha256": "ccb31980dca43497aca076dbcaa9c654290f1df0bd9b365e68cf1d6740625817"
+          },
+          {
+            "path": "/Users/farhoud/Workspace/sigil/packages/cli/src/main.ts",
+            "sha256": "1f01d502bf48ae9a4806807c5bb712b69d2049db9ac3159fdc6ef76ec9e279c7"
+          }
+        ]
+      },
+      "cwd_for_all_cli_commands": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+      "physical_cwd_alias": "/private/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+      "input_snapshot": {
+        "capture_mode": "in_place",
+        "before_and_after_membership_equal": true,
+        "before_and_after_bytes_equal": true,
+        "configuration": [
+          {
+            "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/.sigil/config.json",
+            "bytes": 192,
+            "sha256": "7d7669e4167e46373c4012266742889efa8300fe2a69a6b25b61abe8e631501e"
+          }
+        ],
+        "local_overrides": [],
+        "glossary": [],
+        "discovered_sigil_sources": [
+          {
+            "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil",
+            "bytes": 256,
+            "sha256": "0db521202957584e145f12b316b51c12a622bf94ecae153ada94d265cc42213f"
+          }
+        ],
+        "implementation_annotation_sources": [
+          {
+            "path": "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/implementation.ts",
+            "bytes": 90,
+            "sha256": "e50a5743fc327cece0874d79b859831c113550c2256bf9ed1b2a74beb730af54",
+            "semantic_assessment": false
+          }
+        ],
+        "other_workspace_files": [],
+        "configured_include": [
+          "**/*.sigil"
+        ],
+        "configured_exclude": [
+          "excluded/**"
+        ]
+      },
+      "commands": [
+        {
+          "argv": [
+            "/Users/farhoud/.deno/bin/sigil",
+            "version",
+            "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+            "--format",
+            "json"
+          ],
+          "stdout": "{\"command\":\"version\",\"cliVersion\":\"0.9.0\",\"coreVersion\":\"0.8.0\",\"workspaceRoot\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace\",\"configPath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/.sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"mechanical-evaluation\",\"diagnostics\":[{\"code\":\"SIGIL_LINE_TOO_LONG\",\"stage\":\"parsing\",\"severity\":\"error\",\"message\":\"Prose exceeds 79 content characters on a physical line.\",\"filePath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil\",\"range\":{\"start\":27,\"end\":192},\"related\":[]}]}\n",
+          "stderr": "",
+          "exit": 1
+        },
+        {
+          "argv": [
+            "/Users/farhoud/.deno/bin/sigil",
+            "check",
+            "--help"
+          ],
+          "stdout": "Usage: sigil check [path] [options]\n\nOptions:\n  --root <path>     Use an explicit workspace root\n  --format <value>  Output json, text, or markdown\n  --pretty          Pretty-print JSON output\n  --quiet           Suppress command output\n  --show-locations  Add file path, line, and column to text diagnostics\n  --help            Show this help\n",
+          "stderr": "",
+          "exit": 0
+        },
+        {
+          "argv": [
+            "/Users/farhoud/.deno/bin/sigil",
+            "fmt",
+            "--help"
+          ],
+          "stdout": "Usage: sigil fmt [paths...] [options]\n\nSelect files or directories in one workspace; overlapping targets are deduplicated.\nWith no paths, select the current directory. At the workspace root, this selects\nall included workspace sources. Only changed selected .sigil files are written.\nAll targets and combined replacements are validated before writing any file.\nPaths resolve from the current directory; --root only anchors workspace discovery.\n\nOptions:\n  --check           Report noncanonical source without writing\n  --root <path>     Use an explicit workspace root\n  --format <value>  Output json or text\n  --pretty          Pretty-print JSON output\n  --quiet           Suppress command output\n  --help            Show this help\n",
+          "stderr": "",
+          "exit": 0
+        },
+        {
+          "argv": [
+            "/Users/farhoud/.deno/bin/sigil",
+            "check",
+            "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+            "--format",
+            "json"
+          ],
+          "stdout": "{\"command\":\"check\",\"workspaceRoot\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace\",\"configPath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/.sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"mechanical-evaluation\",\"diagnostics\":[{\"code\":\"SIGIL_IMPLEMENTATION_ANNOTATION\",\"stage\":\"host\",\"severity\":\"error\",\"message\":\"Ownership annotation references unknown or ambiguous Tag \\\"Missing\\\" on Notes.\",\"filePath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/implementation.ts\",\"implementationRange\":{\"start\":{\"line\":1,\"column\":1},\"end\":{\"line\":1,\"column\":59}},\"related\":[],\"sourceLocation\":{\"line\":1,\"column\":1}},{\"code\":\"SIGIL_LINE_TOO_LONG\",\"stage\":\"parsing\",\"severity\":\"error\",\"message\":\"Prose exceeds 79 content characters on a physical line.\",\"filePath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil\",\"range\":{\"start\":27,\"end\":192},\"related\":[],\"sourceLocation\":{\"line\":3,\"column\":1}}],\"diagnosticCounts\":{\"error\":2,\"warning\":0,\"info\":0}}\n",
+          "stderr": "",
+          "exit": 1
+        },
+        {
+          "argv": [
+            "/Users/farhoud/.deno/bin/sigil",
+            "fmt",
+            "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil",
+            "--root",
+            "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace",
+            "--check",
+            "--format",
+            "json"
+          ],
+          "stdout": "{\"command\":\"fmt\",\"workspaceRoot\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace\",\"configPath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/.sigil/config.json\",\"sigilVersion\":\"0.8.0\",\"workspaceName\":\"mechanical-evaluation\",\"check\":true,\"files\":[{\"filePath\":\"/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/formatting/workspace/notes.sigil\",\"status\":\"noncanonical\"}],\"diagnostics\":[]}\n",
+          "stderr": "",
+          "exit": 1
+        }
+      ],
+      "interpretation": [
+        "The version probe supplied compatible tool identity despite exiting 1 with a workspace width diagnostic.",
+        "Workspace check completed with two errors: selected-design physical width and implementation annotation vocabulary.",
+        "The implementation annotation diagnostic is retained as mechanical context, not implementation conformance or a semantic design finding.",
+        "Formatting check completed and identified notes.sigil as noncanonical. It did not write the file."
+      ],
+      "read_only_verification": {
+        "workspace_snapshot_before_probes_matches_before_validation": true,
+        "workspace_snapshot_before_validation_matches_after_validation": true,
+        "workspace_files_added_removed_or_modified": [],
+        "evidence_files_created": false
+      }
+    }
+  },
+  "limitations": [
+    "Read-only restriction was instructions-only; the host did not enforce a read-only filesystem. No writing formatter, fix, installer, initialization, source edit, evidence log, or report-file operation was performed.",
+    "Semantic coverage is limited to the supplied Notes design. Implementation bytes were hashed only for mechanical identity; implementation conformance and saturated coherence were not assessed.",
+    "Mechanical validation completed with findings and must not be reported as clean.",
+    "The CLI launcher digest was verified before and after. The Deno configuration and TypeScript entrypoint identities were observed after execution only; the full runtime module graph was not captured or verified for before/after stability.",
+    "Workspace file membership and exact bytes were verified unchanged; writes outside the inspected workspace were not independently audited.",
+    "The initial full language-reference display was truncated by tool output limits. The applicable contract rules and grammar were visible, and the interpretation and physical-width sections were subsequently read directly.",
+    "Observer before.json and inputs.json were not read."
+  ]
+}

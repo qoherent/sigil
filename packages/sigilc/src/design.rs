@@ -1,9 +1,9 @@
 //! Current Design assembly; external reconstruction enters only through ingest.
 use crate::{
     catalog::{self, DesignIdentities, FrozenCatalog},
+    eqval::{self, DesignState, DesignWorld, Limits},
     frontend::{EntityType, Severity},
     inputs::DesignSnapshot,
-    eqval::{self, DesignState, DesignWorld, Limits},
     sources::hash,
     store::{Freshness, LockedStore},
     turtle::{Assertion, ONTOLOGY, Object, RDF_TYPE, XSD},
@@ -122,7 +122,7 @@ pub fn compile(
     for entity in &input.entities {
         let kind = match entity.kind {
             EntityType::Component => "Component",
-            EntityType::Concept => "Concept",
+            EntityType::Tag => "Tag",
         };
         assertions.push(Assertion {
             subject: entity.id.clone(),
@@ -154,13 +154,15 @@ pub fn compile(
         })
         .collect::<Result<Vec<_>, String>>()?;
     let mut world = eqval::design(&assertions, &units, limits)?;
+    world.structure =
+        Some(input.structural_records(&input.sources.iter().map(|s| s.path.clone()).collect()));
     if !all_fresh && world.state == DesignState::Coherent {
         world.state = DesignState::Loose;
     }
     let input_fingerprint = snapshot.fingerprint()?;
     let design_fingerprint = hash(
         &serde_json::to_vec(&(
-            "sigil-design-world-v1",
+            "sigil-design-world-v2",
             &input_fingerprint,
             &projections,
             &world.closure.kernel_fingerprint,
@@ -176,7 +178,7 @@ pub fn compile(
     };
     let diagnostics = crate::report::design(input, &world, &sources, &assertion_sources);
     Ok(DesignReport {
-        version: 1,
+        version: 2,
         interpretation_limit: "Authored-unit coverage does not prove faithful interpretation of every sentence.",
         input_fingerprint,
         design_fingerprint,
@@ -198,6 +200,32 @@ pub fn valid_frontend(snapshot: &DesignSnapshot) -> Result<(), String> {
         .find(|d| matches!(d.severity, Severity::Error))
     {
         return Err(format!("frontend error {}: {}", error.code, error.message));
+    }
+    let input = snapshot.input();
+    if input
+        .entities
+        .iter()
+        .any(|e| !e.valid || !e.complete || !e.identity_resolved)
+        || input
+            .units
+            .iter()
+            .any(|u| !u.valid || !u.complete || u.owner.is_none())
+        || input.groups.iter().any(|g| !g.valid || !g.complete)
+        || input
+            .introductions
+            .iter()
+            .any(|i| !i.valid || !i.complete || i.tag.is_none())
+        || input.references.iter().any(|r| r.tag.is_none())
+        || input.imports.iter().any(|i| {
+            !i.valid
+                || !i.complete
+                || i.status != crate::frontend::ImportStatus::Resolved
+                || i.names
+                    .iter()
+                    .any(|n| n.status != crate::frontend::SelectionStatus::Resolved)
+        })
+    {
+        return Err("frontend contains unresolved or incomplete language structure".into());
     }
     Ok(())
 }

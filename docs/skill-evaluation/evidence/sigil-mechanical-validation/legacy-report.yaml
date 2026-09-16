@@ -1,0 +1,80 @@
+protocol: sigil-design-review/v1
+status: complete
+scope: Direct, read-only design assessment of notes.sigil, component Notes.
+source_root: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/legacy/workspace
+
+assessed_inputs:
+  - role: draft
+    original_path: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/legacy/workspace/notes.sigil
+    captured_path: null
+    capture_mode: in_place
+    sha256: ec870022a616a80acd1525ce797e396962e6b126f2099129d38b1b6b9caea863
+
+authority:
+  evaluator_entrypoint: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-evaluate/SKILL.md
+  evaluator_sha256: 76487d1ab9c59343217898c0cddf0c2e477cd99d10ce22205429ad1f335db3b4
+  language_manifest: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/catalog/sigil-understand/references/language/manifest.json
+  manifest_sha256: 25c9c782ed5b778faf82b7bdda380756bf55f652fe9cf174e278117a2de45fee
+  language_version: 0.8.0
+  upstream_revision: 28ff9851a50032c2f6be9140c48a23d9d8f8a9c8
+  consulted: Evaluator references, understanding guidance, normative component/contract rules, and grammar.
+
+findings: []
+
+coverage:
+  semantic: >-
+    Assessed Notes ownership, its goal "Keep the user notes accessible."
+    (line 3), and interface "Return the saved notes on request." (line 6).
+    These commitments are compatible. Required contracts contain content.
+    No imports, Tags, links, or supplied consequential unresolved choices.
+    No supported missing-detail or simplification finding.
+  mechanical:
+    status: unavailable
+    executable: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/legacy/sigil-legacy
+    executable_sha256: 80df14a86ae49303469c5e7a5ca4154e1e56268b47b18614092dda92bc03c2c4
+    cwd: /var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/legacy/workspace
+    command_notation: Each argv below is appended to the absolute executable above.
+    observations:
+      - argv: ["--help"]
+        stdout: ""
+        stderr: "Legacy controlled stub: unsupported command\n"
+        exit: 2
+      - argv: ["version", "/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/sigil-mechanical-work-yfvrgp8q/observations/legacy/workspace", "--format", "json"]
+        stdout: "{\"command\": \"version\", \"cliVersion\": \"0.8.0\", \"coreVersion\": \"0.7.0\", \"sigilVersion\": \"0.8.0\", \"diagnostics\": []}\n"
+        stderr: ""
+        exit: 0
+      - argv: ["check", "--help"]
+        stdout: ""
+        stderr: "Legacy controlled stub: unsupported command\n"
+        exit: 2
+      - argv: ["fmt", "--help"]
+        stdout: ""
+        stderr: "Legacy controlled stub: unsupported command\n"
+        exit: 2
+    probe_history: >-
+      These four commands were initially probed with merged output and then
+      repeated with separately captured stdout/stderr and workspace snapshots.
+      Repeated results matched. Initial --help used inherited cwd
+      /Users/farhoud/Workspace/sigil; other initial probes used source_root.
+    workspace_identity:
+      capture_mode: in_place
+      membership:
+        - path: notes.sigil
+          sha256: ec870022a616a80acd1525ce797e396962e6b126f2099129d38b1b6b9caea863
+        - path: .sigil/config.json
+          sha256: 7d7669e4167e46373c4012266742889efa8300fe2a69a6b25b61abe8e631501e
+      config: 'sigilVersion=0.8.0; include=["**/*.sigil"]; exclude=["excluded/**"]'
+      additional_files: None discovered, including local overrides, glossary, or annotation sources.
+      before_after: Membership and exact bytes unchanged across repeated probes.
+    checks_performed: No workspace check or fmt --check executed.
+    reason: >-
+      CLI 0.8.0/core 0.7.0 are incompatible with required CLI 0.9.x/core 0.8.x.
+      Workspace sigilVersion does not establish executable compatibility.
+      Check JSON and nonwriting formatter capabilities were not verified.
+
+limitations:
+  - Mechanical validation unavailable for the stated incompatibility and failed help probes.
+  - Initial discovery probes preceded the recorded before/after snapshot.
+  - Instructions-only read-only restriction; no files, logs, or reports written.
+  - No alternate CLI, repository tool, network, installation, or observer expectations accessed.
+  - Design-only assessment establishes neither implementation conformance nor saturated coherence.

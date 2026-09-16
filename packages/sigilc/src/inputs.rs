@@ -11,7 +11,7 @@ use std::{
     path::Path,
 };
 
-pub const PROJECTION_FORMAT: u32 = 1;
+pub const PROJECTION_FORMAT: u32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -96,12 +96,17 @@ impl DesignSnapshot {
         Ok(serde_json::json!({
             "schemaVersion": self.input.schema_version,
             "frontendVersion": self.input.frontend_version,
+            "languageVersion": self.input.language_version,
             "target": self.input.sources.iter().find(|s| s.path == source),
             "dependencies": self.input.sources.iter().filter(|s| s.path != source && paths.contains(s.path.as_str())).collect::<Vec<_>>(),
             "context": self.input.context,
             "entities": self.input.entities.iter().filter(|e| paths.contains(e.source.as_str())).collect::<Vec<_>>(),
             "units": self.input.units.iter().filter(|u| paths.contains(u.source.as_str())).collect::<Vec<_>>(),
             "imports": self.input.imports.iter().filter(|i| paths.contains(i.source.as_str())).collect::<Vec<_>>(),
+            "groups": self.input.groups.iter().filter(|g| paths.contains(g.source.as_str())).collect::<Vec<_>>(),
+            "introductions": self.input.introductions.iter().filter(|i| paths.contains(i.source.as_str())).collect::<Vec<_>>(),
+            "references": self.input.references.iter().filter(|r| paths.contains(r.source.as_str())).collect::<Vec<_>>(),
+            "links": self.input.links.iter().filter(|l| paths.contains(l.source.as_str())).collect::<Vec<_>>(),
         }))
     }
 
@@ -159,6 +164,31 @@ impl DesignSnapshot {
         let structure = hash(
             &serde_json::to_vec(&(
                 self.input.schema_version,
+                &self.input.language_version,
+                sorted(
+                    self.input
+                        .groups
+                        .iter()
+                        .filter(|g| closure.contains(&g.source)),
+                )?,
+                sorted(
+                    self.input
+                        .introductions
+                        .iter()
+                        .filter(|i| closure.contains(&i.source)),
+                )?,
+                sorted(
+                    self.input
+                        .references
+                        .iter()
+                        .filter(|r| closure.contains(&r.source)),
+                )?,
+                sorted(
+                    self.input
+                        .links
+                        .iter()
+                        .filter(|l| closure.contains(&l.source)),
+                )?,
                 sorted(
                     self.input
                         .imports
@@ -201,7 +231,7 @@ impl DesignSnapshot {
             .map(|p| self.binding(p))
             .collect::<Result<_, _>>()?;
         Ok(hash(
-            &serde_json::to_vec(&("sigil-design-input-v1", bindings)).map_err(|e| e.to_string())?,
+            &serde_json::to_vec(&("sigil-design-input-v2", bindings)).map_err(|e| e.to_string())?,
         ))
     }
 }

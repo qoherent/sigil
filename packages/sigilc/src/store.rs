@@ -14,7 +14,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-
 const WORLDS: &str = ".sigil/worlds";
 const INDEX: &str = ".sigil/worlds/index.json";
 const INDEX_VERSION: u32 = 3;

@@ -1,4 +1,4 @@
-@spec/language.sigil import { SigilLanguage }
+@spec/language.sigil from SigilLanguage import { TagIdentity }
 
 component SigilWorkspaceGlossary {
   goal {
@@ -6,7 +6,7 @@ component SigilWorkspaceGlossary {
     workspace.
 
     Give authors and deterministic tools unambiguous workspace-wide and
-    bounded-context meanings without changing Sigil source syntax or concept
+    bounded-context meanings without changing Sigil source syntax or Tag
     identity.
   }
 
@@ -67,13 +67,16 @@ component SigilWorkspaceGlossary {
 
       occurrences resolve only inside Facet prose
 
-      structural syntax, EmbeddedContent types and bodies, inline code, and URLs do not
-      contain glossary occurrences
+      structural syntax, fenced content types and bodies, inline code, and URLs do
+      not contain glossary occurrences
+
+      These glossary-specific exclusions do not define TagIdentity or Tag
+      recognition. Follow the [language
+      reference](sigil-reference.md#tags-and-references) for Tag identity and
+      references; glossary identity remains independent
     }
   }
-}
 
-expand SigilWorkspaceGlossary {
   logic {
     ContextResolution {
       Resolve context include and exclude globs against normalized workspace-relative
@@ -117,7 +120,7 @@ expand SigilWorkspaceGlossary {
 
       One spelling cannot resolve to multiple entries in the same effective context.
 
-      A glossary entry does not create, import, alias, or shadow a Sigil concept
+      A glossary entry does not create, import, alias, or shadow a Sigil Tag
       identity.
 
       Agent-context exclusion does not affect glossary authority, validation, term
@@ -145,7 +148,7 @@ expand SigilWorkspaceGlossary {
       terminology authority.
 
       Scope: Governs workspace and bounded-context vocabulary; excludes behavioral
-      contracts and Sigil concept identity.
+      contracts and Sigil Tag identity.
 
       Trade-offs: Teams maintain an additional reviewed JSON artifact.
 

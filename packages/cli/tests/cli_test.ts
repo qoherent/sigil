@@ -5,6 +5,7 @@ import {
   SIGIL_VERSION,
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
+import { relative as relativePathFrom, resolve } from "node:path";
 import { CoreAdapter } from "../src/core-adapter.ts";
 import metadata from "../deno.json" with { type: "json" };
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
@@ -23,9 +24,9 @@ import {
 } from "../src/exit.ts";
 
 // @sigil tests packages/cli/src/retrieval-markdown.sigil::SigilRetrievalMarkdown::RetrievalMarkdownProjection interface,constraints,cases
-Deno.test("retrieve Markdown renders module context and escaped ownership links", () => {
+Deno.test("retrieve Markdown renders provider context and escaped ownership links", () => {
   const projection: RetrievalProjection = {
-    schema: "sigil-retrieval-projection/v1",
+    schema: "sigil-retrieval-projection/v2",
     purpose: "semantic",
     target: {
       kind: "component",
@@ -47,17 +48,24 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
       cases: [],
       ownership: [{
         relation: "implements",
+        tagName: "shared value",
+        tagIdentity: {
+          id: "provider:shared",
+          name: "shared value",
+          owner: { componentName: "Provider", declarationPath: "dep.sigil" },
+        },
         path: "src/feature.ts",
         location: { line: 8, column: 3 },
         symbol: "renderFeature",
         sections: ["interface"],
+        facetIds: [],
       }],
       links: [],
     }, {
       id: "_module.sigil::Workspace",
       name: "Workspace",
       path: "_module.sigil",
-      role: "module-context",
+      role: "dependency",
       goal: [{ text: "Assemble the workspace.", path: "_module.sigil" }],
       interface: [],
       state: [],
@@ -96,11 +104,13 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
   const markdown = renderRetrieveMarkdown(projection);
   assert(markdown.includes("Use \\*safe\\* Markdown."));
   assert(markdown.includes("[src/feature.ts:8:3](src/feature.ts#L8)"));
+  assert(markdown.includes("; Tag: shared value; Origin: dep.sigil::Provider"));
+  assert(!markdown.includes("#### shared value"));
   assert(markdown.includes("## Dependencies"));
   assert(markdown.includes("#### ProviderApi"));
-  assert(markdown.includes("- run()"));
+  assert(markdown.includes("run()"));
   assert(!markdown.includes("Goal: Provide"));
-  assert(markdown.includes("## Module Context"));
+  assert(!markdown.includes("## Module Context"));
   assert(markdown.includes("### Workspace"));
   assert(markdown.includes("- **component** — A coherent system part."));
 });
@@ -110,33 +120,37 @@ Deno.test("retrieve Markdown renders module context and escaped ownership links"
  * @sigil tests packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
  */
 Deno.test("parse discovers config and emits workspace metadata", async () => {
-  const result = await runCli([
-    "parse",
-    "../../examples/promise/promise.sigil",
-    "--format",
-    "json",
-  ]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
-  assertEquals(json.command, "parse");
-  assertEquals(json.sigilVersion, SIGIL_VERSION);
-  assertEquals(json.workspaceName, "promise");
-  assertEquals(json.document.components[0].name, "Promise");
+  const root = await providerWorkspace();
+  try {
+    const result = await runCli(["parse", `${root}/consumer.sigil`]);
+    assertEquals(result.exitCode, 0);
+    const output = parseJson(result.stdout);
+    assertEquals(output.sigilVersion, SIGIL_VERSION);
+    assertEquals(output.document.components[0].name, "Consumer");
+    assertEquals(output.document.imports[0].provider, "Base");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("check resolves repository config from a nested working directory", async () => {
-  const result = await runCli(["check", "--format", "json"]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
-  assertEquals(json.workspaceRoot, "../..");
-  assertEquals(json.configPath, "../../.sigil/config.json");
-  assertEquals(json.diagnosticCounts.error, 0);
+Deno.test("check resolves config from a nested working directory", async () => {
+  const root = await providerWorkspace();
+  try {
+    await Deno.mkdir(`${root}/nested`);
+    const result = await runCli(["check", "--format", "json"], {
+      core: new CoreAdapter({ currentDirectory: `${root}/nested` }),
+    });
+    assertEquals(result.exitCode, 0, result.stdout);
+    assertEquals(parseJson(result.stdout).diagnosticCounts.error, 0);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::OwnershipDiagnostics interface,logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliOwnershipDiagnostics interface,logic,cases
  */
 Deno.test("check reports ownership diagnostics from implementation sources", async () => {
   const root = await makeWorkspace("ownership-check");
@@ -154,14 +168,14 @@ Deno.test("check reports ownership diagnostics from implementation sources", asy
     const result = await runCli(["check", root, "--format", "json"]);
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
     const output = parseJson(result.stdout);
-    assertHasCode(output.diagnostics, "SIGIL_PARSE_STRUCTURE");
+    assertHasCode(output.diagnostics, "SIGIL_IMPLEMENTATION_ANNOTATION");
     assertEquals(output.diagnosticCounts.error, 1);
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
-// @sigil tests packages/cli/_module.sigil::SigilCli::OwnershipDiagnostics cases
+// @sigil tests packages/cli/_module.sigil::SigilCli::CliOwnershipDiagnostics cases
 Deno.test("check skips ownership diagnostics from config-excluded sources", async () => {
   const root = await makeWorkspace("excluded-ownership-check");
   try {
@@ -289,18 +303,17 @@ Deno.test("init defaults workspace name to directory basename", async () => {
  * @sigil tests packages/cli/_module.sigil::SigilCli::ArtifactVersionOwnership constraints
  */
 Deno.test("version reports tool and resolved contract versions", async () => {
-  const result = await runCli([
-    "version",
-    "../..",
-    "--format",
-    "json",
-    "--pretty",
-  ]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
-  assertEquals(json.cliVersion, metadata.version);
-  assertEquals(json.coreVersion, SIGIL_CORE_VERSION);
-  assertEquals(json.sigilVersion, SIGIL_VERSION);
+  const root = await providerWorkspace();
+  try {
+    const result = await runCli(["version", root, "--format", "json"]);
+    assertEquals(result.exitCode, 0);
+    const output = parseJson(result.stdout);
+    assertEquals(output.cliVersion, metadata.version);
+    assertEquals(output.coreVersion, SIGIL_CORE_VERSION);
+    assertEquals(output.sigilVersion, SIGIL_VERSION);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 /*
@@ -443,61 +456,39 @@ Deno.test("check --show-locations adds file, line, and column to text diagnostic
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("check reports imported concept ambiguity in module indexes and ordinary files", async () => {
-  const root = await makeWorkspace("concept-ambiguity");
+Deno.test("check reports exact Tag collisions in module files and ordinary consumers", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(
-      `${root}/glossary.sigil`,
-      `component SigilGlossaryEngine {
-  goal {
-    Inspect glossary data.
-  }
-
-  interface {
-    GlossaryInspection {
-      Inspect reviewed glossary terms.
-    }
-  }
-}
-`,
+    const exported = parseJson(
+      (await runCli(["export", "design", root])).stdout,
     );
-    const consumer = (name: string) =>
-      `@glossary.sigil import { SigilGlossaryEngine }
-
-component ${name} {
-  goal {
-    Present glossary inspection.
-  }
-
-  interface {
-    GlossaryInspection {
-      A local facade for SigilGlossaryEngine GlossaryInspection.
+    const consumer = exported.sources.find((s: { path: string }) =>
+      s.path === "consumer.sigil"
+    ).text;
+    for (const path of ["consumer.sigil", "_module.sigil"]) {
+      await Deno.writeTextFile(
+        `${root}/${path}`,
+        consumer.replace(
+          "component Consumer",
+          path === "consumer.sigil" ? "component Consumer" : "component Module",
+        ).replace(
+          "interface {",
+          "interface {\nresult {\nA local collision.\n}\n",
+        ),
+      );
     }
-  }
-}
-`;
-    await Deno.writeTextFile(`${root}/_module.sigil`, consumer("SigilCore"));
-    await Deno.writeTextFile(
-      `${root}/workspace.sigil`,
-      consumer("SigilWorkspace"),
-    );
-
     const result = await runCli(["check", root, "--format", "json"]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    const ambiguities = parseJson(result.stdout).diagnostics.filter(
-      (item: { code: string }) =>
-        item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
-    );
-    assertEquals(ambiguities.length, 2);
-    assert(
-      ambiguities.some((item: { filePath: string }) =>
-        item.filePath.endsWith("/_module.sigil")
-      ),
-    );
-    assert(
-      ambiguities.some((item: { filePath: string }) =>
-        item.filePath.endsWith("/workspace.sigil")
-      ),
+    assertEquals(result.exitCode, 1);
+    const diagnostics = parseJson(result.stdout).diagnostics;
+    assertEquals(
+      new Set(
+        diagnostics.filter((d: { code: string }) =>
+          d.code === "SIGIL_TAG_NAME_COLLISION"
+        ).map((d: { filePath: string }) =>
+          d.filePath
+        ),
+      ).size,
+      2,
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -545,22 +536,26 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
     diagnosticCounts: { error: 1, warning: 1, info: 1 },
     diagnostics: [
       {
+        stage: "structure",
+        related: [],
         severity: "error",
         code: "SIGIL_UNKNOWN_SECTION",
         message: "Unknown section.",
         filePath: `${winRoot}/pkg/a.sigil`,
-        range: {
-          start: { line: 8, column: 3 },
-          end: { line: 8, column: 9 },
-        },
+        range: { start: 80, end: 86 },
+        sourceLocation: { line: 8, column: 3 },
       },
       {
+        stage: "resolution",
+        related: [],
         severity: "warning",
-        code: "SIGIL_UNUSED_IMPORT",
+        code: "SIGIL_UNUSED_TAG_IMPORT",
         message: "Unused import.",
         filePath: `${winRoot}/pkg/b.sigil`,
       },
       {
+        stage: "workspace",
+        related: [],
         severity: "info",
         code: "SIGIL_UNSUPPORTED_VERSION",
         message: "No location here.",
@@ -577,7 +572,7 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
   );
   assert(
     winText.includes(
-      "warning SIGIL_UNUSED_IMPORT C:/repo/pkg/b.sigil: Unused import.",
+      "warning SIGIL_UNUSED_TAG_IMPORT C:/repo/pkg/b.sigil: Unused import.",
     ),
     winText,
   );
@@ -586,6 +581,28 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
     winText,
   );
   assert(!winText.includes("\\"), "paths must render with forward slashes");
+
+  // A workspace on another drive cannot be rendered relative to cwd.
+  const otherDrive = normalizePath(Deno.cwd()).startsWith("C:") ? "Z:" : "C:";
+  const otherRoot = `${otherDrive}/repo`;
+  const otherResult: CheckCommandResult = {
+    ...winResult,
+    workspaceRoot: otherRoot,
+    configPath: `${otherRoot}/.sigil/config.json`,
+    diagnostics: [{
+      ...winResult.diagnostics[0],
+      filePath: `${otherRoot}/pkg/a.sigil`,
+    }],
+  };
+  const otherOutput = parseJson(
+    await formatResult(otherResult, {
+      ...base,
+      format: "json",
+    }),
+  );
+  assertEquals(otherOutput.workspaceRoot, otherRoot);
+  assertEquals(otherOutput.configPath, `${otherRoot}/.sigil/config.json`);
+  assertEquals(otherOutput.diagnostics[0].filePath, `${otherRoot}/pkg/a.sigil`);
 
   // A relative invocation normalizes absolute workspace paths to relative POSIX.
   const cwd = normalizePath(Deno.cwd());
@@ -599,14 +616,14 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
     diagnosticCounts: { error: 1, warning: 0, info: 0 },
     diagnostics: [
       {
+        stage: "structure",
+        related: [],
         severity: "error",
         code: "SIGIL_UNKNOWN_SECTION",
         message: "Unknown section.",
         filePath: `${posixRoot}/pkg/a.sigil`,
-        range: {
-          start: { line: 4, column: 2 },
-          end: { line: 4, column: 5 },
-        },
+        range: { start: 40, end: 43 },
+        sourceLocation: { line: 4, column: 2 },
       },
     ],
   };
@@ -622,7 +639,7 @@ Deno.test("check location rendering handles ranges, missing ranges, and path sty
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  */
 Deno.test("glossary reports reviewed terms, contexts, and occurrences", async () => {
   const root = await makeWorkspace("glossary");
@@ -699,7 +716,7 @@ Deno.test("glossary reports reviewed terms, contexts, and occurrences", async ()
 });
 
 /*
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::ExitStatus constraints,cases
  */
 Deno.test("glossary is absent without error and invalid data exits 1", async () => {
@@ -722,57 +739,28 @@ Deno.test("glossary is absent without error and invalid data exits 1", async () 
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("context exposes concept blocks and resolved namespaces", async () => {
-  const root = await makeWorkspace("concept-context");
+Deno.test("context exposes owner-qualified Tags and collective introductions", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(
-      `${root}/contract.sigil`,
-      `component Feature {
-  goal {
-    Test concepts.
-  }
-
-  interface {
-    Execution {
-      run()
-    }
-  }
-}
-`,
-    );
-    const result = await runCli([
-      "context",
-      root,
-      "--component",
-      "Feature",
-      "--format",
-      "json",
-    ]);
-    assertEquals(result.exitCode, EXIT_OK);
+    const result = await runCli(["context", root, "--component", "Base"]);
+    assertEquals(result.exitCode, 0, result.stdout);
     const output = parseJson(result.stdout);
+    assertEquals(output.tagNamespaces[0].tags.length, 2);
     assertEquals(
-      output.componentContracts[0].interfaceConcepts[0].identifier,
-      "Execution",
+      output.tagNamespaces[0].tags.reduce(
+        (n: number, t: { introductions: unknown[] }) =>
+          n + t.introductions.length,
+        0,
+      ),
+      3,
     );
-    assertEquals(
-      output.conceptNamespaces[0].publicConcepts[0].identifier,
-      "Execution",
+    assert(
+      output.componentContracts[0].declaration.sections.some((
+        section: { groups: unknown[] },
+      ) => section.groups.length > 0),
     );
-
-    const markdown = await runCli([
-      "context",
-      root,
-      "--component",
-      "Feature",
-      "--format",
-      "markdown",
-    ]);
-    assertEquals(markdown.exitCode, EXIT_OK);
-    assert(markdown.stdout.includes("### Concept Namespace"));
-    assert(markdown.stdout.includes("#### Public Concepts"));
-    assert(markdown.stdout.includes("#### Accessible Concepts"));
-    assert(markdown.stdout.includes("#### Declared Concepts"));
-    assert(markdown.stdout.includes("- Execution (Feature,"));
+    assertEquals(output.conceptNamespaces, undefined);
+    assertEquals(output.collectedExpansions, undefined);
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -813,8 +801,8 @@ const detached = 1;
     assertEquals(projection.targets[0].sections.join(","), "interface");
     assertEquals(projection.targets[0].filePath, "implementation.ts");
     assertEquals(projection.targets[0].symbolIdentity, "runFeature");
-    assertHasCode(projection.diagnostics, "SIGIL_PARSE_STRUCTURE");
-    assertHasCode(output.diagnostics, "SIGIL_PARSE_STRUCTURE");
+    assertHasCode(projection.diagnostics, "SIGIL_IMPLEMENTATION_ANNOTATION");
+    assertHasCode(output.diagnostics, "SIGIL_IMPLEMENTATION_ANNOTATION");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -870,8 +858,8 @@ export function hiddenFeature() {}
           target.symbolIdentity === "hiddenFeature",
       ),
     );
-    assertHasCode(projection.diagnostics, "SIGIL_PARSE_STRUCTURE");
-    assertHasCode(output.diagnostics, "SIGIL_PARSE_STRUCTURE");
+    assertHasCode(projection.diagnostics, "SIGIL_IMPLEMENTATION_ANNOTATION");
+    assertHasCode(output.diagnostics, "SIGIL_IMPLEMENTATION_ANNOTATION");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -944,227 +932,50 @@ export function runFeature() {}
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("context includes direct dependency contracts and decision rationale", async () => {
-  const root = await makeWorkspace("agent-dependency-context");
+Deno.test("context includes full provider contracts, selected Tags and consumer use evidence", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(
-      `${root}/leaf.sigil`,
-      validSigil("Leaf"),
+    const result = await runCli(["context", root, "--component", "Consumer"]);
+    assertEquals(result.exitCode, 0, result.stdout);
+    const context = parseJson(result.stdout).agentDependencyContexts[0];
+    assertEquals(context.providers[0].component.name, "Base");
+    assertEquals(context.providers[0].selections.length, 2);
+    assertEquals(context.providers[0].uses.length, 2);
+    assert(
+      context.dependencyContracts[0].declaration.sections.some((
+        section: { name: string },
+      ) => section.name === "constraints"),
     );
-    await Deno.writeTextFile(
-      `${root}/leaf-detail.sigil`,
-      `@leaf.sigil import { Leaf }
-
-expand Leaf {
-  decisions {
-    LeafChoice {
-      Decision: Exclude transitive rationale.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/provider.sigil`,
-      `@leaf.sigil import { Leaf }
-
-${validSigil("Provider").replace("run()", "run(Leaf)")}`,
-    );
-    await Deno.writeTextFile(
-      `${root}/provider-detail.sigil`,
-      `@provider.sigil import { Provider }
-
-expand Provider {
-  logic {
-    ProviderLogic {
-      Keep private mechanics hidden.
-    }
-  }
-
-  decisions {
-    ProviderChoice {
-      Decision: Include direct rationale.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/consumer.sigil`,
-      `@provider.sigil import { Provider }
-
-${validSigil("Consumer").replace("run()", "run(Provider)")}`,
-    );
-
-    const result = await runCli([
-      "context",
-      root,
-      "--component",
-      "Consumer",
-      "--format",
-      "json",
-    ]);
-    assertEquals(result.exitCode, EXIT_OK);
-    const output = parseJson(result.stdout);
-    const context = output.agentDependencyContexts[0];
     assertEquals(context.selectedComponent.name, "Consumer");
-    assertEquals(
-      context.dependencyContracts.map((item: {
-        name: string;
-      }) => item.name).join(","),
-      "Provider",
-    );
-    assertEquals(context.dependencyDecisions.length, 1);
-    assertEquals(
-      context.dependencyDecisions[0].section.units[0].prose,
-      "Decision: Include direct rationale.",
-    );
-    assert(
-      !JSON.stringify(context.dependencyDecisions).includes(
-        "Keep private mechanics hidden.",
-      ),
-    );
-    assert(
-      !context.dependencyContracts.some((item: { name: string }) =>
-        item.name === "Leaf"
-      ),
-    );
-    assertEquals(
-      output.relatedFilePaths.map((path: string) =>
-        path.slice(path.lastIndexOf("/") + 1)
-      ).join(","),
-      "consumer.sigil,provider-detail.sigil,provider.sigil",
-    );
-
-    const markdown = await runCli([
-      "context",
-      root,
-      "--component",
-      "Consumer",
-      "--format",
-      "markdown",
-    ]);
-    assertEquals(markdown.exitCode, EXIT_OK);
-    assert(markdown.stdout.includes("### Direct Dependencies"));
-    assert(markdown.stdout.includes("#### Provider"));
-    assert(markdown.stdout.includes("##### Goal"));
-    assert(markdown.stdout.includes("- Test Provider."));
-    assert(markdown.stdout.includes("##### Interface"));
-    assert(markdown.stdout.includes("- run(Leaf)"));
-    assert(markdown.stdout.includes("##### Dependency Decisions"));
-    assert(markdown.stdout.includes("provider-detail.sigil"));
-    assert(markdown.stdout.includes("Decision: Include direct rationale."));
-    assert(
-      !markdown.stdout.includes("Keep private mechanics hidden."),
-    );
-    assert(
-      markdown.stdout.indexOf("#### Provider") <
-        markdown.stdout.indexOf("Decision: Include direct rationale."),
-    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("context renders component Markdown for contracts, expansions, diagnostics, and no matches", async () => {
-  const root = await makeWorkspace("context-markdown-component");
+Deno.test("context Markdown preserves consumer and provider contracts, payload and empty selection", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(
-      `${root}/plain.sigil`,
-      `component Plain {
-  goal {
-    Render without expansions.
-  }
-
-  interface {
-    PlainApi {
-      run plain.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/feature.sigil`,
-      `component Feature {
-  goal {
-    Render punctuation: <angle> & pipes | stars * safely.
-  }
-
-  interface {
-    FeatureApi {
-      run(value: "quoted") -> result?
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/one.sigil`,
-      `@feature.sigil import { Feature }
-
-expand Feature {
-  logic {
-    FeatureApi {
-      One expansion.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/two.sigil`,
-      `@feature.sigil import { Feature }
-
-expand Feature {
-  cases {
-    FeatureApi {
-      Second expansion.
-    }
-  }
-}
-`,
-    );
-    const plain = await runCli([
+    const result = await runCli([
       "context",
       root,
       "--component",
-      "Plain",
+      "Consumer",
       "--format",
       "markdown",
     ]);
-    assertEquals(plain.exitCode, EXIT_OK);
-    assert(plain.stdout.startsWith("# Sigil Context\n"));
-    assert(plain.stdout.includes("## Plain"));
-    assert(!plain.stdout.includes("### Expansions"));
-
-    const feature = await runCli([
-      "context",
-      root,
-      "--component",
-      "Feature",
-      "--format",
-      "markdown",
-    ]);
-    assertEquals(feature.exitCode, EXIT_OK);
-    assert(feature.stdout.includes("## Feature"));
-    assert(
-      feature.stdout.includes(
-        "- Render punctuation: <angle> & pipes | stars * safely.",
-      ),
+    assertEquals(result.exitCode, 0, result.stdout);
+    assert(result.stdout.includes("### Direct Dependencies"));
+    assert(result.stdout.includes("Selected Tags:"));
+    assert(result.stdout.includes("Consumer uses: 2"));
+    const exported = parseJson(
+      (await runCli(["export", "design", root])).stdout,
     );
-    assert(feature.stdout.includes('- run(value: "quoted") -> result?'));
-    assert(
-      feature.stdout.indexOf("Source:") <
-        feature.stdout.indexOf("One expansion."),
-    );
-    assert(feature.stdout.includes("Source:"));
-    assert(feature.stdout.includes("One expansion."));
-    assert(feature.stdout.includes("Second expansion."));
-    assert(feature.stdout.includes("## Related Files"));
-
-    const missing = await runCli([
+    const payload = exported.units.find((u: { payload: unknown }) => u.payload)
+      ?.payload;
+    assert(result.stdout.includes(payload.rawBody));
+    assert(!result.stdout.includes("undefined"));
+    const empty = await runCli([
       "context",
       root,
       "--component",
@@ -1172,145 +983,97 @@ expand Feature {
       "--format",
       "markdown",
     ]);
-    assertEquals(missing.exitCode, EXIT_OK);
-    assert(missing.stdout.includes("No context matched"));
+    assert(empty.stdout.includes("No context matched"));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
 
-    const defaultJson = await runCli([
+/*
+ * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::MarkdownOutput interface,logic,constraints
+ */
+Deno.test("context Markdown retains duplicate physical owners without merged contracts", async () => {
+  const root = await providerWorkspace();
+  try {
+    await Deno.writeTextFile(
+      `${root}/duplicate.sigil`,
+      validSigil("Base").replace("Test Base.", "Independent duplicate owner."),
+    );
+    const result = await runCli([
       "context",
       root,
       "--component",
-      "Feature",
-    ]);
-    const explicitJson = await runCli([
-      "context",
-      root,
-      "--component",
-      "Feature",
+      "Base",
       "--format",
       "json",
     ]);
-    assertEquals(defaultJson.exitCode, EXIT_OK);
-    assertEquals(explicitJson.exitCode, EXIT_OK);
-    assertEquals(defaultJson.stdout, explicitJson.stdout);
-
-    await Deno.writeTextFile(
-      `${root}/broken.sigil`,
-      `component Broken {
-  goal {
-    Recover partial context.
-  }
-}
-`,
+    assertEquals(result.exitCode, 1);
+    const output = parseJson(result.stdout);
+    assertEquals(output.selectedComponents.length, 2);
+    assertEquals(output.agentDependencyContexts.length, 0);
+    assertHasCode(output.diagnostics, "SIGIL_DUPLICATE_COMPONENT");
+    const consumer = parseJson(
+      (await runCli(["context", root, "--component", "Consumer"])).stdout,
     );
-
-    const broken = await runCli([
+    assertEquals(consumer.agentDependencyContexts[0].providers.length, 0);
+    const markdown = await runCli([
       "context",
       root,
       "--component",
-      "Broken",
+      "Base",
       "--format",
       "markdown",
     ]);
-    assertEquals(broken.exitCode, EXIT_DIAGNOSTICS);
-    assert(broken.stdout.includes("## Broken"));
-    assert(broken.stdout.includes("SIGIL_MISSING_INTERFACE"));
+    assertEquals(
+      countOccurrences(markdown.stdout, "Independent duplicate owner."),
+      1,
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
 
-    const json = await runCli([
+/*
+ * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::MarkdownOutput interface,logic,constraints
+ */
+Deno.test("context leaves duplicate provider names unresolved", async () => {
+  const root = await providerWorkspace();
+  try {
+    await Deno.writeTextFile(
+      `${root}/duplicate.sigil`,
+      validSigil("Base").replace("Test Base.", "Independent duplicate owner."),
+    );
+    const result = await runCli([
       "context",
       root,
       "--component",
-      "Feature",
+      "Base",
       "--format",
       "json",
     ]);
-    assertEquals(json.exitCode, EXIT_DIAGNOSTICS);
-    assertEquals(parseJson(json.stdout).command, "context");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-/*
- * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::MarkdownOutput interface,logic,constraints
- */
-Deno.test("context Markdown does not attach expands to duplicate component names", async () => {
-  const root = await makeWorkspace("context-markdown-duplicate-name");
-  try {
-    await Deno.writeTextFile(
-      `${root}/first.sigil`,
-      `component Duplicate {
-  goal {
-    First duplicate.
-  }
-
-  interface {
-    FirstApi {
-      first()
-    }
-  }
-}
-`,
+    assertEquals(result.exitCode, 1);
+    const output = parseJson(result.stdout);
+    assertEquals(output.selectedComponents.length, 2);
+    assertEquals(output.agentDependencyContexts.length, 0);
+    assertHasCode(output.diagnostics, "SIGIL_DUPLICATE_COMPONENT");
+    const consumer = parseJson(
+      (await runCli(["context", root, "--component", "Consumer"])).stdout,
     );
-    await Deno.writeTextFile(
-      `${root}/second.sigil`,
-      `component Duplicate {
-  goal {
-    Second duplicate.
-  }
-
-  interface {
-    SecondApi {
-      second()
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/first-detail.sigil`,
-      `@first.sigil import { Duplicate }
-
-expand Duplicate {
-  logic {
-    FirstApi {
-      first expansion.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second-detail.sigil`,
-      `@second.sigil import { Duplicate }
-
-expand Duplicate {
-  logic {
-    SecondApi {
-      second expansion.
-    }
-  }
-}
-`,
-    );
-
-    const result = await runCli([
+    assertEquals(consumer.agentDependencyContexts[0].providers.length, 0);
+    const markdown = await runCli([
       "context",
       root,
-      "--file",
-      `${root}/second.sigil`,
+      "--component",
+      "Base",
       "--format",
       "markdown",
     ]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    assert(result.stdout.includes("## Duplicate"));
-    assert(result.stdout.includes("- Second duplicate."));
-    assert(result.stdout.includes("#### SecondApi"));
-    assert(!result.stdout.includes("- First duplicate."));
-    assert(!result.stdout.includes("#### FirstApi"));
-    assert(!result.stdout.includes("second expansion."));
-    assert(result.stdout.includes("SIGIL_EXPAND_WITHOUT_COMPONENT"));
-    assert(result.stdout.includes("SIGIL_DUPLICATE_COMPONENT"));
+    assertEquals(
+      countOccurrences(markdown.stdout, "Independent duplicate owner."),
+      1,
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -1320,245 +1083,42 @@ expand Duplicate {
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::MarkdownOutput interface,logic,constraints
  */
-Deno.test("context Markdown leaves duplicate dependency names unresolved", async () => {
-  const root = await makeWorkspace("context-markdown-duplicate-dependencies");
+Deno.test("context does not assign resolved provider context to duplicate selected names", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.mkdir(`${root}/first`);
-    await Deno.mkdir(`${root}/second`);
     await Deno.writeTextFile(
-      `${root}/first/provider.sigil`,
-      `component Provider {
-  goal {
-    First provider.
-  }
-
-  interface {
-    FirstProviderApi {
-      first()
-    }
-  }
-}
-`,
+      `${root}/duplicate.sigil`,
+      validSigil("Base").replace("Test Base.", "Independent duplicate owner."),
     );
-    await Deno.writeTextFile(
-      `${root}/first/provider-detail.sigil`,
-      `@first/provider.sigil import { Provider }
-
-expand Provider {
-  decisions {
-    FirstProviderChoice {
-      Decision: Use the first provider.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second/provider.sigil`,
-      `component Provider {
-  goal {
-    Second provider.
-  }
-
-  interface {
-    SecondProviderApi {
-      second()
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second/provider-detail.sigil`,
-      `@second/provider.sigil import { Provider }
-
-expand Provider {
-  decisions {
-    SecondProviderChoice {
-      Decision: Use the second provider.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/consumer.sigil`,
-      `@first/provider.sigil import { Provider }
-@second/provider.sigil import { Provider }
-
-component Consumer {
-  goal {
-    Consume both providers.
-  }
-
-  interface {
-    ConsumerApi {
-      consume()
-    }
-  }
-}
-`,
-    );
-
     const result = await runCli([
       "context",
       root,
       "--component",
-      "Consumer",
+      "Base",
       "--format",
-      "markdown",
+      "json",
     ]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    assert(result.stdout.includes("first/provider.sigil"));
-    assert(result.stdout.includes("second/provider.sigil"));
-    assert(!result.stdout.includes("#### Other Dependency Decisions"));
-    assertEquals(
-      countOccurrences(result.stdout, "Decision: Use the first provider."),
-      0,
+    assertEquals(result.exitCode, 1);
+    const output = parseJson(result.stdout);
+    assertEquals(output.selectedComponents.length, 2);
+    assertEquals(output.agentDependencyContexts.length, 0);
+    assertHasCode(output.diagnostics, "SIGIL_DUPLICATE_COMPONENT");
+    const consumer = parseJson(
+      (await runCli(["context", root, "--component", "Consumer"])).stdout,
     );
-    assertEquals(
-      countOccurrences(result.stdout, "Decision: Use the second provider."),
-      0,
-    );
-    assert(result.stdout.includes("SIGIL_DUPLICATE_COMPONENT"));
-    assert(result.stdout.includes("SIGIL_UNRESOLVED_IMPORTED_COMPONENT"));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-/*
- * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::MarkdownOutput interface,logic,constraints
- */
-Deno.test("context Markdown preserves dependency identity for duplicate selected components", async () => {
-  const root = await makeWorkspace("context-markdown-duplicate-selected");
-  try {
-    await Deno.mkdir(`${root}/first`);
-    await Deno.mkdir(`${root}/second`);
-    await Deno.writeTextFile(
-      `${root}/first/provider.sigil`,
-      `component FirstProvider {
-  goal {
-    First dependency.
-  }
-
-  interface {
-    FirstDependencyApi {
-      first()
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/first/provider-detail.sigil`,
-      `@first/provider.sigil import { FirstProvider }
-
-expand FirstProvider {
-  decisions {
-    FirstDependencyChoice {
-      Decision: Use the first dependency.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second/provider.sigil`,
-      `component SecondProvider {
-  goal {
-    Second dependency.
-  }
-
-  interface {
-    SecondDependencyApi {
-      second()
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second/provider-detail.sigil`,
-      `@second/provider.sigil import { SecondProvider }
-
-expand SecondProvider {
-  decisions {
-    SecondDependencyChoice {
-      Decision: Use the second dependency.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/first/consumer.sigil`,
-      `@first/provider.sigil import { FirstProvider }
-
-component Consumer {
-  goal {
-    First consumer.
-  }
-
-  interface {
-    ConsumerApi {
-      consume first.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/second/consumer.sigil`,
-      `@second/provider.sigil import { SecondProvider }
-
-component Consumer {
-  goal {
-    Second consumer.
-  }
-
-  interface {
-    ConsumerApi {
-      consume second.
-    }
-  }
-}
-`,
-    );
-
-    const result = await runCli([
+    assertEquals(consumer.agentDependencyContexts[0].providers.length, 0);
+    const markdown = await runCli([
       "context",
       root,
       "--component",
-      "Consumer",
+      "Base",
       "--format",
       "markdown",
     ]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    const firstConsumer = result.stdout.indexOf("first/consumer.sigil");
-    const secondConsumer = result.stdout.indexOf(
-      "second/consumer.sigil",
-    );
-    const firstDependency = result.stdout.indexOf(
-      "first/provider.sigil",
-    );
-    const secondDependency = result.stdout.indexOf(
-      "second/provider.sigil",
-    );
-    assert(firstConsumer >= 0);
-    assert(secondConsumer > firstConsumer);
-    assert(firstDependency > firstConsumer && firstDependency < secondConsumer);
-    assert(secondDependency > secondConsumer);
     assertEquals(
-      countOccurrences(result.stdout, "Decision: Use the first dependency."),
+      countOccurrences(markdown.stdout, "Independent duplicate owner."),
       1,
     );
-    assertEquals(
-      countOccurrences(result.stdout, "Decision: Use the second dependency."),
-      1,
-    );
-    assert(result.stdout.includes("SIGIL_DUPLICATE_COMPONENT"));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -1628,9 +1188,10 @@ component Second {
       core: new CoreAdapter({ currentDirectory: root }),
     });
     assertEquals(relative.exitCode, EXIT_OK);
-    assert(!relative.stdout.includes(`Workspace root: ${normalizedRoot}`));
+    const displayRoot = normalizePath(relativePathFrom(Deno.cwd(), root));
+    assert(relative.stdout.includes(`Workspace root: ${displayRoot}`));
     assert(
-      !relative.stdout.includes(`Source: ${normalizedRoot}/multi.sigil`),
+      relative.stdout.includes(`Source: ${displayRoot}/multi.sigil`),
     );
     assert(relative.stdout.includes("multi.sigil"));
     assert(relative.stdout.includes("## First"));
@@ -1640,92 +1201,26 @@ component Second {
   }
 });
 
-Deno.test("context optionally includes direct importing-file context", async () => {
-  const root = await makeWorkspace("agent-dependent-context");
+Deno.test("context optionally includes consumers selecting provider Tags", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(
-      `${root}/provider.sigil`,
-      validSigil("Provider"),
+    const plain = parseJson(
+      (await runCli(["context", root, "--component", "Base"])).stdout,
     );
-    await Deno.writeTextFile(
-      `${root}/consumer.sigil`,
-      `@provider.sigil import { Provider }
-
-component ConsumerA {
-  goal {
-    Import provider.
-  }
-
-  interface {
-    runA(Provider)
-  }
-}
-
-component ConsumerB {
-  goal {
-    Share an importing file.
-  }
-
-  interface {
-    runB()
-  }
-}
-`,
-    );
-
-    const defaultResult = await runCli([
-      "context",
-      root,
-      "--component",
-      "Provider",
-      "--format",
-      "json",
-    ]);
-    assertEquals(defaultResult.exitCode, EXIT_OK);
-    assert(!("agentDependentContexts" in parseJson(defaultResult.stdout)));
-
+    assertEquals(plain.agentDependentContexts, undefined);
     const result = await runCli([
       "context",
       root,
       "--component",
-      "Provider",
+      "Base",
       "--include-dependents",
-      "--format",
-      "json",
     ]);
-    assertEquals(result.exitCode, EXIT_OK);
-    const output = parseJson(result.stdout);
-    const context = output.agentDependentContexts[0];
-    assertEquals(context.selectedComponent.name, "Provider");
-    assertEquals(
-      context.importingFiles.map((item: { filePath: string }) =>
-        item.filePath.slice(item.filePath.lastIndexOf("/") + 1)
-      ).join(","),
-      "consumer.sigil",
-    );
-    assertEquals(context.importingFiles[0].importedComponent.name, "Provider");
-    assertEquals(
-      context.importingFiles[0].contextualContracts.map((
-        item: { name: string },
-      ) => item.name).join(","),
-      "ConsumerA,ConsumerB",
-    );
-    assertEquals(context.importingFiles[0].importEdges.length, 1);
-
-    const markdown = await runCli([
-      "context",
-      root,
-      "--component",
-      "Provider",
-      "--include-dependents",
-      "--format",
-      "markdown",
-    ]);
-    assertEquals(markdown.exitCode, EXIT_OK);
-    assert(markdown.stdout.includes("### Direct Importers"));
-    assert(markdown.stdout.includes("consumer.sigil"));
-    assert(markdown.stdout.includes("###### ConsumerA"));
-    assert(markdown.stdout.includes("###### ConsumerB"));
+    assertEquals(result.exitCode, 0, result.stdout);
+    const importer =
+      parseJson(result.stdout).agentDependentContexts[0].importingFiles[0];
+    assertEquals(importer.provider.name, "Base");
+    assertEquals(importer.importEdges.length, 2);
+    assertEquals(importer.contextualContracts[0].name, "Consumer");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -1774,7 +1269,7 @@ Deno.test("retrieve returns one deterministic purpose result", async () => {
     assertEquals(first.exitCode, EXIT_OK);
     const result = parseJson(first.stdout);
     assertEquals(result.command, "retrieve");
-    assertEquals(result.schema, "sigil-purpose-retrieval/v1");
+    assertEquals(result.schema, "sigil-purpose-retrieval/v2");
     assertEquals(result.purpose, "architecture");
     assert(
       result.graph.nodes.some((node: { kind: string }) =>
@@ -1793,27 +1288,22 @@ Deno.test("retrieve returns one deterministic purpose result", async () => {
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("check rejects an imports-only module index in an internal directory", async () => {
-  const root = await makeWorkspace("internal-module-index");
+Deno.test("check treats an imports-only module file as ordinary source", async () => {
+  const root = await providerWorkspace();
   try {
     await Deno.mkdir(`${root}/internal`);
     await Deno.writeTextFile(
       `${root}/internal/_module.sigil`,
-      "@internal/contract.sigil import { Internal }\n",
-    );
-    await Deno.writeTextFile(
-      `${root}/internal/contract.sigil`,
-      validSigil("Internal"),
-    );
-    await Deno.writeTextFile(
-      `${root}/consumer.sigil`,
-      `@internal import { Internal }\n\n${validSigil("Consumer")}`,
+      "@base.sigil from Base import { result }\n",
     );
     const result = await runCli(["check", root, "--format", "json"]);
-    assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
-    assertHasCode(
-      parseJson(result.stdout).diagnostics,
-      "SIGIL_MODULE_WITHOUT_COMPONENT",
+    assertEquals(result.exitCode, 1);
+    const diagnostics = parseJson(result.stdout).diagnostics;
+    assertHasCode(diagnostics, "SIGIL_UNUSED_TAG_IMPORT");
+    assert(
+      !diagnostics.some((d: { code: string }) =>
+        d.code === "SIGIL_MODULE_WITHOUT_COMPONENT"
+      ),
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -1821,109 +1311,67 @@ Deno.test("check rejects an imports-only module index in an internal directory",
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("graph includes component nodes and imported-component edges", async () => {
-  const repository = await runCli(["graph", "../..", "--format", "json"]);
-  assertEquals(repository.exitCode, EXIT_OK);
-  assert(
-    !parseJson(repository.stdout).graph.componentNodes.some(
-      (node: { name: string }) =>
-        node.name === "Promise" || node.name === "Slotted",
-    ),
-  );
-
-  const result = await runCli([
-    "graph",
-    "../../examples/slotted",
-    "--format",
-    "json",
-  ]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const output = parseJson(result.stdout);
-  assertEquals(output.workspaceName, "slotted");
-  const graph = output.graph;
-  assert(
-    graph.componentNodes.some((node: { name: string }) => node.name === "Auth"),
-  );
-  assert(
-    graph.importedComponentEdges.some((edge: { componentName: string }) =>
-      edge.componentName === "UserProfile"
-    ),
-  );
+Deno.test("graph preserves selected Tag edges and actual reference uses", async () => {
+  const root = await providerWorkspace();
+  try {
+    const result = await runCli(["graph", root]);
+    assertEquals(result.exitCode, 0, result.stdout);
+    const graph = parseJson(result.stdout).graph;
+    assertEquals(graph.componentNodes.length, 2);
+    assertEquals(graph.importedTagEdges.length, 2);
+    assertEquals(graph.fileEdges.length, 1);
+    assert(
+      graph.importedTagEdges.every((e: { uses: unknown[] }) =>
+        e.uses.length === 1
+      ),
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("context reports every collected expansion file", async () => {
-  const root = await makeWorkspace("multi-expand");
+Deno.test("context exposes consolidated owner contributions across contract sections", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(`${root}/contract.sigil`, validSigil("Feature"));
-    await Deno.writeTextFile(
-      `${root}/one.sigil`,
-      "@contract.sigil import { Feature }\n\nexpand Feature {\n  logic {\n    One.\n  }\n}\n",
-    );
-    await Deno.writeTextFile(
-      `${root}/two.sigil`,
-      "@contract.sigil import { Feature }\n\nexpand Feature {\n  cases {\n    Two.\n  }\n}\n",
-    );
     const result = await runCli([
       "context",
       root,
-      "--component",
-      "Feature",
-      "--format",
-      "json",
+      "--file",
+      `${root}/base.sigil`,
     ]);
-    assertEquals(result.exitCode, EXIT_OK);
-    const paths = parseJson(result.stdout).relatedFilePaths;
-    assert(paths.some((path: string) => path.endsWith("/one.sigil")));
-    assert(paths.some((path: string) => path.endsWith("/two.sigil")));
-    assertEquals(parseJson(result.stdout).glossaryContext, null);
+    assertEquals(result.exitCode, 0, result.stdout);
+    const output = parseJson(result.stdout);
+    assertEquals(output.selectedComponents.length, 1);
+    assertEquals(output.selectedComponents[0].name, "Base");
+    assert(output.componentContracts[0].declaration.sections.length >= 3);
+    assertEquals(output.collectedExpansions, undefined);
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
-Deno.test("context for an expand file collects its parent component", async () => {
-  const root = await makeWorkspace("expand-context");
+Deno.test("context rejects removed expands and retains valid independent components", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.writeTextFile(`${root}/contract.sigil`, validSigil("Feature"));
     await Deno.writeTextFile(
       `${root}/details.sigil`,
-      "@contract.sigil import { Feature }\n\nexpand Feature {\n  logic {\n    Resolve the parent.\n  }\n}\n",
-    );
-    await Deno.writeTextFile(
-      `${root}/feature.ts`,
-      "// @sigil implements details.sigil::Feature logic\nexport function resolveFeature() {}\n",
+      "expand Base {\n  logic {\n    Old contribution.\n  }\n}\n",
     );
     const result = await runCli([
       "context",
       root,
       "--file",
       `${root}/details.sigil`,
-      "--format",
-      "json",
     ]);
-    assertEquals(result.exitCode, EXIT_OK);
-    const output = parseJson(result.stdout);
-    assertEquals(output.selectedComponents.length, 1);
-    assertEquals(output.selectedComponents[0].name, "Feature");
-    assertEquals(output.collectedExpansions.length, 1);
-    assert(
-      output.collectedExpansions[0].expands.some(
-        (expand: { filePath: string }) =>
-          expand.filePath.endsWith("/details.sigil"),
-      ),
+    assertEquals(result.exitCode, 1);
+    assertEquals(parseJson(result.stdout).selectedComponents.length, 0);
+    const valid = parseJson(
+      (await runCli(["context", root, "--component", "Base"])).stdout,
     );
-    assertEquals(output.ownedImplementationProjections.length, 1);
-    assertEquals(
-      output.ownedImplementationProjections[0].targets[0].symbolIdentity,
-      "resolveFeature",
-    );
-    assert(
-      !output.diagnostics.some((item: { code: string }) =>
-        item.code === "SIGIL_PARSE_STRUCTURE"
-      ),
-    );
+    assertEquals(valid.selectedComponents[0].name, "Base");
+    assertHasCode(valid.diagnostics, "SIGIL_PARSE_STRUCTURE");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -1931,122 +1379,42 @@ Deno.test("context for an expand file collects its parent component", async () =
 
 /*
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::GlossaryInspection logic,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliGlossaryInspection logic,cases
  */
-Deno.test("context includes only glossary terms from related Sigil files", async () => {
-  const root = await makeWorkspace("glossary-context");
+Deno.test("context includes glossary evidence only from selected and provider files", async () => {
+  const root = await providerWorkspace();
   try {
-    await Deno.mkdir(`${root}/.sigil`, { recursive: true });
+    await Deno.writeTextFile(
+      `${root}/unrelated.sigil`,
+      validSigil("Unrelated"),
+    );
     await Deno.writeTextFile(
       `${root}/.sigil/glossary.json`,
-      JSON.stringify(
-        {
-          schemaVersion: 1,
-          terms: [
-            {
-              term: "workspace root",
-              definition: "The directory containing .sigil/config.json.",
-            },
-            {
-              term: "unused term",
-              definition: "Vocabulary unrelated to the selected component.",
-            },
-            {
-              term: "Decision:",
-              definition: "A reviewed rationale-writing convention.",
-              agentContext: false,
-            },
-          ],
-          contexts: [
-            {
-              id: "booking",
-              include: ["**/*.sigil"],
-              exclude: [],
-              terms: [
-                {
-                  term: "hold",
-                  definition: "Booking capacity before confirmation.",
-                  aliases: ["temporary reservation"],
-                },
-              ],
-            },
-          ],
-        },
-        null,
-        2,
-      ),
+      JSON.stringify({
+        schemaVersion: 1,
+        terms: [{
+          term: "Preserve",
+          definition: "Retain source.",
+          agentContext: true,
+        }, {
+          term: "Unrelated",
+          definition: "Outside scope.",
+          agentContext: true,
+        }],
+        contexts: [],
+      }),
     );
-    await Deno.writeTextFile(
-      `${root}/contract.sigil`,
-      `component Feature {
-  goal {
-    Decision: Operate from the workspace root.
-  }
-
-  interface {
-    Reservation {
-      Creates a hold.
-    }
-  }
-}
-`,
-    );
-    await Deno.writeTextFile(
-      `${root}/expand.sigil`,
-      `@contract.sigil import { Feature }
-
-expand Feature {
-  cases {
-    Reservation {
-      A temporary reservation remains temporary.
-    }
-  }
-}
-`,
-    );
-    const result = await runCli([
-      "context",
-      root,
-      "--component",
-      "Feature",
-      "--format",
-      "json",
-    ]);
-    assertEquals(result.exitCode, EXIT_OK);
-    const context = parseJson(result.stdout).glossaryContext;
-    assert(context.glossaryPath.endsWith("/.sigil/glossary.json"));
-    assertEquals(
-      context.terms.map((term: { term: string }) => term.term).join(","),
-      "workspace root,hold",
-    );
-    assertEquals(context.resolvedContexts.length, 2);
+    const result = await runCli(["context", root, "--component", "Consumer"]);
+    assertEquals(result.exitCode, 0, result.stdout);
+    const output = parseJson(result.stdout);
     assert(
-      context.occurrences.some(
-        (occurrence: { matchedSpelling: string }) =>
-          occurrence.matchedSpelling === "temporary reservation",
+      output.relatedFilePaths.every((p: string) =>
+        !p.endsWith("unrelated.sigil")
       ),
     );
     assert(
-      !context.terms.some(
-        (term: { term: string }) => term.term === "unused term",
-      ),
-    );
-    assert(
-      !context.terms.some(
-        (term: { term: string }) => term.term === "Decision:",
-      ),
-    );
-    const glossaryResult = await runCli([
-      "glossary",
-      root,
-      "--format",
-      "json",
-    ]);
-    assertEquals(glossaryResult.exitCode, EXIT_OK);
-    assert(
-      parseJson(glossaryResult.stdout).occurrences.some(
-        (occurrence: { term: { term: string } }) =>
-          occurrence.term.term === "Decision:",
+      !output.glossaryContext.terms.some((t: { term: string }) =>
+        t.term === "Unrelated"
       ),
     );
   } finally {
@@ -2058,12 +1426,18 @@ expand Feature {
  * @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::StructuredOutput interface,constraints
  */
-Deno.test("render JSON includes workspace metadata and Markdown", async () => {
-  const result = await runCli(["render", "../..", "--format", "json"]);
-  assertEquals(result.exitCode, EXIT_OK);
-  const json = parseJson(result.stdout);
-  assertEquals(json.workspaceName, "sigil");
-  assert(json.markdown.includes("# Sigil Workspace"));
+Deno.test("render JSON includes workspace metadata and all contract sections", async () => {
+  const root = await providerWorkspace();
+  try {
+    const result = await runCli(["render", root, "--format", "json"]);
+    assertEquals(result.exitCode, 0, result.stdout);
+    const output = parseJson(result.stdout);
+    assert(output.markdown.includes("# Sigil Workspace"));
+    assert(output.markdown.includes("### Constraints"));
+    assert(output.markdown.includes("### Interface"));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 /*
@@ -2091,7 +1465,7 @@ Deno.test("render Markdown diagnostics keep stable text formatting", async () =>
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
     assert(
       result.stdout.includes(
-        "- error SIGIL_MISSING_INTERFACE: component Broken is missing required interface section.",
+        "- error SIGIL_MISSING_INTERFACE: A nonempty interface section is required.",
       ),
     );
     assert(
@@ -2118,8 +1492,13 @@ Deno.test("invalid usage and runtime failures keep stable exit codes", async () 
   assertEquals(usage.stdout, "");
   assert(usage.stderr.includes("Error: context accepts only one"));
   assert(usage.stderr.includes("Usage: sigil context"));
-  const runtime = await runCli(["parse", "does-not-exist.sigil"]);
-  assertEquals(runtime.exitCode, EXIT_RUNTIME);
+  const root = await makeWorkspace("missing-file");
+  try {
+    const runtime = await runCli(["parse", `${root}/does-not-exist.sigil`]);
+    assertEquals(runtime.exitCode, EXIT_RUNTIME);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
@@ -2214,7 +1593,7 @@ Deno.test("version flag reports CLI information", async () => {
 });
 
 /*
- * @sigil tests packages/cli/_module.sigil::SigilCli::SkillInstallation logic,constraints,cases
+ * @sigil tests packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
  * @sigil tests packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
  * @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
  */
@@ -2320,6 +1699,15 @@ Deno.test("skill discovery resolves valid skills from the source installation", 
     parseJson(listed.stdout).skills.join(","),
     "sigil,sigil-evaluate,sigil-understand,sigil-write",
   );
+  const legacy = parseJson(listed.stdout).catalog.find((s: { name: string }) =>
+    s.name === "sigil"
+  );
+  assertEquals(legacy.compatibility.requirements.sigilVersion, "0.7.0");
+  assertEquals(legacy.compatibility.requirements.cliVersion, "^0.8.0");
+  assertEquals(legacy.compatibility.requirements.coreVersion, "^0.7.0");
+  assertEquals(legacy.compatibility.requirements.sigilcVersion, "^0.1.0");
+  assertEquals(legacy.compatibility.languageCompatible, false);
+  assertEquals(legacy.compatibility.runtimeValidation, "not-run");
 });
 
 Deno.test("skill real bundle retains sibling references in global and project links and relocated copies", async () => {
@@ -2435,26 +1823,29 @@ Deno.test("skill install refuses unmanaged destinations before changing others",
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
 Deno.test("executable subprocess returns version JSON", async () => {
-  const command = new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "--allow-read",
-      "src/main.ts",
-      "version",
-      "../..",
-      "--format",
-      "json",
-    ],
-    cwd: ".",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const output = await command.output();
-  assertEquals(output.code, EXIT_OK);
-  assertEquals(
-    JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
-    metadata.version,
-  );
+  const root = await providerWorkspace();
+  try {
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "--allow-read",
+        "src/main.ts",
+        "version",
+        root,
+        "--format",
+        "json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(output.code, 0);
+    assertEquals(
+      JSON.parse(new TextDecoder().decode(output.stdout)).cliVersion,
+      metadata.version,
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 async function makeWorkspace(name: string): Promise<string> {
@@ -2490,10 +1881,11 @@ function assert(
 ): asserts condition {
   if (!condition) throw new Error(message);
 }
-function assertEquals<T>(actual: T, expected: T): void {
+function assertEquals<T>(actual: T, expected: T, message?: string): void {
   if (actual !== expected) {
     throw new Error(
-      `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+      message ??
+        `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
 }
@@ -2522,6 +1914,10 @@ async function exists(path: string): Promise<boolean> {
 }
 
 class UnreadableImplementationFileSystem implements SigilFileSystem {
+  readSourceFile(path: string): Promise<Uint8Array> {
+    return Deno.readFile(path);
+  }
+
   readonly #base = new DenoSigilFileSystem();
   readonly #unreadablePath: string;
 
@@ -2616,7 +2012,13 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
       ),
     );
 
-    const result = await runCli(["fmt", root, "--format", "json"]);
+    const result = await runCli([
+      "fmt",
+      validPath,
+      invalidPath,
+      "--format",
+      "json",
+    ]);
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
     assertEquals(await Deno.readTextFile(validPath), noncanonical);
     assert(
@@ -2629,7 +2031,309 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
   }
 });
 
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt preserves absolute output paths for single and mixed targets", async () => {
+  const root = normalizePath(await makeWorkspace("fmt-absolute-output"));
+  try {
+    await Deno.writeTextFile(`${root}/first.sigil`, validSigil("First"));
+    await Deno.writeTextFile(`${root}/second.sigil`, validSigil("Second"));
+    const options = { core: new CoreAdapter({ currentDirectory: root }) };
+    const single = await runCli([
+      "fmt",
+      `${root}/first.sigil`,
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(single.exitCode, EXIT_OK);
+    const result = parseJson(single.stdout);
+    assertEquals(result.workspaceRoot, root);
+    assertEquals(result.configPath, `${root}/.sigil/config.json`);
+    assertEquals(result.files[0].filePath, `${root}/first.sigil`);
+    const targets = [`${root}/first.sigil`, "second.sigil"];
+    const batch = await runCli([
+      "fmt",
+      ...targets,
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    const reversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(batch.exitCode, EXIT_OK);
+    assertEquals(reversed.exitCode, EXIT_OK);
+    assertEquals(parseJson(batch.stdout).workspaceRoot, root);
+    assertEquals(reversed.stdout, batch.stdout);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt batches cwd-relative paths with spaces and preserves source order", async () => {
+  const root = normalizePath(await makeWorkspace("fmt-batch"));
+  try {
+    await Deno.mkdir(`${root}/selected`);
+    const sources = new Map([
+      ["selected/alpha file.sigil", noncanonicalSigil("Alpha")],
+      ["selected/beta.sigil", noncanonicalSigil("Beta")],
+      ["other.sigil", validSigil("Other")],
+    ]);
+    for (const [path, source] of sources) {
+      await Deno.writeTextFile(`${root}/${path}`, source);
+    }
+    const options = {
+      core: new CoreAdapter({ currentDirectory: `${root}/selected` }),
+    };
+    const targets = ["beta.sigil", "alpha file.sigil"];
+    const checked = await runCli([
+      "fmt",
+      ...targets,
+      "--root",
+      "..",
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(checked.exitCode, EXIT_DIAGNOSTICS);
+    const selectedPaths = parseJson(checked.stdout).files.map(
+      (file: { filePath: string }) =>
+        normalizePath(resolve(Deno.cwd(), file.filePath)),
+    );
+    assertEquals(
+      JSON.stringify(selectedPaths),
+      JSON.stringify([
+        `${root}/selected/alpha file.sigil`,
+        `${root}/selected/beta.sigil`,
+      ]),
+    );
+    for (const [path, source] of sources) {
+      assertEquals(await Deno.readTextFile(`${root}/${path}`), source);
+    }
+    const reversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--root",
+      "..",
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(reversed.stdout, checked.stdout);
+
+    const formatted = await runCli([
+      "fmt",
+      ...targets,
+      "--root",
+      "..",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(formatted.exitCode, EXIT_OK);
+    assertEquals(parseJson(formatted.stdout).files.length, 2);
+    const canonicalSources = new Map<string, string>();
+    for (const path of sources.keys()) {
+      const actual = await Deno.readTextFile(`${root}/${path}`);
+      if (path.startsWith("selected/")) {
+        assert(actual !== sources.get(path));
+        canonicalSources.set(path, actual);
+        await Deno.writeTextFile(`${root}/${path}`, sources.get(path)!);
+      } else {
+        assertEquals(actual, sources.get(path)!);
+      }
+    }
+    const formattedReversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--root",
+      "..",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(formattedReversed.stdout, formatted.stdout);
+    for (const [path, source] of canonicalSources) {
+      assertEquals(await Deno.readTextFile(`${root}/${path}`), source);
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting constraints,cases
+Deno.test("fmt validates every batch target before writing", async () => {
+  const root = await makeWorkspace("fmt-bad-target");
+  const foreignRoot = await makeWorkspace("fmt-foreign");
+  try {
+    await Deno.writeTextFile(
+      `${root}/.sigil/config.json`,
+      JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "fmt-bad-target" },
+        files: { include: ["**/*.sigil"], exclude: ["excluded/**"] },
+      }),
+    );
+    await Deno.mkdir(`${root}/excluded`);
+    await Deno.mkdir(`${root}/empty`);
+    const source = noncanonicalSigil("Selected");
+    await Deno.writeTextFile(`${root}/selected.sigil`, source);
+    await Deno.writeTextFile(`${root}/excluded/skip.sigil`, validSigil("Skip"));
+    await Deno.writeTextFile(`${root}/notes.txt`, "No Sigil source here.");
+    await Deno.writeTextFile(
+      `${foreignRoot}/foreign.sigil`,
+      noncanonicalSigil("Foreign"),
+    );
+    const badTargets = [
+      `${root}/missing.sigil`,
+      `${root}/excluded/skip.sigil`,
+      `${root}/excluded`,
+      `${root}/empty`,
+      `${root}/notes.txt`,
+      `${foreignRoot}/foreign.sigil`,
+    ];
+    for (const target of badTargets) {
+      for (
+        const targets of [[`${root}/selected.sigil`, target], [
+          target,
+          `${root}/selected.sigil`,
+        ]]
+      ) {
+        for (const flags of [[], ["--root", root], ["--check"]]) {
+          const result = await runCli(["fmt", ...targets, ...flags]);
+          assertEquals(
+            result.exitCode,
+            EXIT_RUNTIME,
+            `${targets.join(" ")}: ${result.stderr}`,
+          );
+          assertEquals(
+            await Deno.readTextFile(`${root}/selected.sigil`),
+            source,
+          );
+          assertEquals(
+            await Deno.readTextFile(`${foreignRoot}/foreign.sigil`),
+            noncanonicalSigil("Foreign"),
+          );
+        }
+      }
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+    await Deno.remove(foreignRoot, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt rejects an undiscovered ancestor before writing any source", async () => {
+  const root = await makeWorkspace("fmt-ancestor-target");
+  try {
+    const source = noncanonicalSigil("Selected");
+    const other = noncanonicalSigil("Other");
+    await Deno.writeTextFile(`${root}/selected.sigil`, source);
+    await Deno.writeTextFile(`${root}/other.sigil`, other);
+    const options = { core: new CoreAdapter({ currentDirectory: root }) };
+    for (
+      const targets of [["selected.sigil", ".."], ["..", "selected.sigil"]]
+    ) {
+      for (const flags of [[], ["--check"]]) {
+        const result = await runCli(["fmt", ...targets, ...flags], options);
+        assertEquals(result.exitCode, EXIT_RUNTIME);
+        assertEquals(await Deno.readTextFile(`${root}/selected.sigil`), source);
+        assertEquals(await Deno.readTextFile(`${root}/other.sigil`), other);
+      }
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt keeps omitted target at cwd even with an explicit root", async () => {
+  const root = normalizePath(await makeWorkspace("fmt-default"));
+  try {
+    await Deno.mkdir(`${root}/selected`);
+    const source = noncanonicalSigil("Selected");
+    const other = validSigil("Other");
+    await Deno.writeTextFile(`${root}/selected/main.sigil`, source);
+    await Deno.writeTextFile(`${root}/other.sigil`, other);
+    const options = {
+      core: new CoreAdapter({ currentDirectory: `${root}/selected` }),
+    };
+    for (const flags of [[], ["--root", ".."]]) {
+      const checked = await runCli([
+        "fmt",
+        ...flags,
+        "--check",
+        "--format",
+        "json",
+      ], options);
+      assertEquals(checked.exitCode, EXIT_DIAGNOSTICS);
+      assertEquals(parseJson(checked.stdout).files.length, 1);
+      assertEquals(
+        normalizePath(
+          resolve(Deno.cwd(), parseJson(checked.stdout).files[0].filePath),
+        ),
+        `${root}/selected/main.sigil`,
+      );
+      assertEquals(
+        await Deno.readTextFile(`${root}/selected/main.sigil`),
+        source,
+      );
+    }
+    const formatted = await runCli(
+      ["fmt", "--root", "..", "--format", "json"],
+      options,
+    );
+    assertEquals(formatted.exitCode, EXIT_OK);
+    assertEquals(parseJson(formatted.stdout).files.length, 1);
+    assertEquals(await Deno.readTextFile(`${root}/other.sigil`), other);
+    const all = await runCli(["fmt", "--check", "--format", "json"], {
+      core: new CoreAdapter({ currentDirectory: root }),
+    });
+    assertEquals(all.exitCode, EXIT_OK);
+    assertEquals(parseJson(all.stdout).files.length, 2);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
+Deno.test("fmt variadic paths leave other commands positional limits intact", async () => {
+  const commands = [
+    ["init"],
+    ["version"],
+    ["parse"],
+    ["export", "design"],
+    ["check"],
+    ["glossary"],
+    ["graph"],
+    ["render"],
+    ["context", "--component", "Example"],
+    ["retrieve", "--component", "Example", "--purpose", "semantic"],
+    ["skill", "list"],
+    ["skill", "install"],
+  ];
+  for (const command of commands) {
+    const result = await runCli([...command, "first.sigil", "second.sigil"]);
+    assertEquals(result.exitCode, EXIT_USAGE);
+  }
+});
+
+function noncanonicalSigil(name: string): string {
+  return validSigil(name).replace(
+    `Test ${name}.`,
+    "These words need wrapping. ".repeat(5).trim(),
+  );
+}
+
 class FailingListFileSystem implements SigilFileSystem {
+  readSourceFile(path: string): Promise<Uint8Array> {
+    return Deno.readFile(path);
+  }
+
   readonly #base = new DenoSigilFileSystem();
   readonly #failureCall: number;
   #listCalls = 0;
@@ -2653,4 +2357,20 @@ class FailingListFileSystem implements SigilFileSystem {
     }
     return this.#base.listFiles(root);
   }
+}
+
+async function providerWorkspace(): Promise<string> {
+  const root = await makeWorkspace("provider-context");
+  const fixture = JSON.parse(
+    await Deno.readTextFile(
+      new URL(
+        "../../core/tests/fixtures/design-input-080.json",
+        import.meta.url,
+      ),
+    ),
+  );
+  for (const source of fixture.sources) {
+    await Deno.writeTextFile(`${root}/${source.path}`, source.text);
+  }
+  return root;
 }

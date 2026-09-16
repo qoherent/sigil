@@ -18,6 +18,11 @@ meaning. Read relevant rules when resolving syntax, Tags, ownership, or links.
 The sibling bundle is required; do not replace missing authority with legacy
 bootstrap instructions. Neither a compiler nor network access is a prerequisite.
 
+Read [mechanical validation](references/mechanical-validation.md) and use a
+verified compatible CLI for `check` and `fmt --check` when available. Keep
+mechanical observations revision-bound and separate from semantic findings;
+otherwise continue review and report the specific unavailable validation.
+
 Read the evaluator-owned [review contract](references/review-contract.md) to
 receive delegated inputs or return a revision-bound report or portable handoff.
 For direct review, its direct-input route preserves the same evidence fields
@@ -26,6 +31,6 @@ and limitations even when findings are empty. Missing evidence, interrupted
 execution, and malformed reports cannot become a clean assessment.
 
 Do not modify design files, compare implementation code, invent policy, or claim
-compiler validation or saturated coherence. A correction supported by an existing
-commitment can be applied by the writer without another approval turn; evaluation
-itself performs no correction.
+unobserved mechanical validation or saturated coherence. A correction supported
+by an existing commitment can be applied by the writer without another approval
+turn; evaluation itself performs no correction.
