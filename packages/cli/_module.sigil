@@ -153,12 +153,17 @@ component SigilCli {
     SourceFormattingCommand {
       SourceFormattingCommand adapts SourceFormatting into a CLI command surface.
 
-      sigil fmt [path]
+      sigil fmt [paths...]
 
-      sigil fmt [path] --check
+      sigil fmt [paths...] --check
 
-      a .sigil file selects that file while a directory selects included .sigil
-      sources beneath that path through ConfigFile source-selection rules
+      Each .sigil file selects that file; each directory selects included .sigil
+      sources beneath it through ConfigFile source-selection rules. Multiple paths
+      select their deduplicated union within one configured workspace.
+
+      Omitted paths select the current directory, so invocation at the workspace
+      root selects all included workspace sources. --root anchors configuration
+      discovery without broadening the selected paths.
     }
 
     OwnershipContext {
@@ -319,6 +324,10 @@ component SigilCli {
 
       fmt parses and validates every selected source before any write.
 
+      fmt validates every requested target and the combined canonical replacements
+      before writing. Duplicate and overlapping targets produce each selected file
+      once, in workspace source order independent of argument order.
+
       fmt writes only selected .sigil files whose canonical source differs.
 
       fmt --check compares canonical source without writing.
@@ -476,6 +485,10 @@ component SigilCli {
       repairable width, canonical rendering fails, or a meaning-preservation check
       fails. Repairable width passes only through the shared formatter checks before
       the all-selected write preflight.
+
+      Missing, excluded, unmatched, or foreign-workspace targets abort the whole
+      invocation with exit code 3 before any write. This preflight does not promise
+      rollback after a filesystem failure during replacement.
 
       Skill commands do not require or modify ConfigFile.
 
@@ -779,6 +792,16 @@ component SigilCli {
 
       fmt rewrites one valid noncanonical selected .sigil file and leaves ConfigFile
       and GlossaryFile unchanged.
+
+      Selecting two files formats both and leaves an unselected third file alone.
+      Repeated paths and overlapping directories produce no duplicate writes.
+      Width repairs in selected providers and consumers validate together.
+
+      Bare fmt at the workspace root selects all included sources; from a nested
+      directory it selects only included sources beneath that directory. Explicit
+      --root does not change this selection boundary.
+
+      A valid first target followed by an invalid target produces no writes.
 
       One selected source with an error other than repairable width prevents every
       selected source from being written. Width-only errors permit writes only when

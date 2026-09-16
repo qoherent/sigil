@@ -81,6 +81,12 @@ component Sigil {
       The host skill applies semantic judgment, conducts design and review
       conversations, and honors the user's existing authorization for scoped Sigil
       and implementation.
+
+      Writing and evaluation use a verified compatible CLI for mechanical checks
+      when available. Writing checks the real workspace, applies supported
+      corrections, formats only authored targets, and rechecks before capturing
+      exact bytes for fresh independent review. Evaluation runs check and fmt
+      --check without modifying sources.
     }
 
     SemanticCompilation {
@@ -147,6 +153,19 @@ component Sigil {
       skills and the user existing scoped authorization. Undecided consequential
       policy remains human-owned; determined preservation corrections proceed
       autonomously.
+
+      Mechanical observations identify the actual CLI, workspace, selected targets,
+      assessed bytes, outcomes, and diagnostics separately from semantic findings.
+      Configuration and other CLI inputs remain part of that observation's scope.
+      A captured review claims live mechanical evidence only when the relevant
+      inputs match the captured revision before and after the commands.
+
+      Missing or incompatible tooling, unavailable workspace context, or denied
+      access leaves mechanical validation unavailable while design work continues.
+      Completed diagnostics remain findings, never unavailable or clean results.
+      Mechanical success proves neither design coherence nor implementation
+      conformance. Formatting after capture invalidates review freshness, and
+      unrelated workspace diagnostics never authorize broader source edits.
     }
 
     SemanticCompilation {
