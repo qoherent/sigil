@@ -1,0 +1,315 @@
+{
+  "status": "complete",
+  "verdict": "Ready with fixes",
+  "verdict_reason": "Fix #3 before merging: failed ancestor workspace discovery can widen formatting to the whole workspace and makes behavior depend on target order. All planned implementation units have corresponding work; R8/R9 retain this P2 edge-case defect. Two documented skill scenarios remain unexecuted.",
+  "scope": {
+    "base": "5b6aac9d3ae97f06a8784dfc4a84be067921e380",
+    "branch": "",
+    "head_sha": "29f9ef355a57a95041eeb5f2dd81702ebc30a0b2",
+    "pr_url": null,
+    "files_changed": 35,
+    "reviewed_tree": "/private/tmp/sigil-mechanical-review-tree"
+  },
+  "intent": "Add same-workspace multiple-target formatting with complete preflight before writes. Integrate compatible CLI checking and scoped formatting into writer and read-only evaluator, preserving independent design review, accurate captured-revision evidence, and offline fallback.",
+  "intent_confidence": "explicit",
+  "reviewers": [
+    "correctness",
+    "testing",
+    "maintainability",
+    "agent-native",
+    "security",
+    "api-contract",
+    "reliability",
+    "adversarial-claude"
+  ],
+  "findings": [
+    {
+      "#": 3,
+      "autofix_class": "manual",
+      "confidence": 75,
+      "evidence": [
+        "packages/cli/src/core-adapter.ts:209 -- if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {",
+        "packages/core/src/workspace.ts:73-87 -- When no ancestor configuration exists, discovery returns currentDirectory as root and SIGIL_CONFIG_NOT_FOUND without a config; formatSources compares only that fallback root.",
+        "packages/cli/src/core-adapter.ts:193-199 -- A directory matches every workspace file whose path starts with the target prefix.",
+        "packages/cli/_module.sigil:489-490 -- Missing, excluded, unmatched, or foreign-workspace targets abort the whole invocation with exit code 3 before any write.",
+        "Read-only reproduction at 29f9ef355a57a95041eeb5f2dd81702ebc30a0b2 using Deno 2.9.4 and an in-memory writable filesystem: configuration only at /work; cwd /work; two noncanonical valid sources /work/a.sigil and /work/b.sigil. formatSources([\"a.sigil\", \"..\"], undefined, false) returned both files formatted, no diagnostics, and replacement calls for both files. Reversing the targets threw \"No Sigil source matched /.\" with zero replacement calls. No real project files were written.",
+        "git diff base 5b6aac9..29f9ef3 adds the per-target discovery guard; the base CLI rejected more than one formatting target."
+      ],
+      "file": "packages/cli/src/core-adapter.ts",
+      "first_evidence": "packages/cli/src/core-adapter.ts:209 -- if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {",
+      "independent_reviewers": [
+        "adversarial-claude"
+      ],
+      "line": 204,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "protected_subject": "public-contract",
+      "requires_verification": true,
+      "reviewers": [
+        "adversarial-claude"
+      ],
+      "severity": "P2",
+      "suggested_fix": "Reject unsuccessful per-target workspace discovery before comparing roots, while preserving the documented explicit-root ancestor-selection exemption. Add both argument orders with a valid file plus an ancestor target and assert failure before any replacements; cover --check as well.",
+      "title": "Out-of-workspace ancestor target silently formats whole workspace",
+      "why_it_matters": "With the working directory at the configured workspace root and no configuration above it, adding an ancestor directory after a valid file bypasses failed workspace discovery. The invocation formats every included workspace source, while reversing the same targets fails without writes. This violates complete target preflight and order-independent selection.",
+      "validation_status": "confirmed",
+      "validation_reason": "At reviewed SHA 29f9ef3 under Deno 2.9.4, the reachable precondition of cwd /work with configuration only at /work and targets [\"a.sigil\", \"..\"] caused packages/core/src/workspace.ts:73-84 to return fallback root /work after failed ancestor discovery, allowing packages/cli/src/core-adapter.ts:193-215 to select and, with check=false, replace both workspace files despite the abort-before-write contract at packages/cli/_module.sigil:489-491, while reversed target order rejected with no writes; the multi-target diff from 5b6aac9 introduced this order-dependent path."
+    }
+  ],
+  "actionable_findings": [
+    {
+      "#": 3,
+      "autofix_class": "manual",
+      "confidence": 75,
+      "evidence": [
+        "packages/cli/src/core-adapter.ts:209 -- if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {",
+        "packages/core/src/workspace.ts:73-87 -- When no ancestor configuration exists, discovery returns currentDirectory as root and SIGIL_CONFIG_NOT_FOUND without a config; formatSources compares only that fallback root.",
+        "packages/cli/src/core-adapter.ts:193-199 -- A directory matches every workspace file whose path starts with the target prefix.",
+        "packages/cli/_module.sigil:489-490 -- Missing, excluded, unmatched, or foreign-workspace targets abort the whole invocation with exit code 3 before any write.",
+        "Read-only reproduction at 29f9ef355a57a95041eeb5f2dd81702ebc30a0b2 using Deno 2.9.4 and an in-memory writable filesystem: configuration only at /work; cwd /work; two noncanonical valid sources /work/a.sigil and /work/b.sigil. formatSources([\"a.sigil\", \"..\"], undefined, false) returned both files formatted, no diagnostics, and replacement calls for both files. Reversing the targets threw \"No Sigil source matched /.\" with zero replacement calls. No real project files were written.",
+        "git diff base 5b6aac9..29f9ef3 adds the per-target discovery guard; the base CLI rejected more than one formatting target."
+      ],
+      "file": "packages/cli/src/core-adapter.ts",
+      "first_evidence": "packages/cli/src/core-adapter.ts:209 -- if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {",
+      "independent_reviewers": [
+        "adversarial-claude"
+      ],
+      "line": 204,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "protected_subject": "public-contract",
+      "requires_verification": true,
+      "reviewers": [
+        "adversarial-claude"
+      ],
+      "severity": "P2",
+      "suggested_fix": "Reject unsuccessful per-target workspace discovery before comparing roots, while preserving the documented explicit-root ancestor-selection exemption. Add both argument orders with a valid file plus an ancestor target and assert failure before any replacements; cover --check as well.",
+      "title": "Out-of-workspace ancestor target silently formats whole workspace",
+      "why_it_matters": "With the working directory at the configured workspace root and no configuration above it, adding an ancestor directory after a valid file bypasses failed workspace discovery. The invocation formats every included workspace source, while reversing the same targets fails without writes. This violates complete target preflight and order-independent selection.",
+      "validation_status": "confirmed",
+      "validation_reason": "At reviewed SHA 29f9ef3 under Deno 2.9.4, the reachable precondition of cwd /work with configuration only at /work and targets [\"a.sigil\", \"..\"] caused packages/core/src/workspace.ts:73-84 to return fallback root /work after failed ancestor discovery, allowing packages/cli/src/core-adapter.ts:193-215 to select and, with check=false, replace both workspace files despite the abort-before-write contract at packages/cli/_module.sigil:489-491, while reversed target order rejected with no writes; the multi-target diff from 5b6aac9 introduced this order-dependent path."
+    }
+  ],
+  "triage_groups": [],
+  "pre_existing_findings": [],
+  "requirements_completeness": {
+    "requirements": [
+      {
+        "id": "R1",
+        "status": "met",
+        "note": "Shared guidance probes CLI compatibility and preserves offline design work with explicit unavailable coverage."
+      },
+      {
+        "id": "R2",
+        "status": "met",
+        "note": "Outcome rules distinguish completed diagnostic-producing checks from failed or unavailable validation."
+      },
+      {
+        "id": "R3",
+        "status": "met",
+        "note": "Writer runs supported repair, explicit authored-file formatting, and recheck before review capture."
+      },
+      {
+        "id": "R4",
+        "status": "met",
+        "note": "Evaluator uses check and fmt --check, preserves bytes, and reports mechanical results separately."
+      },
+      {
+        "id": "R5",
+        "status": "met",
+        "note": "Shared guidance preserves independent semantic review and rejects conformance or policy authority from CLI success."
+      },
+      {
+        "id": "R6",
+        "status": "met",
+        "note": "Guidance records command scope and input identities; changed bytes require recapture and independent reassessment."
+      },
+      {
+        "id": "R7",
+        "status": "met",
+        "note": "CLI help, README, specification, and guidance describe selection, no-write checks, and explicit-root context."
+      },
+      {
+        "id": "R8",
+        "status": "partially addressed",
+        "note": "Multiple-target union, deduplication, and deterministic ordering are implemented; finding #3 exposes order-dependent ancestor selection."
+      },
+      {
+        "id": "R9",
+        "status": "partially addressed",
+        "note": "Target and combined-result preflight are implemented; finding #3 bypasses failed ancestor discovery."
+      }
+    ],
+    "implementation_units": [
+      {
+        "id": "U5",
+        "status": "met",
+        "note": "Implementation and relevant verification/documentation appear in the isolated diff."
+      },
+      {
+        "id": "U1",
+        "status": "met",
+        "note": "Implementation and relevant verification/documentation appear in the isolated diff."
+      },
+      {
+        "id": "U2",
+        "status": "met",
+        "note": "Implementation and relevant verification/documentation appear in the isolated diff."
+      },
+      {
+        "id": "U4",
+        "status": "met",
+        "note": "Implementation and relevant verification/documentation appear in the isolated diff."
+      },
+      {
+        "id": "U3",
+        "status": "met",
+        "note": "Implementation and relevant verification/documentation appear in the isolated diff."
+      }
+    ],
+    "plan_path": "/Users/farhoud/Workspace/sigil/docs/plans/2026-09-16-1148-feat-skill-mechanical-validation-plan.md",
+    "plan_source": "explicit",
+    "note": "Every implementation unit has corresponding work. R8/R9 are partially addressed because of the confirmed edge-case defect, not an omitted implementation unit."
+  },
+  "learnings": [],
+  "agent_native_gaps": [],
+  "deployment_notes": [],
+  "residual_risks": [
+    "Filesystem replacement failure during a batch can leave an already-written subset formatted; packages/cli/spec.md:222 and packages/cli/_module.sigil:491 explicitly exclude rollback. Target and semantic preflight does not establish transactionality for I/O failures.",
+    "Mixed filesystem aliases such as macOS /tmp and /private/tmp can fail target matching despite identifying the same physical workspace. The smoke observations document this limit and use canonical paths; alias equivalence is not claimed."
+  ],
+  "testing_gaps": [
+    {
+      "title": "Single-target compatibility fallback lacks an executed test",
+      "file": "docs/skill-evaluation/sigil-mechanical-validation.md",
+      "line": 65,
+      "why_it_matters": "A supported older CLI can expose only single-target formatting, so a writer or evaluator must split commands without broadening the authorized file set and must disclose interdependent repairs it cannot complete. That branch currently has no observed agent run, leaving the workflow able to issue an unsupported batch command, widen scope to a directory, or misreport mechanical coverage despite the new compatibility promise.",
+      "evidence": [
+        "docs/skill-evaluation/sigil-mechanical-validation.md:65 -- The mismatch case deliberately injected changed inputs. Older compatible\nsingle-file CLI fallback and post-review cosmetic mutation remain documented\nfixtures, not newly observed cases in this batch.",
+        "integrations/skills/sigil-evaluate/references/mechanical-validation.md:25 -- A compatible CLI may still have the older\nsingle-target formatter; use the capability it actually exposes.",
+        "integrations/skills/sigil-evaluate/references/mechanical-validation.md:55 -- Submit the authored file set together when help advertises `[paths...]`; this\nallows provider and consumer width repairs to validate together. For a verified\nolder single-target CLI, invoke it once per authored file."
+      ],
+      "suggested_fix": "Execute and retain a controlled writer/evaluator case with a compatible CLI whose help advertises only one formatting target. Assert one explicit invocation per authorized file, no writes from evaluation, no directory broadening, and an accurate limitation when provider/consumer repairs cannot validate independently; then add the resulting evidence to the mechanical validation report.",
+      "reviewers": [
+        "testing"
+      ],
+      "severity": "P2",
+      "confidence": 75,
+      "autofix_class": "advisory",
+      "owner": "human"
+    },
+    {
+      "title": "Formatting-only freshness recovery remains untested",
+      "file": "docs/skill-evaluation/sigil-mechanical-validation.md",
+      "line": 66,
+      "why_it_matters": "A writer that formats a reviewed file after capture can incorrectly claim the prior independent report covers the current bytes. The new workflow explicitly requires recapture and fresh review for this case, but the formatting-only mutation scenario remains unexecuted, so the central revision-binding behavior is not demonstrated for the operation this change adds.",
+      "evidence": [
+        "docs/skill-evaluation/sigil-mechanical-validation.md:65 -- The mismatch case deliberately injected changed inputs. Older compatible\nsingle-file CLI fallback and post-review cosmetic mutation remain documented\nfixtures, not newly observed cases in this batch.",
+        "integrations/skills/sigil-write/evals/mechanical-validation-fixture.md:111 -- - **Post-review edit:** After an authentic completed review, change only formatting\nin a reviewed file. Resume the writer with the unchanged report. Observer:\nreject current-byte coverage and obtain fresh captures/review.",
+        "integrations/skills/sigil-evaluate/references/mechanical-validation.md:100 -- Subsequent edits, including formatting,\nrequire new captures and fresh independent review before claiming coverage of\nthe changed bytes."
+      ],
+      "suggested_fix": "Run the existing post-review-edit fixture with an authentic completed report, inject a formatting-only change to a reviewed file, and retain evidence that the writer rejects current-byte coverage, recaptures all relevant inputs, and obtains a fresh independent report before completion.",
+      "reviewers": [
+        "testing"
+      ],
+      "severity": "P2",
+      "confidence": 75,
+      "autofix_class": "advisory",
+      "owner": "human"
+    }
+  ],
+  "coverage": {
+    "depth": "full",
+    "mode": "agent report-only",
+    "reviewer_roster": [
+      {
+        "reviewer": "correctness",
+        "tier": "session",
+        "reason": "Behavior and intent compliance"
+      },
+      {
+        "reviewer": "testing",
+        "tier": "mid-tier",
+        "reason": "Batch and skill fixtures changed"
+      },
+      {
+        "reviewer": "maintainability",
+        "tier": "mid-tier",
+        "reason": "480 executable changed lines including tests"
+      },
+      {
+        "reviewer": "agent-native",
+        "tier": "mid-tier",
+        "reason": "Writer and evaluator skill capabilities changed"
+      },
+      {
+        "reviewer": "security",
+        "tier": "session",
+        "reason": "User-provided file targets reach writes"
+      },
+      {
+        "reviewer": "api-contract",
+        "tier": "mid-tier",
+        "reason": "Public CLI target syntax and output compatibility"
+      },
+      {
+        "reviewer": "reliability",
+        "tier": "mid-tier",
+        "reason": "Preflight error propagation and unavailable-tool behavior"
+      }
+    ],
+    "notes": [
+      "Full depth selected because user-controlled formatting changes the public CLI contract and selected filesystem writes.",
+      "Project standards: not run (no applicable standards files).",
+      "Review tree is a detached clean snapshot of task commits; pre-existing dirty core/eqval work and untracked plans are excluded.",
+      "Host verification at reviewed code: full deno task test passed, including Rust/core/CLI/LSP/editor/native/skill checks; repository typecheck and lint passed.",
+      "Native reviewer concurrency clamped to available host capacity; no cleanup primitive is exposed.",
+      "Peer was given only the isolated task diff; its artifact notes a shell-less inspection limit. Review remains at 29f9ef3; caller has a separate uncommitted absolute-output compatibility correction, outside this receipt.",
+      "Independent cross-model adversarial review: route claude; requested and actual model claude-opus-5; requested effort high, actual effort unverified; receipt_supported true; independence_verified true. Artifact collected through verified runner read and terminal job directory deleted.",
+      "Mechanical synthesis: 4 valid candidates; 0 malformed findings or returns; 0 confidence suppressions; first_evidence_backfilled=0; missing-quote demotions=0.",
+      "Mode-aware demotions: 2 testing-only candidates retained as testing gaps. The observed writer, mismatch, and compatibility cases provide material workflow coverage; the two unexecuted documented fixture variations do not establish a current defect or an unaddressed implementation unit.",
+      "Rejected 1 maintainability candidate: test-file size and navigation preference alone did not establish a consequential maintenance problem; cohesive formatter tests already have descriptive names.",
+      "Cross-model validator shortcut: 0 findings skipped; the sole primary finding has peer evidence and local synthesis reproduction, but no ordinary reviewer corroboration, so it requires the independent validator batch.",
+      "The peer ancestor-target claim was reproduced locally at reviewed head 29f9ef3 using Deno 2.9.4 and an in-memory filesystem; the reviewed checkout was not modified.",
+      "No applicable settlement conflicts. Offline continuation remains the user-directed design.",
+      "Peer freshness uncertainty resolved: git diff 3e8208d..29f9ef3 -- integrations/skills packages/cli/src is empty; the observation document accurately identifies its captured revision.",
+      "The claimed unselected-width test gap is refuted by formatting_test.ts:90-109, which checks a partial provider/consumer selection fails with width diagnostics and zero writes; the shared guidance explicitly preserves blocked formatting diagnostics rather than broadening write scope.",
+      "Ancestor-target regression coverage is included in primary finding #3 rather than repeated as a separate testing gap."
+    ],
+    "cross_model_outcome": "folded",
+    "validator": {
+      "outcome": "verdicts",
+      "batch_count": 1,
+      "selected": 1,
+      "confirmed": 1,
+      "rejected": 0,
+      "unresolved": 0,
+      "malformed": 0,
+      "failed": 0,
+      "shortcut_skipped": 0,
+      "bound_exceeded": false,
+      "protected_subject_reclassifications": [],
+      "degraded_p0_p1": [],
+      "note": "One bounded validator batch returned a valid confirmation for #3. No shortcut applied because no ordinary reviewer corroborated the peer finding."
+    },
+    "suppressed_by_confidence": {},
+    "mode_aware_demotions": 2,
+    "first_evidence_backfilled": 0,
+    "missing_quote_demotions": 0,
+    "malformed_findings": 0,
+    "malformed_returns": 0,
+    "failed_reviewers": [],
+    "compound_packs": {
+      "roots": [],
+      "warnings": [],
+      "errors": []
+    },
+    "not_assessed": [
+      "Project standards: no applicable standards files.",
+      "Dedicated learnings and deployment review lenses were not selected."
+    ],
+    "source_mutations": false
+  },
+  "artifact_path": "/tmp/compound-engineering-501/sigil-mechanical-pcvobixl",
+  "run_id": "sigil-mechanical-pcvobixl"
+}

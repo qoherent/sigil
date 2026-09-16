@@ -206,7 +206,10 @@ export class CoreAdapter {
           startPath: target,
           currentDirectory: this.#currentDirectory,
         });
-        if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {
+        if (
+          !discovery.config ||
+          normalizePath(discovery.root) !== normalizePath(workspace.root)
+        ) {
           throw new Error(
             `Formatting target ${target} belongs to a different workspace than ${workspace.root}.`,
           );

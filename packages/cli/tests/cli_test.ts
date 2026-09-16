@@ -2008,6 +2008,49 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt preserves absolute output paths for single and mixed targets", async () => {
+  const root = await makeWorkspace("fmt-absolute-output");
+  try {
+    await Deno.writeTextFile(`${root}/first.sigil`, validSigil("First"));
+    await Deno.writeTextFile(`${root}/second.sigil`, validSigil("Second"));
+    const options = { core: new CoreAdapter({ currentDirectory: root }) };
+    const single = await runCli([
+      "fmt",
+      `${root}/first.sigil`,
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(single.exitCode, EXIT_OK);
+    const result = parseJson(single.stdout);
+    assertEquals(result.workspaceRoot, root);
+    assertEquals(result.configPath, `${root}/.sigil/config.json`);
+    assertEquals(result.files[0].filePath, `${root}/first.sigil`);
+    const targets = [`${root}/first.sigil`, "second.sigil"];
+    const batch = await runCli([
+      "fmt",
+      ...targets,
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    const reversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(batch.exitCode, EXIT_OK);
+    assertEquals(reversed.exitCode, EXIT_OK);
+    assertEquals(parseJson(batch.stdout).workspaceRoot, root);
+    assertEquals(reversed.stdout, batch.stdout);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
 Deno.test("fmt batches cwd-relative paths with spaces and preserves source order", async () => {
   const root = await makeWorkspace("fmt-batch");
   try {
@@ -2156,6 +2199,30 @@ Deno.test("fmt validates every batch target before writing", async () => {
   } finally {
     await Deno.remove(root, { recursive: true });
     await Deno.remove(foreignRoot, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt rejects an undiscovered ancestor before writing any source", async () => {
+  const root = await makeWorkspace("fmt-ancestor-target");
+  try {
+    const source = noncanonicalSigil("Selected");
+    const other = noncanonicalSigil("Other");
+    await Deno.writeTextFile(`${root}/selected.sigil`, source);
+    await Deno.writeTextFile(`${root}/other.sigil`, other);
+    const options = { core: new CoreAdapter({ currentDirectory: root }) };
+    for (
+      const targets of [["selected.sigil", ".."], ["..", "selected.sigil"]]
+    ) {
+      for (const flags of [[], ["--check"]]) {
+        const result = await runCli(["fmt", ...targets, ...flags], options);
+        assertEquals(result.exitCode, EXIT_RUNTIME);
+        assertEquals(await Deno.readTextFile(`${root}/selected.sigil`), source);
+        assertEquals(await Deno.readTextFile(`${root}/other.sigil`), other);
+      }
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
   }
 });
 

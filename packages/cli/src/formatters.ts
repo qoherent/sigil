@@ -97,6 +97,9 @@ function normalizeResultPaths(
 
 function controllingPath(request: CommandRequest): string | undefined {
   if (request.command === "parse") return request.file;
+  if (request.command === "fmt") {
+    return request.paths.find(isAbsolute) ?? request.paths[0];
+  }
   if (
     request.command === "context" || request.command === "retrieve"
   ) {

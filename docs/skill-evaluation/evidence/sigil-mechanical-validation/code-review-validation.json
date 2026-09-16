@@ -1,0 +1,10 @@
+{
+  "verdicts": [
+    {
+      "#": 3,
+      "status": "confirmed",
+      "protected_subject": "public-contract",
+      "reason": "At reviewed SHA 29f9ef3 under Deno 2.9.4, the reachable precondition of cwd /work with configuration only at /work and targets [\"a.sigil\", \"..\"] caused packages/core/src/workspace.ts:73-84 to return fallback root /work after failed ancestor discovery, allowing packages/cli/src/core-adapter.ts:193-215 to select and, with check=false, replace both workspace files despite the abort-before-write contract at packages/cli/_module.sigil:489-491, while reversed target order rejected with no writes; the multi-target diff from 5b6aac9 introduced this order-dependent path."
+    }
+  ]
+}

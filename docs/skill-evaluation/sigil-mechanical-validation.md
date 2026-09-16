@@ -45,6 +45,24 @@ in the evidence; the host did not synthesize a replacement review.
 - Final workspace check had no diagnostics. Both changed contracts were canonical
   under the new multiple-target `fmt --check` invocation.
 
+A subsequent regression check found that changing the formatter request to a
+path array bypassed absolute output-path selection. The correction preserves
+absolute single-target output and makes mixed absolute/relative batches use the
+same output convention in either argument order. Its regression failed before
+the correction; all 73 CLI tests, repository typecheck, and lint passed afterward.
+The skill observations above retain their original source identity.
+
+The [completed code review](evidence/sigil-mechanical-validation/code-review.json)
+then confirmed an ancestor-target preflight defect: failed discovery could return
+the current directory as a fallback root and incorrectly pass the root comparison.
+The final correction requires a discovered configuration before accepting that
+comparison. Adapter and CLI regressions first reproduced the defect, then passed
+for both argument orders and both write/check modes with no replacement calls on
+failure. Explicit-root ancestor selection still passes its existing test. The
+final CLI suite contains 75 passing tests.
+[Follow-up verification](evidence/sigil-mechanical-validation/review-followup.json)
+records the fixes separately from the review's earlier source snapshot.
+
 The CLI reports artifact version 0.9.0 and core/language 0.8.0. The installed
 launcher resolves this source checkout. Its identity, compatibility response,
 and source revision are recorded in [environment evidence](evidence/sigil-mechanical-validation/environment.json).

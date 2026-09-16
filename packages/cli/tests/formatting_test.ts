@@ -193,6 +193,30 @@ Deno.test("formatting aborts a batch before any replacement when targets or sour
 });
 
 // @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("formatting rejects ancestor targets without a discovered workspace", async () => {
+  for (const targets of [["main.sigil", ".."], ["..", "main.sigil"]]) {
+    const source = component("Main", "words ".repeat(30) + "end.");
+    const other = component("Other", "words ".repeat(30) + "end.");
+    const fs = new FormattingFileSystem({
+      "/work/.sigil/config.json": JSON.stringify({
+        sigilVersion: "0.8.0",
+        workspace: { name: "format" },
+        files: { include: ["**/*.sigil"] },
+      }),
+      "/work/main.sigil": source,
+      "/work/other.sigil": other,
+    });
+    const core = new CoreAdapter({ fs, currentDirectory: "/work" });
+    for (const check of [false, true]) {
+      await assertRejects(() => core.formatSources(targets, undefined, check));
+      assertEquals(fs.writeCalls, []);
+      assertEquals(await fs.readSourceFile("/work/main.sigil"), source);
+      assertEquals(await fs.readSourceFile("/work/other.sigil"), other);
+    }
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
 Deno.test("formatting retains ancestor directory selection with an explicit workspace root", async () => {
   const fs = new FormattingFileSystem({
     "/work/nested/.sigil/config.json": JSON.stringify({
