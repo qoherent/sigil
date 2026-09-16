@@ -1,4 +1,4 @@
-use sigilc::sources::{Selection, capture, checked_path, discover, hash};
+use sigilc::sources::{Selection, capture, discover, hash};
 use std::{
     fs,
     path::PathBuf,
@@ -257,6 +257,7 @@ fn permissions_do_not_change_semantic_identity() {
 #[cfg(unix)]
 #[test]
 fn symlinks_and_special_files_cannot_be_explicit_sources_or_artifact_parents() {
+    use sigilc::sources::checked_path;
     use std::os::unix::{fs::symlink, net::UnixListener};
     let root = Workspace::new();
     let outside = Workspace::new();
