@@ -1,4 +1,4 @@
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, realpath, rm } from "node:fs/promises";
 import os from "node:os";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -36,14 +36,17 @@ if (
 const fixture = process.env.SIGIL_TEST_WORKSPACE
   ? undefined
   : await mkdtemp(path.join(os.tmpdir(), "sigil-editor-workspace-"));
-const workspace = process.env.SIGIL_TEST_WORKSPACE ??
+const workspacePath = process.env.SIGIL_TEST_WORKSPACE ??
   path.join(fixture, "slotted");
 if (fixture) {
-  await cp(path.join(repository, "examples/slotted"), workspace, {
+  await cp(path.join(repository, "examples/slotted"), workspacePath, {
     recursive: true,
   });
 }
 try {
+  // Windows temp paths can contain 8.3 aliases. Give the editor and its filesystem
+  // watcher the same expanded path so native writes produce accurate file events.
+  const workspace = await realpath(workspacePath);
   await runTests({
     vscodeExecutablePath,
     extensionDevelopmentPath: extension,
