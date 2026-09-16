@@ -73,9 +73,9 @@ for (const path of files.filter((p) => /\.(md|sigil|yaml)$/.test(p))) {
 const adapter = await Deno.readTextFile(`${root}/agents/openai.yaml`);
 assert(adapter.includes("$sigil"), "Default prompt must invoke the skill");
 assert(
-  files.some((path) => path.endsWith("evals/frontend-surface-fixture.md")),
+  files.includes(join(root, "evals", "frontend-surface-fixture.md")),
 );
-assert(files.some((path) => path.endsWith("references/sigil-format.md")));
+assert(files.includes(join(root, "references", "sigil-format.md")));
 
 // Run the actual documented commands with fixture paths substituted, without a
 // shell. Fixed empty Turtle exercises freshness and yellow/unavailable states;
