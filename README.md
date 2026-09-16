@@ -753,6 +753,8 @@ and portable handoff if delegation cannot complete. Static package checks and
 separate evidence. Mechanical checks do not establish design coherence or code
 conformance. The [mechanical fixtures](integrations/skills/sigil-write/evals/mechanical-validation-fixture.md)
 cover CLI-enabled behavior separately from the earlier offline observations.
+The [mechanical validation observations](docs/skill-evaluation/sigil-mechanical-validation.md)
+record actual commands, independent reviews, input identities, and limitations.
 
 `sigil fmt [paths...]` accepts multiple files or directories within one workspace:
 
