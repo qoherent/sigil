@@ -203,11 +203,17 @@ export async function activate(
 
   // Compilation invalidation observes all inputs; LSP ownership watching remains
   // independently registered by the server. Ignore native cache writes.
-  const invalidate = (uri: vscode.Uri) => {
+  const invalidate = (
+    uri: vscode.Uri,
+    event: "change" | "create" | "delete",
+  ) => {
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder) return;
     const relative = workspaceRelativeSigilPath(folder.uri, uri);
     if (
+      // Windows reports this parent-directory change when the native cache is
+      // created. Authored configuration changes arrive at their own file paths.
+      (event === "change" && relative === ".sigil") ||
       relative.split("/").some((part) =>
         [".git", "node_modules", "target", "build"].includes(part)
       ) ||
@@ -226,9 +232,9 @@ export async function activate(
   const watcher = vscode.workspace.createFileSystemWatcher("**/*");
   context.subscriptions.push(
     watcher,
-    watcher.onDidChange(invalidate),
-    watcher.onDidCreate(invalidate),
-    watcher.onDidDelete(invalidate),
+    watcher.onDidChange((uri) => invalidate(uri, "change")),
+    watcher.onDidCreate((uri) => invalidate(uri, "create")),
+    watcher.onDidDelete((uri) => invalidate(uri, "delete")),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration("sigil.compile")) return;
       for (const folder of vscode.workspace.workspaceFolders ?? []) {
