@@ -5,7 +5,7 @@ import {
   SIGIL_VERSION,
   type SigilFileSystem,
 } from "@qoherent/sigil-core";
-import { resolve } from "node:path";
+import { relative as relativePathFrom, resolve } from "node:path";
 import { CoreAdapter } from "../src/core-adapter.ts";
 import metadata from "../deno.json" with { type: "json" };
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
@@ -1188,9 +1188,10 @@ component Second {
       core: new CoreAdapter({ currentDirectory: root }),
     });
     assertEquals(relative.exitCode, EXIT_OK);
-    assert(!relative.stdout.includes(`Workspace root: ${normalizedRoot}`));
+    const displayRoot = normalizePath(relativePathFrom(Deno.cwd(), root));
+    assert(relative.stdout.includes(`Workspace root: ${displayRoot}`));
     assert(
-      !relative.stdout.includes(`Source: ${normalizedRoot}/multi.sigil`),
+      relative.stdout.includes(`Source: ${displayRoot}/multi.sigil`),
     );
     assert(relative.stdout.includes("multi.sigil"));
     assert(relative.stdout.includes("## First"));
