@@ -105,7 +105,7 @@ export async function runCommand(
   }
   if (request.command === "fmt") {
     const formatted = await core.formatSources(
-      request.path,
+      request.paths,
       request.root,
       request.check,
     );

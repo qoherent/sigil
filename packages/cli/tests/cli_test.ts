@@ -1988,7 +1988,13 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
       ),
     );
 
-    const result = await runCli(["fmt", root, "--format", "json"]);
+    const result = await runCli([
+      "fmt",
+      validPath,
+      invalidPath,
+      "--format",
+      "json",
+    ]);
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
     assertEquals(await Deno.readTextFile(validPath), noncanonical);
     assert(
@@ -2000,6 +2006,237 @@ Deno.test("fmt writes nothing when a selected source has an error", async () => 
     await Deno.remove(root, { recursive: true });
   }
 });
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt batches cwd-relative paths with spaces and preserves source order", async () => {
+  const root = await makeWorkspace("fmt-batch");
+  try {
+    await Deno.mkdir(`${root}/selected`);
+    const sources = new Map([
+      ["selected/alpha file.sigil", noncanonicalSigil("Alpha")],
+      ["selected/beta.sigil", noncanonicalSigil("Beta")],
+      ["other.sigil", validSigil("Other")],
+    ]);
+    for (const [path, source] of sources) {
+      await Deno.writeTextFile(`${root}/${path}`, source);
+    }
+    const options = {
+      core: new CoreAdapter({ currentDirectory: `${root}/selected` }),
+    };
+    const targets = ["beta.sigil", "alpha file.sigil"];
+    const checked = await runCli([
+      "fmt",
+      ...targets,
+      "--root",
+      "..",
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(checked.exitCode, EXIT_DIAGNOSTICS);
+    const selectedPaths = parseJson(checked.stdout).files.map(
+      (file: { filePath: string }) =>
+        normalizePath(`${Deno.cwd()}/${file.filePath}`),
+    );
+    assertEquals(
+      JSON.stringify(selectedPaths),
+      JSON.stringify([
+        `${root}/selected/alpha file.sigil`,
+        `${root}/selected/beta.sigil`,
+      ]),
+    );
+    for (const [path, source] of sources) {
+      assertEquals(await Deno.readTextFile(`${root}/${path}`), source);
+    }
+    const reversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--root",
+      "..",
+      "--check",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(reversed.stdout, checked.stdout);
+
+    const formatted = await runCli([
+      "fmt",
+      ...targets,
+      "--root",
+      "..",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(formatted.exitCode, EXIT_OK);
+    assertEquals(parseJson(formatted.stdout).files.length, 2);
+    const canonicalSources = new Map<string, string>();
+    for (const path of sources.keys()) {
+      const actual = await Deno.readTextFile(`${root}/${path}`);
+      if (path.startsWith("selected/")) {
+        assert(actual !== sources.get(path));
+        canonicalSources.set(path, actual);
+        await Deno.writeTextFile(`${root}/${path}`, sources.get(path)!);
+      } else {
+        assertEquals(actual, sources.get(path)!);
+      }
+    }
+    const formattedReversed = await runCli([
+      "fmt",
+      ...targets.toReversed(),
+      "--root",
+      "..",
+      "--format",
+      "json",
+    ], options);
+    assertEquals(formattedReversed.stdout, formatted.stdout);
+    for (const [path, source] of canonicalSources) {
+      assertEquals(await Deno.readTextFile(`${root}/${path}`), source);
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting constraints,cases
+Deno.test("fmt validates every batch target before writing", async () => {
+  const root = await makeWorkspace("fmt-bad-target");
+  const foreignRoot = await makeWorkspace("fmt-foreign");
+  try {
+    await Deno.writeTextFile(
+      `${root}/.sigil/config.json`,
+      JSON.stringify({
+        sigilVersion: SIGIL_VERSION,
+        workspace: { name: "fmt-bad-target" },
+        files: { include: ["**/*.sigil"], exclude: ["excluded/**"] },
+      }),
+    );
+    await Deno.mkdir(`${root}/excluded`);
+    await Deno.mkdir(`${root}/empty`);
+    const source = noncanonicalSigil("Selected");
+    await Deno.writeTextFile(`${root}/selected.sigil`, source);
+    await Deno.writeTextFile(`${root}/excluded/skip.sigil`, validSigil("Skip"));
+    await Deno.writeTextFile(`${root}/notes.txt`, "No Sigil source here.");
+    await Deno.writeTextFile(
+      `${foreignRoot}/foreign.sigil`,
+      noncanonicalSigil("Foreign"),
+    );
+    const badTargets = [
+      `${root}/missing.sigil`,
+      `${root}/excluded/skip.sigil`,
+      `${root}/excluded`,
+      `${root}/empty`,
+      `${root}/notes.txt`,
+      `${foreignRoot}/foreign.sigil`,
+    ];
+    for (const target of badTargets) {
+      for (
+        const targets of [[`${root}/selected.sigil`, target], [
+          target,
+          `${root}/selected.sigil`,
+        ]]
+      ) {
+        for (const flags of [[], ["--root", root], ["--check"]]) {
+          const result = await runCli(["fmt", ...targets, ...flags]);
+          assertEquals(
+            result.exitCode,
+            EXIT_RUNTIME,
+            `${targets.join(" ")}: ${result.stderr}`,
+          );
+          assertEquals(
+            await Deno.readTextFile(`${root}/selected.sigil`),
+            source,
+          );
+          assertEquals(
+            await Deno.readTextFile(`${foreignRoot}/foreign.sigil`),
+            noncanonicalSigil("Foreign"),
+          );
+        }
+      }
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+    await Deno.remove(foreignRoot, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
+Deno.test("fmt keeps omitted target at cwd even with an explicit root", async () => {
+  const root = await makeWorkspace("fmt-default");
+  try {
+    await Deno.mkdir(`${root}/selected`);
+    const source = noncanonicalSigil("Selected");
+    const other = validSigil("Other");
+    await Deno.writeTextFile(`${root}/selected/main.sigil`, source);
+    await Deno.writeTextFile(`${root}/other.sigil`, other);
+    const options = {
+      core: new CoreAdapter({ currentDirectory: `${root}/selected` }),
+    };
+    for (const flags of [[], ["--root", ".."]]) {
+      const checked = await runCli([
+        "fmt",
+        ...flags,
+        "--check",
+        "--format",
+        "json",
+      ], options);
+      assertEquals(checked.exitCode, EXIT_DIAGNOSTICS);
+      assertEquals(parseJson(checked.stdout).files.length, 1);
+      assertEquals(
+        normalizePath(
+          `${Deno.cwd()}/${parseJson(checked.stdout).files[0].filePath}`,
+        ),
+        `${root}/selected/main.sigil`,
+      );
+      assertEquals(
+        await Deno.readTextFile(`${root}/selected/main.sigil`),
+        source,
+      );
+    }
+    const formatted = await runCli(
+      ["fmt", "--root", "..", "--format", "json"],
+      options,
+    );
+    assertEquals(formatted.exitCode, EXIT_OK);
+    assertEquals(parseJson(formatted.stdout).files.length, 1);
+    assertEquals(await Deno.readTextFile(`${root}/other.sigil`), other);
+    const all = await runCli(["fmt", "--check", "--format", "json"], {
+      core: new CoreAdapter({ currentDirectory: root }),
+    });
+    assertEquals(all.exitCode, EXIT_OK);
+    assertEquals(parseJson(all.stdout).files.length, 2);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// @sigil tests packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
+Deno.test("fmt variadic paths leave other commands positional limits intact", async () => {
+  const commands = [
+    ["init"],
+    ["version"],
+    ["parse"],
+    ["export", "design"],
+    ["check"],
+    ["glossary"],
+    ["graph"],
+    ["render"],
+    ["context", "--component", "Example"],
+    ["retrieve", "--component", "Example", "--purpose", "semantic"],
+    ["skill", "list"],
+    ["skill", "install"],
+  ];
+  for (const command of commands) {
+    const result = await runCli([...command, "first.sigil", "second.sigil"]);
+    assertEquals(result.exitCode, EXIT_USAGE);
+  }
+});
+
+function noncanonicalSigil(name: string): string {
+  return validSigil(name).replace(
+    `Test ${name}.`,
+    "These words need wrapping. ".repeat(5).trim(),
+  );
+}
 
 class FailingListFileSystem implements SigilFileSystem {
   readSourceFile(path: string): Promise<Uint8Array> {

@@ -176,23 +176,48 @@ export class CoreAdapter {
    * @sigil implements packages/cli/_module.sigil::SigilCli::SourceFormatting logic,constraints,cases
    */
   async formatSources(
-    path: string | undefined,
+    paths: readonly string[],
     explicitRoot: string | undefined,
     check: boolean,
   ): Promise<FormatSourcesResult> {
-    const target = this.resolveTarget(path ?? this.#currentDirectory);
-    const workspace = await this.loadWorkspace(target, explicitRoot);
-    const resolved = resolveSigilWorkspace(workspace);
-    const selected = workspace.files.filter((file) =>
-      target.endsWith(".sigil")
-        ? normalizePath(file.path) === normalizePath(target)
-        : normalizePath(file.path).startsWith(
-          `${normalizePath(target).replace(/\/$/, "")}/`,
-        ) || normalizePath(target) === normalizePath(workspace.root)
-    );
-    if (selected.length === 0) {
-      throw new Error(`No Sigil source matched ${target}.`);
+    const targets = [
+      ...new Set(
+        (paths.length ? paths : [this.#currentDirectory]).map((path) =>
+          this.resolveTarget(path)
+        ),
+      ),
+    ];
+    const workspace = await this.loadWorkspace(targets[0], explicitRoot);
+    const selectedPaths = new Set<string>();
+    for (const target of targets) {
+      const prefix = `${target.replace(/\/$/, "")}/`;
+      const matches = workspace.files.filter((file) =>
+        target.endsWith(".sigil")
+          ? normalizePath(file.path) === target
+          : normalizePath(file.path).startsWith(prefix) ||
+            target === normalizePath(workspace.root)
+      );
+      if (matches.length === 0) {
+        throw new Error(`No Sigil source matched ${target}.`);
+      }
+      // An explicit root retains directory selection from its ancestors.
+      if (!(explicitRoot && workspace.root.startsWith(prefix))) {
+        const discovery = await discoverSigilWorkspace(this.#fs, {
+          startPath: target,
+          currentDirectory: this.#currentDirectory,
+        });
+        if (normalizePath(discovery.root) !== normalizePath(workspace.root)) {
+          throw new Error(
+            `Formatting target ${target} belongs to a different workspace than ${workspace.root}.`,
+          );
+        }
+      }
+      for (const file of matches) selectedPaths.add(file.path);
     }
+    const selected = workspace.files.filter((file) =>
+      selectedPaths.has(file.path)
+    );
+    const resolved = resolveSigilWorkspace(workspace);
     if (
       resolved.diagnostics.some((item) =>
         item.severity === "error" && item.code !== "SIGIL_LINE_TOO_LONG"
