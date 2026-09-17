@@ -1,0 +1,39 @@
+; Tool-owned laws for computed design validation. Data is re-emitted by the
+; host from parsed values; the interpreter supplies no rule and fills no table.
+;
+; Relation declarations land with the guidance bundle so the runtime fingerprint
+; covers them. The laws themselves are authored against these shapes.
+
+; --- minted by the tool from the design export -------------------------------
+; A Facet: its identity, the component that owns it, its contract role, source.
+(relation facet (String String String String))
+; A contract role that declares at least one Facet on a component.
+(relation section-declared (String String))
+; A design entity. Kind is Component or Tag.
+(relation entity (String String String String String))
+; An entity this Facet may legitimately name, per the export's resolved records.
+(relation mentions (String String))
+; An entity reachable from a source through its resolved import closure.
+(relation visible (String String))
+
+; --- re-emitted by the tool from validated interpreter output ----------------
+; claim id, facet, contract role, subject, relation, object, modality, expected.
+; The contract role is filled by the tool from the Facet, never by the interpreter.
+(relation claim (String String String String String String String String))
+; claim id, facet, contract role, subject, property, value.
+(relation property (String String String String String String))
+; claim id, facet, contract role, subject, property, number.
+(relation measure (String String String String String f64))
+; facet, outcome. Records a Facet the interpreter read but drew no commitment from.
+(relation reading (String String))
+
+; --- derived ----------------------------------------------------------------
+(relation holds (String String String))
+; claim id, subject, relation, object, law that derived it.
+(relation because (String String String String String))
+(relation reachable (String String))
+(relation obligation (String String String String))
+(function filled (String String String String) i64 :merge (max old new))
+
+(ruleset closure)
+(ruleset diagnostics)

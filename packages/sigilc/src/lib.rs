@@ -1,6 +1,7 @@
 //! Deterministic Semantic Worlds compiler. Model orchestration is external.
 pub mod assertions;
 pub mod catalog;
+pub mod claims;
 pub mod cli;
 pub mod comparison;
 pub mod design;
