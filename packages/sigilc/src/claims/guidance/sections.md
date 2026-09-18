@@ -56,6 +56,18 @@ the tool computes.
 "Must return a result" is `required`. "May return a cached result" is
 `permitted`. "Assumes the store is reachable" is `assumed`.
 
+## Naming what a claim is about
+
+A claim's subject and object must each be one of three things: the Facet's own
+component, a component its source imports from, or a Tag marked with asterisks
+in this exact Facet's own prose — `*a name like this*`. Nothing else. If the
+entity you want to name is not one of these, the claim is rejected as
+ungrounded, even though the row is otherwise well-formed.
+
+This is why every worked example below asterisk-marks the noun it later claims
+something about. If a Facet's prose does not introduce or reference a Tag by
+name, do not invent a claim about it — return a `reading` row instead.
+
 ## What the role does to a claim
 
 A `decisions` Facet's claims are retained and reported, and are passed to the

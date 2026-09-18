@@ -1,8 +1,15 @@
 use sigilc::{
-    claims::{guidance, vocabulary},
+    claims::{
+        dialect::{self, Row},
+        guidance, vocabulary,
+    },
     sources::hash,
 };
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    path::PathBuf,
+};
 
 mod support;
 use support::Workspace;
@@ -300,4 +307,117 @@ fn guidance_in_the_workspace_under_validation_is_never_read() {
         "the bundle is compiled in; nothing on disk may change it"
     );
     assert_eq!(guidance::fingerprint(), guidance::fingerprint());
+}
+
+// --------------------------------------------------------- examples ground
+
+/// Every asterisk-marked term in a blockquote: `*a name*` -> `"a name"`.
+fn asterisked(prose: &str) -> BTreeSet<&str> {
+    let mut out = BTreeSet::new();
+    let mut rest = prose;
+    while let Some(start) = rest.find('*') {
+        let after = &rest[start + 1..];
+        let Some(end) = after.find('*') else { break };
+        out.insert(&after[..end]);
+        rest = &after[end + 1..];
+    }
+    out
+}
+
+/// Pairs each blockquote in the guidance with the fenced code block that
+/// immediately follows it, when one does. Some blockquotes in this document
+/// are explanatory only and carry no rows; those are skipped.
+fn worked_examples(markdown: &str) -> Vec<(String, String)> {
+    let mut pairs = Vec::new();
+    let mut lines = markdown.lines().peekable();
+    while let Some(line) = lines.next() {
+        if !line.trim_start().starts_with('>') {
+            continue;
+        }
+        let mut quote = line.trim_start_matches('>').trim().to_string();
+        while let Some(next) = lines.peek() {
+            if next.trim_start().starts_with('>') {
+                quote.push(' ');
+                quote.push_str(lines.next().unwrap().trim_start_matches('>').trim());
+            } else {
+                break;
+            }
+        }
+        let mut code = String::new();
+        let mut in_fence = false;
+        let mut closed = false;
+        for l in lines.by_ref() {
+            let trimmed = l.trim_start();
+            if trimmed.starts_with("```") {
+                if in_fence {
+                    closed = true;
+                    break;
+                }
+                in_fence = true;
+                continue;
+            }
+            if in_fence {
+                code.push_str(l);
+                code.push('\n');
+            } else if !trimmed.is_empty() {
+                break;
+            }
+        }
+        if closed && !code.trim().is_empty() {
+            pairs.push((quote, code));
+        }
+    }
+    pairs
+}
+
+#[test]
+fn every_worked_claim_names_only_its_component_or_an_asterisk_marked_tag() {
+    // The exact invariant identity::Grounding enforces at runtime: a claim's
+    // subject and object are either the Facet's own component (or an import
+    // provider, not exercised by these single-component examples) or a Tag
+    // the Facet's own prose marks with asterisks. A worked example that names
+    // anything else would teach the interpreter a pattern the validator
+    // refuses -- this is the regression this test exists to catch.
+    let components: BTreeSet<&str> = ["SearchService", "SearchPanel"].into_iter().collect();
+    let markdown = guidance::document("examples.md").unwrap().text;
+    let pairs = worked_examples(markdown);
+    assert!(
+        pairs.len() >= 7,
+        "expected at least 7 worked examples, found {}",
+        pairs.len()
+    );
+
+    let mut checked = 0;
+    for (quote, code) in pairs {
+        let ground = asterisked(&quote);
+        let rows = dialect::parse(&code, dialect::Limits::default()).unwrap_or_else(|e| {
+            panic!(
+                "worked example is not valid data: {e}
+code:
+{code}"
+            )
+        });
+        for row in &rows {
+            let names: Vec<&str> = match &row {
+                Row::Claim {
+                    subject, object, ..
+                } => vec![subject.as_str(), object.as_str()],
+                Row::Property { subject, .. } | Row::Measure { subject, .. } => {
+                    vec![subject.as_str()]
+                }
+                Row::Reading { .. } => vec![],
+            };
+            for name in names {
+                assert!(
+                    components.contains(name) || ground.contains(name),
+                    "{quote:?} claims {name:?}, which is neither a component nor                      asterisk-marked in that same prose"
+                );
+                checked += 1;
+            }
+        }
+    }
+    assert!(
+        checked >= 8,
+        "expected to check at least 8 entity mentions, saw {checked}"
+    );
 }

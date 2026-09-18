@@ -8,7 +8,7 @@ pre-filled row and the entity list give you, not a name you invent.
 
 ## `goal`
 
-> Find records matching a supplied query.
+> Provide *record search*: find records matching a supplied query.
 
 ```
 (claim "f1" "SearchService" "provides" "record search" "required" "true")
@@ -20,7 +20,7 @@ component is for, so the commitment is `required`.
 ## `interface`
 
 > Accept a *query* as search text and return *search results* as matching
-> records. A cached result may be returned when the query is unchanged.
+> records. A *cached result* may be returned when the query is unchanged.
 
 ```
 (claim "f2" "SearchService" "provides" "query" "required" "true")
@@ -34,7 +34,7 @@ nothing says the panel depends on the service. That would be a deduction.
 
 ## `state`
 
-> The active request is the only one whose results may be published.
+> The *active request* is the only one whose results may be published.
 
 ```
 (claim "f3" "SearchPanel" "owns" "active request" "required" "true")
@@ -46,8 +46,8 @@ a property of the state, so it travels on a `property` row.
 
 ## `logic`
 
-> Publishing results requires a completed search. Publishing must not occur for
-> a superseded request.
+> Publishing results requires a *completed search*. A *superseded publication*
+> must not occur.
 
 ```
 (claim "f4" "SearchPanel" "requires" "completed search" "required" "true")
@@ -59,8 +59,8 @@ not hold. That is a prohibition, not an absence.
 
 ## `constraints`
 
-> Search must answer within 200 milliseconds. The panel may not reach the store
-> directly.
+> Search must answer within 200 milliseconds. The panel may not reach the
+> *record store* directly.
 
 ```
 (measure "f5" "SearchService" "latencyBudgetMs" "200")
@@ -72,8 +72,8 @@ A bound becomes a measure. A prohibition becomes a claim whose `expected` is
 
 ## `decisions`
 
-> We considered caching in the panel and rejected it, because two caches would
-> disagree. We assume the store stays reachable.
+> We considered a *result cache* in the panel and rejected it, because two
+> caches would disagree. We assume the *record store* stays reachable.
 
 ```
 (claim "f6" "SearchPanel" "owns" "result cache" "permitted" "false")
@@ -94,7 +94,8 @@ instead:
 
 ## `cases`
 
-> Given an empty query, the service returns no results and reports no error.
+> Given an empty query, the service provides an *empty result* and reports no
+> error.
 
 ```
 (claim "f7" "SearchService" "provides" "empty result" "permitted" "true")
