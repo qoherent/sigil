@@ -8,27 +8,18 @@ use sigilc::{
         program,
     },
     eqval,
-    frontend::DesignInput,
 };
 use std::{fs, path::PathBuf};
 
 mod support;
-
-const BASE: &str = "base.sigil";
-const BASE_GOAL: &str = "facet:base.sigil:29";
-const BASE_INTERFACE: &str = "facet:base.sigil:71";
-const BASE_CONSTRAINTS: &str = "facet:base.sigil:129";
-
-fn shared_input() -> DesignInput {
-    DesignInput::parse(&serde_json::to_vec(&support::shared_value()).unwrap()).unwrap()
-}
+use support::{BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE, shared_input};
 
 fn run(artifact: &str) -> (Request, Vec<Fact>, Context) {
     let input = shared_input();
     let request = prepare::project(&input, BASE).unwrap();
     let rows = dialect::parse(artifact, Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &input, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
     let identity = Identity {
         export_digest: request.binding.export_digest.clone(),
         interpretations: vec!["artifact".into()],

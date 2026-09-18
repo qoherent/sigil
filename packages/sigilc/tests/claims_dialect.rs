@@ -11,23 +11,16 @@ use sigilc::{
 };
 
 mod support;
+use support::{
+    BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE, CONSUMER, CONSUMER_GOAL, CONSUMER_INTERFACE,
+    shared_input,
+};
 
-const BASE: &str = "base.sigil";
-const CONSUMER: &str = "consumer.sigil";
-const BASE_GOAL: &str = "facet:base.sigil:29";
-const BASE_INTERFACE: &str = "facet:base.sigil:71";
-const BASE_CONSTRAINTS: &str = "facet:base.sigil:129";
-const CONSUMER_GOAL: &str = "facet:consumer.sigil:75";
-const CONSUMER_INTERFACE: &str = "facet:consumer.sigil:107";
 const BASE_ID: &str = "urn:sigil:component:base.sigil:Base";
 const VALUE_ID: &str = "urn:sigil:component:base.sigil:Base:tag:value";
 
 fn input_from(value: Value) -> DesignInput {
     DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap()
-}
-
-fn shared_input() -> DesignInput {
-    input_from(support::shared_value())
 }
 
 fn request_for(input: &DesignInput, source: &str) -> Request {
@@ -209,7 +202,7 @@ fn the_published_relations_are_read_through_the_compilers_public_accessor() {
     // eqval::fingerprint() hashes, invalidating every stored world.
     let expected: std::collections::BTreeSet<&str> =
         turtle::ENTITY_PREDICATES.iter().copied().collect();
-    assert_eq!(vocabulary::relations(), expected);
+    assert_eq!(vocabulary::relations(), &expected);
     let all = turtle::vocabulary();
     for name in vocabulary::boolean_properties() {
         assert_eq!(all.get(name), Some(&"boolean"));
@@ -508,5 +501,4 @@ fn an_empty_artifact_is_valid_data_and_claims_nothing() {
     // Covers AE3's precondition: silence is not malformed.
     let rows: Vec<Row> = dialect::parse("", Limits::default()).unwrap();
     assert!(rows.is_empty());
-    assert!(dialect::facets(&rows).is_empty());
 }

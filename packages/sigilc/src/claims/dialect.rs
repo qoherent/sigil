@@ -6,7 +6,6 @@
 //! here is ever evaluated — the host re-emits accepted rows into a program it
 //! writes itself.
 use super::vocabulary;
-use std::collections::BTreeSet;
 
 /// Bounds applied before the work they protect.
 #[derive(Debug, Clone, Copy)]
@@ -275,9 +274,4 @@ fn expect(
 fn atom(name: &str, values: &[String]) -> String {
     let rendered: Vec<String> = values.iter().map(|v| format!("{v:?}")).collect();
     format!("({name} {})", rendered.join(" "))
-}
-
-/// The distinct Facets a set of rows speaks about.
-pub fn facets(rows: &[Row]) -> BTreeSet<&str> {
-    rows.iter().map(Row::facet).collect()
 }

@@ -7,22 +7,13 @@ use sigilc::{
         program,
     },
     eqval,
-    frontend::DesignInput,
 };
 use std::fs;
 
 mod support;
-use support::Workspace;
+use support::{BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE, Workspace, shared_input};
 
-const BASE: &str = "base.sigil";
-const BASE_GOAL: &str = "facet:base.sigil:29";
-const BASE_INTERFACE: &str = "facet:base.sigil:71";
-const BASE_CONSTRAINTS: &str = "facet:base.sigil:129";
 const BASE_ID: &str = "urn:sigil:component:base.sigil:Base";
-
-fn shared_input() -> DesignInput {
-    DesignInput::parse(&serde_json::to_vec(&support::shared_value()).unwrap()).unwrap()
-}
 
 /// The whole path: project, read the artifact, admit, saturate, report.
 fn run(artifact: &str) -> (Request, Vec<Fact>, Report) {
@@ -30,7 +21,7 @@ fn run(artifact: &str) -> (Request, Vec<Fact>, Report) {
     let request = prepare::project(&input, BASE).unwrap();
     let rows = dialect::parse(artifact, Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &input, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
     let report = findings::report(&request, &facts, &world, &["artifact-digest".into()]);
     (request, facts, report)
 }
@@ -376,7 +367,7 @@ fn supplying_a_second_artifact_changes_the_recorded_report_identity() {
     let request = prepare::project(&input, BASE).unwrap();
     let rows = dialect::parse(&clean_artifact(), Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &input, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
     let two = findings::report(
         &request,
         &facts,

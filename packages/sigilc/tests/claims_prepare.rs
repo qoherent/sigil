@@ -1,18 +1,8 @@
-use sigilc::{
-    claims::{guidance, prepare, vocabulary},
-    frontend::DesignInput,
-};
+use sigilc::claims::{guidance, prepare, vocabulary};
 use std::fs;
 
 mod support;
-use support::Workspace;
-
-const BASE: &str = "base.sigil";
-const CONSUMER: &str = "consumer.sigil";
-
-fn shared_input() -> DesignInput {
-    DesignInput::parse(&serde_json::to_vec(&support::shared_value()).unwrap()).unwrap()
-}
+use support::{BASE, CONSUMER, Workspace, shared_input};
 
 fn out_dir(name: &str) -> std::path::PathBuf {
     let path = std::env::temp_dir().join(format!(

@@ -105,19 +105,19 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
     let quoted = inline_code(published);
     let mentions = |name: &str| quoted.iter().any(|token| token == name);
 
-    for name in vocabulary::relations() {
+    for name in vocabulary::relations().iter().copied() {
         assert!(
             mentions(name),
             "relation {name} is accepted but undocumented"
         );
     }
-    for name in vocabulary::boolean_properties() {
+    for name in vocabulary::boolean_properties().iter().copied() {
         assert!(
             mentions(name),
             "property {name} is accepted but undocumented"
         );
     }
-    for name in vocabulary::numeric_properties() {
+    for name in vocabulary::numeric_properties().iter().copied() {
         assert!(
             mentions(name),
             "property {name} is accepted but undocumented"
@@ -139,9 +139,10 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
     }
 
     let accepted: Vec<&str> = vocabulary::relations()
-        .into_iter()
+        .iter()
         .chain(vocabulary::boolean_properties())
         .chain(vocabulary::numeric_properties())
+        .copied()
         .collect();
     let reserved = ["claim", "property", "measure", "reading"];
     for token in &quoted {

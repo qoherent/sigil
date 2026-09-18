@@ -6,7 +6,6 @@ use sigilc::{
         program::{self, Saturated},
     },
     eqval,
-    frontend::DesignInput,
 };
 
 mod support;
@@ -115,12 +114,8 @@ fn fact(facet: &str, section: &str, body: Body) -> Fact {
     }
 }
 
-fn empty_input() -> DesignInput {
-    DesignInput::parse(&serde_json::to_vec(&support::shared_value()).unwrap()).unwrap()
-}
-
 fn run(request: &Request, facts: &[Fact]) -> Saturated {
-    program::saturate(request, &empty_input(), facts, eqval::Limits::default()).unwrap()
+    program::saturate(request, facts, eqval::Limits::default()).unwrap()
 }
 
 fn cell(row: &[Value], index: usize) -> &str {
@@ -544,7 +539,7 @@ fn the_emitted_program_carries_the_laws_and_only_parsed_values() {
         "required",
         "true",
     )];
-    let text = program::program(&req, &empty_input(), &facts);
+    let text = program::program(&req, &facts);
     assert!(text.contains("(ruleset closure)"));
     assert!(text.contains("(commits \"interface\")"));
     assert!(

@@ -8,7 +8,7 @@ use super::{
     prepare::Request,
     vocabulary,
 };
-use crate::{assertions::quote, eqval, frontend::DesignInput};
+use crate::{assertions::quote, eqval};
 use egglog::EGraph;
 use serde::Serialize;
 use serde_json::Value;
@@ -54,6 +54,16 @@ impl Saturated {
     }
 }
 
+/// One cell of a saturated table row, as the exported rows encode it.
+///
+/// Lives here because this module owns `Saturated` and its row convention.
+pub(super) fn text(row: &[Value], index: usize) -> String {
+    row.get(index)
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_owned()
+}
+
 /// Whether claims authored under this contract role commit the design.
 pub fn commits(section: &str) -> bool {
     !NON_COMMITTING.contains(&section)
@@ -64,7 +74,7 @@ pub fn commits(section: &str) -> bool {
 /// Exposed so a reader can see exactly what was run: the laws are fixed, and
 /// everything else is a row derived from the export or from an accepted fact.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::SectionAwareClosure interface,constraints,cases
-pub fn program(request: &Request, input: &DesignInput, facts: &[Fact]) -> String {
+pub fn program(request: &Request, facts: &[Fact]) -> String {
     let mut out = String::from(include_str!("claims.egg"));
     let mut row = |text: String| {
         out.push('\n');
@@ -99,14 +109,6 @@ pub fn program(request: &Request, input: &DesignInput, facts: &[Fact]) -> String
             quote(entity.owner.as_deref().unwrap_or_default()),
             quote(&entity.source)
         ));
-        row(format!(
-            "(visible {} {})",
-            quote(&entity.source),
-            quote(&entity.id)
-        ));
-    }
-    for (facet, entity) in super::identity::mentions(input, request) {
-        row(format!("(mentions {} {})", quote(&facet), quote(&entity)));
     }
 
     for fact in facts {
@@ -169,7 +171,6 @@ pub fn program(request: &Request, input: &DesignInput, facts: &[Fact]) -> String
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::SectionAwareClosure interface,constraints,cases
 pub fn saturate(
     request: &Request,
-    input: &DesignInput,
     facts: &[Fact],
     limits: eqval::Limits,
 ) -> Result<Saturated, String> {
@@ -179,7 +180,7 @@ pub fn saturate(
     let started = Instant::now();
     let mut graph = EGraph::default();
     graph
-        .parse_and_run_program(Some("sigil-claims".into()), &program(request, input, facts))
+        .parse_and_run_program(Some("sigil-claims".into()), &program(request, facts))
         .map_err(|e| e.to_string())?;
     let iterations = eqval::fixedpoint(&mut graph, limits, started)?;
     let mut tables = BTreeMap::new();

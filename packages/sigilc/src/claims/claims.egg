@@ -13,10 +13,6 @@
 (relation section-declared (String String))
 ; A design entity. Kind is Component or Tag.
 (relation entity (String String String String String))
-; An entity this Facet may legitimately name, per the export's resolved records.
-(relation mentions (String String))
-; An entity reachable from a source through its resolved import closure.
-(relation visible (String String))
 ; A contract role whose claims can carry a commitment.
 ;
 ; Rationale does not convert a rejected alternative into a promise, so the host

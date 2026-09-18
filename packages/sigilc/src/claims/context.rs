@@ -8,7 +8,7 @@ use super::{
     findings::Identity,
     identity::{Body, Fact},
     prepare::Request,
-    program::{self, Saturated},
+    program::{self, Saturated, text},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -146,6 +146,23 @@ pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Ide
         })
         .collect();
 
+    // Indexed once. Scanning these per Facet made the pass quadratic in
+    // (Facets x derived rows), which bites on a design with many units.
+    let mut derived_by_witness: BTreeMap<&str, Vec<&Derived>> = BTreeMap::new();
+    for entry in &derived {
+        derived_by_witness
+            .entry(entry.witness.as_str())
+            .or_default()
+            .push(entry);
+    }
+    let mut obligations_by_claim: BTreeMap<String, Vec<&Vec<Value>>> = BTreeMap::new();
+    for row in world.table("obligation") {
+        obligations_by_claim
+            .entry(text(row, 0))
+            .or_default()
+            .push(row);
+    }
+
     let unmet: BTreeSet<String> = world
         .table("unmet-obligation")
         .iter()
@@ -165,20 +182,21 @@ pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Ide
             .collect();
 
         let ids: BTreeSet<&str> = mine.iter().map(|f| f.id.as_str()).collect();
-        let mut mine_derived: Vec<Derived> = derived
+        let mut mine_derived: Vec<Derived> = ids
             .iter()
-            .filter(|d| ids.contains(d.witness.as_str()))
-            .cloned()
+            .filter_map(|id| derived_by_witness.get(id))
+            .flat_map(|entries| entries.iter().map(|d| (*d).clone()))
             .collect();
         mine_derived.sort();
         mine_derived.dedup();
 
         let mut obligations = Vec::new();
-        for obligation_row in world.table("obligation") {
+        for obligation_row in ids
+            .iter()
+            .filter_map(|id| obligations_by_claim.get(*id))
+            .flat_map(|rows| rows.iter().copied())
+        {
             let raised_by = text(obligation_row, 0);
-            if !ids.contains(raised_by.as_str()) {
-                continue;
-            }
             let (subject, relation, object) = (
                 text(obligation_row, 1),
                 text(obligation_row, 2),
@@ -308,11 +326,4 @@ fn candidates(world: &Saturated, origin: &BTreeMap<&str, &Fact>) -> Vec<Candidat
 
 fn obligation_key(id: &str, subject: &str, relation: &str, object: &str) -> String {
     format!("{id}\u{1f}{subject}\u{1f}{relation}\u{1f}{object}")
-}
-
-fn text(row: &[Value], index: usize) -> String {
-    row.get(index)
-        .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_owned()
 }

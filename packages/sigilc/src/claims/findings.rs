@@ -6,10 +6,9 @@
 use super::{
     identity::{Body, Defect, Fact},
     prepare::Request,
-    program::Saturated,
+    program::{Saturated, text},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
@@ -98,12 +97,14 @@ pub struct Disagreement {
     pub detail: String,
 }
 
-/// Which laws answer which question.
-fn class_of(law: &str) -> Class {
+/// Which question a law in the `violation` table answers.
+///
+/// Only violation laws reach here; unmet promises and interpretation defects
+/// are built with an explicit class at their own construction sites. New
+/// violation laws default to a contradiction, which is what the rest are.
+fn violation_class(law: &str) -> Class {
     match law {
         "exclusive-ownership" => Class::OwnershipConflict,
-        "unmet-obligation" => Class::UnmetObligation,
-        "degenerate-claim" | "ungrounded-claim" | "uninterpreted-section" => Class::Interpretation,
         _ => Class::Contradiction,
     }
 }
@@ -132,7 +133,7 @@ pub fn report(
         let witness = text(row, 3);
         let (component, section) = where_of(&witness);
         findings.push(Finding {
-            class: class_of(&law),
+            class: violation_class(&law),
             law,
             subject: text(row, 1),
             object: text(row, 2),
@@ -248,13 +249,6 @@ fn subject_of(body: &Body) -> String {
     }
 }
 
-fn text(row: &[Value], index: usize) -> String {
-    row.get(index)
-        .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_owned()
-}
-
 /// Where this component's reports live. A sibling of the compiler's cache,
 /// never inside it.
 pub fn store_path(root: &Path) -> PathBuf {
@@ -264,11 +258,23 @@ pub fn store_path(root: &Path) -> PathBuf {
 /// Write the report under the store this component owns.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ComputedFindings interface
 pub fn write(report: &Report, root: &Path) -> Result<PathBuf, String> {
+    store(report, root, &report.source, ".json")
+}
+
+/// Write one artifact under the store this component owns.
+///
+/// Shared by the report and the judgment context so the two cannot drift on
+/// naming, formatting, or which directory they land in.
+pub(super) fn store(
+    value: &impl Serialize,
+    root: &Path,
+    source: &str,
+    suffix: &str,
+) -> Result<PathBuf, String> {
     let dir = store_path(root);
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let name = format!("{}.json", report.source.replace(['/', '\\', ':'], "_"));
-    let path = dir.join(name);
-    let mut bytes = serde_json::to_vec_pretty(report).map_err(|e| e.to_string())?;
+    let path = dir.join(format!("{}{suffix}", source.replace(['/', '\\', ':'], "_")));
+    let mut bytes = serde_json::to_vec_pretty(value).map_err(|e| e.to_string())?;
     bytes.push(b'\n');
     std::fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(path)

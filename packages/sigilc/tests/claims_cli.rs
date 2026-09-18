@@ -6,11 +6,7 @@ use std::{
 };
 
 mod support;
-
-const BASE: &str = "base.sigil";
-const BASE_GOAL: &str = "facet:base.sigil:29";
-const BASE_INTERFACE: &str = "facet:base.sigil:71";
-const BASE_CONSTRAINTS: &str = "facet:base.sigil:129";
+use support::{BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE};
 
 struct Scratch(PathBuf);
 

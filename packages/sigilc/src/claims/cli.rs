@@ -145,8 +145,7 @@ fn ingest(options: &BTreeMap<String, String>, root: &str) -> Output {
         None => None,
     };
 
-    let world =
-        program::saturate(&request, &input, &facts, eqval::Limits::default()).map_err(gate)?;
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).map_err(gate)?;
     let mut report = findings::report(&request, &facts, &world, &digests);
     if let Some(repeat) = &repeat {
         findings::attach(&mut report, findings::disagreements(&facts, repeat));
@@ -154,7 +153,8 @@ fn ingest(options: &BTreeMap<String, String>, root: &str) -> Output {
     let context = context::build(&request, &facts, &world, report.identity.clone());
 
     let report_path = findings::write(&report, Path::new(root)).map_err(operational)?;
-    let context_path = write_context(&context, Path::new(root)).map_err(operational)?;
+    let context_path = findings::store(&context, Path::new(root), &context.source, ".context.json")
+        .map_err(operational)?;
 
     let code = match report.state {
         findings::State::Disjoint => 1,
@@ -173,19 +173,6 @@ fn ingest(options: &BTreeMap<String, String>, root: &str) -> Output {
             "guidanceFingerprint": report.identity.guidance_fingerprint,
         }),
     )
-}
-
-fn write_context(context: &context::Context, root: &Path) -> Result<std::path::PathBuf, String> {
-    let dir = findings::store_path(root);
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let path = dir.join(format!(
-        "{}.context.json",
-        context.source.replace(['/', '\\', ':'], "_")
-    ));
-    let mut bytes = serde_json::to_vec_pretty(context).map_err(|e| e.to_string())?;
-    bytes.push(b'\n');
-    std::fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))?;
-    Ok(path)
 }
 
 /// Name every field that differs, so a caller can see which input moved.

@@ -1,6 +1,6 @@
 //! The published claim vocabulary. Guidance describes it; the validator enforces it.
 use crate::{frontend::Section, turtle};
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::LazyLock};
 
 /// Changes when the accepted claim profile becomes incompatible.
 pub const VOCABULARY_GENERATION: u32 = 1;
@@ -80,18 +80,21 @@ pub fn returned(name: &str) -> Option<&'static Returned> {
 /// tables themselves. `TEXT_PREDICATES`, `BOOLEAN_PREDICATES` and
 /// `NUMBER_PREDICATES` are private, and widening them would edit `turtle.rs`,
 /// whose text `eqval::fingerprint()` hashes.
-pub fn relations() -> BTreeSet<&'static str> {
-    named("entity")
+pub fn relations() -> &'static BTreeSet<&'static str> {
+    static RELATIONS: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("entity"));
+    &RELATIONS
 }
 
 /// Property names a property row may use.
-pub fn boolean_properties() -> BTreeSet<&'static str> {
-    named("boolean")
+pub fn boolean_properties() -> &'static BTreeSet<&'static str> {
+    static BOOLEAN: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("boolean"));
+    &BOOLEAN
 }
 
 /// Property names a measure row may use.
-pub fn numeric_properties() -> BTreeSet<&'static str> {
-    named("number")
+pub fn numeric_properties() -> &'static BTreeSet<&'static str> {
+    static NUMERIC: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("number"));
+    &NUMERIC
 }
 
 fn named(range: &str) -> BTreeSet<&'static str> {
