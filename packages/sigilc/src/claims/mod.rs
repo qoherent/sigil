@@ -8,4 +8,5 @@
 //! reads the design export, owns its own store, and never writes the files
 //! whose text `eqval::fingerprint()` hashes.
 pub mod guidance;
+pub mod prepare;
 pub mod vocabulary;
