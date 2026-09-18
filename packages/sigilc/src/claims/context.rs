@@ -119,6 +119,10 @@ pub struct Context {
     pub non_committing_roles: Vec<String>,
 }
 
+/// The suffix this component's on-disk artifact uses, mirroring how
+/// findings.rs owns its own report suffix.
+pub const SUFFIX: &str = ".context.json";
+
 /// Build the judgment context for one interpretation of one design source.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::JudgmentContext interface
 pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Identity) -> Context {

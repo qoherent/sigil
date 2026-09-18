@@ -46,6 +46,9 @@
 ; Two units asserting the same proposition; a candidate, never a verdict.
 (relation duplicate-proposition (String String))
 
+; eqval::fixedpoint steps exactly these two rulesets, by name, in this order
+; -- that driver is off-limits to edit here. A third ruleset would compile
+; and run clean but never actually step, silently deriving nothing.
 (ruleset closure)
 (ruleset diagnostics)
 

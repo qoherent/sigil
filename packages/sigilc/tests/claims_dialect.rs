@@ -3,7 +3,7 @@ use sigilc::{
     claims::{
         dialect::{self, Limits, Row},
         identity::{self, Body, Defect},
-        prepare::{self, Request},
+        prepare::{self, Binding, Request},
         vocabulary,
     },
     frontend::DesignInput,
@@ -537,4 +537,133 @@ fn ordinary_rows_never_approach_the_depth_limit() {
     ] {
         assert!(dialect::parse(&artifact, Limits::default()).is_ok());
     }
+}
+
+// -------------------------------------------------- coverage gaps closed
+
+#[test]
+fn a_measure_row_is_grounded_and_admitted_like_a_claim() {
+    // The Measure arm of admit()'s grounding check had no direct test: every
+    // existing measure fixture used a subject grounded through its own
+    // component, never exercising the ungrounded branch for this row kind.
+    let grounded = accept(
+        &shared_input(),
+        BASE,
+        &format!("(measure {BASE_GOAL:?} \"Base\" \"risk\" \"0.5\")\n"),
+    )
+    .unwrap();
+    assert_eq!(grounded.len(), 1);
+    assert!(
+        grounded[0].defects.is_empty(),
+        "Base is its own Facet's owning component: {:?}",
+        grounded[0].defects
+    );
+    match &grounded[0].body {
+        Body::Measure {
+            subject,
+            property,
+            number,
+        } => {
+            assert_eq!(subject, BASE_ID);
+            assert_eq!(property, "risk");
+            assert_eq!(number, "0.5");
+        }
+        other => panic!("expected a measure, got {other:?}"),
+    }
+
+    // consumer.sigil's goal Facet references no Tag, so a measure naming one
+    // is ungrounded exactly like a claim would be.
+    let ungrounded = accept(
+        &shared_input(),
+        CONSUMER,
+        &format!("(measure {CONSUMER_GOAL:?} \"value\" \"risk\" \"0.5\")\n"),
+    )
+    .unwrap();
+    assert!(
+        ungrounded[0]
+            .defects
+            .contains(&Defect::Ungrounded(VALUE_ID.to_string())),
+        "got {:?}",
+        ungrounded[0].defects
+    );
+}
+
+/// A design with no source text at all: sufficient for identity::admit, which
+/// reads request.entities for name resolution and input only for grounding.
+fn no_source_input() -> DesignInput {
+    DesignInput::parse(
+        &serde_json::to_vec(&json!({
+            "schemaVersion": 2, "languageVersion": "0.8.0", "frontendVersion": "test",
+            "sources": [],
+            "context": [
+                {"path": ".sigil/config.json", "text": Value::Null},
+                {"path": ".sigil/local.json", "text": Value::Null},
+                {"path": ".sigil/glossary.json", "text": Value::Null},
+            ],
+            "diagnostics": [], "imports": [],
+            "entities": [], "units": [], "groups": [], "introductions": [],
+            "references": [], "links": [],
+        }))
+        .unwrap(),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_label_shared_by_two_entities_in_the_closure_is_refused_as_ambiguous() {
+    // EntityNames::resolve treats a label two entities share as unresolvable
+    // rather than guessing; nothing in the fixtures exercised that branch.
+    // Built directly, in the shape claims_laws.rs's request() helper uses,
+    // since the full 0.8 export validator enforces cross-references (Tag
+    // introductions, per-Unit introduction lists) this test has no need of.
+    let request = Request {
+        binding: Binding {
+            format: prepare::REQUEST_FORMAT,
+            source: "d.sigil".into(),
+            export_digest: "digest".into(),
+            guidance_fingerprint: "guidance".into(),
+            vocabulary_generation: vocabulary::VOCABULARY_GENERATION,
+            closure: vec!["d.sigil".into()],
+            facets: vec!["f1".into()],
+        },
+        rows: vec![prepare::FacetRow {
+            facet: "f1".into(),
+            component: "urn:e:Owner".into(),
+            component_label: "Owner".into(),
+            section: "interface".into(),
+            source: "d.sigil".into(),
+            prose: "prose".into(),
+        }],
+        entities: vec![
+            prepare::AdmissibleEntity {
+                id: "urn:e:Owner".into(),
+                kind: "Component".into(),
+                label: "Owner".into(),
+                owner: None,
+                source: "d.sigil".into(),
+            },
+            prepare::AdmissibleEntity {
+                id: "urn:e:Owner:tag:value".into(),
+                kind: "Tag".into(),
+                label: "value".into(),
+                owner: Some("urn:e:Owner".into()),
+                source: "d.sigil".into(),
+            },
+            prepare::AdmissibleEntity {
+                id: "urn:e:Elsewhere:tag:value".into(),
+                kind: "Tag".into(),
+                label: "value".into(),
+                owner: Some("urn:e:Elsewhere".into()),
+                source: "d.sigil".into(),
+            },
+        ],
+        declared: vec![("urn:e:Owner".into(), "interface".into())],
+    };
+    let rows = dialect::parse(
+        "(claim \"f1\" \"Owner\" \"provides\" \"value\" \"required\" \"true\")\n",
+        Limits::default(),
+    )
+    .unwrap();
+    let error = identity::admit(&request, &no_source_input(), &rows).unwrap_err();
+    assert!(error.contains("more than one entity"), "got: {error}");
 }

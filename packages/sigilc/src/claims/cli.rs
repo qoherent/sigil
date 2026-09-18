@@ -29,8 +29,9 @@ Flow:
 This command never launches a model. Step 3 is the caller's, and passing the
 same artifact again reproduces the same report.
 
-Gate exits: 0 = coherent or loose, 1 = disjoint, 2 = usage, 3 = operational
-failure.
+Gate exits: 0 = pass or warning, 1 = a gate failure (a computed Disjoint
+verdict, a refused artifact, or a saturation-limit breach), 2 = usage,
+3 = operational failure.
 "#
     .into()
 }
@@ -52,7 +53,7 @@ pub fn run(args: &[&str]) -> Output {
     };
 
     let allowed: &[&str] = match command {
-        "prepare" => &["--frontend", "--source", "--out", "--root"],
+        "prepare" => &["--frontend", "--source", "--out"],
         "ingest" => &[
             "--frontend",
             "--binding",
@@ -156,7 +157,7 @@ fn ingest(options: &BTreeMap<String, String>, root: &str) -> Output {
     let context = context::build(&request, &facts, &world, report.identity.clone());
 
     let report_path = findings::write(&report, Path::new(root)).map_err(operational)?;
-    let context_path = findings::store(&context, Path::new(root), &context.source, ".context.json")
+    let context_path = findings::store(&context, Path::new(root), &context.source, context::SUFFIX)
         .map_err(operational)?;
 
     let code = match report.state {

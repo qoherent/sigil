@@ -208,7 +208,7 @@ fn runtime_identity_covers_the_guidance_the_vocabulary_and_the_laws() {
     let read = |path: PathBuf| {
         fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
     };
-    let covered = [
+    let files_only = [
         read(src.join("guidance/sections.md")),
         read(src.join("guidance/vocabulary.md")),
         read(src.join("guidance/examples.md")),
@@ -217,10 +217,16 @@ fn runtime_identity_covers_the_guidance_the_vocabulary_and_the_laws() {
         read(src.join("claims.egg")),
     ]
     .concat();
+    let covered = format!("{files_only}{}", sigilc::turtle::ontology_fingerprint());
     assert_eq!(
         guidance::fingerprint(),
         hash(covered.as_bytes()),
-        "the runtime identity must hash exactly the guidance, the vocabulary and the laws"
+        "the runtime identity must hash exactly the guidance, the vocabulary, the laws,          and the compiler's accepted ontology"
+    );
+    assert_ne!(
+        guidance::fingerprint(),
+        hash(files_only.as_bytes()),
+        "the compiler's ontology must actually move the fingerprint, not just be ignored"
     );
 }
 

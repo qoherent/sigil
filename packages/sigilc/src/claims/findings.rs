@@ -251,7 +251,7 @@ fn subject_of(body: &Body) -> String {
 
 /// Where this component's reports live. A sibling of the compiler's cache,
 /// never inside it.
-pub fn store_path(root: &Path) -> PathBuf {
+fn store_path(root: &Path) -> PathBuf {
     root.join(STORE)
 }
 

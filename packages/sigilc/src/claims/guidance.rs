@@ -40,21 +40,31 @@ pub fn document(name: &str) -> Option<&'static Document> {
 }
 
 /// Identity of everything that decides what the interpreter is told and what the
-/// tool derives: the guidance text, the vocabulary definition, and the laws.
+/// tool derives: the guidance text, the vocabulary definition, the laws, and the
+/// compiler's own accepted ontology.
 ///
 /// This is the claims-side analogue of `eqval::fingerprint()`, and it is
 /// deliberately separate from it: that value covers the compiler's runtime and
-/// must not move, so this component hashes its own sources instead.
+/// must not move, so this component hashes its own sources instead. The
+/// compiler's ontology is folded in even though this crate does not own it,
+/// because `vocabulary::relations()` reads `turtle::vocabulary()` at runtime:
+/// without this, a compiler change that widens the accepted predicate set
+/// would silently widen what this tool accepts too, with no move in the
+/// fingerprint the binding staleness check depends on.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::CompiledGuidance interface,constraints
 pub fn fingerprint() -> String {
     hash(
-        concat!(
-            include_str!("guidance/sections.md"),
-            include_str!("guidance/vocabulary.md"),
-            include_str!("guidance/examples.md"),
-            include_str!("guidance/rejected.md"),
-            include_str!("vocabulary.rs"),
-            include_str!("claims.egg")
+        format!(
+            "{}{}",
+            concat!(
+                include_str!("guidance/sections.md"),
+                include_str!("guidance/vocabulary.md"),
+                include_str!("guidance/examples.md"),
+                include_str!("guidance/rejected.md"),
+                include_str!("vocabulary.rs"),
+                include_str!("claims.egg")
+            ),
+            crate::turtle::ontology_fingerprint()
         )
         .as_bytes(),
     )
