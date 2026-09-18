@@ -274,6 +274,14 @@ pub fn write(report: &Report, root: &Path) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Attach a repeat comparison to a report.
+///
+/// Additive by construction: it sets a field the report otherwise omits and
+/// touches no finding the first interpretation produced.
+pub fn attach(report: &mut Report, comparison: Vec<Disagreement>) {
+    report.disagreements = Some(comparison);
+}
+
 /// Compare two interpretations of the same design, per Facet.
 ///
 /// The first interpretation remains the sole basis for the computed report;

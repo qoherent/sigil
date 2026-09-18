@@ -267,3 +267,125 @@ fn a_run_never_writes_into_the_compilers_world_cache() {
     );
     assert_ne!(findings::STORE, ".sigil/worlds");
 }
+
+// ------------------------------------------------ repeat interpretation (U8)
+
+/// Admit a second artifact against the same request, as a repeat run does.
+fn admit_against(request: &Request, artifact: &str) -> Vec<Fact> {
+    let input = shared_input();
+    let rows = dialect::parse(artifact, Limits::default()).unwrap();
+    identity::admit(request, &input, &rows).unwrap()
+}
+
+#[test]
+fn two_identical_interpretations_disagree_about_nothing() {
+    let (request, facts, _) = run(&clean_artifact());
+    let repeat = admit_against(&request, &clean_artifact());
+    assert_eq!(facts, repeat, "the same artifact admits identically");
+    assert!(findings::disagreements(&facts, &repeat).is_empty());
+}
+
+#[test]
+fn one_differing_claim_is_reported_against_the_facet_it_came_from() {
+    let (request, first, _) = run(&clean_artifact());
+    let changed = format!(
+        "(reading {BASE_GOAL:?} \"no-commitment\")\n\
+         (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"result\" \"required\" \"true\")\n\
+         (claim {BASE_CONSTRAINTS:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
+    );
+    let repeat = admit_against(&request, &changed);
+    let disagreements = findings::disagreements(&first, &repeat);
+    assert_eq!(disagreements.len(), 2, "{disagreements:?}");
+    for entry in &disagreements {
+        assert_eq!(entry.facet, BASE_INTERFACE, "{entry:?}");
+        assert_eq!(entry.section, "interface");
+        assert!(entry.detail.contains("unstable"), "{}", entry.detail);
+    }
+    let sides: Vec<&str> = disagreements.iter().map(|d| d.only_in.as_str()).collect();
+    assert!(
+        sides.contains(&"first") && sides.contains(&"repeat"),
+        "{sides:?}"
+    );
+}
+
+#[test]
+fn a_facet_only_the_repeat_read_is_a_disagreement_and_still_a_gap() {
+    // The first interpretation stays the sole basis for the computed report, so
+    // the gap it produced is not suppressed by the comparison.
+    let first_artifact = format!(
+        "(claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n"
+    );
+    let (request, first, mut report) = run(&first_artifact);
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.law == "uninterpreted-section" && f.object == "goal"),
+        "{:?}",
+        report.findings
+    );
+
+    let repeat = admit_against(
+        &request,
+        &format!(
+            "(claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
+             (reading {BASE_GOAL:?} \"no-commitment\")\n"
+        ),
+    );
+    let disagreements = findings::disagreements(&first, &repeat);
+    assert_eq!(disagreements.len(), 1, "{disagreements:?}");
+    assert_eq!(disagreements[0].facet, BASE_GOAL);
+    assert_eq!(disagreements[0].only_in, "repeat");
+
+    findings::attach(&mut report, disagreements);
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.law == "uninterpreted-section" && f.object == "goal"),
+        "the comparison must not suppress the first run's gap: {:?}",
+        report.findings
+    );
+}
+
+#[test]
+fn the_comparison_is_absent_unless_a_second_artifact_was_supplied() {
+    let (request, first, report) = run(&clean_artifact());
+    assert!(
+        report.disagreements.is_none(),
+        "an opt-in comparison costs a full extra interpretation"
+    );
+    let serialized = serde_json::to_string(&report).unwrap();
+    assert!(!serialized.contains("disagreements"), "{serialized}");
+
+    let repeat = admit_against(&request, &clean_artifact());
+    let mut with = report.clone();
+    findings::attach(&mut with, findings::disagreements(&first, &repeat));
+    assert_eq!(with.disagreements, Some(Vec::new()));
+    assert!(
+        serde_json::to_string(&with)
+            .unwrap()
+            .contains("disagreements")
+    );
+}
+
+#[test]
+fn supplying_a_second_artifact_changes_the_recorded_report_identity() {
+    let (_, _, one) = run(&clean_artifact());
+    let input = shared_input();
+    let request = prepare::project(&input, BASE).unwrap();
+    let rows = dialect::parse(&clean_artifact(), Limits::default()).unwrap();
+    let facts = identity::admit(&request, &input, &rows).unwrap();
+    let world = program::saturate(&request, &input, &facts, eqval::Limits::default()).unwrap();
+    let two = findings::report(
+        &request,
+        &facts,
+        &world,
+        &["artifact-digest".into(), "repeat-digest".into()],
+    );
+    assert_ne!(
+        one.identity.interpretations, two.identity.interpretations,
+        "every supplied interpretation is part of what the report was computed from"
+    );
+    assert_eq!(two.identity.interpretations.len(), 2);
+}
