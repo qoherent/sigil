@@ -548,3 +548,61 @@ fn the_emitted_program_carries_the_laws_and_only_parsed_values() {
     );
     assert!(text.contains(&format!("(facet \"f1\" {A:?}")));
 }
+
+// ------------------------------------------------- ungrounded claims (P0 fix)
+
+#[test]
+fn an_ungrounded_claim_cannot_manufacture_a_violation_against_an_unrelated_entity() {
+    // A claim naming an entity the Facet never grounds is flagged Ungrounded by
+    // identity::admit (tested in claims_dialect.rs), but must not be allowed to
+    // reach saturation and forge a contradiction, ownership conflict, or
+    // obligation the design never actually stated. Constructed directly with a
+    // defect, mirroring how admit() would have flagged it, since this test
+    // targets the saturation boundary rather than the grounding check itself.
+    let req = request(&[("f1", A, "interface"), ("f2", A, "constraints")]);
+
+    let mut forged = claim("f1", "interface", A, "provides", CAP, "required", "true");
+    forged.defects = vec![sigilc::claims::identity::Defect::Ungrounded(
+        CAP.to_string(),
+    )];
+    let real = claim("f2", "constraints", A, "provides", CAP, "required", "false");
+
+    let world = run(&req, &[forged.clone(), real.clone()]);
+    assert!(
+        world.table("violation").is_empty(),
+        "a defect-carrying claim must not reach the program at all: {:?}",
+        world.table("violation")
+    );
+    assert!(
+        world.table("holds").is_empty(),
+        "the forged claim must not contribute to holds either: {:?}",
+        world.table("holds")
+    );
+
+    // The real claim, on its own, still contradicts nothing — proving the
+    // absence above is because the forged claim was excluded, not because the
+    // scenario itself is contradiction-free.
+    let alone = run(&req, std::slice::from_ref(&real));
+    assert!(alone.table("violation").is_empty());
+
+    // The emitted program text itself must never mention the forged claim's id.
+    let text = program::program(&req, &[forged.clone(), real]);
+    assert!(
+        !text.contains(&forged.id),
+        "a defect-carrying fact must not appear in the saturated program at all"
+    );
+}
+
+#[test]
+fn a_defect_carrying_property_or_measure_is_also_excluded_from_the_program() {
+    let req = request(&[("f1", A, "state")]);
+    let mut prop = property("f1", "state", CAP, "exclusive", "true");
+    prop.defects = vec![sigilc::claims::identity::Defect::Ungrounded(
+        CAP.to_string(),
+    )];
+    let text = program::program(&req, std::slice::from_ref(&prop));
+    assert!(!text.contains(&prop.id));
+
+    let world = run(&req, std::slice::from_ref(&prop));
+    assert!(world.table("violation").is_empty());
+}

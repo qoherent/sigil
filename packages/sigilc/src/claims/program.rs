@@ -112,6 +112,16 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
     }
 
     for fact in facts {
+        // A defect (degenerate subject/object, or an entity absent from this
+        // Facet's grounding set) is reported directly from this list in
+        // findings.rs and context.rs, never from the saturated tables. Only
+        // Claim/Property/Measure rows carry defects; Reading rows never do.
+        // A defective claim/property/measure is excluded here so it cannot
+        // manufacture a violation, an ownership conflict, or an obligation
+        // against an entity the Facet never actually named.
+        if !fact.defects.is_empty() {
+            continue;
+        }
         let head = format!(
             "{} {} {}",
             quote(&fact.id),
