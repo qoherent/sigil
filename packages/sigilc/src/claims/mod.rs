@@ -7,6 +7,7 @@
 //! The compiler's own pipeline is untouched by everything here: this component
 //! reads the design export, owns its own store, and never writes the files
 //! whose text `eqval::fingerprint()` hashes.
+pub mod cli;
 pub mod context;
 pub mod dialect;
 pub mod findings;

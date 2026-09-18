@@ -104,3 +104,67 @@ identity are revalidated, projection generations use compare-and-swap
 semantics, the world index is locked, and accepted projections become visible
 atomically. These guarantees are independent of how an external caller
 chooses to schedule interpretation or retain its records.
+
+## `sigil-claims`: computed design validation
+
+The crate ships a second binary beside `sigilc`. It answers a different
+question: not whether an external interpretation of a Design is coherent
+against the compiler's ontology, but which design findings follow from a
+model's reading of authored prose — and which still need judgment.
+
+It never launches a model. Like `sigilc`, it uses a prepare/ingest boundary,
+and the interpretation is an input the caller supplies and can supply again.
+
+```sh
+sigil export design . > frontend.json
+sigil-claims prepare --frontend frontend.json --source a.sigil --out claims-a
+# An external interpreter reads claims-a and writes Datalog claims.
+sigil-claims ingest --frontend frontend.json \
+  --binding claims-a/binding.json --claims claims-a/result.egg
+sigil-claims extract-guidance --out ./guidance
+```
+
+`prepare` writes an immutable `binding.json`, a `request.json` carrying each
+Facet's exact prose slice with the contract role it belongs to, and the
+interpreter guidance. `ingest` recomputes the request from the current export
+and refuses a binding that does not match it, naming which input moved.
+
+Claims come back as data-only egglog atoms. An artifact containing a rule,
+command, schedule or non-literal argument is refused whole. Relation and
+property names are closed over the compiler's published ontology, read through
+`turtle::vocabulary()`. The tool mints every claim identity, fills the contract
+role from the export, and refuses an entity the design does not declare in the
+selected closure.
+
+Every claim carries the role it was authored under, which is what the
+compiler's RDF-shaped facts could not express. A claim from a `decisions` Facet
+is retained, reported and passed to the judge but derives nothing: rationale
+does not convert a rejected alternative into a promise. Modality carries the
+rest — `required` commitments oblige, `permitted` ones do not, and `assumed`
+ones oblige the design to state what it leans on.
+
+Findings cite the claims and the law that produced them. A declared role the
+interpretation returned nothing for is named with its component and attributed
+to the interpretation, not the design. A claim whose subject and object coincide
+is degenerate, and one naming an entity absent from its own Facet's resolved
+references, owning component and import providers is ungrounded; neither
+satisfies its unit.
+
+Alongside the report, `ingest` writes a judgment context covering every unit in
+the design — including units nothing was found about — with derived facts, their
+provenance, the state of each promise and where it is stated, and
+simplification candidates it does not rule on. Deciding those is not this
+binary's work.
+
+Guidance is compiled into the binary and covered by a runtime fingerprint
+alongside the vocabulary and the laws. Guidance found in the workspace under
+validation is never read, so no file on disk can widen what is accepted;
+`extract-guidance` writes an editable copy to a path outside that workspace.
+
+Reports and stores live under `.sigil/claims/`, which this binary owns. The
+compiler's `.sigil/worlds/` cache, its stored projections, and its command
+surface are untouched.
+
+Gate exits match the compiler's convention: 0 for coherent or loose, 1 for
+disjoint, 2 for usage, 3 for operational failure.
+

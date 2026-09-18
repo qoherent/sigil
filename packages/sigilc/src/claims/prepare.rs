@@ -24,7 +24,7 @@ pub const REQUEST_FORMAT: u32 = 1;
 /// Facet can support, but it is not a column of any row that comes back: the
 /// tool fills that from the export when it re-emits.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FacetRow {
     /// Copied verbatim into every row the interpreter returns for this Facet.
     pub facet: String,
@@ -37,7 +37,7 @@ pub struct FacetRow {
 
 /// An entity a claim from this design may name.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct AdmissibleEntity {
     pub id: String,
     pub kind: String,
@@ -48,7 +48,7 @@ pub struct AdmissibleEntity {
 
 /// What ingest checks before it trusts a returned artifact.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Binding {
     pub format: u32,
     pub source: String,
@@ -71,7 +71,7 @@ impl Binding {
 
 /// A prepared interpretation request, before it reaches disk.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Request {
     pub binding: Binding,
     pub rows: Vec<FacetRow>,
