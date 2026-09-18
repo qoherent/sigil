@@ -1,84 +1,94 @@
-(* Sigil 0.8.0 — normative grammar; implementation pending.
-   Companion: sigil-reference.md. Authoring: sigil-language.md.
+(* Sigil 0.8.0 — normative structural grammar; implementation pending.
+   Authoring: sigil-language.md. The language contract: language.sigil.
 
    Notation: = definition; , concatenation; | alternatives; [...] optional;
    {...} repetition; (...) grouping; quoted strings literal; parenthesized-star comments.
-   Special sequences ? ... ? have exact definitions in the reference.
+   Special sequences ? ... ? define context-sensitive lexical rules.
    No whitespace is discarded implicitly. Full input consumption is required.
 
-   The structural entry point is source. The lexical entry points for content
-   are prose_paragraph, inline_link, inline_image, and inline_tag_definition.
-   prose_paragraph and literal_line are maximal context-sensitive lexer regions,
-   not arbitrary strings. Reference lexical.region fixes recognition precedence;
-   tag.definition fixes outer asterisk boundaries. Bare references are resolved
-   against accessible names by tag.match, not by a context-free production.
+   source separates the top-level import prefix from declarations: imports are
+   file-scoped and must precede Components and Traits. Inline Tags, Links, prose,
+   and fences require their context-sensitive rules; bare Tag references resolve
+   against accessible names after parsing, not through this grammar.
 *)
 
-source = { blank_line | tag_import | component }, indentation ;
+source = import_prefix, declaration_body ;
+import_prefix = { blank_line | tag_import | trait_import } ;
+declaration_body = { blank_line | component | trait } ;
 
-component = component_open,
-            { blank_line | contract },
-            close_line ;
-component_open = indentation, "component", hgap, component_name,
+component = component_open, { blank_line | component_contract }, close_line ;
+component_open = indentation, "component", hgap, declaration_name,
+                 [ hgap, "is", hgap, trait_name,
+                   { hmargin, ",", hmargin, trait_name } ],
                  hmargin, "{", hmargin, line_end ;
-component_name = ascii_letter, { ascii_letter | digit | "_" } ;
 
-contract = contract_open,
-           { blank_line | tag_group | facet },
-           close_line ;
-contract_open = indentation, contract_name, hmargin, "{", hmargin, line_end ;
-contract_name = "goal" | "interface" | "state" | "logic"
-              | "constraints" | "decisions" | "cases" ;
+trait = trait_open, { blank_line | trait_contract }, close_line ;
+trait_open = indentation, "trait", hgap, trait_name,
+             hmargin, "{", hmargin, line_end ;
 
-(* Nonemptiness of required contracts/groups and unique sections are checked
-   by contract.structure and tag.group. The grammar retains their empty forms
-   so implementations can issue the precise required-content diagnostics. *)
+declaration_name = ascii_letter, { ascii_letter | digit | "_" } ;
+trait_name = declaration_name ;
+
+component_contract = contract_open, { blank_line | tag_group | facet }, close_line ;
+trait_contract = trait_contract_open,
+                 { blank_line | tag_group | facet }, close_line ;
+contract_open = indentation, component_contract_name,
+                hmargin, "{", hmargin, line_end ;
+trait_contract_open = indentation, trait_contract_name,
+                      hmargin, "{", hmargin, line_end ;
+component_contract_name = "goal" | "interface" | "state" | "logic"
+                        | "constraints" | "decisions" | "cases" ;
+trait_contract_name = "goal" | "interface" | "state" | "constraints"
+                    | "decisions" | "cases" ;
+
+(* goal and interface are required and nonempty; contracts appear at most once in
+   one declaration. Groups are flat and nonempty. These are structural checks after
+   parsing, so recovery can retain incomplete declarations. *)
 tag_group = group_open, { blank_line | facet }, close_line ;
 group_open = indentation, tag_name, hmargin, "{", hmargin, line_end ;
 close_line = indentation, "}", hmargin, line_end ;
 
-(* A paragraph is maximal. There is exactly one payload per Embedded Facet.
-   A blank_line between paragraph and opener prevents attachment. The first
-   closer ends the Facet; following prose starts another paragraph/Facet. *)
+(* A Facet is one maximal paragraph, with at most one directly adjacent payload. *)
 facet = prose_paragraph, [ fenced_payload ] ;
 prose_paragraph = ? maximal prose-line run; lexical.region and facet.boundary ? ;
 
 fenced_payload = fence_open, { literal_line }, fence_close ;
 fence_open = indentation, backticks, hmargin, [ fence_type ], hmargin, newline ;
-fence_close = indentation, backticks, hmargin, line_end ;
+fence_close = indentation, closer_backticks, hmargin, line_end ;
 backticks = "`", "`", "`", { "`" } ;
+closer_backticks = ? only backticks; count at least opening backticks ? ;
 fence_type = ascii_letter, { ascii_letter | digit | "_" | "+" | "." | "-" } ;
 literal_line = ? next complete payload line that is not its closer; facet.fence ? ;
-(* Backtick runs are maximal. The closer's count must be at least the opener's.
-   An unterminated payload is invalid, even if its body looks like Sigil. *)
+(* A fence body is literal: it creates no Tags, Links, declarations, or execution
+   evidence. An unterminated payload is structurally invalid but recoverable. *)
 
-tag_import = indentation, "@", import_path, hgap, "from", hgap,
-             component_name, hgap, "import", hmargin, "{", import_gap,
+tag_import = indentation, "@", sigil_path, hgap, "from", hgap,
+             declaration_name, hgap, "import", hmargin, "{", import_gap,
              tag_name, { import_gap, ",", import_gap, tag_name },
              [ import_gap, "," ], import_gap, "}", hmargin, line_end ;
-import_path = path_character, { path_character } ;
-path_character = ? permitted single path scalar; lexical.import ? ;
+trait_import = indentation, "@", sigil_path, hgap, "import", hmargin, "{",
+               import_gap, trait_name,
+               { import_gap, ",", import_gap, trait_name },
+               [ import_gap, "," ], import_gap, "}", hmargin, line_end ;
+sigil_path = ? nonempty workspace-root-relative path ending in .sigil; lexical.import ? ;
 import_gap = { hspace | newline } ;
-(* Only the selection list can span lines. Names cannot contain a newline.
-   A trailing comma is optional; an empty list and empty selections are invalid.
-   Internal name whitespace is exact. Margins surrounding names are structural.
-   The source's path and provider are resolved by import.resolve. *)
+(* A Tag import's provider must resolve to a Component; a Trait import's selections
+   must resolve to Traits. Resolution also checks collisions and use. Only selection
+   lists may span lines; a selected Tag name itself cannot contain a newline. *)
 
 inline_tag_definition = "*", tag_name, "*" ;
-(* Valid only in eligible original prose under the boundary/scanning algorithm
-   tag.definition: inner ends touch the name; outer ends have whitespace, a
-   physical line boundary, comma, or period. Backticks supply no protection. *)
+(* Valid only in eligible prose when the asterisks touch tag_name and satisfy the
+   required prose outer-boundary rule. `* name *` is not a definition. Tag names are
+   exact and case-sensitive; no whitespace or Unicode normalization occurs. *)
 tag_name = name_edge, [ { name_inner }, name_edge ] ;
 name_inner = name_edge | name_whitespace ;
 name_edge = ? one non-whitespace, non-reserved Tag-name scalar; lexical.name ? ;
 name_whitespace = ? one permitted internal whitespace scalar; lexical.name ? ;
 
-inline_link = ? complete CommonMark 0.31.2 inline link; facet.link and lexical.region ? ;
-inline_image = ? complete CommonMark 0.31.2 inline image; facet.link and lexical.region ? ;
-(* Inline Links/images are recognized before Tags within prose regions.
-   Their labels, destinations, titles, and escapes are opaque to Tag scanning.
-   Reference-style links and bare URLs are not these productions.
-   There is no inline-code production. Backticks in prose are ordinary text. *)
+inline_link = ? complete [label](destination) inline link; lexical.region ? ;
+inline_image = ? complete CommonMark inline image; lexical.region ? ;
+(* Complete Inline Links/images are opaque to Tag scanning. Link role and target
+   interpretation come from surrounding prose, not the grammar. *)
 
 blank_line = indentation, newline ;
 indentation = { hspace } ;
