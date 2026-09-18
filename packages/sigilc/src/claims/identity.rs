@@ -140,6 +140,23 @@ impl Grounding {
     }
 }
 
+/// Every entity each Facet may legitimately name, flattened for emission.
+///
+/// This is the grounding set the ungrounded check uses, exposed so the
+/// saturated program can carry it as evidence a reader can inspect.
+pub fn mentions(input: &DesignInput, request: &Request) -> Vec<(String, String)> {
+    let grounding = Grounding::build(input, request);
+    grounding
+        .per_facet
+        .iter()
+        .flat_map(|(facet, entities)| {
+            entities
+                .iter()
+                .map(move |entity| (facet.clone(), entity.clone()))
+        })
+        .collect()
+}
+
 /// Admit rows against the design, minting identity and filling the role.
 ///
 /// Refuses the artifact when a row speaks about a Facet the request did not ask

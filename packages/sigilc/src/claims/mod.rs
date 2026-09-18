@@ -11,4 +11,5 @@ pub mod dialect;
 pub mod guidance;
 pub mod identity;
 pub mod prepare;
+pub mod program;
 pub mod vocabulary;

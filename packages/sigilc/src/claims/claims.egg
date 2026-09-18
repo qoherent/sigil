@@ -1,8 +1,10 @@
 ; Tool-owned laws for computed design validation. Data is re-emitted by the
 ; host from parsed values; the interpreter supplies no rule and fills no table.
 ;
-; Relation declarations land with the guidance bundle so the runtime fingerprint
-; covers them. The laws themselves are authored against these shapes.
+; The law shapes are ported from the compiler's kernel and design rules — the
+; obligation/filled/unresolved trio, the two-ruleset fixpoint, and a `because`
+; witness column — but the facts are n-ary claims rather than RDF triples, and
+; every claim carries the contract role it was authored under.
 
 ; --- minted by the tool from the design export -------------------------------
 ; A Facet: its identity, the component that owns it, its contract role, source.
@@ -15,6 +17,13 @@
 (relation mentions (String String))
 ; An entity reachable from a source through its resolved import closure.
 (relation visible (String String))
+; A contract role whose claims can carry a commitment.
+;
+; Rationale does not convert a rejected alternative into a promise, so the host
+; emits no row for `decisions`: its claims are retained and reported but derive
+; nothing. The gate lives in data so which roles commit is visible here rather
+; than buried in a rule.
+(relation commits (String))
 
 ; --- re-emitted by the tool from validated interpreter output ----------------
 ; claim id, facet, contract role, subject, relation, object, modality, expected.
@@ -29,11 +38,93 @@
 
 ; --- derived ----------------------------------------------------------------
 (relation holds (String String String))
-; claim id, subject, relation, object, law that derived it.
+; subject, relation, object, law, witness: a claim id, or an intermediary entity.
 (relation because (String String String String String))
 (relation reachable (String String))
+; law, subject, object, witness claim id.
+(relation violation (String String String String))
+; obligation id, subject, relation, object.
 (relation obligation (String String String String))
 (function filled (String String String String) i64 :merge (max old new))
+(relation unmet-obligation (String String String String))
+; Two units asserting the same proposition; a candidate, never a verdict.
+(relation duplicate-proposition (String String))
 
 (ruleset closure)
 (ruleset diagnostics)
+
+; --- what a claim commits its design to -------------------------------------
+; An authored commitment holds. An assumption does not: it is something the
+; design leans on rather than promises, so it raises an obligation instead.
+(rule ((claim id f sec s p o "required" "true") (commits sec))
+      ((holds s p o) (because s p o "asserted" id)) :ruleset closure)
+(rule ((claim id f sec s p o "permitted" "true") (commits sec))
+      ((holds s p o) (because s p o "asserted" id)) :ruleset closure)
+
+; --- consequences the laws derive, so the interpreter need not --------------
+(rule ((holds a "dependsOn" b))
+      ((reachable a b) (because a "reachable" b "dependency-direct" b)) :ruleset closure)
+(rule ((reachable a b) (holds b "dependsOn" c))
+      ((reachable a c) (because a "reachable" c "dependency-transitive" b)) :ruleset closure)
+(rule ((holds a "delegates" b) (holds b "provides" c))
+      ((holds a "provides" c) (because a "provides" c "delegated-capability" b)) :ruleset closure)
+
+; --- contradictions ---------------------------------------------------------
+; Two required claims on the same proposition, disagreeing on whether it holds.
+(rule ((claim i1 f1 sec1 s p o "required" "true")
+       (claim i2 f2 sec2 s p o "required" "false")
+       (commits sec1) (commits sec2))
+      ((violation "contradictory-claims" s o i1)
+       (violation "contradictory-claims" s o i2)) :ruleset closure)
+; A claim that the relation must not hold, where something asserts that it does.
+(rule ((claim id f sec s p o "required" "false") (commits sec) (holds s p o))
+      ((violation "negated-claim-holds" s o id)) :ruleset closure)
+; A prohibition contradicted by a derived or asserted capability or use.
+(rule ((claim id f sec a "excludes" c "required" "true") (commits sec) (holds a "provides" c))
+      ((violation "excluded-capability" a c id)) :ruleset closure)
+(rule ((claim id f sec a "excludes" c "required" "true") (commits sec) (holds a "uses" c))
+      ((violation "excluded-use" a c id)) :ruleset closure)
+; Two claims disagreeing about a property or a measure of the same entity.
+(rule ((property i1 f1 sec1 a p x) (property i2 f2 sec2 a p y)
+       (commits sec1) (commits sec2) (!= x y))
+      ((violation "conflicting-property" a p i1)) :ruleset closure)
+(rule ((measure i1 f1 sec1 a p x) (measure i2 f2 sec2 a p y)
+       (commits sec1) (commits sec2) (!= x y))
+      ((violation "conflicting-measure" a p i1)) :ruleset closure)
+
+; --- ownership conflicts ----------------------------------------------------
+; Exclusive state cannot have two independently observed owners.
+(rule ((property id f sec c "exclusive" "true") (commits sec)
+       (holds a "owns" c) (holds b "owns" c) (!= a b))
+      ((violation "exclusive-ownership" a b id)) :ruleset closure)
+
+; --- obligations ------------------------------------------------------------
+; Requiring a capability obliges the subject to provide it, directly or through
+; a dependency that does. This is the compiler's lowering, kept intact.
+(rule ((claim id f sec a "requires" c "required" "true") (commits sec))
+      ((obligation id a "provides" c)
+       (set (filled id a "provides" c) 0)) :ruleset closure)
+; An assumption obliges the design to state the thing it leans on.
+(rule ((claim id f sec s p o "assumed" "true") (commits sec))
+      ((obligation id s p o)
+       (set (filled id s p o) 0)) :ruleset closure)
+; Required state needs an owner.
+(rule ((property id f sec c "required" "true") (commits sec) (entity c "Tag" l ow src))
+      ((obligation id c "owns" c)
+       (set (filled id c "owns" c) 0)) :ruleset closure)
+
+(rule ((obligation id s p o) (holds s p o))
+      ((set (filled id s p o) 1)) :ruleset closure)
+(rule ((obligation id a "provides" c) (holds a "dependsOn" b) (holds b "provides" c))
+      ((set (filled id a "provides" c) 1)) :ruleset closure)
+(rule ((obligation id c "owns" c) (holds a "owns" c))
+      ((set (filled id c "owns" c) 1)) :ruleset closure)
+
+; --- read absence only after the closure has stopped growing ---------------
+(rule ((obligation id s p o) (= (filled id s p o) 0))
+      ((unmet-obligation id s p o)) :ruleset diagnostics)
+
+; Same proposition authored in two different Facets: a simplification
+; candidate for the judge, never a defect this tool rules on.
+(rule ((claim i1 f1 sec1 s p o m1 e1) (claim i2 f2 sec2 s p o m2 e2) (!= f1 f2))
+      ((duplicate-proposition i1 i2)) :ruleset diagnostics)
