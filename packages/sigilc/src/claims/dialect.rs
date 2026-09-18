@@ -91,12 +91,57 @@ pub fn parse(source: &str, limits: Limits) -> Result<Vec<Row>, String> {
             limits.max_document_bytes
         ));
     }
+    refuse_deep_nesting(source)?;
     let atoms = atoms(source, limits)?;
     let mut rows = Vec::new();
     for (name, values) in atoms {
         rows.push(row(&name, &values)?);
     }
     Ok(rows)
+}
+
+/// The nesting depth beyond which an artifact is refused before parsing.
+///
+/// Every accepted row is one flat call with literal-only arguments, so a
+/// well-formed artifact never nests past depth 1. This leaves generous slack.
+const MAX_NESTING_DEPTH: usize = 8;
+
+/// Bound nesting depth with one linear scan, before egglog's own parser ever
+/// sees the text.
+///
+/// `EGraph::parse_program` recurses once per level of paren nesting with no
+/// depth guard of its own, so a payload well inside the byte limit can still
+/// exhaust the native stack and crash the process before this validator's
+/// atom-count check, or any row check, ever runs. This scan is the actual
+/// bound: it is cheap, and it runs first.
+fn refuse_deep_nesting(source: &str) -> Result<(), String> {
+    let mut depth: usize = 0;
+    let mut in_string = false;
+    let mut escaped = false;
+    for ch in source.chars() {
+        if in_string {
+            match (escaped, ch) {
+                (false, '\\') => escaped = true,
+                (false, '"') => in_string = false,
+                _ => escaped = false,
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            '(' => {
+                depth += 1;
+                if depth > MAX_NESTING_DEPTH {
+                    return Err(format!(
+                        "claims artifact nests more than {MAX_NESTING_DEPTH} levels deep"
+                    ));
+                }
+            }
+            ')' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 /// Every call atom in the artifact, with its literal string arguments.

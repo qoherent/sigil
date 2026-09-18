@@ -502,3 +502,39 @@ fn an_empty_artifact_is_valid_data_and_claims_nothing() {
     let rows: Vec<Row> = dialect::parse("", Limits::default()).unwrap();
     assert!(rows.is_empty());
 }
+
+// ------------------------------------------------------- nesting depth (P1)
+
+#[test]
+fn deeply_nested_parens_are_refused_before_egglogs_own_parser_sees_them() {
+    // egglog's parser recurses once per level of paren nesting with no depth
+    // guard, so this must be caught by dialect's own scan before parse_program
+    // ever runs -- otherwise a payload well inside the byte limit can exhaust
+    // the native stack. 200 nesting levels is far below what a 1MB payload
+    // could encode, and still large enough that a crash (not a returned Err)
+    // would hang or abort the test process if the guard were absent.
+    let opens: String = "(".repeat(200);
+    let closes: String = ")".repeat(200);
+    let artifact = format!("{opens}{closes}\n");
+    let error = dialect::parse(&artifact, Limits::default()).unwrap_err();
+    assert!(error.contains("nests"), "got: {error}");
+}
+
+#[test]
+fn nesting_inside_a_quoted_string_does_not_count_as_depth() {
+    // A literal argument may legitimately contain parenthesis characters; the
+    // depth scan must track string state, not just paren characters.
+    let artifact =
+        format!("(claim {BASE_GOAL:?} \"Base\" \"provides\" \"(((a)))\" \"required\" \"true\")\n");
+    assert!(dialect::parse(&artifact, Limits::default()).is_ok());
+}
+
+#[test]
+fn ordinary_rows_never_approach_the_depth_limit() {
+    for artifact in [
+        format!("(claim {BASE_GOAL:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n"),
+        format!("(reading {BASE_GOAL:?} \"no-commitment\")\n"),
+    ] {
+        assert!(dialect::parse(&artifact, Limits::default()).is_ok());
+    }
+}

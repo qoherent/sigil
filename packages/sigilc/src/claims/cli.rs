@@ -63,6 +63,9 @@ pub fn run(args: &[&str]) -> Output {
         _ => &["--out", "--root"],
     };
     let options = parse(tail, allowed)?;
+    if options.values().filter(|v| v.as_str() == "-").count() > 1 {
+        return Err((2, "only one input may read standard input".into()));
+    }
     let required = |flag: &str| required_in(&options, flag);
     let root = options
         .get("--root")
