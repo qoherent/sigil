@@ -1,217 +1,76 @@
-@spec/language.sigil import { SigilLanguage, SigilModuleIndex }
-@packages/core/src/diagnostics.sigil import { SigilDiagnostics }
+@spec/language.sigil from SigilLanguage import { Component, Trait, Contract, Concept, Facet, Tag, Inline Tag, Inline Link, Embedded Facet, SourceGrammar, TraitConformance }
 
 component SigilParser {
   goal {
-    Interpret one versioned Sigil source into a source-faithful partial document.
-
-    Preserve useful declarations, concepts, Facets, attached literal
-    blocks, original physical lines, and ranges whenever malformed structure
-    permits deterministic recovery.
+    Read one 0.8 Sigil source without losing its architectural structure.
   }
 
   interface {
-    SourceDocumentParsing {
-      SourceDocumentParsing adapts SourceDocument into the parser API.
-
-      parseSigilDocument(filePath, source, options) returns ParseResult
-
-      options.sigilVersion is required and must equal SupportedLanguageVersion
-    }
-
-    ParseResult {
-      ParseResult contains a recovered SigilDocument and structural diagnostics
+    source reading {
+      Reveal Component and Trait declarations, Contract sections, a Concept heading,
+      Facet prose, Inline Tag and Inline Link prose, conformance, imports, and an
+      Embedded Facet for later review.
     }
   }
-}
 
-expand SigilParser {
   logic {
-    SourceDocument {
-      Parse top-level import, component, and expand forms.
+    source reading {
+      Follow SourceGrammar while recognizing top-level Tag imports, Trait imports,
+      Components, and Traits. Keep direct and Concept-grouped Facets in source order.
 
-      Parse sections and flat concept blocks while preserving identifiers and ranges.
+      Join wrapped prose into one Facet. Attach one immediately adjacent fence to its
+      introducing prose as an Embedded Facet; its body remains inert to structure and
+      Tag scanning.
 
-      Parse decisions as free-form expand-section content without requiring concept
-      blocks or labeled fields.
-
-      Combine adjacent prose physical lines into one blank-line-delimited
-      Facet.
-
-      Associate each Facet inside a concept block with that identifier.
-
-      Preserve non-empty free Facets outside concept blocks.
-
-      Parse an immediately adjacent backtick fence as a EmbeddedContent attached to its
-      preceding prose Facet.
-
-      Dedent literal body lines by the opening-fence indentation when present while
-      preserving additional indentation.
-
-      Skip malformed top-level and direct form-body lines, then resume at the same
-      structural level.
-
-      Finalize EOF-unclosed concepts, sections, components, and expands in nesting
-      order while retaining their recovered content.
+      Retain useful authored material after malformed structure without inventing a
+      declaration or meaning.
     }
 
-    ComponentContract {
-      Diagnose components missing goal or interface.
-    }
-
-    ModuleIndexContents {
-      Diagnose a ModuleIndexFile that contains no local component.
-    }
-
-    ConceptIdentity {
-      Accept Facets directly under every contract without requiring Concept blocks.
-
-      Preserve mixed ungrouped and Concept-grouped Facets in source order without
-      a grouping warning.
-
-      Reject invalid identifiers, empty concept blocks, and nested concept blocks.
-    }
-
-    EmbeddedFacet {
-      Reject a detached, unintroduced, invalidly typed, or unclosed fenced content.
-
-      Ignore braces and apparent Sigil structure inside literal bodies.
-    }
-
-    FormattingStyle {
-      Report informational SIGIL_LINE_TOO_LONG when ordinary prose can be canonically
-      wrapped below 79 content characters.
-
-      Report error SIGIL_UNFORMATTABLE_LINE when one indivisible prose token exceeds
-      79 content characters.
-    }
-
-    LanguageVersion {
-      Reject an unsupported configured language version before interpreting
-      declarations.
+    conformance reading {
+      Read `is Trait1, Trait2` only on a Component. TraitConformance determines what
+      that declaration means; later vocabulary resolution checks imported ownership.
     }
   }
 
   constraints {
-    SourceDocument {
-      SigilParser performs no filesystem access or workspace resolution.
-
-      Structural recognition follows SigilLanguage SourceGrammar.
-
-      Warnings preserve a usable partial document and do not make parsing fail.
+    source reading {
+      Reading source structure does not decide import ownership, link availability,
+      or whether an architectural claim is true. Those are later concerns.
     }
 
-    SourceRecovery {
-      Parser diagnostics, retained content, resume points, source ranges, and
-      ordering follow SigilLanguage SourceRecovery without host-dependent
-      synchronization.
+    contract shape {
+      Report a missing goal or interface, a duplicate contract, logic in a Trait, an
+      empty or nested Concept, invalid import syntax, or a detached or unclosed fence.
     }
 
-    ConceptIdentity {
-      Concept body content remains free-form except for structural brace tracking.
+    inline tags and links {
+      Recognize Inline Tag and Inline Link spans only in prose. Preserve physical
+      wrapping inside a Facet; an Inline Tag remains on one physical line and is
+      never split across asterisks or name.
     }
 
-    Facet {
-      Blank lines terminate prose Facets while physical wrapping does not.
-
-      Facet prose joins wrapped physical lines with one normalized space and
-      retains the original lines and complete range.
-    }
-
-    EmbeddedFacet {
-      Literal type tokens match [A-Za-z][A-Za-z0-9_+.-]*.
-
-      Literal bodies create no semantic references and are exempt from prose-width
-      diagnostics.
-    }
-
-    FormattingStyle {
-      Prose width counts Unicode code points after leading indentation.
-    }
-
-    DiagnosticConstruction {
-      Structural findings are created through SigilDiagnostics.
+    fenced representations {
+      Keep a fenced representation attached to its introducing Facet and literal to
+      later Tag, Link, and structure reading.
     }
   }
 
   cases {
-    ParseResult {
-      Valid source returns recovered declarations and Facets without error
-      diagnostics.
+    source reading {
+      A later valid declaration remains available after an unexpected top-level line.
 
-      An unclosed component returns its recoverable content with a source-ranged
-      structural diagnostic.
+      An unfinished declaration, contract, Concept, or fence remains reviewable with
+      its malformed structure visible.
     }
 
-    SourceDocument {
-      A decisions section preserves grouped and ungrouped Facets without a grouping
-      diagnostic.
+    conformance reading {
+      `component Screen is RequestSafety { ... }` records RequestSafety as
+      conformance; `trait RequestSafety is Other { ... }` is invalid.
     }
 
-    SourceRecovery {
-      An unexpected top-level line is skipped and a later valid declaration remains
-      available.
-
-      An EOF-unclosed concept, section, and component are finalized in order and each
-      receives its applicable diagnostic.
-    }
-
-    ComponentContract {
-      A component missing goal or interface remains in the partial document with
-      required-section diagnostics.
-    }
-
-    ConceptIdentity {
-      An interface containing only ungrouped Facets produces no grouping diagnostic.
-
-      An interface mixing ungrouped Facets and Concept blocks preserves both without
-      requiring additional identifiers.
-
-      A concept block with several blank-line-delimited paragraphs preserves one
-      identity and every Facet.
-
-      Ungrouped Facets are valid in every contract, including interface.
-
-      Empty and nested concept blocks are invalid.
-    }
-
-    Facet {
-      Two adjacent wrapped prose lines produce one Facet.
-
-      A blank line between prose paragraphs produces two Facets.
-    }
-
-    EmbeddedFacet {
-      Introducing prose immediately followed by a json fence produces one semantic
-      unit with one attached EmbeddedContent.
-
-      Blank lines and unmatched braces inside a EmbeddedContent do not close its
-      Facet or enclosing Sigil forms.
-
-      A blank line before an opening fence produces SIGIL_DETACHED_LITERAL_BLOCK.
-
-      An opening fence without introducing prose produces
-      SIGIL_LITERAL_WITHOUT_INTRODUCTION.
-
-      An invalid type produces SIGIL_INVALID_LITERAL_TYPE.
-
-      An unclosed fence produces SIGIL_UNCLOSED_LITERAL_BLOCK.
-    }
-
-    FormattingStyle {
-      Six leading spaces do not reduce the 79-character prose-content allowance.
-
-      An indivisible token longer than 79 content characters produces
-      SIGIL_UNFORMATTABLE_LINE.
-    }
-
-    ModuleIndexContents {
-      An imports-only ModuleIndexFile produces SIGIL_MODULE_WITHOUT_COMPONENT.
-    }
-
-    LanguageVersion {
-      An unsupported version returns an empty partial document with
-      SIGIL_UNSUPPORTED_VERSION.
+    fenced representations {
+      A malformed fence remains attached to the Facet that introduced it rather than
+      being mistaken for ordinary prose.
     }
   }
 }

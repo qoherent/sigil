@@ -1,33 +1,22 @@
+@spec/language.sigil from SigilLanguage import { Component, Trait, Contract, Tag, StructuralVocabulary }
+
 component SigilLanguageModel {
   goal {
-    Define stable language constants and source-position primitives with shared
-    structural vocabulary for deterministic Sigil model contracts.
+    Keep the structural vocabulary used to understand a Sigil source consistent.
   }
 
   interface {
-    LanguageModel {
-      SIGIL_VERSION, SigilFormKind, and SigilSectionName define the supported
-      language version and structural declaration vocabulary. SourceLocation and
-      SourceRange define immutable source-position primitives shared across domains.
+    shared vocabulary {
+      StructuralVocabulary gives parsing, review, diagnostics, and navigation the
+      same names for Component and Trait declarations, Contract sections, Tag
+      ownership, conformance, imports, and source locations.
     }
   }
-}
 
-expand SigilLanguageModel {
   decisions {
-    SourcePositionOwnership {
-      Decision: Place SourceLocation and SourceRange in the foundational language
-      model so diagnostics and recovered source structures consume one-way shared
-      primitives.
-
-      Scope: Governs source-position data ownership across core model domains;
-      excludes diagnostics, parsed source structures, and their operational use.
-
-      Trade-offs: The language model exposes two general immutable data shapes in
-      addition to language constants and declaration vocabulary.
-
-      Consequences: Diagnostics remain source-ranged without a source-to-diagnostics
-      ownership cycle, and domain modules keep explicit acyclic dependencies.
+    shared vocabulary {
+      Keep the language definition with SigilLanguage; this boundary only shares its
+      vocabulary so each concern can describe one source without a competing meaning.
     }
   }
 }
