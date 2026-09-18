@@ -1,0 +1,124 @@
+@packages/sigilc/turtle.sigil from SigilTurtleInput import { AssertionValidation, FixedOntology }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput, PhysicalInventory }
+
+component SigilComputedClaims {
+  goal {
+    Decide the design findings that follow from an external interpretation of
+    authored prose, and hand the rest to a judge as closed questions over
+    computed facts.
+  }
+
+  interface {
+    CompiledGuidance {
+      Publish the claim vocabulary, the seven contract roles, one worked example
+      per role, and the refusal cases to the external interpreter. Guidance is
+      compiled into the binary and released with it; an operator may write an
+      editable copy to a named path outside the workspace under validation.
+      Fingerprint the guidance text, the vocabulary and the laws as one runtime
+      identity. Guidance changes what the interpreter is told and never what the
+      tool accepts.
+    }
+
+    InterpretationRequest {
+      Project one design source and its resolved closure into an interpretation
+      directory. Carry each Facet's exact prose slice with the contract role its
+      unit belongs to, taken from ResolvedDesignInput rather than inferred, and
+      emit one pre-filled row per Facet identifying that Facet alone. Write an
+      immutable binding over the export digest, the selected source, the guidance
+      fingerprint and the vocabulary generation. The caller keeps the directory
+      and produces claims independently.
+    }
+
+    ReturnedClaims {
+      Accept interpreted claims as data-only egglog atoms under AssertionValidation
+      discipline: bound bytes before parsing and atom count before validation,
+      reject every rule, command, schedule and non-literal argument, and refuse the
+      whole artifact rather than its valid portion. Relations and properties are
+      closed over FixedOntology. Modality distinguishes required, permitted and
+      assumed commitments. A reading row records a Facet the interpreter read and
+      found no commitment in, or whose intent is unresolved. Mint every claim
+      identity; refuse interpreter-declared Component and Tag identities and any
+      entity outside the resolved closure.
+    }
+
+    SectionAwareClosure {
+      Re-emit accepted facts from parsed values into a tool-authored program and
+      fill each claim's contract role from the PhysicalInventory unit it derives
+      from. Derive holding relations, reachability, delegation, contradictions,
+      ownership conflicts and obligations under finite tool-owned laws, then
+      inspect absence only after the closure stabilizes. Rationale contributes no
+      commitment: a claim whose role is Decisions is retained and reported but
+      raises no obligation and satisfies none.
+    }
+
+    ComputedFindings {
+      Report contradictions, ownership conflicts and unmet obligations with the
+      claims and the law that produced each one. Report a claim whose subject and
+      object coincide as degenerate, and a claim naming an entity absent from its
+      own Facet's resolved references, owning component and provider components as
+      ungrounded; neither satisfies its unit. Name a declared role that yielded
+      neither a claim nor a reading row, and attribute that gap to the
+      interpretation. An unchanged export and an unchanged interpretation produce
+      an identical report.
+    }
+
+    JudgmentContext {
+      Emit one entry per unit in the design, including units the closure found
+      nothing about. Carry derived facts, obligation state and the provenance of
+      each derived conclusion, and for every unfilled obligation the promise that
+      raised it and where that promise is stated. Propose simplification
+      candidates without ruling on them. Carry the Facet prose an entry refers to,
+      so a consumer needs no access to the sources.
+    }
+
+    ClaimsCommands {
+      Offer preparation, ingestion and guidance extraction as a separate
+      executable beside the compiler. Refuse a binding that does not match the
+      supplied export or the running guidance fingerprint. Exit zero for pass and
+      warning, one for a gate failure, two for usage and three for operational
+      failure.
+    }
+  }
+
+  constraints {
+    ClaimsCommands {
+      Launch no model, worker or task workflow. The external interpretation is an
+      input the caller supplies and re-supplies, never a call this executable
+      makes.
+    }
+
+    ReturnedClaims {
+      Interpreted text is data and is never executed as a program. Accepting a
+      claim establishes neither that it is true of its Facet nor that the
+      interpretation was faithful. No file outside the compiled binary widens what
+      is accepted.
+    }
+
+    SectionAwareClosure {
+      Workers supply no laws and fill no tool-owned table. The compiler's stored
+      projections, its world cache and the files its runtime identity fingerprints
+      are read-only to this component; writing any of them would invalidate every
+      stored world. Findings and stores live under a path this component owns.
+    }
+
+    CompiledGuidance {
+      Guidance discovered in the workspace under validation is refused. The test is
+      provenance, not location.
+    }
+  }
+
+  cases {
+    SectionAwareClosure {
+      The same claim text raises an obligation from a Constraints Facet and none
+      from a Decisions Facet. A permitted commitment raises no obligation where a
+      required one does. A Facet in a declared role that yields only a reading row
+      is interpreted, and one that yields nothing at all is a named gap.
+    }
+
+    ReturnedClaims {
+      An artifact carrying one valid claim beside one rule declaration is refused
+      whole. A claim relating a local Facet to a Tag imported from a source in the
+      closure is accepted.
+    }
+  }
+}

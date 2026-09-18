@@ -38,6 +38,7 @@ repos/
 
 # Disposable semantic worlds and caller-owned preparation state
 **/.sigil/worlds/
+**/.sigil/claims/
 **/.sigil/tmp/
 .codex-progress/
 

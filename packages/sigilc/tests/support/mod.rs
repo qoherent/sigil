@@ -93,6 +93,19 @@ pub fn shared_workspace() -> Workspace {
     root
 }
 
+/// The shared 0.8 design fixture, parsed. Facet identities below are baked from
+/// byte offsets in that fixture, so they live here rather than in each test.
+pub fn shared_input() -> DesignInput {
+    DesignInput::parse(&serde_json::to_vec(&shared_value()).unwrap()).unwrap()
+}
+pub const BASE: &str = "base.sigil";
+pub const CONSUMER: &str = "consumer.sigil";
+pub const BASE_GOAL: &str = "facet:base.sigil:29";
+pub const BASE_INTERFACE: &str = "facet:base.sigil:71";
+pub const BASE_CONSTRAINTS: &str = "facet:base.sigil:129";
+pub const CONSUMER_GOAL: &str = "facet:consumer.sigil:75";
+pub const CONSUMER_INTERFACE: &str = "facet:consumer.sigil:107";
+
 pub fn cycle_value() -> Value {
     serde_json::from_str(include_str!(
         "../../../core/tests/fixtures/design-cycle-080.json"

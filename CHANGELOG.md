@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add `sigil-claims`, a second native binary that computes design findings from
+  an external model's reading of Facet prose. It prepares an interpretation
+  request from the existing Design export, accepts returned Datalog claims as
+  data only, saturates them against section-aware laws, and reports
+  contradictions, ownership conflicts and unmet promises with the claims and the
+  law behind each. Claims from a `decisions` Facet derive nothing, so rationale
+  no longer reads as a commitment. Alongside the report it emits a judgment
+  context covering every unit for a later judgment pass. The compiler's
+  commands, stored projections and world cache are unchanged.
+
 - Support language 0.8 across core, CLI, LSP, and VS Code, including exact
   component-owned Tags, explicit provider imports, and preserved Facet ownership.
   Activate the root workspace on 0.8; migrate older source using the
