@@ -3,44 +3,45 @@ component SigilLanguage {
     Define the versioned source and interpretation contract for Sigil documents.
 
     Give deterministic tools one structural model for components, expansions,
-    sections, concepts, imports, and recoverable diagnostics.
+    sections, Tags, imports, and recoverable diagnostics.
   }
 
   interface {
     LanguageVersion {
-      sigilVersion = "0.7.0"
+      sigilVersion = "0.8.0"
 
-      workspace configuration declares the LanguageVersion that governs
+      *workspace configuration* declares the LanguageVersion that governs
       interpretation
     }
 
     SourceDocument {
       accepts UTF-8 .sigil source containing imports, components, expands, sections,
-      concept blocks, Facets, and attached fenced content
+      Concepts, Facets, and attached *fenced content*
 
       interprets structural forms through SourceGrammar and malformed input through
       SourceRecovery
 
-      preserves recovered declarations, Facets, fenced content, concept
-      identities, original physical lines, and source ranges
+      preserves recovered declarations, Facets, fenced content, Tag identity,
+      original physical lines, and *source ranges*
 
-      returns structural diagnostics and the deterministic partial document defined
+      returns structural diagnostics and the deterministic *partial document* defined
       by SourceRecovery
 
-      treats diagnostic message prose as explanatory and non-normative while code,
-      severity, ordering, file path, range, retained result, and resume point carry
-      the compatibility contract
+      treats *diagnostic message prose* as explanatory and non-normative while
+      code, severity, ordering, file path, range, *retained result*, and
+      *resume point* carry the *compatibility contract*
     }
 
     SourceGrammar {
       recognizes structure only when a complete trimmed physical line matches the
-      applicable production at a top-level, form, section, or concept boundary
+      applicable production at a top-level, form, section, or Tag boundary
 
-      accepts this normative structural grammar where horizontal whitespace is space
-      or tab, newline is LF or CRLF, name is [A-Za-z][A-Za-z0-9_]*, concept-id is
-      [A-Za-z][A-Za-z0-9_-]*, path-token is one or more non-whitespace characters
-      other than braces or comma, backticks is three or more backtick characters, and
-      physical-line is any sequence of characters other than newline:
+      accepts this normative *structural grammar* where horizontal whitespace is
+      space or tab, newline is LF or CRLF, name is [A-Za-z][A-Za-z0-9_]*, tag_name
+      is [A-Za-z][A-Za-z0-9_-]*, path-token is one or more non-whitespace
+      characters other than braces or comma, backticks is three or more backtick
+      characters, and physical-line is any sequence of characters other than
+      newline:
       ```ebnf
       document       = { blank | import | component | expand } ;
       import         = "@" path-token ws "import" ws "{" ws-opt name-list ws-opt "}" line-end ;
@@ -49,9 +50,9 @@ component SigilLanguage {
       expand         = "expand" ws name ws-opt "{" line-end { section | blank } "}" line-end ;
       section        = section-name ws-opt "{" line-end section-body "}" line-end ;
       section-name   = "goal" | "interface" | "state" | "logic" | "constraints" | "decisions" | "cases" ;
-      section-body   = { blank | concept-block | prose-unit } ;
-      concept-block  = concept-header { blank | prose-unit } "}" line-end ;
-      concept-header = header-text ws-opt "{" line-end ;
+      section-body   = { blank | tag_group | prose-unit } ;
+      tag_group      = group_open { blank | prose-unit } "}" line-end ;
+      group_open     = header-text ws-opt "{" line-end ;
       section-header = name ws-opt "{" line-end ;
       prose-unit     = prose-line { newline prose-line } [ newline embedded-content ] line-end ;
       embedded-content  = opening-fence newline { literal-line newline } closing-fence line-end ;
@@ -67,40 +68,42 @@ component SigilLanguage {
       newline        = "\n" | "\r\n" ;
       ```
 
-      after trimming, header-text is nonempty, does not start with @, and contains
-      none of =:()[]<>"' or backtick; its complete value is the supplied concept
-      identifier and is valid only when it matches concept-id
+      after trimming, *header-text* is nonempty, does not start with @, and contains
+      none of =:()[]<>"' or backtick; its complete value is the supplied Concept
+      name and is valid only when it matches tag_name
 
-      fence-info is the complete suffix after the opening backticks; its trimmed
-      nonempty value is the supplied literal type and is valid only when it matches
+      *fence-info* is the complete suffix after the opening backticks; its trimmed
+      nonempty value is the supplied *literal type* and is valid only when it matches
       [A-Za-z][A-Za-z0-9_+.-]*
 
       directly inside a form, any section-header whose name is outside section-name
-      is an unknown section header; every other nonblank line that is neither a
-      structural close nor a valid section is unexpected form content
+      is an *unknown section header*; every other nonblank line that is neither a
+      structural close nor a valid section is *unexpected form content*
 
       indentation before structural forms is insignificant, while indentation and
-      characters inside prose and literal bodies follow their own preservation rules
+      characters inside prose and *literal bodies* follow their own preservation
+      rules
 
-      inside a section or concept, an opening fence consumes the maximal contiguous
-      run of three or more leading backticks before interpreting its suffix as
-      fence-info and takes precedence over blank-line, closing-brace, concept-header,
-      and prose recognition; its closing fence contains only backticks, has at least
-      the opener's length after trimming, and takes precedence over literal-line
+      inside a section or Concept, an *opening fence* consumes the maximal
+      contiguous run of three or more leading backticks before interpreting its
+      suffix as fence-info and takes precedence over blank-line, closing-brace,
+      group_open, and prose recognition; its *closing fence* contains only
+      backticks, has at least the opener's length after trimming, and takes
+      precedence over literal-line
 
-      outside a literal, a closing brace takes precedence over concept-header and
-      prose recognition when brace depth permits closing the current concept,
+      outside a literal, a closing brace takes precedence over group_open and
+      prose recognition when *brace depth* permits closing the current Concept,
       section, or form
 
-      a concept header takes precedence over prose only at a paragraph boundary and
-      at the current section or concept's baseline brace depth; every other nonblank
-      line inside a section is prose-line
+      a *Concept heading* takes precedence over prose only at a paragraph
+      boundary and at the current section or Concept's baseline brace depth;
+      every other nonblank line inside a section is *prose-line*
 
       after structural recognition, scan every ordinary prose line from left to right
       and add one for each { and subtract one for each }; quotes and apparent comment
       or annotation text do not suppress braces, while literal bodies are inert
 
-      a concept begins at brace depth one and free section prose at depth zero; the
+      a Concept begins at brace depth one and free section prose at depth zero; the
       net line delta controls recognition on later lines, an unmatched } may lower
       depth, later { may restore it, and any depth at EOF follows SourceRecovery
       finalization
@@ -111,48 +114,48 @@ component SigilLanguage {
 
     SourceRecovery {
       recovers malformed source according to this deterministic matrix, emitting
-      diagnostics in source-scan order followed by required-section diagnostics:
+      diagnostics in *source-scan order* followed by *required-section diagnostics*:
       ```text
-      Condition                         Diagnostic                         Severity Retained result and resume point
-      unsupported LanguageVersion       SIGIL_UNSUPPORTED_VERSION         error    empty document; stop interpretation
-      malformed or unexpected top level SIGIL_PARSE_STRUCTURE             error    skip that physical line; resume at top level
-      unknown section header            SIGIL_UNKNOWN_SECTION             error    skip the header; remain directly inside the form
-      unexpected content inside form    SIGIL_PARSE_STRUCTURE             error    skip that physical line; remain inside the form
-      missing goal                       SIGIL_MISSING_GOAL                error    retain the component after the source scan
-      missing interface                  SIGIL_MISSING_INTERFACE           error    retain the component after the source scan
-      invalid concept identifier         SIGIL_INVALID_CONCEPT_IDENTIFIER error    retain the concept block and its content
-      empty concept block                SIGIL_EMPTY_CONCEPT_BLOCK         error    retain the empty block
-      nested concept header              SIGIL_NESTED_CONCEPT_BLOCK        error    retain it as outer-concept prose with brace tracking
-      unclosed concept at EOF            SIGIL_PARSE_STRUCTURE             error    finalize concept at EOF, then enclosing section and form
-      unclosed section at EOF            SIGIL_PARSE_STRUCTURE             error    finalize section at EOF, then enclosing form
-      unclosed component or expand       SIGIL_PARSE_STRUCTURE             error    finalize the declaration at EOF
-      detached fenced content             SIGIL_DETACHED_LITERAL_BLOCK      error    retain the literal in a recovered Facet
-      literal without introduction       SIGIL_LITERAL_WITHOUT_INTRODUCTION error   retain the literal in a recovered Facet
-      invalid literal type               SIGIL_INVALID_LITERAL_TYPE        error    retain the literal and supplied type
-      unclosed literal at EOF             SIGIL_UNCLOSED_LITERAL_BLOCK      error    retain body through EOF, then finalize enclosing forms
+      Condition                         Diagnostic                          Severity Retained result and resume point
+      unsupported LanguageVersion       SIGIL_UNSUPPORTED_VERSION           error    empty document; stop interpretation
+      malformed or unexpected top level SIGIL_PARSE_STRUCTURE               error    skip that physical line; resume at top level
+      unknown section header            SIGIL_UNKNOWN_SECTION               error    skip the header; remain directly inside the form
+      unexpected content inside form    SIGIL_PARSE_STRUCTURE               error    skip that physical line; remain inside the form
+      missing goal                      SIGIL_MISSING_GOAL                  error    retain the component after the source scan
+      missing interface                 SIGIL_MISSING_INTERFACE             error    retain the component after the source scan
+      invalid Concept name              SIGIL_INVALID_TAG_NAME              error    retain the Concept and its content
+      empty Concept                     SIGIL_EMPTY_CONCEPT                 error    retain the empty Concept
+      nested Concept heading            SIGIL_NESTED_CONCEPT                error    retain it as outer Concept prose with brace tracking
+      unclosed Concept at EOF           SIGIL_PARSE_STRUCTURE               error    finalize the Concept at EOF, then enclosing section and form
+      unclosed section at EOF           SIGIL_PARSE_STRUCTURE               error    finalize section at EOF, then enclosing form
+      unclosed component or expand      SIGIL_PARSE_STRUCTURE               error    finalize the declaration at EOF
+      detached fenced content           SIGIL_DETACHED_LITERAL_BLOCK        error    retain the literal in a recovered Facet
+      literal without introduction      SIGIL_LITERAL_WITHOUT_INTRODUCTION  error    retain the literal in a recovered Facet
+      invalid literal type              SIGIL_INVALID_LITERAL_TYPE          error    retain the literal and supplied type
+      unclosed literal at EOF           SIGIL_UNCLOSED_LITERAL_BLOCK        error    retain body through EOF, then finalize enclosing forms
       ```
 
       after source-scan diagnostics, required-section diagnostics follow component
-      declaration order and emit missing goal before missing interface for each
+      *declaration order* and emit missing goal before missing interface for each
       component
 
-      every retained declaration, section, concept, Facet, fenced content, and
+      every retained declaration, section, Concept, Facet, fenced content, and
       diagnostic preserves its deterministic source range
 
       unsupported-version diagnostics use the zero-width start of the source;
-      skipped-line, unknown-section, invalid-identifier, nested-header, and literal
-      diagnostics span the complete nonblank physical line; empty-concept diagnostics
-      span the recovered concept and missing-section diagnostics span the component
+      skipped-line, unknown-section, invalid-name, nested-heading, and literal
+      diagnostics span the complete nonblank physical line; empty-Concept diagnostics
+      span the recovered Concept and missing-section diagnostics span the component
 
-      unclosed concept, section, component, or expand diagnostics use a zero-width
+      unclosed Concept, section, component, or expand diagnostics use a zero-width
       range at column one of that construct's opening line; an unclosed literal
       diagnostic spans its opening-fence line
 
       ungrouped Facets and Concept-grouped Facets can coexist in every contract;
-      preserve their source order and ranges without a grouping diagnostic
+      preserve their *source order* and ranges without a grouping diagnostic
 
       a detached or unintroduced literal creates one Facet under the current
-      component or expand, section, and concept when present, with empty normalized
+      component or expand, section, and Concept when present, with empty normalized
       prose and physical prose lines, the literal as its sole attachment, and the
       literal's complete range; each contiguous malformed fence creates a separate
       unit
@@ -164,7 +167,7 @@ component SigilLanguage {
     }
 
     ComponentContract {
-      component defines the reusable public contract of one coherent system part
+      component defines the reusable *public contract* of one coherent system part
       through its goal and interface
 
       expand contributes collective operational detail without changing or overriding
@@ -177,36 +180,36 @@ component SigilLanguage {
       observable promises available to dependents
     }
 
-    ConceptIdentity {
-      a concept block groups one or more related Facets under a reusable
-      identifier
+    TagIdentity {
+      a Concept groups one or more related Facets under a reusable name
 
-      Concept identifiers are optional cross-contract grouping; a component
-      describing one concept normally needs only Facets directly under contracts
+      Concepts provide optional cross-contract grouping; a component describing
+      one concern normally needs only Facets directly under contracts
 
-      a concept is public when it occurs in interface and otherwise remains private
-      to its component and matching expands
+      a Tag is introduced in `interface` when its Concept heading occurs there and
+      is otherwise introduced outside `interface`, remaining local to its component
+      and matching expands
 
-      a component and all matching expands share one flat concept namespace
+      a component and all matching expands share one flat *Tag scope*
 
-      repeated blocks with the same resolved identifier contribute collectively
+      repeated Concepts with the same *resolved name* contribute collectively
       without overriding one another
 
-      imported public concepts retain their originating identity only when reused in
-      matching expands
+      imported Tags introduced in `interface` retain their *originating identity*
+      only when reused in matching expands
     }
 
     ImportSemantics {
       import is the sole declaration of dependency on another Sigil component
 
       an expand declared in another source depends on its matching component through
-      an explicit named import
+      an explicit *named import*
 
       a named import exposes the imported component's public goal, interface, and
-      public concept identities
+      the identity of each Tag introduced in `interface`
 
-      imported operational detail and private concepts remain unavailable to
-      dependents
+      imported operational detail and Tags introduced outside `interface` remain
+      unavailable to dependents
 
       every resolved imported name is used by a qualifying contract, operational,
       structural reference
@@ -313,59 +316,60 @@ expand SigilLanguage {
       declaration or another expand.
 
       A dependent receives the imported component's public contract without its
-      state, logic, constraints, decisions, cases, or private concepts.
+      state, logic, constraints, decisions, cases, or Tags introduced outside
+      `interface`.
 
       Implementation-hiding rules belong in constraints unless they define an
       observable promise.
     }
 
-    ConceptIdentity {
-      Concept blocks are flat and cannot nest.
+    TagIdentity {
+      Concepts are flat and cannot nest.
 
-      No contract requires Concept blocks. A contract may freely mix ungrouped
+      No contract requires Concepts. A contract may freely mix ungrouped
       Facets and Concept-grouped Facets.
 
-      Every concept block contains at least one Facet.
+      Every Concept contains at least one Facet.
 
-      Concept identifiers match [A-Za-z][A-Za-z0-9_-]* and contain no spaces.
+      Concept names match [A-Za-z][A-Za-z0-9_-]* and contain no spaces.
 
       PascalCase without hyphens or underscores is preferred but not required for
       validity.
 
-      Concept references are case-sensitive.
+      Tag references are case-sensitive.
 
-      Accessible identifiers are unique without regard to case across the transitive
+      Accessible Tag names are unique without regard to case across the transitive
       import graph.
 
-      Sigil provides no dotted concept notation, qualification, aliases, or local
+      Sigil provides no dotted Tag notation, qualification, aliases, or local
       shadowing.
 
-      Reusing an imported concept in a matching expand preserves its originating
+      Reusing an imported Tag in a matching expand preserves its originating
       identity while keeping importer Facets contextual to the importer.
 
-      A same-named concept declared on the importing component remains a distinct
+      A same-named local Tag declared on the importing component remains a distinct
       local identity and is ambiguous with the imported identity.
 
-      Each case-insensitive identifier group containing more than one distinct
-      accessible identity emits one error SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER per
-      component context in accessible-identifier discovery order, ranged over that
-      component declaration; all identities remain in the namespace and textual
-      occurrences of that identifier remain unbound.
+      Each case-insensitive name group containing more than one distinct accessible
+      identity emits one error SIGIL_AMBIGUOUS_TAG per component context in
+      accessible-name discovery order, ranged over that component declaration; all
+      identities remain in the Tag scope and textual occurrences of that name remain
+      unbound.
 
-      Reusing an imported concept in a matching expand interface re-exposes the same
+      Reusing an imported Tag in a matching expand interface re-exposes the same
       identity to downstream importers.
 
       Provider context never includes Facets contributed by consumers.
 
-      An exact-case accessible identifier in semantic content resolves as a reference
+      An exact-case accessible Tag name in semantic content resolves as a reference
       only when the immediately preceding and following characters, when present, are
       outside ASCII A-Z, a-z, 0-9, underscore, and hyphen.
 
-      Unmatched words remain ordinary semantic content without unresolved-concept
+      Unmatched words remain ordinary semantic content without unresolved-Tag
       diagnostics.
 
-      Concept identities provide grouping, reuse, navigation, and highlighting but
-      define no source-anchor behavior.
+      Tag identity provides grouping, reuse, navigation, and highlighting but
+      defines no source-anchor behavior.
     }
 
     ImportSemantics {
@@ -380,11 +384,12 @@ expand SigilLanguage {
       An expand declared in another source matches its component only through a
       resolved named import in the expand's source.
 
-      A cross-file expand without that import produces SIGIL_EXPAND_WITHOUT_COMPONENT
-      and contributes no collected expansion or concept-namespace content.
+      A cross-file expand without that import produces
+      *SIGIL_EXPAND_WITHOUT_COMPONENT* and contributes no collected expansion or
+      Tag scope content.
 
       A structural import used by an expand does not project the component back into
-      its own concept namespace as an imported dependency.
+      its own Tag scope as an imported dependency.
 
       Imported names must resolve to components exposed by the selected source or
       directory-import surface.
@@ -395,17 +400,17 @@ expand SigilLanguage {
 
       An unresolved path retains an import result with no resolved names; an
       unresolved name retains every independently resolved name from the same import;
-      an import cycle retains resolved import edges and names, and resolution of
+      an *import cycle* retains resolved import edges and names, and resolution of
       declarations outside the cycle continues.
 
-      Every unresolved path emits error SIGIL_UNRESOLVED_IMPORT_PATH over its
+      Every unresolved path emits error *SIGIL_UNRESOLVED_IMPORT_PATH* over its
       complete import line in source-discovery and import-declaration order; every
-      unresolved name then emits error SIGIL_UNRESOLVED_IMPORTED_COMPONENT over its
+      unresolved name then emits error *SIGIL_UNRESOLVED_IMPORTED_COMPONENT* over its
       complete import line in resolved-import and written-name order.
 
       Import cycles are then discovered depth first in source-discovery and
       import-edge order; every edge returning to an active source emits error
-      SIGIL_IMPORT_CYCLE over that closing import declaration, after all
+      *SIGIL_IMPORT_CYCLE* over that closing import declaration, after all
       unresolved-name diagnostics.
 
       Import paths resolve from the selected workspace root, not the declaring
@@ -421,16 +426,17 @@ expand SigilLanguage {
       Import use is evaluated separately for each resolved imported name in its
       declaring source document.
 
-      Exact-case component references and imported public-concept references in
-      interface, state, logic, constraints, or cases count as use.
+      Exact-case component references and references, within interface, state,
+      logic, constraints, or cases, to imported Tags introduced in `interface` count
+      as use.
 
       Component references use the same immediately adjacent ASCII A-Z, a-z, 0-9,
-      underscore, and hyphen boundary exclusion as concept references.
+      underscore, and hyphen boundary exclusion as Tag references.
 
       An applicable local expand counts as structural use.
 
       References in goal, decisions, literal bodies, other source documents,
-      differently cased words, and identifier substrings do not count as use;
+      differently cased words, and name substrings do not count as use;
       comment-shaped or annotation-shaped ordinary prose follows its containing
       section because Sigil defines no separate syntax for it.
 
@@ -442,14 +448,15 @@ expand SigilLanguage {
       identity.
 
       Every qualifying textual or structural use is attributed to all repeated
-      entries that resolve to the same name and provider; with no qualifying use,
-      every repeated entry independently emits SIGIL_UNUSED_IMPORT in written order.
+      entries that resolve to the same name and provider; with no qualifying
+      use, every repeated entry independently emits *SIGIL_UNUSED_IMPORT* in
+      written order.
     }
 
     DeclarationMultiplicity {
       Component names are unique across the selected workspace; every declaration of
-      a duplicated name is retained and receives error SIGIL_DUPLICATE_COMPONENT in
-      source-discovery order, while the name binds no import, expand, or concept
+      a duplicated name is retained and receives error *SIGIL_DUPLICATE_COMPONENT* in
+      source-discovery order, while the name binds no import, expand, or Tag
       context.
 
       Repeated sections in one component or expand are allowed ordered contributions
@@ -466,7 +473,7 @@ expand SigilLanguage {
 
       decisions is an optional expand section.
 
-      decisions content is free-form and does not require concept blocks, labeled
+      decisions content is free-form and does not require Concepts, labeled
       fields, or a complete rationale schema.
 
       decisions records concise conclusions and supporting rationale rather than
@@ -492,13 +499,13 @@ expand SigilLanguage {
     EmbeddedContent {
       A blank line between introducing prose and its opening fence is invalid.
 
-      A fenced content without preceding prose in the same section or concept block is
+      A fenced content without preceding prose in the same section or Concept is
       invalid.
 
       Structural indentation equal to the opening-fence indentation is removed from
       literal-body lines when present while additional indentation is preserved.
 
-      Literal bodies create no component, concept, import, glossary, ownership, or
+      Literal bodies create no component, Tag, import, glossary, ownership, or
       other semantic references.
 
       Literal bodies are not prose-wrapped or width-checked.
@@ -514,7 +521,7 @@ expand SigilLanguage {
       spaces.
 
       An indivisible prose token longer than 79 content characters produces error
-      SIGIL_UNFORMATTABLE_LINE over its complete physical line; parsing retains the
+      *SIGIL_UNFORMATTABLE_LINE* over its complete physical line; parsing retains the
       line, formatting returns no writable result, and check fails.
     }
   }
@@ -563,9 +570,9 @@ expand SigilLanguage {
       Decision: Reject each resolved imported name that has no qualifying contract,
       operational, or structural use in its declaring source.
 
-      Scope: Governs named component imports and imported public-concept reuse;
-      excludes unresolved names and documentary mentions in goal, decisions, literal
-      bodies, and other source documents.
+      Scope: Governs named component imports and reuse of imported Tags introduced
+      in `interface`; excludes unresolved names and documentary mentions in goal,
+      decisions, literal bodies, and other source documents.
 
       Trade-offs: Authors must state real dependency use outside documentary
       rationale, including in module-index sources.
@@ -584,7 +591,7 @@ expand SigilLanguage {
       Decision: Require every cross-file expand to import its matching component
       explicitly.
 
-      Scope: Governs expansion matching, collection, concept namespaces, and
+      Scope: Governs expansion matching, collection, Tag scopes, and
       structural import use; excludes expands colocated with their component.
 
       Trade-offs: Expansion files require explicit dependency declarations, while
@@ -624,7 +631,7 @@ expand SigilLanguage {
       prose and preserve its body as uninterpreted literal content.
 
       Scope: Governs examples, configuration, code, data, diagrams, and other
-      multiline literal content inside sections and concept blocks.
+      multiline literal content inside sections and Concepts.
 
       Trade-offs: Standalone or blank-line-detached fences are invalid and literal
       content is unavailable to semantic reference and glossary scanning.
@@ -657,15 +664,15 @@ expand SigilLanguage {
       independent from nesting depth.
     }
 
-    ConceptIdentity {
-      Decision: Use one flat collective concept namespace per component context and
-      allow imported identity reuse only through matching expands.
+    TagIdentity {
+      Decision: Use one flat collective Tag scope per component context and allow
+      imported identity reuse only through matching expands.
 
-      Scope: Governs concept identity within a component, its matching expands, and
-      accessible imported public concepts; excludes glossary identity and source
-      anchors.
+      Scope: Governs Tag identity within a component, its matching expands, and
+      accessible imported Tags introduced in `interface`; excludes glossary identity
+      and source anchors.
 
-      Trade-offs: Component declarations cannot reuse imported concept blocks;
+      Trade-offs: Component declarations cannot reuse imported Concepts;
       same-named local and imported identities require renaming, while contradictory
       occurrences remain semantic-review issues.
 
@@ -702,8 +709,8 @@ expand SigilLanguage {
       Decision: Require workspace-unique component names, allow repeated sections as
       ordered collective contributions, and preserve repeated import-name entries.
 
-      Scope: Governs declaration collisions and repetition; excludes concept
-      identity, which follows its own collective namespace rules.
+      Scope: Governs declaration collisions and repetition; excludes Tag identity,
+      which follows its own collective Tag scope rules.
 
       Trade-offs: Duplicate components cannot participate in resolution until
       renamed, while repeated import entries may produce separate use diagnostics.
@@ -765,14 +772,14 @@ expand SigilLanguage {
       before interpreting workspace Sigil files.
 
       A document configured for an earlier or later non-exact version is not silently
-      reinterpreted using 0.7.0 semantics.
+      reinterpreted using 0.8.0 semantics.
     }
 
     SourceDocument {
       A malformed top-level or form-body line is diagnosed, skipped, and followed by
       deterministic interpretation at the same structural level.
 
-      An EOF-unclosed concept, section, component, or expand is finalized at EOF with
+      An EOF-unclosed Concept, section, component, or expand is finalized at EOF with
       source-ranged diagnostics and retained recoverable content.
 
       An unsupported LanguageVersion returns an empty document before declaration
@@ -788,10 +795,10 @@ expand SigilLanguage {
 
       Two free interface paragraphs separated by a blank line remain two Facets.
 
-      Ungrouped Facets before and after a Concept block retain source order and
+      Ungrouped Facets before and after a Concept retain source order and
       remain ungrouped without a diagnostic.
 
-      An empty or nested concept block is invalid.
+      An empty or nested Concept is invalid.
 
       Wrapped prose with no blank separator produces one Facet.
 
@@ -826,26 +833,26 @@ expand SigilLanguage {
       collected operational description.
     }
 
-    ConceptIdentity {
-      Reusing one public concept in interface, state, logic, constraints, decisions,
-      or cases preserves one collective identity.
+    TagIdentity {
+      Reusing one Tag introduced in `interface` in interface, state, logic,
+      constraints, decisions, or cases preserves one collective identity.
 
-      Importing two different public concepts whose identifiers compare equal without
-      regard to case produces one SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER error over the
+      Importing two different Tags introduced in `interface` whose names compare
+      equal without regard to case produces one SIGIL_AMBIGUOUS_TAG error over the
       consumer component; both identities remain accessible and occurrences remain
       unbound.
 
-      A concept introduced only outside interface remains private.
+      A Tag introduced only outside `interface` remains local to its component
+      and matching expands.
 
-      Reusing an imported public concept in a matching expand preserves its
-      originating identity without changing provider context.
+      Reusing an imported Tag introduced in `interface` in a matching expand
+      preserves its originating identity without changing provider context.
 
-      Declaring the same identifier on the importing component produces an
-      ambiguous-concept diagnostic.
+      Declaring the same name on the importing component produces an
+      ambiguous-Tag diagnostic.
 
-      PublicConcept resolves in `(PublicConcept)` and next to non-ASCII letters, but
-      not in `APublicConcept`, `PublicConcept2`, `PublicConcept_name`, or
-      `PublicConcept-name`.
+      PublicTag resolves in `(PublicTag)` and next to non-ASCII letters, but not in
+      `APublicTag`, `PublicTag2`, `PublicTag_name`, or `PublicTag-name`.
     }
 
     ImportSemantics {
@@ -862,7 +869,8 @@ expand SigilLanguage {
 
       A second unused name in the same import still produces SIGIL_UNUSED_IMPORT.
 
-      A structural self-import does not duplicate the component's public concepts.
+      A structural self-import does not duplicate the identities of the component's
+      Tags introduced in `interface`.
 
       A missing source retains an import result with no resolved names; a missing
       component or directory-import name retains every independently resolved name
@@ -879,7 +887,8 @@ expand SigilLanguage {
       letters, but not in `AnImportedComponent`, `ImportedComponent2`,
       `ImportedComponent_name`, or `ImportedComponent-name`.
 
-      An imported public concept reused in logic uses its provider import.
+      An imported Tag introduced in `interface` and reused in logic uses its
+      provider import.
 
       A provider name occurring only inside a fenced content does not use its import.
 
@@ -889,7 +898,7 @@ expand SigilLanguage {
       target; `@../a` and `@a/../../b` retain outside traversal and are unresolved.
 
       A repeated imported name remains separately ordered and checked for use without
-      duplicating its provider concept identity.
+      duplicating its provider Tag identity.
 
       One textual or structural use qualifies every repeated entry for the same name
       and provider; with no use, every entry receives SIGIL_UNUSED_IMPORT.
@@ -915,7 +924,7 @@ expand SigilLanguage {
 
       An expand may omit decisions without losing validity.
 
-      A decisions section may contain free prose or named concept blocks with
+      A decisions section may contain free prose or named Concepts with
       rationale labels.
 
       A binding stack choice appears in constraints while a corresponding decisions
@@ -951,7 +960,7 @@ component SigilWorkspaceConfig {
     ConfigFile {
       filename: .sigil/config.json
 
-      location: workspace root
+      location: *workspace root*
     }
 
     ConfiguredLanguageVersion {
@@ -993,7 +1002,7 @@ expand SigilWorkspaceConfig {
     }
 
     WorkspaceBoundary {
-      Each workspace.members entry declares one additional project root in the same
+      Each workspace.members entry declares one additional *project root* in the same
       workspace.
 
       Member paths are unique, non-root, workspace-relative directories that cannot
@@ -1009,7 +1018,7 @@ expand SigilWorkspaceConfig {
     }
 
     SourceSelection {
-      SourceSelection controls source discovery but does not declare workspace
+      SourceSelection controls *source discovery* but does not declare workspace
       members or restrict ModuleIndexFile locations.
     }
 
@@ -1059,7 +1068,7 @@ component SigilModuleIndex {
     }
 
     DirectoryImportSurface {
-      a directory import @path resolves through @path/_module.sigil
+      a *directory import* @path resolves through @path/_module.sigil
 
       includes components declared directly in ModuleIndexFile
 
@@ -1072,7 +1081,7 @@ component SigilModuleIndex {
     }
 
     ModuleIndexContents {
-      contains at least one local component declaration
+      contains at least one *local component declaration*
 
       may additionally contain ordinary imports and expands
     }
@@ -1131,7 +1140,7 @@ expand SigilModuleIndex {
       from that declaration. Neither failure invalidates local names or names from
       other independently resolved direct imports.
 
-      Resolve chained and cyclic surfaces to the least fixed point. For each name,
+      Resolve chained and cyclic surfaces to the *least fixed point*. For each name,
       monotonically accumulate the set of distinct declaration identities contributed
       across all reached indexes. Seed those sets with locally declared components
       and independently resolved direct-file imports, then visit module-index imports

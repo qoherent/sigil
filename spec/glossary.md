@@ -1,15 +1,15 @@
 # Sigil Glossary
 
-This glossary defines the project-specific vocabulary used by the Sigil
-language, platform, documentation, and development workflow. It exists to keep
-the same word from acquiring different meanings across specifications, code,
-tools, and conversations.
+This glossary defines the project-specific vocabulary used by the Sigil language,
+platform, documentation, and development workflow. It keeps the same word from
+acquiring different meanings across specifications, code, tools, and
+conversations, and covers technical and project-specific terms rather than
+ordinary English words.
 
-It defines technical and project-specific terms, not ordinary English words.
 When a definition here conflicts with an approved normative contract, the
 normative contract governs and this glossary must be corrected.
 
-Primary authorities are:
+Primary authorities:
 
 - [Sigil Language Reference](sigil-reference.md) for language and source
   semantics;
@@ -17,8 +17,7 @@ Primary authorities are:
   configuration;
 - [Sigil Workflow](sigil-workflow.md) for design, review, and implementation
   gates;
-- package READMEs and exported types for implemented 0.5 public language
-  surfaces;
+- package READMEs and exported types for implemented public language surfaces;
 - [Sigil Platform Architecture](sigil-platform-architecture.md) for package and
   integration boundaries;
 - accepted ADRs for the decisions they own.
@@ -34,7 +33,6 @@ approved or implemented contract.
   synonyms.
 - Do not use `component` as a synonym for a source file, class, package, or
   visual element.
-- `expand` is a legacy form; current contracts belong directly to components.
 - Do not use `valid`, `ready`, and `approved` as synonyms; they represent
   separate gates.
 - State whether a future concept is `proposed`, `accepted`, `implemented`, or
@@ -45,1166 +43,435 @@ approved or implemented contract.
 ## Language And Source Model
 
 ### Sigil
-
-The rationale-oriented modeling language and platform defined by this
-repository. Depending on context, `Sigil` may name the language, the overall
-project, or the platform; qualify it when ambiguity is possible.
-
+The rationale-oriented modeling language and platform defined by this repository. Depending on context it may name the language, the overall project, or the platform; qualify it when ambiguity is possible.
 ### Sigil Language
-
-The versioned contract governing `.sigil` syntax, structure, sections, imports,
-workspace interpretation, and meaning. Current tools support `0.7.0`; the
-[Tag language revision](sigil-reference.md) targets `0.8.0`. The definitions below
-use the Tag model where it differs from the historical 0.7 behavior.
-
+The versioned contract governing `.sigil` syntax, structure, sections, imports, workspace interpretation, and meaning; see the [Sigil Language Reference](sigil-reference.md).
 ### Sigil source
-
 UTF-8 text interpreted according to a supported Sigil Language version.
-
 ### Sigil source file
-
 A file whose name ends in `.sigil` and whose contents are Sigil source.
-
 ### Sigil document
-
-The parsed model of one Sigil source file, including imports, components,
-sections, Facets, source ranges, and diagnostics.
-
+The parsed model of one Sigil source file, including imports, components, sections, Facets, source ranges, and diagnostics.
 ### Top-level form
-
-A Tag import or `component` declaration appearing outside every other
-form in a Sigil document.
-
+A Tag import or `component` declaration appearing outside every other form in a Sigil document.
 ### Declaration
-
-A top-level form that introduces a Tag import or component into a Sigil
-document.
-
-### Import
-
-A declaration selecting component-owned Tags from a component in an explicit source:
-`@folder/file.sigil from Component import { tag1, tag two }`. It preserves the
-selected Tags' originating identity and uses the provider's full component
-design as context. Only selected names become accessible to the consumer.
-
-### Import path
-
-The workspace-root-relative path following `@` in an import declaration.
-
-### Explicit-file import
-
-An import whose path ends with a `.sigil` filename, such as
-`@features/auth/auth.sigil`. Ordinary internal contracts use explicit-file
-imports.
-
-### Directory import
-
-The deprecated 0.7 shorthand that selected `_module.sigil` from a directory.
-The Tag revision requires an explicit `.sigil` file and does not provide a
-directory namespace import.
-
-### Imported name
-
-A selected Tag name inside a tag import's braces. Names are separated
-by commas and may contain spaces. The component after `from` identifies their
-provider and is not itself an imported name.
-
+A top-level form that introduces a Tag import or component into a Sigil document.
 ### Component
-
-A coherent system unit with a stable contract relied upon by users, callers, or
-other components. A component may represent a product module, service boundary,
-domain concept, programming abstraction, internal API, state machine, screen,
-view, or reusable UI surface.
-
+One bounded responsibility with one workspace-unique name, described by a component declaration. A component need not equal a file, class, process, API, or screen.
 ### Component declaration
-
-The `component Name` form that owns all seven contract roles. Goal and
-Interface are required; State, Logic, Constraints, Decisions, and Cases
-are optional sections in the same declaration.
-
+The `component Name { ... }` form that owns all seven contract roles. Goal and Interface are required; State, Logic, Constraints, Decisions, and Cases are optional; each allowed contract appears at most once inside the declaration.
 ### Component name
-
-The case-sensitive identifier following `component`. Each component has one
-declaration and its name must be unique in the configured workspace.
-
-### Public contract
-
-A legacy language term for Goal and Interface. The current language assigns
-no public/private category to its contracts or Tags. A system's public API
-and access restrictions are implementation design decisions.
-
+The case-sensitive `[A-Za-z][A-Za-z0-9_]*` identifier following `component`, unique across the configured workspace. A Tag named `Search` does not declare a component named `Search`.
 ### Dependent
-
-A user, caller, component, tool, or other system part that relies on a
-component's design.
-
+A user, caller, component, tool, or other system part that relies on a component's design.
 ### Caller
-
 A dependent that invokes an operation or API-shaped interface.
-
 ### Goal
-
-The required component section describing why the component exists, the
-responsibility it owns, and its intended outcome.
-
+The required contract describing why the component exists, the responsibility it owns, and its intended outcome.
 ### Interface
-
-The required component section containing only the operations, data,
-events, results, errors, and observable promises available to dependents.
-
-### Expand
-
-A removed top-level form from 0.7 and earlier 0.8 drafts. Its operational
-contributions now belong directly to the owning component declaration. See
-[component consolidation](migrating-to-0.8.md#consolidate-expands-into-their-components).
-
-### Expansion
-
-The legacy parsed or resolved representation of an `expand` declaration.
-The current language places its contracts directly in a component.
-
-### Collected expansion
-
-The legacy aggregation of matching expands. Migration consolidates those
-contributions into one component without discarding Facets.
-
-### Implementation-specific expand
-
-A legacy expand placed beside implementation. It has no current language form;
-a component may describe implementation spread across multiple files.
-
+The required contract containing only the operations, data, events, results, errors, and observable promises available to dependents.
 ### State
-
-An optional component section describing meaningful runtime or domain
-configurations, modes, and conditions that exist or change during execution.
-It does not mean storage layout unless that layout is itself a domain decision.
-
+The optional contract describing meaningful runtime or domain configurations, modes, and conditions that exist or change during execution. It does not mean storage layout unless that layout is itself a domain decision.
 ### Logic
-
-An optional component section describing behavior, flows, algorithms,
-transformations, decisions, and lifecycle transitions.
-
+The optional contract describing behavior, flows, algorithms, transformations, decisions, and lifecycle transitions.
 ### Constraint
-
-One binding rule, policy, invariant, architecture decision, ownership rule,
-dependency rule, or technology choice that a valid implementation must obey.
-
+One binding rule, policy, invariant, ownership or dependency rule, architecture decision, or technology choice that a valid implementation must obey.
 ### Constraints
-
-The optional component section containing constraints.
-
+The optional contract containing Constraints.
 ### Decision rationale
-
-Concise, durable context explaining why a material selected choice was made,
-where it applies, which assumptions and trade-offs shaped it, which alternatives
-were discarded, and when it should be revisited.
-
+Concise, durable context explaining why a material choice was made, where it applies, which assumptions and trade-offs shaped it, which alternatives were discarded, and when it should be revisited.
 ### Decisions
-
-The optional free-form component section containing decision rationale. Binding
-outcomes remain in `constraints`.
-
+The optional free-form contract containing decision rationale. Binding outcomes remain in Constraints.
 ### Decision scope
-
-The governed boundary and important exclusions for one decision occurrence. It
-does not attempt to enumerate every current dependent and does not become
-transitively binding through contextual concept reuse.
-
+The governed boundary and material exclusions of one decision occurrence. It does not attempt to enumerate every dependent and does not become transitively binding through contextual reuse.
 ### Case
-
-One representative, externally observable example, edge condition, acceptance
-scenario, or outcome.
-
+One representative, externally observable example, edge condition, acceptance scenario, or outcome: a situation plus an observation. A Case does not automatically become a universal rule.
 ### Cases
-
-The optional component section containing cases.
-
+The optional contract containing Cases.
 ### Section
-
-A named contract block inside a component: `goal`, `interface`, `state`,
-`logic`, `constraints`, `decisions`, or `cases`.
-Each section may occur at most once per component. Goal and Interface are
-required and must each contain at least one direct or grouped Facet.
-
+A named contract block inside a component: `goal`, `interface`, `state`, `logic`, `constraints`, `decisions`, or `cases`. Goal and Interface are required and must each contain at least one direct or grouped Facet; all other contracts are optional.
 ### Section body
-
 The free-form content enclosed by a section's braces.
-
 ### Free-form content
+Expressive authored content such as prose, signatures, pseudocode, tables, and ASCII layouts. Ordinary prose must retain its meaning and exact Tag references when physical lines are joined with spaces; notation whose meaning depends on line breaks or indentation must use an attached fenced payload. Sigil has no comment syntax.
+### Source location
+A line and column identifying one position in a source file.
+### Source range
+A start and end source location identifying a span of source text.
+### Partial document
+A usable parsed document returned alongside diagnostics when malformed source permits structural recovery.
+### Structural validity
+The absence of error diagnostics for grammar, required sections, imports, workspace rules, and other deterministic language constraints. Structural validity does not imply semantic readiness or human approval.
+### Semantic readiness
+The degree to which a contract is specific and coherent enough to guide the intended implementation or review without material invention: goal clarity, interface completeness, observable cases, cross-Sigil coherence, modularity, and applicable external guidance. It is not a parser result.
+### Visual reference
+An image, screenshot, ASCII wireframe, or linked design included in a Facet. The Facet's prose states the visual's intended role; there is no special Figma keyword or separate visual-authority syntax.
 
-Expressive authored content such as prose, signatures, pseudocode, tables,
-and ASCII layouts. Ordinary prose must retain its meaning and exact Tag references when physical lines
-are joined with spaces. Notation whose syntax or meaning depends on line breaks
-or indentation, including tables and ASCII layouts, must use an attached fenced
-payload. Outer forms, Concept Tag grouping, inline `*Tag*` introductions, and
-Inline Links have Sigil syntax; a fenced payload retains its embedded notation.
-Sigil has no comment syntax; comment-like prose remains authored content.
-
-### Facet
-
-One blank-line-delimited prose paragraph inside a section body, preserved with
-its owner, section, file, source range, original physical lines, optional
-Concept Tag grouping, inline Tag introductions and references, Inline Links,
-and directly attached fenced content. A Facet may concern several Tags and
-reference several documents.
-
-### Embedded Facet
-
-Introducing prose and an attached fenced payload forming one Facet. Introducing
-prose follows normal Tag declaration and reference rules outside complete Inline
-Links; only the fenced payload is excluded from Tag scanning. Attaching a payload
-does not change Tag recognition in unchanged introducing prose. An enclosing
-Concept Tag heading can group the Facet under a local Tag. The fenced content
-retains its meaning and contract role in its own notation.
-
-### Concept identifier
-
-The historical name for a Concept block's heading. In the Tag revision this
-role is a **Concept Tag**, with the existing bare heading syntax retained.
-The old parser's identifier fields are implementation migration details.
+## Tags, Concepts, And References
 
 ### Tag
-
-A case-sensitive reusable name introduced inline as `*tag content*` or through a Concept Tag
-heading. Inline delimiters touch the name: `*tag*` introduces a Tag, while
-`* tag *` does not. Outside each asterisk, whitespace, a physical line boundary,
-a comma, or a period is required; backticks and parentheses do not qualify. Fenced payloads and complete Inline Links are excluded
-from Tag scanning; Embedded Facet introductions follow normal Tag rules. Later prose references omit asterisks and choose the longest
-complete matching name when references overlap. Tag names
-may contain multiple words. Their spelling is exact, with no whitespace or
-Unicode normalization. Inline backticks provide no protection from Tag scanning.
-Definitions and references keep the whole name on one
-physical line. Hyphens and dots join word segments: order is not a reference
-inside pre-order or order.status. Tags retain component ownership and source evidence.
-Each exact name permits at most one inline definition per component;
-repeated inline definitions are errors. Bare prose and grouping headings reuse
-the local Tag without adding inline definitions.
-
-### Concept Tag
-
-A Tag used to group Facets through the unchanged `Search { ... }` syntax.
-A heading always introduces or reuses a Tag local to its component. Imported Tags are used only in Facet prose.
-It needs no asterisks, including on first use. A local inline Tag may later be
-used as a heading, and a heading Tag may also be referenced inline.
-
-### Concept block
-
-A flat, nonempty grouping block headed by a Concept Tag inside a contract.
-The header introduces or reuses its local Tag and groups Facets but is not itself
-a Facet. Blocks cannot nest.
-
-### Concept namespace
-
-The legacy term for accessible Concept identities. The Tag model preserves
-local and imported identity scope without namespace imports: all contracts in
-a component share local Tags, while explicit tag imports expose selected
-provider identities to an importing source. Same-spelled Tags in different
-components retain distinct owners. Importing them into one source is ambiguous;
-importing the same identity twice is also an error. Local/import name collisions
-are errors. Source order cannot select an owner or discard duplicates.
-
-### Public concept
-
-A legacy visibility category based on Interface declarations. The current
-language permits imports of component-owned Tags introduced in any contract.
-Public access in the implemented system is an implementation design decision.
-
-### Private concept
-
-A legacy visibility category for Concepts outside Interface. The current
-language has no private Tag category; implementation access restrictions can
-be described as Constraints without preventing a Tag import.
-
-### Contextual concept reuse
-
-Reuse of an accessible imported Tag in consumer Facet prose, including Embedded
-Facet introductions, outside Inline Links and fenced payloads. Grouping headings
-remain local.
-The originating identity is preserved and consumer contributions retain their
-owner and contract role. Reuse does not re-export the Tag, transfer ownership,
-or flow consumer obligations back into the provider.
-
-### Source location
-
-A line and column identifying one position in a source file.
-
-### Source range
-
-A start and end source location identifying a span of source text.
-
-### Partial document
-
-A usable parsed document returned alongside diagnostics when malformed source
-permits structural recovery.
-
-### Structural validity
-
-The absence of error diagnostics for grammar, required sections, imports,
-workspace rules, and other deterministic language constraints. Structural
-validity does not imply semantic readiness or human approval.
-
-### Semantic readiness
-
-The degree to which a contract is specific and coherent enough to guide the
-intended implementation or review without material invention. It includes goal
-clarity, interface completeness, observable cases, cross-Sigil coherence,
-modularity, and applicable external guidance. It is not a parser result.
-
+Umbrella term for a component-owned identifier, introduced either as an Inline Tag (`*name*`) or as a Concept heading. A Tag name is exact, case-sensitive, may contain multiple words, and is never whitespace- or Unicode-normalized. A Tag retains its owning component and source evidence, and every component owns its own local Tag vocabulary.
+### Inline Tag
+The prose form of a Tag. Introduce it exactly once per component at its first meaningful occurrence as `*name*`; every later mention is bare `name`. A definition requires both delimiter boundaries: the inner asterisks touch non-whitespace name characters, and the outer sides are whitespace, a physical line boundary, an ASCII comma, or an ASCII period. `* name *`, `` `*name*` ``, `(*name*)`, and `prefix*name*suffix` do not define a Tag. A bare first mention is ordinary prose, and repeating `*name*` is an error, not reuse (`SIGIL_TAG_NAME_STYLE`, `SIGIL_INVALID_TAG_NAME`). The grammar's `tag_name` begins and ends with `name_edge` and never spans a physical line. Bare references resolve the longest complete accessible name; a hyphen or dot connector adjacent to a word character blocks a match, so `order` does not match `pre-order` or `order.status`. Complete Inline Links and fenced payloads are opaque to Tag scanning; an Embedded Facet introduction is not. `order` is not referenced by `orders`, and `C++` is referenced by `Use C++ here` but not by `C++17`. A second inline definition of one exact name in a component is an error (`SIGIL_AMBIGUOUS_TAG`).
+### Concept
+A flat, nonempty `tag_group` inside a contract, introduced by `group_open`: a `tag_name` heading followed by `{`. It gathers related Facets under one local Tag and is not itself a Facet. A Concept may not nest (`SIGIL_NESTED_CONCEPT`) and may not be empty (`SIGIL_EMPTY_CONCEPT`); direct Facets and grouped Facets may coexist. A heading introduces or reuses a local Tag. Repeating the same exact Concept heading across contracts gathers Facets into one cross-contract Concept while preserving each contract's role; copy its spelling and case exactly. An imported Tag cannot be a local heading, and heading identity never comes from imports.
+### Facet
+One blank-line-delimited prose paragraph inside a contract or `tag_group`, preserved with its owner, contract, file, source range, original physical lines, optional Concept grouping, inline Tag introductions and references, Inline Links, and directly attached fenced content. A Facet may concern several Tags and reference several documents.
+### Embedded Facet
+Introducing prose and one immediately adjacent fenced payload forming one Facet: no blank line separates them, and the fence closes the Facet. The introduction follows normal Tag rules; only the payload is excluded from Tag scanning. Attaching a payload does not change recognition in the unchanged introducing prose. The payload retains its own notation and contract role.
 ### Inline Link
+A `[label](destination)` reference in Facet prose, with an optional title. Relative targets resolve from the source file, import paths from the workspace root; query strings and fragments select within a target. The surrounding prose states the link's role—binding, suggestive, or explanatory/rationale. Labels, destinations, titles, and linked content retain their own syntax and never declare or reference Tags; links do not import Tags or declare components.
+### Tag import
+A top-level, file-scoped declaration `@path/file.sigil from Component import { a, b }` that selects named Tags owned by the stated component. Every declaration in the source sees the same imports. The path is workspace-root-relative and names an explicit `.sigil` source, never a Markdown guide; the provider component must be declared there. A selected Tag must be referenced in eligible prose—labels, fenced payloads, and headings do not count. Duplicate imports, unused selections, unknown selections, and name collisions are errors (`SIGIL_AMBIGUOUS_TAG`). There are no aliases, wildcards, qualified references, re-exports, or inherited provider imports. Importing supplies shared vocabulary; it grants no runtime access and copies no provider obligation. Tag import cycles are allowed.
+### Tag scope
+The set of Tag identities accessible at one point. All contracts in a component share its local Tags; a bare Tag from another component is unavailable until imported. Imported selections are visible to every component in the importing source, while other components' local Tags in that file stay inaccessible. Same-spelled Tags in different components keep distinct owners. A local/import collision, or two imported identities with one accessible name, is ambiguous, and neither source order nor import order selects a winner; importing the same identity twice is also an error. Reusing an imported Tag in consumer prose preserves its originating identity and the consumer's ownership of its own Facets; it does not re-export the Tag, transfer ownership, or flow consumer obligations back into the provider. Runtime public/private access is an implementation design decision and neither grants nor restricts importability.
 
-A reference written in Markdown inline-link form, `[label](destination)`, with
-an optional title. It belongs to its containing Facet and may reference local
-Markdown, an API design, an OpenAPI document, an image, Figma, or other design
-material. Relative paths resolve from the `.sigil` source directory; absolute
-URLs identify external resources. The surrounding prose and contract explain
-how the linked content applies. Inline Links do not import Tags or declare
-components. Labels, destinations, titles, and referenced content retain their
-own syntax and do not declare or reference Sigil Tags. Fenced payloads do not
-create Sigil Inline Links.
+## Imports And Names
 
-### Visual reference
-
-An image, screenshot, ASCII wireframe, or linked design included in a Facet.
-External designs, including Figma, use the general Inline Link syntax. A
-Facet's prose states the visual's intended role; there is no special Figma
-keyword or separate visual-authority syntax.
+### Import path
+The workspace-root-relative path following `@` in a Tag import. Absolute paths, traversal outside the workspace, and directory paths do not resolve.
+### Explicit-file import
+An import whose path ends with a `.sigil` filename, such as `@features/auth/auth.sigil`. Ordinary internal contracts use explicit-file imports.
+### Imported name
+A selected Tag name inside a Tag import's braces. Names are comma-separated and may contain spaces; the component after `from` identifies their provider and is not itself an imported name.
 
 ## Workspace And Project Model
 
 ### `.sigil/config.json`
-
-The mandatory strict JSON configuration file that defines a Sigil workspace
-root, language version, workspace identity, optional project members, source
-discovery rules, and namespaced host settings.
-
+The mandatory strict JSON configuration file that defines a Sigil workspace root, language version, workspace identity, optional project members, source discovery rules, and namespaced host settings.
 ### `.sigil/glossary.json`
-
-The optional strict JSON workspace sidecar containing reviewed workspace-wide
-and bounded-context terminology. Schema version 1 is defined by
-`spec/sigil-glossary.schema.json`.
-
+The optional strict JSON workspace sidecar containing reviewed workspace-wide and bounded-context terminology. Schema version 1 is defined by `spec/sigil-glossary.schema.json`.
 ### Workspace glossary
-
-The validated authoritative model loaded from `.sigil/glossary.json`. It
-contains workspace terms and zero or more path-glob-bounded contexts. An invalid
-glossary contributes diagnostics but no active definitions.
-
+The validated authoritative model loaded from `.sigil/glossary.json`: workspace terms and zero or more path-glob-bounded contexts. An invalid glossary contributes diagnostics but no active definitions.
 ### Glossary term
-
-A canonical project-specific spelling, reviewed definition, optional aliases,
-optional agent-context visibility, scope, and declaration range. A glossary
-term is distinct from a Sigil concept identifier. Agent-context visibility
-defaults to included; exclusion affects only agent-facing scoped projections.
-
+A canonical project-specific spelling, reviewed definition, optional aliases, optional agent-context visibility, scope, and declaration range. Visibility defaults to included; exclusion affects only agent-facing scoped projections.
 ### Bounded context
-
-A stable glossary scope selected by workspace-relative include and exclude
-globs. A loaded Sigil source may match at most one bounded context.
-
+A stable glossary scope selected by workspace-relative include and exclude globs. A loaded Sigil source may match at most one bounded context.
 ### Glossary occurrence
-
-A deterministic whole-word or whole-phrase match of a reviewed canonical term
-or alias in eligible free-form Sigil prose. It preserves the canonical entry,
-matched spelling, source owner, and exact range.
-
+A deterministic whole-word or whole-phrase match of a reviewed canonical term or alias in eligible free-form Sigil prose, preserving the canonical entry, matched spelling, source owner, and exact range.
 ### Workspace
-
-All Sigil sources governed by one `.sigil/config.json`. A workspace may contain
-one root project and zero or more declared member projects.
-
+All Sigil sources governed by one `.sigil/config.json`. A workspace contains one root project and zero or more declared member projects.
 ### Workspace root
-
-The directory containing `.sigil/config.json`. It is also the root project's
-location and the base for `@` import resolution.
-
+The directory containing `.sigil/config.json`; also the root project's location and the base for `@` import resolution.
 ### Workspace name
-
-The non-empty stable identifier stored in `workspace.name`. It identifies the
-workspace and does not name every project inside it.
-
+The non-empty stable identifier stored in `workspace.name`. It names the workspace, not every project inside it.
 ### Workspace member
-
-A non-root, workspace-relative project path explicitly listed in
-`workspace.members`.
-
+A non-root, workspace-relative project path explicitly listed in `workspace.members`.
 ### Member root
-
-The directory identified by a `workspace.members` entry. It is a configured
-project-summary boundary for Brownfield workflow, but it does not contain a
-separate `.sigil/config.json`.
-
+The directory identified by a `workspace.members` entry: a configured project-summary boundary that does not contain its own `.sigil/config.json`.
 ### Project
-
-A coherent buildable, distributable, deployable, or otherwise independently
-summarized unit located at the workspace root or a declared member root. In
-Sigil, a project is not inferred from a package manifest or arbitrary
-directory.
-
+A coherent buildable, distributable, deployable, or otherwise independently summarized unit located at the workspace root or a declared member root. A project is never inferred from a package manifest or arbitrary directory.
 ### Root project
-
 The project located at the workspace root.
-
 ### Project root
-
-The directory containing one project: either the workspace root or a declared
-member root.
-
+The directory containing one project: either the workspace root or a declared member root.
 ### `_module.sigil`
-
-An ordinary source filename in the Tag revision, often retained for a project
-summary component. It no longer assembles or exposes a directory-import surface.
-Import a summary's Tags through the explicit `_module.sigil` file and
-its declared component. In historical 0.7 tooling this filename is the reserved
-directory index.
-
-### Directory-import surface
-
-The historical 0.7 component-name surface assembled by `_module.sigil`.
-It is removed from the Tag revision; explicit imports select component-owned Tags from
-the source declaring their owning component.
-
+An ordinary source filename, often used to hold a project summary component. It has no directory-index, import-resolution, export, or re-export behavior; import its Tags through its explicit path and declared component.
 ### Descriptive Sigil filename
-
-An ordinary `.sigil` filename that identifies the responsibility or concern it
-describes, such as `auth.sigil`, `workspace.sigil`, or
-`booking-calendar-view.sigil`.
-
+An ordinary `.sigil` filename that identifies the responsibility or concern it describes, such as `auth.sigil` or `booking-calendar-view.sigil`.
 ### Internal Sigil source
-
-A Sigil source below a project boundary that describes a component or
-implementation concern rather than the entire project. It uses a descriptive
-filename and explicit-file imports.
-
+A Sigil source below a project boundary that describes a component or implementation concern rather than the entire project; it uses a descriptive filename and explicit-file imports.
 ### Independent workspace
-
-A nested directory with its own `.sigil/config.json` whose entire subtree is
-excluded by every configured parent workspace. It is not a member of its
-parent.
-
+A nested directory with its own `.sigil/config.json` whose entire subtree is excluded by every configured parent workspace. It is not a member of its parent.
 ### Nested configuration
-
-A `.sigil/config.json` below another configured workspace. It is valid only
-when its subtree is excluded from the parent; otherwise it is a workspace
-diagnostic.
-
+A `.sigil/config.json` below another configured workspace. It is valid only when its subtree is excluded from the parent; otherwise it is a workspace diagnostic.
 ### Included source
-
-A `.sigil` file matching at least one `files.include` glob and no
-`files.exclude` glob in the governing workspace configuration.
-
+A `.sigil` file matching at least one `files.include` glob and no `files.exclude` glob in the governing workspace configuration.
 ### Excluded subtree
-
-A directory tree matched by the parent workspace's exclusion rules. Its Sigil
-sources do not belong to that parent workspace.
-
+A directory tree matched by the parent workspace's exclusion rules. Its Sigil sources do not belong to that parent workspace.
 ### Workspace discovery
-
-The deterministic process of locating and validating the governing
-`.sigil/config.json`, including nested-workspace eligibility.
-
+The deterministic process of locating and validating the governing `.sigil/config.json`, including nested-workspace eligibility.
 ### Source discovery
-
-The deterministic process of selecting included Sigil files under a discovered
-workspace root.
+The deterministic process of selecting included Sigil files under a discovered workspace root.
 
 ## Parsing, Resolution, Graphs, And Diagnostics
 
 ### Parser
-
-The deterministic core stage that converts one Sigil source into a partial or
-complete Sigil document without reading files or resolving imports.
-
+The deterministic core stage that converts one Sigil source into a partial or complete Sigil document without reading files or resolving imports.
 ### Parse
-
-To interpret the structure of one Sigil source using an explicit supported
-language version.
-
+To interpret the structure of one Sigil source using an explicit supported language version.
 ### Workspace loader
-
-The deterministic core stage that discovers configuration, selects source
-files, parses them, and identifies configured workspace-member boundaries.
-
+The deterministic core stage that discovers configuration, selects source files, parses them, and identifies configured workspace-member boundaries.
 ### Resolver
-
-The deterministic core stage that connects imports to target documents and
-components, detects relationship errors, and collects expansions.
-
+The deterministic core stage that connects imports to target documents and components, detects relationship errors, and collects resolution results.
 ### Resolution
-
-The result of resolving imports, components, expansions, and their diagnostics
-across a loaded workspace.
-
+The result of resolving imports, components, and their diagnostics across a loaded workspace.
 ### Unresolved import path
-
 An import whose resolved target file does not exist in the loaded workspace.
-
 ### Unresolved imported component
-
-An imported name for which the target document has no matching component
-declaration.
-
+An imported name for which the target document has no matching component declaration.
 ### Duplicate component
-
-Multiple declarations of the same case-sensitive component name in one
-workspace, making name-based references ambiguous.
-
+Multiple declarations of the same case-sensitive component name in one workspace, making name-based references ambiguous and establishing no unambiguous component owner.
 ### Import cycle
-
-A dependency path in which following file imports returns to a previously
-visited file. Tag import cycles are allowed: declarations and selections resolve
-collectively, and traversal tracks visited sources and identities. A cycle does
-not merge identities, change visibility, or establish requirement satisfaction.
-Invalid selections within a cycle retain their own resolution errors.
-
+A dependency path in which following Tag imports returns to a previously visited source. Tag import cycles are allowed: declarations and selections resolve collectively, traversal tracks visited sources and identities, and a cycle does not merge identities, change visibility, or establish requirement satisfaction. Invalid selections within a cycle retain their own resolution errors.
 ### Graph
-
 The deterministic relationship model derived from resolved Sigil declarations.
-
 ### Node
-
-One entity represented in a graph. The current Sigil graph exposes component
-nodes.
-
+One entity represented in a graph. The current Sigil graph exposes component nodes.
 ### Edge
-
-One directed relationship represented in a graph, such as a file import,
-imported component, or component-to-expansion relationship.
-
+One directed relationship represented in a graph, such as a Tag import or an imported component.
 ### Projection
-
-A structured view derived from resolved core models for use by CLI, LSP,
-editors, agents, or renderers without changing Sigil semantics.
-
+A structured view derived from resolved core models for use by CLI, LSP, editors, agents, or renderers without changing Sigil semantics.
 ### Component contract projection
-
-A structured view of a component's name, source, goal lines, and interface
-lines.
-
+A structured view of a component's name, source, goal lines, and interface lines.
 ### Diagnostic
-
-A structured finding with a stable code, severity, message, and optional file
-and source range.
-
+A structured finding with a stable code, severity, message, and optional file and source range.
 ### Error diagnostic
-
-A diagnostic that makes the checked source or workspace structurally invalid
-for the affected operation.
-
+A diagnostic that makes the checked source or workspace structurally invalid for the affected operation.
 ### Warning diagnostic
-
-A non-fatal diagnostic identifying a concern that does not make the operation
-structurally invalid.
-
+A non-fatal diagnostic identifying a concern that does not make the operation structurally invalid.
 ### Informational diagnostic
-
-A non-fatal diagnostic providing context without indicating structural
-invalidity.
-
+A non-fatal diagnostic providing context without indicating structural invalidity.
 ### Host failure
-
-An operating-system, runtime, filesystem, or process failure that prevents a
-tool from completing its operation. It is propagated to the host rather than
-recast as a Sigil source diagnostic.
-
+An operating-system, runtime, filesystem, or process failure that prevents a tool from completing its operation. It is propagated to the host rather than recast as a Sigil source diagnostic.
 ### Stable diagnostic code
-
-A machine-readable identifier whose meaning is part of the core API contract.
-Consumers should branch on the code rather than parse the human message.
+A machine-readable identifier whose meaning is part of the core API contract. Consumers branch on the code rather than parse the human message.
 
 ## Workflow And Review
 
 ### Agent
-
-A coding or reasoning system that reads Sigil and repository evidence, works
-with the user, and may propose or implement changes within the review gates.
-
+A coding or reasoning system that reads Sigil and repository evidence, works with the user, and may propose or implement changes within the review gates.
 ### Host
-
-The environment integrating an agent or tool with Sigil, such as Codex, an
-editor, CI, or another automation system.
-
+The environment integrating an agent or tool with Sigil, such as Codex, an editor, CI, or another automation system.
 ### Host integration
-
-Host-specific behavior under `integrations/`, including user elicitation,
-model-assisted judgment, external research, and editor adapters.
-
+Host-specific behavior under `integrations/`, including user elicitation, model-assisted judgment, external research, and editor adapters.
 ### Deterministic
-
-Given the same versioned inputs and environment contract, the operation is
-expected to produce the same semantic result without model inference or
-external research.
-
+Given the same versioned inputs and environment contract, the operation is expected to produce the same semantic result without model inference or external research.
 ### Model-assisted
-
-An operation in which a model interprets natural language, reconciles evidence,
-or proposes a result. Model-assisted output must remain attributed and must not
-be presented as deterministic core truth.
-
+An operation in which a model interprets natural language, reconciles evidence, or proposes a result. Model-assisted output must remain attributed and must not be presented as deterministic core truth.
 ### Greenfield
-
-A design situation in which the selected behavior or component has no existing
-implementation constraining its intended contract.
-
+A design situation in which the selected behavior or component has no existing implementation constraining its intended contract.
 ### Brownfield
-
-A design or reconciliation situation in which relevant implementation exists
-but Sigil coverage is absent, incomplete, ambiguous, or suspected to have
-drifted.
-
+A design or reconciliation situation in which relevant implementation exists but Sigil coverage is absent, incomplete, ambiguous, or suspected to have drifted.
 ### Repository evidence
-
-Existing code, tests, documentation, manifests, executable configuration,
-entrypoints, designs, and related artifacts used to understand current
-behavior. Evidence does not automatically establish desired intent.
-
+Existing code, tests, documentation, manifests, executable configuration, entrypoints, designs, and related artifacts used to understand current behavior. Evidence does not automatically establish desired intent.
 ### Application picture
-
-A provisional description of an existing application's responsibility, users
-or systems, boundaries, and external interaction surfaces derived from
-repository evidence and user confirmation.
-
+A provisional description of an existing application's responsibility, users or systems, boundaries, and external interaction surfaces derived from repository evidence and user confirmation.
 ### Pilot boundary
-
-The deliberately limited component or behavior selected for initial brownfield
-Sigil adoption.
-
+The deliberately limited component or behavior selected for initial brownfield Sigil adoption.
 ### Change frontier
-
-The smallest coherent boundary containing the behavior and decisions affected
-by a requested change.
-
+The smallest coherent boundary containing the behavior and decisions affected by a requested change.
 ### Design conversation
-
-A structured collaboration that frames, explores, resolves, and synthesizes
-material product, contract, ownership, lifecycle, architecture, risk, and
-verification decisions before Sigil or implementation is proposed.
-
+A structured collaboration that frames, explores, resolves, and synthesizes material product, contract, ownership, lifecycle, architecture, risk, and verification decisions before Sigil or implementation is proposed.
 ### Framing
-
-The design-conversation phase that establishes outcome, users or callers,
-boundary, and relevant evidence.
-
+The design-conversation phase that establishes outcome, users or callers, boundary, and relevant evidence.
 ### Exploring
-
-The phase that discovers material decisions, alternatives, conflicts,
-assumptions, and pitfalls.
-
+The phase that discovers material decisions, alternatives, conflicts, assumptions, and pitfalls.
 ### Resolving
-
 The phase that decides questions shaping the contract.
-
 ### Synthesizing
-
-The phase that combines resolved decisions into a coherent design and exact
-proposed Sigil.
-
+The phase that combines resolved decisions into a coherent design and exact proposed Sigil.
 ### Confirmed decision
-
-A material decision explicitly selected by the user or already established by
-approved Sigil.
-
+A material decision explicitly selected by the user or already established by approved Sigil.
 ### Provisional assumption
-
-A conservative, reversible decision temporarily used with the user's
-knowledge because certainty is unavailable.
-
+A conservative, reversible decision temporarily used with the user's knowledge because certainty is unavailable.
 ### Intentionally deferred decision
-
-A visible unresolved choice that does not materially block the current
-contract and is deliberately postponed.
-
+A visible unresolved choice that does not materially block the current contract and is deliberately postponed.
 ### Unresolved decision
-
 A material choice for which no governing intent has been selected.
-
 ### Blocking decision
-
-An unresolved choice that could materially change public behavior, ownership,
-permissions, persistent data, lifecycle, failure behavior, architecture, or
-acceptance criteria.
-
+An unresolved choice that could materially change public behavior, ownership, permissions, persistent data, lifecycle, failure behavior, architecture, or acceptance criteria.
 ### Proposal gate
-
-The requirement to show exact proposed semantic changes and obtain approval
-before writing brownfield-reconstructed or externally informed Sigil.
-
+The requirement to show exact proposed semantic changes and obtain approval before writing brownfield-reconstructed or externally informed Sigil.
 ### Semantic review gate
-
-The mandatory stop after creating or semantically changing Sigil. The user must
-review and approve the complete resulting contract before implementation.
-
+The mandatory stop after creating or semantically changing Sigil. The user must review and approve the complete resulting contract before implementation.
 ### Approval
-
-An explicit human decision accepting a specific Sigil contract or proposal for
-its stated next use. Successful parsing, checking, rendering, or testing never
-implies approval.
-
+An explicit human decision accepting a specific Sigil contract or proposal for its stated next use. Successful parsing, checking, rendering, or testing never implies approval.
 ### Implementation coverage
-
-The degree to which every material implementation concern has an intentional
-component-owned contract contribution or omit decision with a clear owner and location.
-
+The degree to which every material implementation concern has an intentional component-owned contract contribution or omit decision with a clear owner and location.
 ### Implementation coverage map
-
-A review artifact listing material concerns, owners, dependents, selected Sigil
-forms, and owning locations before code is written.
-
+A review artifact listing material concerns, owners, dependents, selected Sigil forms, and owning locations before code is written.
 ### Omit decision
-
-An explicit decision not to create separate Sigil for trivial mechanics whose
-behavior and rationale are local, obvious, and safely reconstructable.
-
+An explicit decision not to create separate Sigil for trivial mechanics whose behavior and rationale are local, obvious, and safely reconstructable.
 ### Colocation
-
 Placing an approved component declaration as near as practical to the implementation it owns or explains.
-
 ### Placement-only change
-
-Moving or splitting approved Sigil without adding, removing, or changing its
-Facets, plus the import-path updates required by that relocation.
-
+Moving or splitting approved Sigil without adding, removing, or changing its Facets, plus the import-path updates required by that relocation.
 ### Semantic change
-
-Any addition, removal, or modification of a Facet or public component
-contract. A semantic change requires review even when structural checks pass.
-
+Any addition, removal, or modification of a Facet or component contract. A semantic change requires review even when structural checks pass.
 ### Drift
-
-A disagreement between Sigil and relevant implementation, tests,
-documentation, configuration, or other approved contracts. Drift identifies a
-conflict; it does not determine which side is correct.
-
+A disagreement between Sigil and relevant implementation, tests, documentation, configuration, or other approved contracts. Drift identifies a conflict; it does not determine which side is correct.
 ### Standards-aware review
-
-Semantic review that assesses whether authoritative external standards,
-protocols, platform guidance, or best practices materially affect the selected
-contract.
-
+Semantic review that assesses whether authoritative external standards, protocols, platform guidance, or best practices materially affect the selected contract.
 ### Compatible guidance
-
-External guidance that adds useful detail without contradicting approved
-Sigil, repository facts, or explicit user decisions.
-
+External guidance that adds useful detail without contradicting approved Sigil, repository facts, or explicit user decisions.
 ### Potential conflict
-
-A possible disagreement whose applicability, scope, evidence, or intended
-contract remains uncertain.
-
+A possible disagreement whose applicability, scope, evidence, or intended contract remains uncertain.
 ### Definite conflict
-
-Two applicable requirements or explicit decisions that cannot both be
-satisfied as written.
-
+Two applicable requirements or explicit decisions that cannot both be satisfied as written.
 ### Unverifiable guidance
-
-Purportedly relevant guidance whose authoritative material is unavailable,
-ambiguous, obsolete, or outside the reviewer's competence.
-
+Purportedly relevant guidance whose authoritative material is unavailable, ambiguous, obsolete, or outside the reviewer's competence.
 ### Non-applicable guidance
-
 Guidance that does not govern or materially inform the selected component.
-
 ### Appears aligned
-
-A provisional review outcome meaning accessible evidence revealed no conflict
-within the stated scope. It is not a certification claim.
-
+A provisional review outcome meaning accessible evidence revealed no conflict within the stated scope. It is not a certification claim.
 ### Partially assessed
-
-A provisional review outcome meaning only part of the relevant guidance or
-scope was available or reviewed.
-
+A provisional review outcome meaning only part of the relevant guidance or scope was available or reviewed.
 ### Gap identified
-
-A provisional review outcome meaning the contract omits a relevant decision or
-guidance item.
-
+A provisional review outcome meaning the contract omits a relevant decision or guidance item.
 ### Conflict identified
-
-A provisional review outcome meaning the contract and applicable guidance
-cannot both hold as written.
-
+A provisional review outcome meaning the contract and applicable guidance cannot both hold as written.
 ### Not assessable
-
-A provisional review outcome meaning available evidence or expertise is
-insufficient to reach an assessment.
+A provisional review outcome meaning available evidence or expertise is insufficient to reach an assessment.
 
 ## Platform And Tooling
 
 ### `sigil-core`
-
-The deterministic TypeScript library owning configuration parsing, source
-parsing, workspace discovery and loading, resolution, graphs, diagnostics,
-source fidelity, and projection primitives.
-
+The deterministic TypeScript library owning configuration parsing, source parsing, workspace discovery and loading, resolution, graphs, diagnostics, source fidelity, and projection primitives.
 ### Core
-
 Short name for `sigil-core` when the package boundary is clear.
-
 ### `sigil-cli`
-
-The non-interactive command-line adapter exposing Sigil behavior to agents, CI,
-scripts, debugging, and review workflows. Its published package is
-`@qoherent/sigil` and its executable is `sigil`.
-
+The non-interactive command-line adapter exposing Sigil behavior to agents, CI, scripts, debugging, and review workflows. Its published package is `@qoherent/sigil` and its executable is `sigil`.
 ### CLI
-
-Command-line interface. In this project, the unqualified term usually means
-`sigil-cli`.
-
+Command-line interface. Unqualified, it usually means `sigil-cli`.
 ### `sigil-lsp`
-
-The editor-neutral language server that exposes core-backed Sigil diagnostics,
-symbols, definitions, hover, and semantic tokens through LSP.
-
+The editor-neutral language server that exposes core-backed Sigil diagnostics, symbols, definitions, hover, and semantic tokens through LSP.
 ### LSP
-
-Language Server Protocol, the editor-neutral request, response, notification,
-and capability protocol used by `sigil-lsp`.
-
+Language Server Protocol, the editor-neutral request, response, notification, and capability protocol used by `sigil-lsp`.
 ### JSON-RPC
-
-The message model and framing semantics used by LSP requests, responses,
-notifications, and errors.
-
+The message model and framing semantics used by LSP requests, responses, notifications, and errors.
 ### Language server
-
 A process implementing LSP features independently of one specific editor UI.
-
 ### VS Code extension
-
-The concrete editor integration that registers `.sigil`, supplies TextMate
-syntax highlighting, starts the bundled language server, and exposes component
-preview behavior.
-
+The concrete editor integration that registers `.sigil`, supplies TextMate syntax highlighting, starts the bundled language server, and exposes component preview behavior.
 ### TextMate grammar
-
 The editor grammar used for syntax-based coloring without workspace resolution.
-
 ### Semantic token
-
 An LSP-provided, resolver-backed classification used for semantic highlighting.
-
 ### Hover
-
-An LSP response showing contextual Markdown for a selected component or source
-position.
-
+An LSP response showing contextual Markdown for a selected component or source position.
 ### Component preview
-
-The VS Code read-only Markdown view derived from a standard component hover
-response.
-
+The VS Code read-only Markdown view derived from a standard component hover response.
 ### Filesystem port
-
-The abstract file-reading, existence, and listing interface through which core
-accesses host filesystems.
-
+The abstract file-reading, existence, and listing interface through which core accesses host filesystems.
 ### Filesystem adapter
-
-A host-specific implementation of the filesystem port, such as the Deno or
-Node adapter.
-
+A host-specific implementation of the filesystem port, such as the Deno or Node adapter.
 ### Overlay filesystem
-
-A filesystem view that substitutes in-memory open-document text for the
-corresponding on-disk file while preserving other filesystem behavior.
-
+A filesystem view that substitutes in-memory open-document text for the corresponding on-disk file while preserving other filesystem behavior.
 ### Pipeline
-
-The core composition that moves typed data through loading, resolution, graph
-construction, and projections without mixing host presentation concerns into
-semantic stages.
-
+The core composition that moves typed data through loading, resolution, graph construction, and projections without mixing host presentation concerns into semantic stages.
 ### Context
-
-A focused projection of selected component contracts, collected expansions,
-related files, and diagnostics. It is smaller than the complete workspace.
-
+A focused projection of selected component contracts, related files, and diagnostics. It is smaller than the complete workspace.
 ### Render
-
-To project resolved Sigil into human-readable Markdown without changing its
-meaning or source.
-
+To project resolved Sigil into human-readable Markdown without changing its meaning or source.
 ### Machine-readable output
-
-Structured JSON intended as the stable automation interface for agents, CI,
-and scripts.
-
+Structured JSON intended as the stable automation interface for agents, CI, and scripts.
 ### Human-readable output
-
-Convenience text or Markdown intended for direct reading. It is not the stable
-automation contract unless explicitly documented otherwise.
-
+Convenience text or Markdown intended for direct reading. It is not the stable automation contract unless explicitly documented otherwise.
 ### CI
-
 Continuous integration: automated validation run for repository changes.
-
 ### API
-
-Application programming interface. In this project it may refer to exported
-library functions, CLI result shapes, or LSP behavior; qualify which interface
-is intended.
-
+Application programming interface. In this project it may refer to exported library functions, CLI result shapes, or LSP behavior; qualify which interface is intended.
 ### ADR
-
-Architecture Decision Record: a document capturing the context, options,
-decision, rationale, and consequences of a material architectural choice.
-
+Architecture Decision Record: a document capturing the context, options, decision, rationale, and consequences of a material architectural choice.
 ### AST
-
-Abstract syntax tree: a structured representation produced by a programming
-language parser. In the proposed indexer, AST nodes are source evidence and not
-durable identities.
-
+Abstract syntax tree: a structured representation produced by a programming language parser. AST nodes are source evidence, not durable identities.
 ### VSIX
-
 The installable archive format used to distribute the VS Code extension.
 
 ## Versions, Statuses, And Scope
 
 ### Sigil version
-
-The language and workspace-contract version stored as `sigilVersion` in
-`.sigil/config.json` and sourced from `packages/core/deno.json`.
-
+The language and workspace-contract version stored as `sigilVersion` in `.sigil/config.json` and sourced from `packages/core/deno.json`.
 ### Package version
-
-The independently versioned release number of a package such as core, CLI, or
-LSP. It is not a workspace configuration field.
-
+The independently versioned release number of a package such as core, CLI, or LSP. It is not a workspace configuration field.
 ### Integration version
-
-The independently versioned release number of a host integration such as the
-VS Code extension or Sigil skill.
-
+The independently versioned release number of a host integration such as the VS Code extension or Sigil skill.
 ### Semantic version
-
-A version shaped as `major.minor.patch`, optionally with prerelease or build
-metadata. Breaking interpretation changes require an appropriate language
-version change.
-
+A version shaped as `major.minor.patch`, optionally with prerelease or build metadata. Breaking interpretation changes require an appropriate language version change.
 ### Pre-production
-
-A released or implemented surface that is not claimed to have production
-stability, readiness, or a stable 1.0 compatibility contract.
-
+A released or implemented surface that is not claimed to have production stability, readiness, or a stable 1.0 compatibility contract.
 ### Initial 0.x scope
-
-The capabilities deliberately included before production readiness. It is a
-scope boundary, not a promise that every future 0.x feature is implemented.
-
+The capabilities deliberately included before production readiness. It is a scope boundary, not a promise that every future 0.x feature is implemented.
 ### Proposed
-
-Documented for review but not yet approved as a governing decision or
-authorized for implementation.
-
+Documented for review but not yet approved as a governing decision or authorized for implementation.
 ### Accepted
-
-Reviewed and approved as a governing design decision. Acceptance does not by
-itself prove that implementation is complete.
-
+Reviewed and approved as a governing design decision. Acceptance does not by itself prove that implementation is complete.
 ### Implemented
-
-Present in executable code or a working integration and supported by relevant
-validation. Implementation does not imply production readiness.
-
+Present in executable code or a working integration and supported by relevant validation. Implementation does not imply production readiness.
 ### Deferred
-
 Deliberately placed outside the current delivery scope without being rejected.
-
 ### Superseded
-
-Replaced as the current decision authority by a newer decision while retained
-as historical context.
-
+Replaced as the current decision authority by a newer decision while retained as context.
 ### Out of scope
-
 Explicitly excluded from the selected contract or delivery stage.
 
 ## Proposed Receipts And Anchors
 
-The terms in this section describe proposed capabilities from
+These terms describe proposed capabilities from
 [ADR-011](decisions/adr-011-generated-rationale-evidence-and-review-records.md).
-They are not part of the implemented Sigil 0.5 surface unless separately marked
+They are not part of the implemented surface unless separately marked
 implemented.
 
 ### Receipt
-
-An attributed, generated record describing what one Sigil target says, how it
-was interpreted, which material inventions or uncertainties remain, which
-checks ran, and what evidence supported them.
-
+An attributed, generated record describing what one Sigil target says, how it was interpreted, which material inventions or uncertainties remain, which checks ran, and what evidence supported them.
 ### Receipt target
-
-The entity assessed by a receipt. The proposed initial target is one semantic
-line.
-
+The entity assessed by a receipt. The proposed initial target is one semantic line.
 ### Receipt fragment
-
-One validated contribution to a receipt, such as a deterministic fact, host
-interpretation, researched finding, invention, check, or evidence reference.
-
+One validated contribution to a receipt, such as a deterministic fact, host interpretation, researched finding, invention, check, or evidence reference.
 ### Review run
-
-One explicit generation of a versioned set of receipts and its manifest.
-Durable completed runs are proposed to be immutable.
-
+One explicit generation of a versioned set of receipts and its manifest. Durable completed runs are proposed to be immutable.
 ### Run manifest
-
-Metadata describing a review run's identity, versions, inputs, policies,
-fingerprints, provenance, completion, counts, and digest.
-
+Metadata describing a review run's identity, versions, inputs, policies, fingerprints, provenance, completion, counts, and digest.
 ### Producer
-
-The attributed origin of a receipt contribution. Proposed producer kinds are
-`core`, `checker`, `host`, `research`, and `human`.
-
+The attributed origin of a receipt contribution. Proposed producer kinds are `core`, `checker`, `host`, `research`, and `human`.
 ### Check
-
-A structured evaluation record with a stable kind, producer, status, summary,
-requirement flag, evidence references, and version information.
-
+A structured evaluation record with a stable kind, producer, status, summary, requirement flag, evidence references, and version information.
 ### Check status
-
-The result of one proposed receipt check: `pass`, `warning`, `fail`, or
-`not_checked`.
-
+The result of one proposed receipt check: `pass`, `warning`, `fail`, or `not_checked`.
 ### Assessment
-
-The proposed receipt dimension summarizing required check results and remaining
-material uncertainty as `green`, `yellow`, `red`, or `gray`.
-
+The proposed receipt dimension summarizing required check results and remaining material uncertainty as `green`, `yellow`, `red`, or `gray`.
 ### Green
-
-Every check required by the selected policy passed and no material unresolved
-invention remains. It does not mean approved or certified.
-
+Every check required by the selected policy passed and no material unresolved invention remains. It does not mean approved or certified.
 ### Yellow
-
-The target is interpretable but warnings, uncertainty, or material invention
-remain.
-
+The target is interpretable but warnings, uncertainty, or material invention remain.
 ### Red
-
-A required check failed, a reference is broken, or a contradiction or invalid
-state is present.
-
+A required check failed, a reference is broken, or a contradiction or invalid state is present.
 ### Gray
-
 The target was parsed but no applicable semantic review policy was run.
-
 ### Freshness
-
-The proposed receipt dimension indicating whether recorded inputs, policies,
-producers, and evidence still match the current environment.
-
+The proposed receipt dimension indicating whether recorded inputs, policies, producers, and evidence still match the current environment.
 ### Current
-
 The receipt still matches the relevant recorded inputs and fingerprints.
-
 ### Stale
-
-At least one relevant source, dependency, context, checker, policy, producer,
-or evidence fingerprint has changed since the receipt was produced.
-
+At least one relevant source, dependency, context, checker, policy, producer, or evidence fingerprint has changed since the receipt was produced.
 ### Approval state
-
-The proposed receipt dimension recording human review independently from
-assessment and freshness: `unreviewed`, `approved`, `rejected`, or
-`superseded`.
-
+The proposed receipt dimension recording human review independently from assessment and freshness: `unreviewed`, `approved`, `rejected`, or `superseded`.
 ### Evidence
-
-An identified source supporting or challenging a check or interpretation, such
-as resolved Sigil, code, tests, configuration, documentation, an accepted
-anchor, external guidance, or human attestation. Evidence does not
-automatically prove a claim.
-
+An identified source supporting or challenging a check or interpretation, such as resolved Sigil, code, tests, configuration, documentation, accepted evidence, external guidance, or human attestation. Evidence does not automatically prove a claim.
 ### Invention
-
-A material behavior, assumption, or decision introduced by an interpreter that
-was not established by the source or governing evidence.
-
+A material behavior, assumption, or decision introduced by an interpreter that was not established by the source or governing evidence.
 ### Anchor
-
-A reviewed relationship connecting a Sigil Facet to implementation
-evidence without changing the line's meaning or proving behavioral compliance.
-
+A reviewed relationship connecting a Sigil Facet to implementation evidence without changing the line's meaning or proving behavioral compliance.
 ### Anchor index
-
-The proposed versioned workspace sidecar `.sigil/anchors.json` containing
-accepted anchor relationships and locator snapshots.
-
+The proposed versioned workspace sidecar `.sigil/anchors.json` containing accepted anchor relationships and locator snapshots.
 ### Source index
-
-A deterministic, disposable model of implementation symbols, tests,
-relationships, ranges, and fingerprints used to generate or reconcile anchor
-candidates.
-
+A deterministic, disposable model of implementation symbols, tests, relationships, ranges, and fingerprints used to generate or reconcile anchor candidates.
 ### Anchor candidate
-
-A bounded possible implementation target produced deterministically for human
-inspection or model-assisted proposal.
-
+A bounded possible implementation target produced deterministically for human inspection or model-assisted proposal.
 ### Anchor proposal
-
-An attributed suggestion that one Facet has a particular relationship
-to one candidate source target. A proposal is not an accepted anchor.
-
+An attributed suggestion that one Facet has a particular relationship to one candidate source target. A proposal is not an accepted anchor.
 ### Locator
-
-A versioned set of identifying and recovery data for a Sigil Facet or
-source target, including paths, names, ranges, hashes, and contextual signals.
-
+A versioned set of identifying and recovery data for a Sigil Facet or source target, including paths, names, ranges, hashes, and contextual signals.
 ### Fingerprint
-
-A deterministic digest or summary used to identify content and detect change.
-A fingerprint is evidence for reconciliation, not permanent identity by itself.
-
+A deterministic digest or summary used to identify content and detect change. A fingerprint is evidence for reconciliation, not permanent identity by itself.
 ### Relationship ID
-
-A stable identifier for one accepted anchor relationship across locator
-updates.
-
+A stable identifier for one accepted anchor relationship across locator updates.
 ### `implements`
-
-The proposed anchor relationship indicating that a source target implements
-behavior or structure described by a Sigil line.
-
+The proposed anchor relationship indicating that a source target implements behavior or structure described by a Sigil line.
 ### `verifies`
-
-The proposed anchor relationship indicating that a test or check verifies an
-observable expectation described by a Sigil line.
-
+The proposed anchor relationship indicating that a test or check verifies an observable expectation described by a Sigil line.
 ### `supports`
-
-The proposed anchor relationship indicating that a source target provides
-relevant supporting evidence without being the primary implementation or
-verification.
-
+The proposed anchor relationship indicating that a source target provides relevant supporting evidence without being the primary implementation or verification.
 ### Reconciliation
-
-The deterministic process of comparing stored locators with current source and
-classifying each accepted anchor after change.
-
+The deterministic process of comparing stored locators with current source and classifying each accepted anchor after change.
 ### Resolved anchor
-
-An anchor whose current target is identified without material structural
-change.
-
+An anchor whose current target is identified without material structural change.
 ### Changed anchor
-
-An anchor whose target remains identifiable but changed structurally and needs
-review attention.
-
+An anchor whose target remains identifiable but changed structurally and needs review attention.
 ### Ambiguous anchor
-
-An anchor for which multiple current targets are plausible and no target may be
-selected silently.
-
+An anchor for which multiple current targets are plausible and no target may be selected silently.
 ### Missing anchor
-
 An anchor whose target can no longer be located.
 
 ## Stable Diagnostic Codes
@@ -1212,15 +479,17 @@ An anchor whose target can no longer be located.
 | Code | Meaning |
 | --- | --- |
 | `SIGIL_PARSE_STRUCTURE` | Source structure or brace organization is malformed. |
-| `SIGIL_UNKNOWN_SECTION` | A form contains a section name not allowed for that form. |
-| `SIGIL_MISSING_GOAL` | A component lacks its required `goal` section. |
-| `SIGIL_MISSING_INTERFACE` | A component lacks its required `interface` section. |
-| `SIGIL_MODULE_WITHOUT_COMPONENT` | A `_module.sigil` declares no local component. |
+| `SIGIL_UNKNOWN_SECTION` | A component body contains a name not allowed as a contract section. |
+| `SIGIL_MISSING_GOAL` | A component lacks a nonempty required `goal`. |
+| `SIGIL_MISSING_INTERFACE` | A component lacks a nonempty required `interface`. |
+| `SIGIL_INVALID_TAG_NAME` | A delimited candidate or heading contains forbidden name content. |
+| `SIGIL_TAG_NAME_STYLE` | An inline definition's asterisk boundaries or spacing are malformed. |
+| `SIGIL_AMBIGUOUS_TAG` | An accessible name has multiple owners, a local/import collision, or a repeated inline definition. |
+| `SIGIL_EMPTY_CONCEPT` | A Concept contains no Facet. |
+| `SIGIL_NESTED_CONCEPT` | A Concept occurs inside another Concept. |
 | `SIGIL_UNRESOLVED_IMPORT_PATH` | An import path does not resolve to a loaded Sigil source. |
-| `SIGIL_UNRESOLVED_IMPORTED_COMPONENT` | An imported name is not declared as a component in the target source. |
-| `SIGIL_EXPAND_WITHOUT_COMPONENT` | An expand has no matching component declaration in the workspace. |
+| `SIGIL_UNRESOLVED_IMPORTED_COMPONENT` | The target source supplies no unambiguous named component. |
 | `SIGIL_DUPLICATE_COMPONENT` | More than one component declares the same name, making references ambiguous. |
-| `SIGIL_IMPORT_CYCLE` | File import relationships contain a cycle. |
 | `SIGIL_CONFIG_NOT_FOUND` | The required workspace configuration cannot be found at the selected location. |
 | `SIGIL_CONFIG_PARSE` | `.sigil/config.json` is not valid JSON. |
 | `SIGIL_CONFIG_INVALID` | The parsed configuration violates the configuration contract. |
@@ -1247,7 +516,7 @@ An anchor whose target can no longer be located.
 | --- | --- |
 | `.sigil/config.json` | Mandatory workspace configuration and workspace-boundary authority. |
 | `.sigil/glossary.json` | Optional reviewed workspace and bounded-context terminology authority. |
-| `_module.sigil` | Ordinary summary source in the Tag revision; reserved directory index in historical 0.7 tooling. |
+| `_module.sigil` | Ordinary summary source filename; no reserved import behavior. |
 | `.sigil/anchors.json` | Proposed committed sidecar for accepted anchors. |
 | `.sigil/runs/` | Proposed directory for immutable receipt review runs. |
 | `.sigil/latest.json` | Proposed pointer to the latest completed receipt run. |

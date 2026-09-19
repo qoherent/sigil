@@ -14,7 +14,7 @@ component SigilWorkspaceGlossary {
     GlossaryFile {
       filename: .sigil/glossary.json
 
-      location: workspace root
+      location: *workspace root*
 
       absence leaves glossary features inactive without invalidating the workspace
     }
@@ -30,15 +30,16 @@ component SigilWorkspaceGlossary {
     }
 
     GlossaryEntry {
-      term is a non-empty canonical spelling
+      term is a non-empty *canonical spelling*
 
       definition is a non-empty reviewed meaning
 
-      aliases is an optional array of unique non-empty alternative spellings
+      *aliases* is an optional array of unique non-empty alternative spellings
 
       agentContext is an optional boolean that defaults to true
 
-      agentContext false excludes the entry from agent-facing scoped glossary context
+      agentContext false excludes the entry from
+      *agent-facing scoped glossary context*
     }
 
     BoundedContext {
@@ -52,23 +53,23 @@ component SigilWorkspaceGlossary {
     }
 
     ContextResolution {
-      workspace terms are available to every included Sigil source
+      *workspace terms* are available to every included Sigil source
 
       a Sigil source matches at most one bounded context
 
-      context terms override workspace terms with the same case-insensitive spelling
-      in that source
+      *context terms* override workspace terms with the same
+      *case-insensitive spelling* in that source
     }
 
     TermRecognition {
       canonical terms and aliases match case-insensitively as whole words or phrases
 
-      the longest matching phrase wins
+      the longest *matching phrase* wins
 
       occurrences resolve only inside Facet prose
 
-      structural syntax, EmbeddedContent types and bodies, inline code, and URLs do not
-      contain glossary occurrences
+      structural syntax, EmbeddedContent types and bodies, inline code, and URLs
+      do not contain glossary occurrences
     }
   }
 }
@@ -93,7 +94,7 @@ expand SigilWorkspaceGlossary {
       or underscore.
 
       Preserve the canonical entry, matched spelling, context, source file, and exact
-      occurrence range.
+      *occurrence range*.
     }
   }
 
@@ -211,7 +212,7 @@ expand SigilWorkspaceGlossary {
       A context definition of hold replaces the workspace definition of hold only for
       sources matched by that context.
 
-      A source matched by two contexts produces SIGIL_GLOSSARY_CONTEXT_OVERLAP.
+      A source matched by two contexts produces *SIGIL_GLOSSARY_CONTEXT_OVERLAP*.
     }
 
     TermRecognition {
@@ -222,7 +223,7 @@ expand SigilWorkspaceGlossary {
       A term inside inline code or a URL remains ordinary text.
 
       Two local entries claiming the same case-insensitive spelling produce
-      SIGIL_GLOSSARY_TERM_COLLISION.
+      *SIGIL_GLOSSARY_TERM_COLLISION*.
 
       A recognized entry with agentContext false remains visible to glossary
       inspection and editor features but is absent from agent-facing scoped context.
