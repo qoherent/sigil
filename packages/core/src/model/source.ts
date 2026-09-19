@@ -34,7 +34,7 @@ export interface Facet {
   readonly ownerName: string;
   readonly sectionName: SigilSectionName;
   /** Absent for a direct Facet; consumers must not invent a wrapper identity. */
-  readonly conceptIdentifier?: string;
+  readonly conceptName?: string;
   readonly prose: string;
   readonly sourceLines: readonly string[];
   /** Legacy serialized field name; nonempty content makes this an EmbeddedFacet. */
@@ -61,7 +61,7 @@ export function isEmbeddedFacet(facet: Facet): facet is EmbeddedFacet {
  * or paragraph, require all seven contracts, or wrap shared direct Facets.
  * Grouping neither requires matching code structure nor proves behavior.
  */
-export interface ConceptBlock {
+export interface TagGroup {
   readonly identifier: string;
   readonly range: SourceRange;
   readonly bodyRange: SourceRange;
@@ -75,7 +75,7 @@ export interface Section {
   readonly bodyRange: SourceRange;
   /** Facets in source order, including both ungrouped and Concept-grouped ones. */
   readonly units: readonly Facet[];
-  readonly concepts: readonly ConceptBlock[];
+  readonly tags: readonly TagGroup[];
 }
 
 export interface ImportDeclaration {

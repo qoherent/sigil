@@ -1,7 +1,7 @@
 import { diagnostic } from "./diagnostics.ts";
 import type {
   ComponentDeclaration,
-  ConceptBlock,
+  TagGroup,
   ExpandDeclaration,
   ImportDeclaration,
   EmbeddedContent,
@@ -45,11 +45,11 @@ interface SectionDraft {
   name: SigilSectionName;
   startLine: number;
   units: Facet[];
-  concepts: ConceptBlock[];
+  tags: TagGroup[];
   freeformBraceDepth: number;
 }
 
-interface ConceptDraft {
+interface TagDraft {
   identifier: string;
   startLine: number;
   units: Facet[];
@@ -100,7 +100,7 @@ export function parseSigilDocument(
 
   let form: FormDraft | undefined;
   let section: SectionDraft | undefined;
-  let concept: ConceptDraft | undefined;
+  let concept: TagDraft | undefined;
   let paragraph: ParagraphDraft | undefined;
   let blankBeforeCurrent = false;
 
@@ -186,7 +186,7 @@ export function parseSigilDocument(
         concept && trimmed === "}" && concept.braceDepth === 1 &&
         !paragraph
       ) {
-        finishConcept(
+        finishTagGroup(
           section,
           concept,
           lineNumber,
@@ -212,17 +212,17 @@ export function parseSigilDocument(
       const header = !paragraph &&
           (concept ? concept.braceDepth : section.freeformBraceDepth) ===
             (concept ? 1 : 0)
-        ? conceptHeader(trimmed)
+        ? tagGroupHeader(trimmed)
         : undefined;
       if (header) {
         if (concept) {
           diagnostics.push(diagnostic(
-            "SIGIL_NESTED_CONCEPT_BLOCK",
-            "Concept blocks cannot nest.",
+            "SIGIL_NESTED_CONCEPT",
+            "A Concept cannot occur within another Concept.",
             { filePath, range: lineRange(lineNumber, line) },
           ));
         } else {
-          validateConceptIdentifier(
+          validateConceptName(
             header.identifier,
             lineNumber,
             line,
@@ -271,7 +271,7 @@ export function parseSigilDocument(
             name: sectionName as SigilSectionName,
             startLine: lineNumber,
             units: [],
-            concepts: [],
+            tags: [],
             freeformBraceDepth: 0,
           };
         } else {
@@ -339,7 +339,7 @@ export function parseSigilDocument(
       `Unclosed concept ${concept.identifier}.`,
       { filePath, range: singlePointRange(concept.startLine) },
     ));
-    finishConcept(
+    finishTagGroup(
       section,
       concept,
       lines.length,
@@ -473,7 +473,7 @@ function makeFacet(
   paragraph: ParagraphDraft,
   form: FormDraft,
   sectionName: SigilSectionName,
-  conceptIdentifier?: string,
+  conceptName?: string,
 ): Facet {
   const prose = paragraph.lines.map((line) => line.trim()).join(" ");
   const lastEmbedded = paragraph.literalBlocks.at(-1);
@@ -491,7 +491,7 @@ function makeFacet(
     ownerKind: form.kind,
     ownerName: form.name,
     sectionName,
-    conceptIdentifier,
+    conceptName,
     prose,
     sourceLines: paragraph.lines,
     literalBlocks: paragraph.literalBlocks,
@@ -514,13 +514,13 @@ function finishSection(
       end: { line: endLine, column: Math.max(1, endColumn + 1) },
     },
     units: section.units,
-    concepts: section.concepts,
+    tags: section.tags,
   };
 }
 
-function finishConcept(
+function finishTagGroup(
   section: SectionDraft,
-  concept: ConceptDraft,
+  concept: TagDraft,
   endLine: number,
   endColumn: number,
   filePath: string,
@@ -532,12 +532,12 @@ function finishConcept(
   };
   if (concept.units.length === 0) {
     diagnostics.push(diagnostic(
-      "SIGIL_EMPTY_CONCEPT_BLOCK",
-      `Concept block ${concept.identifier} must contain at least one Facet.`,
+      "SIGIL_EMPTY_CONCEPT",
+      `Concept ${concept.identifier} must contain at least one Facet.`,
       { filePath, range },
     ));
   }
-  section.concepts.push({
+  section.tags.push({
     identifier: concept.identifier,
     range,
     bodyRange: {
@@ -548,7 +548,7 @@ function finishConcept(
   });
 }
 
-function validateConceptIdentifier(
+function validateConceptName(
   identifier: string,
   lineNumber: number,
   line: string,
@@ -557,16 +557,16 @@ function validateConceptIdentifier(
 ): void {
   if (!CONCEPT_IDENTIFIER.test(identifier)) {
     diagnostics.push(diagnostic(
-      "SIGIL_INVALID_CONCEPT_IDENTIFIER",
-      `Invalid concept identifier ${
+      "SIGIL_INVALID_TAG_NAME",
+      `Invalid Tag name ${
         JSON.stringify(identifier)
       }; expected [A-Za-z][A-Za-z0-9_-]* with no spaces.`,
       { filePath, range: lineRange(lineNumber, line) },
     ));
   } else if (!PREFERRED_CONCEPT_IDENTIFIER.test(identifier)) {
     diagnostics.push(diagnostic(
-      "SIGIL_CONCEPT_IDENTIFIER_STYLE",
-      `Concept identifier ${identifier} is valid; prefer PascalCase without hyphens or underscores.`,
+      "SIGIL_TAG_NAME_STYLE",
+      `Tag name ${identifier} is valid; prefer PascalCase without hyphens or underscores.`,
       {
         severity: "info",
         filePath,
@@ -616,7 +616,7 @@ function importNameRanges(
   });
 }
 
-function conceptHeader(
+function tagGroupHeader(
   trimmed: string,
 ): { readonly identifier: string } | undefined {
   const match = trimmed.match(/^(.+?)\s*\{\s*$/);

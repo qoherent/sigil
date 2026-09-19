@@ -31,7 +31,7 @@ export type RetrievalNodeKind =
   | "sigil-file"
   | "expansion"
   | "module-index"
-  | "public-concept-origin"
+  | "public-tag-origin"
   | "implementation-target";
 export type RetrievalRelation =
   | "selected-declaration"
@@ -40,7 +40,7 @@ export type RetrievalRelation =
   | "direct-importer"
   | "containing-module-index"
   | "cycle-member"
-  | "public-concept-origin"
+  | "public-tag-origin"
   | "owned-implementation";
 export type EvidenceKind =
   | "selected-contract"
@@ -50,7 +50,7 @@ export type EvidenceKind =
   | "importer-contract"
   | "cycle-contract"
   | "module-index-summary"
-  | "public-concept-origin"
+  | "public-tag-origin"
   | "glossary-definition"
   | "ownership-projection"
   | "diagnostic";
@@ -80,7 +80,7 @@ export interface EvidenceUnit {
   readonly path?: string;
   readonly componentName?: string;
   readonly sectionName?: SigilSectionName | ImplementationSection;
-  readonly conceptIdentity?: string;
+  readonly tagIdentity?: string;
   readonly range?: SourceRange;
   readonly location?: SourceLocation;
   readonly text: string;
@@ -147,7 +147,7 @@ export interface RetrievalProjectionLocation {
 export interface RetrievalProjectionItem extends RetrievalProjectionLocation {
   readonly text: string;
 }
-export interface RetrievalProjectionConcept {
+export interface RetrievalProjectionTag {
   readonly name?: string;
   readonly items: readonly RetrievalProjectionItem[];
   readonly ownership: readonly RetrievalProjectionOwnership[];
@@ -175,7 +175,7 @@ export interface RetrievalProjectionComponent {
     | "cycle-member"
     | "module-context";
   readonly goal: readonly RetrievalProjectionItem[];
-  readonly interface: readonly RetrievalProjectionConcept[];
+  readonly interface: readonly RetrievalProjectionTag[];
   readonly state: readonly RetrievalProjectionItem[];
   readonly logic: readonly RetrievalProjectionItem[];
   readonly constraints: readonly RetrievalProjectionItem[];

@@ -485,7 +485,7 @@ component ${name} {
     assertEquals(result.exitCode, EXIT_DIAGNOSTICS);
     const ambiguities = parseJson(result.stdout).diagnostics.filter(
       (item: { code: string }) =>
-        item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
+        item.code === "SIGIL_AMBIGUOUS_TAG",
     );
     assertEquals(ambiguities.length, 2);
     assert(
@@ -728,7 +728,7 @@ Deno.test("context exposes concept blocks and resolved namespaces", async () => 
       `${root}/contract.sigil`,
       `component Feature {
   goal {
-    Test concepts.
+    Test tags.
   }
 
   interface {
@@ -750,11 +750,11 @@ Deno.test("context exposes concept blocks and resolved namespaces", async () => 
     assertEquals(result.exitCode, EXIT_OK);
     const output = parseJson(result.stdout);
     assertEquals(
-      output.componentContracts[0].interfaceConcepts[0].identifier,
+      output.componentContracts[0].interfaceTags[0].identifier,
       "Execution",
     );
     assertEquals(
-      output.conceptNamespaces[0].publicConcepts[0].identifier,
+      output.tagScopes[0].publicTags[0].identifier,
       "Execution",
     );
 
@@ -767,10 +767,10 @@ Deno.test("context exposes concept blocks and resolved namespaces", async () => 
       "markdown",
     ]);
     assertEquals(markdown.exitCode, EXIT_OK);
-    assert(markdown.stdout.includes("### Concept Namespace"));
-    assert(markdown.stdout.includes("#### Public Concepts"));
-    assert(markdown.stdout.includes("#### Accessible Concepts"));
-    assert(markdown.stdout.includes("#### Declared Concepts"));
+    assert(markdown.stdout.includes("### Tag Scope"));
+    assert(markdown.stdout.includes("#### Public Tags"));
+    assert(markdown.stdout.includes("#### Accessible Tags"));
+    assert(markdown.stdout.includes("#### Declared Tags"));
     assert(markdown.stdout.includes("- Execution (Feature,"));
   } finally {
     await Deno.remove(root, { recursive: true });

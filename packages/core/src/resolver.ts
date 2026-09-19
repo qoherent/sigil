@@ -1,13 +1,13 @@
 import { diagnostic } from "./diagnostics.ts";
 import type {
   CollectedExpansion,
-  ConceptIdentity,
+  TagIdentity,
   ImportUse,
   ResolvedComponent,
-  ResolvedConcept,
-  ResolvedConceptNamespace,
-  ResolvedConceptOccurrence,
-  ResolvedConceptReference,
+  ResolvedTag,
+  ResolvedTagScope,
+  ResolvedTagOccurrence,
+  ResolvedTagReference,
   ResolvedImport,
   SigilResolution,
 } from "./model/resolution.ts";
@@ -49,18 +49,18 @@ interface ComponentResolutionDraft {
   readonly expansions: CollectedExpansion;
 }
 
-interface LocalConceptGroup {
+interface LocalTagGroup {
   readonly identifier: string;
   readonly normalizedIdentifier: string;
-  readonly identity: ConceptIdentity;
-  readonly occurrences: readonly ResolvedConceptOccurrence[];
+  readonly identity: TagIdentity;
+  readonly occurrences: readonly ResolvedTagOccurrence[];
   readonly isPublic: boolean;
 }
 
 interface NamespaceState {
   readonly component: ComponentResolutionDraft;
-  readonly groups: readonly LocalConceptGroup[];
-  namespace: ResolvedConceptNamespace;
+  readonly groups: readonly LocalTagGroup[];
+  namespace: ResolvedTagScope;
 }
 
 // @sigil implements packages/core/src/resolver.sigil::SigilResolver::RelationshipResolution interface,logic,constraints,cases
@@ -211,7 +211,7 @@ export function resolveSigilRelationships(
   }
 
   const resolvedByDeclaration = new Map(
-    resolveConceptNamespaces(
+    resolveTagScopes(
       componentDrafts.filter((component) =>
         !duplicateComponentNames.has(component.name)
       ),
@@ -222,7 +222,7 @@ export function resolveSigilRelationships(
   const resolvedComponents = componentDrafts.map((component) =>
     resolvedByDeclaration.get(component.declaration) ?? {
       ...component,
-      conceptNamespace: emptyConceptNamespace(component.name),
+      tagScope: emptyTagScope(component.name),
     }
   );
 
@@ -234,14 +234,14 @@ export function resolveSigilRelationships(
   };
 }
 
-function emptyConceptNamespace(
+function emptyTagScope(
   componentName: string,
-): ResolvedConceptNamespace {
+): ResolvedTagScope {
   return {
     componentName,
-    concepts: [],
-    accessibleConcepts: [],
-    publicConcepts: [],
+    tags: [],
+    accessibleTags: [],
+    publicTags: [],
     references: [],
   };
 }
@@ -265,22 +265,22 @@ function expandTargetsComponent(
   );
 }
 
-function resolveConceptNamespaces(
+function resolveTagScopes(
   components: readonly ComponentResolutionDraft[],
   imports: readonly ResolvedImport[],
   diagnostics: SigilDiagnostic[],
 ): ResolvedComponent[] {
   const states = components.map((component): NamespaceState => {
-    const groups = localConceptGroups(component, diagnostics);
+    const groups = localTagGroups(component, diagnostics);
     return {
       component,
       groups,
       namespace: {
         componentName: component.name,
-        concepts: groups.map((group) => localResolvedConcept(group)),
-        accessibleConcepts: groups.map((group) => localResolvedConcept(group)),
-        publicConcepts: groups.filter((group) => group.isPublic).map((group) =>
-          localResolvedConcept(group, true)
+        tags: groups.map((group) => localResolvedTag(group)),
+        accessibleTags: groups.map((group) => localResolvedTag(group)),
+        publicTags: groups.filter((group) => group.isPublic).map((group) =>
+          localResolvedTag(group, true)
         ),
         references: [],
       },
@@ -293,7 +293,7 @@ function resolveConceptNamespaces(
   for (let iteration = 0; iteration < states.length + 1; iteration++) {
     let changed = false;
     for (const state of states) {
-      const imported = importedPublicConcepts(
+      const imported = importedPublicTags(
         state,
         imports,
         stateByDeclaration,
@@ -310,26 +310,26 @@ function resolveConceptNamespaces(
   }
 
   for (const state of states) {
-    diagnoseConceptAmbiguities(state, diagnostics);
+    diagnoseTagAmbiguities(state, diagnostics);
     state.namespace = {
       ...state.namespace,
-      references: resolveConceptReferences(state),
+      references: resolveTagReferences(state),
     };
   }
 
   return states.map((state) => ({
     ...state.component,
-    conceptNamespace: state.namespace,
+    tagScope: state.namespace,
   }));
 }
 
-function localConceptGroups(
+function localTagGroups(
   component: ComponentResolutionDraft,
   diagnostics: SigilDiagnostic[],
-): readonly LocalConceptGroup[] {
-  const occurrences: ResolvedConceptOccurrence[] = [];
+): readonly LocalTagGroup[] {
+  const occurrences: ResolvedTagOccurrence[] = [];
   for (const section of component.declaration.sections) {
-    for (const block of section.concepts) {
+    for (const block of section.tags) {
       occurrences.push({
         componentName: component.name,
         filePath: component.filePath,
@@ -341,7 +341,7 @@ function localConceptGroups(
   }
   for (const expansion of component.expansions.expands) {
     for (const section of expansion.declaration.sections) {
-      for (const block of section.concepts) {
+      for (const block of section.tags) {
         occurrences.push({
           componentName: component.name,
           filePath: expansion.filePath,
@@ -353,22 +353,22 @@ function localConceptGroups(
     }
   }
 
-  const byNormalized = new Map<string, ResolvedConceptOccurrence[]>();
+  const byNormalized = new Map<string, ResolvedTagOccurrence[]>();
   for (const occurrence of occurrences) {
-    const normalized = normalizeConceptIdentifier(occurrence.block.identifier);
+    const normalized = normalizeConceptName(occurrence.block.identifier);
     const grouped = byNormalized.get(normalized) ?? [];
     grouped.push(occurrence);
     byNormalized.set(normalized, grouped);
   }
 
-  const groups: LocalConceptGroup[] = [];
+  const groups: LocalTagGroup[] = [];
   for (const [normalizedIdentifier, grouped] of byNormalized) {
     const spellings = new Set(grouped.map((item) => item.block.identifier));
     if (spellings.size > 1) {
       for (const occurrence of grouped) {
         diagnostics.push(diagnostic(
-          "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
-          `Concept identifiers ${
+          "SIGIL_AMBIGUOUS_TAG",
+          `Tag names ${
             [...spellings].join(", ")
           } differ only by case in component ${component.name}.`,
           { filePath: occurrence.filePath, range: occurrence.block.range },
@@ -392,18 +392,18 @@ function localConceptGroups(
   return groups;
 }
 
-function importedPublicConcepts(
+function importedPublicTags(
   state: NamespaceState,
   imports: readonly ResolvedImport[],
   stateByDeclaration: ReadonlyMap<ComponentDeclaration, NamespaceState>,
-): readonly ResolvedConcept[] {
+): readonly ResolvedTag[] {
   const contextFiles = new Set([
     normalizePath(state.component.filePath),
     ...state.component.expansions.expands.map((item) =>
       normalizePath(item.filePath)
     ),
   ]);
-  const concepts: ResolvedConcept[] = [];
+  const tags: ResolvedTag[] = [];
   for (const item of imports) {
     if (!contextFiles.has(normalizePath(item.sourceFile))) continue;
     for (const name of item.names) {
@@ -411,20 +411,20 @@ function importedPublicConcepts(
       if (name.component === state.component.declaration) continue;
       const importedState = stateByDeclaration.get(name.component);
       if (importedState) {
-        concepts.push(...importedState.namespace.publicConcepts);
+        tags.push(...importedState.namespace.publicTags);
       }
     }
   }
-  return mergeConceptsByIdentity(concepts);
+  return mergeTagsByIdentity(tags);
 }
 
 function buildNamespace(
   state: NamespaceState,
-  imported: readonly ResolvedConcept[],
-): ResolvedConceptNamespace {
-  const importedByNormalized = groupConceptsByNormalized(imported);
-  const local = state.groups.flatMap((group): readonly ResolvedConcept[] => {
-    const exactImported = distinctConceptIdentities(
+  imported: readonly ResolvedTag[],
+): ResolvedTagScope {
+  const importedByNormalized = groupTagsByNormalized(imported);
+  const local = state.groups.flatMap((group): readonly ResolvedTag[] => {
+    const exactImported = distinctTagIdentities(
       (importedByNormalized.get(group.normalizedIdentifier) ?? []).filter(
         (concept) => concept.identifier === group.identifier,
       ),
@@ -432,7 +432,7 @@ function buildNamespace(
     const importedMatch = exactImported.length === 1
       ? exactImported[0]
       : undefined;
-    if (!importedMatch) return [localResolvedConcept(group)];
+    if (!importedMatch) return [localResolvedTag(group)];
 
     const componentOccurrences = group.occurrences.filter((occurrence) =>
       occurrence.ownerKind === "component"
@@ -440,9 +440,9 @@ function buildNamespace(
     const expandOccurrences = group.occurrences.filter((occurrence) =>
       occurrence.ownerKind === "expand"
     );
-    const concepts: ResolvedConcept[] = [];
+    const tags: ResolvedTag[] = [];
     if (componentOccurrences.length > 0) {
-      concepts.push({
+      tags.push({
         identity: group.identity,
         identifier: group.identifier,
         isPublic: componentOccurrences.some((occurrence) =>
@@ -453,7 +453,7 @@ function buildNamespace(
       });
     }
     if (expandOccurrences.length > 0) {
-      concepts.push({
+      tags.push({
         identity: importedMatch.identity,
         identifier: group.identifier,
         isPublic: expandOccurrences.some((occurrence) =>
@@ -463,15 +463,15 @@ function buildNamespace(
         occurrences: expandOccurrences,
       });
     }
-    return concepts;
+    return tags;
   });
 
-  const accessible = mergeConceptsByIdentity([...imported, ...local]);
-  const publicConcepts = local.filter((concept) => concept.isPublic).map(
+  const accessible = mergeTagsByIdentity([...imported, ...local]);
+  const publicTags = local.filter((concept) => concept.isPublic).map(
     (concept) => {
       const inherited = imported.find((candidate) =>
-        conceptIdentityKey(candidate.identity) ===
-          conceptIdentityKey(concept.identity)
+        tagIdentityKey(candidate.identity) ===
+          tagIdentityKey(concept.identity)
       );
       const publicOccurrences = concept.occurrences.filter((occurrence) =>
         occurrence.sectionName === "interface"
@@ -488,20 +488,20 @@ function buildNamespace(
 
   return {
     componentName: state.component.name,
-    concepts: local,
-    accessibleConcepts: accessible,
-    publicConcepts: mergeConceptsByIdentity(publicConcepts),
+    tags: local,
+    accessibleTags: accessible,
+    publicTags: mergeTagsByIdentity(publicTags),
     references: [],
   };
 }
 
-function resolveConceptReferences(
+function resolveTagReferences(
   state: NamespaceState,
-): readonly ResolvedConceptReference[] {
-  const concepts = unambiguousAccessibleConcepts(
-    state.namespace.accessibleConcepts,
+): readonly ResolvedTagReference[] {
+  const tags = unambiguousAccessibleTags(
+    state.namespace.accessibleTags,
   );
-  const references: ResolvedConceptReference[] = [];
+  const references: ResolvedTagReference[] = [];
   const declarations = [
     state.component.declaration,
     ...state.component.expansions.expands.map((item) => item.declaration),
@@ -510,9 +510,9 @@ function resolveConceptReferences(
   for (const declaration of declarations) {
     for (const section of declaration.sections) {
       for (const line of section.units) {
-        const lineReferences = concepts.flatMap((concept) =>
+        const lineReferences = tags.flatMap((concept) =>
           referenceRanges(line, concept.identifier).map((range) => ({
-            conceptIdentity: concept.identity,
+            tagIdentity: concept.identity,
             componentName: state.component.name,
             filePath: line.filePath,
             ownerKind: line.ownerKind,
@@ -530,12 +530,12 @@ function resolveConceptReferences(
   return references;
 }
 
-function unambiguousAccessibleConcepts(
-  concepts: readonly ResolvedConcept[],
-): readonly ResolvedConcept[] {
-  const grouped = groupConceptsByNormalized(concepts);
+function unambiguousAccessibleTags(
+  tags: readonly ResolvedTag[],
+): readonly ResolvedTag[] {
+  const grouped = groupTagsByNormalized(tags);
   return [...grouped.values()].flatMap((items) => {
-    const identities = distinctConceptIdentities(items);
+    const identities = distinctTagIdentities(items);
     if (identities.length !== 1) return [];
     const concept = identities[0];
     const spellings = new Set(
@@ -548,8 +548,8 @@ function unambiguousAccessibleConcepts(
 function referenceRanges(
   line: Facet,
   identifier: string,
-): readonly ResolvedConceptReference["range"][] {
-  const ranges: ResolvedConceptReference["range"][] = [];
+): readonly ResolvedTagReference["range"][] {
+  const ranges: ResolvedTagReference["range"][] = [];
   for (let lineOffset = 0; lineOffset < line.sourceLines.length; lineOffset++) {
     const source = line.sourceLines[lineOffset];
     const content = source.trim();
@@ -561,8 +561,8 @@ function referenceRanges(
       const before = content[found - 1];
       const after = content[found + identifier.length];
       if (
-        !isConceptIdentifierCharacter(before) &&
-        !isConceptIdentifierCharacter(after)
+        !isConceptNameCharacter(before) &&
+        !isConceptNameCharacter(after)
       ) {
         ranges.push({
           start: {
@@ -581,28 +581,28 @@ function referenceRanges(
   return ranges;
 }
 
-function isConceptIdentifierCharacter(value: string | undefined): boolean {
+function isConceptNameCharacter(value: string | undefined): boolean {
   return value !== undefined && /[A-Za-z0-9_-]/.test(value);
 }
 
-function diagnoseConceptAmbiguities(
+function diagnoseTagAmbiguities(
   state: NamespaceState,
   diagnostics: SigilDiagnostic[],
 ): void {
-  const grouped = groupConceptsByNormalized(
-    state.namespace.accessibleConcepts,
+  const grouped = groupTagsByNormalized(
+    state.namespace.accessibleTags,
   );
-  for (const [normalized, concepts] of grouped) {
-    const distinct = distinctConceptIdentities(concepts);
+  for (const [normalized, tags] of grouped) {
+    const distinct = distinctTagIdentities(tags);
     if (distinct.length < 2) continue;
     const names = distinct.map((concept) =>
       `${concept.identity.componentName}::${concept.identity.identifier}`
     );
     diagnostics.push(diagnostic(
-      "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
-      `Concept identifier ${normalized} is ambiguous in component ${state.component.name}: ${
+      "SIGIL_AMBIGUOUS_TAG",
+      `Tag name ${normalized} is ambiguous in component ${state.component.name}: ${
         names.join(", ")
-      }. Rename one concept; qualification and shadowing are not supported.`,
+      }. Rename one Tag; qualification and shadowing are not supported.`,
       {
         filePath: state.component.filePath,
         range: state.component.declaration.range,
@@ -611,10 +611,10 @@ function diagnoseConceptAmbiguities(
   }
 }
 
-function localResolvedConcept(
-  group: LocalConceptGroup,
+function localResolvedTag(
+  group: LocalTagGroup,
   publicOnly = false,
-): ResolvedConcept {
+): ResolvedTag {
   return {
     identity: group.identity,
     identifier: group.identifier,
@@ -626,11 +626,11 @@ function localResolvedConcept(
   };
 }
 
-function groupConceptsByNormalized(
-  concepts: readonly ResolvedConcept[],
-): Map<string, ResolvedConcept[]> {
-  const grouped = new Map<string, ResolvedConcept[]>();
-  for (const concept of concepts) {
+function groupTagsByNormalized(
+  tags: readonly ResolvedTag[],
+): Map<string, ResolvedTag[]> {
+  const grouped = new Map<string, ResolvedTag[]>();
+  for (const concept of tags) {
     const items = grouped.get(concept.identity.normalizedIdentifier) ?? [];
     items.push(concept);
     grouped.set(concept.identity.normalizedIdentifier, items);
@@ -638,22 +638,22 @@ function groupConceptsByNormalized(
   return grouped;
 }
 
-function distinctConceptIdentities(
-  concepts: readonly ResolvedConcept[],
-): readonly ResolvedConcept[] {
-  const distinct = new Map<string, ResolvedConcept>();
-  for (const concept of concepts) {
-    distinct.set(conceptIdentityKey(concept.identity), concept);
+function distinctTagIdentities(
+  tags: readonly ResolvedTag[],
+): readonly ResolvedTag[] {
+  const distinct = new Map<string, ResolvedTag>();
+  for (const concept of tags) {
+    distinct.set(tagIdentityKey(concept.identity), concept);
   }
   return [...distinct.values()];
 }
 
-function mergeConceptsByIdentity(
-  concepts: readonly ResolvedConcept[],
-): readonly ResolvedConcept[] {
-  const merged = new Map<string, ResolvedConcept>();
-  for (const concept of concepts) {
-    const key = conceptIdentityKey(concept.identity);
+function mergeTagsByIdentity(
+  tags: readonly ResolvedTag[],
+): readonly ResolvedTag[] {
+  const merged = new Map<string, ResolvedTag>();
+  for (const concept of tags) {
+    const key = tagIdentityKey(concept.identity);
     const existing = merged.get(key);
     merged.set(
       key,
@@ -674,9 +674,9 @@ function mergeConceptsByIdentity(
 }
 
 function mergeOccurrences(
-  occurrences: readonly ResolvedConceptOccurrence[],
-): readonly ResolvedConceptOccurrence[] {
-  const unique = new Map<string, ResolvedConceptOccurrence>();
+  occurrences: readonly ResolvedTagOccurrence[],
+): readonly ResolvedTagOccurrence[] {
+  const unique = new Map<string, ResolvedTagOccurrence>();
   for (const occurrence of occurrences) {
     const key = `${
       normalizePath(occurrence.filePath)
@@ -686,26 +686,26 @@ function mergeOccurrences(
   return [...unique.values()];
 }
 
-function conceptIdentityKey(identity: ConceptIdentity): string {
+function tagIdentityKey(identity: TagIdentity): string {
   return `${
     normalizePath(identity.filePath)
   }::${identity.componentName}::${identity.normalizedIdentifier}`;
 }
 
-function normalizeConceptIdentifier(identifier: string): string {
+function normalizeConceptName(identifier: string): string {
   return identifier.toLocaleLowerCase("en-US");
 }
 
-function namespaceFingerprint(namespace: ResolvedConceptNamespace): string {
+function namespaceFingerprint(namespace: ResolvedTagScope): string {
   return JSON.stringify({
-    accessible: namespace.accessibleConcepts.map((concept) => ({
-      identity: conceptIdentityKey(concept.identity),
+    accessible: namespace.accessibleTags.map((concept) => ({
+      identity: tagIdentityKey(concept.identity),
       occurrences: concept.occurrences.map((item) =>
         `${normalizePath(item.filePath)}:${item.block.range.start.line}`
       ),
     })),
-    public: namespace.publicConcepts.map((concept) => ({
-      identity: conceptIdentityKey(concept.identity),
+    public: namespace.publicTags.map((concept) => ({
+      identity: tagIdentityKey(concept.identity),
       occurrences: concept.occurrences.map((item) =>
         `${normalizePath(item.filePath)}:${item.block.range.start.line}`
       ),
@@ -785,11 +785,11 @@ function resolveImportUses(
         });
       }
 
-      const publicConcepts = new Set(
+      const publicTags = new Set(
         imported.component.sections
           .filter((section) => section.name === "interface")
           .flatMap((section) =>
-            section.concepts.map((concept) => concept.identifier)
+            section.tags.map((concept) => concept.identifier)
           ),
       );
       for (const declaration of [...source.components, ...source.expands]) {
@@ -809,10 +809,10 @@ function resolveImportUses(
                 range,
               });
             }
-            for (const concept of publicConcepts) {
+            for (const concept of publicTags) {
               for (const range of referenceRanges(unit, concept)) {
                 addUse({
-                  kind: "public-concept-reference",
+                  kind: "public-tag-reference",
                   filePath: resolvedImport.sourceFile,
                   ownerKind: declaration.kind,
                   ownerName: declaration.name,
@@ -822,10 +822,10 @@ function resolveImportUses(
               }
             }
           }
-          for (const block of section.concepts) {
-            if (!publicConcepts.has(block.identifier)) continue;
+          for (const block of section.tags) {
+            if (!publicTags.has(block.identifier)) continue;
             addUse({
-              kind: "public-concept-reference",
+              kind: "public-tag-reference",
               filePath: resolvedImport.sourceFile,
               ownerKind: declaration.kind,
               ownerName: declaration.name,

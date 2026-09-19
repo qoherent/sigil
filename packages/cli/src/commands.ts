@@ -242,8 +242,8 @@ async function contextCommand(
   const expansions = selectedComponents.map((component) =>
     component.expansions
   );
-  const conceptNamespaces = selectedComponents.map((component) =>
-    component.conceptNamespace
+  const tagScopes = selectedComponents.map((component) =>
+    component.tagScope
   );
   const agentDependencyContexts = selectedComponents.map((component) =>
     agentDependencyContextForComponent(resolved, component, allContracts)
@@ -289,7 +289,7 @@ async function contextCommand(
     ...workspaceMetadata(resolved.workspace),
     selectedComponents,
     componentContracts: contracts,
-    conceptNamespaces,
+    tagScopes,
     collectedExpansions: expansions,
     agentDependencyContexts,
     ...(agentDependentContexts ? { agentDependentContexts } : {}),

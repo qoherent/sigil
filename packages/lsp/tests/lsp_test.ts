@@ -219,7 +219,7 @@ component ${name} {
     const diagnostics = diagnosticsFor(published, pathToFileUri(path));
     assert(
       diagnostics.some((item) =>
-        item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
+        item.code === "SIGIL_AMBIGUOUS_TAG"
       ),
     );
   }
@@ -588,7 +588,7 @@ Deno.test("ownership hover cache shares scans and invalidates on watched changes
   assertEquals(fs.implementationReads, readsAfterConcurrentHovers + 4);
 });
 
-// @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+// @sigil tests packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
 Deno.test("navigates and hovers contextual imported concepts", async () => {
   const server = makeServer();
   await initialize(server);
@@ -827,7 +827,7 @@ Deno.test("highlights, explains, and navigates reviewed glossary terms", async (
 
 /*
  * @sigil tests packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil tests packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil tests packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
  * @sigil tests packages/lsp/_module.sigil::SigilLsp::GlossaryLanguageFeatures interface,logic,constraints,cases
  */
 Deno.test("combines concept and glossary hover while preserving concept navigation", async () => {
@@ -883,13 +883,13 @@ Deno.test("combines concept and glossary hover while preserving concept navigati
   const markdown = String(
     (hover.contents as Record<string, unknown>).value,
   );
-  const conceptHeading = markdown.indexOf(
+  const tagGroupHeading = markdown.indexOf(
     "### concept [Execution](file:///workspace/contract.sigil#L7,5)",
   );
   const termHeading = markdown.indexOf("### term execution model");
   const ownershipHeading = markdown.indexOf("**Owned implementations**");
-  assert(conceptHeading >= 0);
-  assert(termHeading > conceptHeading);
+  assert(tagGroupHeading >= 0);
+  assert(termHeading > tagGroupHeading);
   assert(ownershipHeading > termHeading);
   assert(markdown.includes("execute · src/execution.ts"));
   assert(markdown.includes("Reviewed execution meaning."));
@@ -988,7 +988,7 @@ Deno.test("publishes concept style information as an LSP hint", async () => {
   await server.handle(request(1, "initialize", { rootUri }));
   const notifications = await server.handle(notification("initialized"));
   const hint = diagnosticsFor(notifications, contractUri).find((item) =>
-    item.code === "SIGIL_CONCEPT_IDENTIFIER_STYLE"
+    item.code === "SIGIL_TAG_NAME_STYLE"
   );
   assert(hint);
   assertEquals(hint.severity, 4);

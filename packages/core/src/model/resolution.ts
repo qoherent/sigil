@@ -7,7 +7,7 @@ import type {
 } from "./language.ts";
 import type {
   ComponentDeclaration,
-  ConceptBlock,
+  TagGroup,
   ExpandDeclaration,
   ImportDeclaration,
   Section,
@@ -23,7 +23,7 @@ export type {
 } from "./language.ts";
 export type {
   ComponentDeclaration,
-  ConceptBlock,
+  TagGroup,
   ExpandDeclaration,
   ImportDeclaration,
   Section,
@@ -50,7 +50,7 @@ export interface ResolvedImportName {
 export interface ImportUse {
   readonly kind:
     | "component-reference"
-    | "public-concept-reference"
+    | "public-tag-reference"
     | "structural-expand";
   readonly filePath: string;
   readonly ownerKind?: SigilFormKind;
@@ -64,10 +64,10 @@ export interface CollectedExpansion {
   readonly expands: readonly ResolvedExpansion[];
 }
 
-export interface ConceptBlockView {
+export interface TagGroupView {
   readonly identifier: string;
   readonly lines: readonly string[];
-  readonly sourceRange: ConceptBlock["range"];
+  readonly sourceRange: TagGroup["range"];
 }
 
 export interface ComponentContractView {
@@ -76,7 +76,7 @@ export interface ComponentContractView {
   readonly goalLines: readonly string[];
   readonly interfaceLines: readonly string[];
   readonly ungroupedInterfaceLines: readonly string[];
-  readonly interfaceConcepts: readonly ConceptBlockView[];
+  readonly interfaceTags: readonly TagGroupView[];
 }
 
 export interface DependencyDecisionView {
@@ -121,7 +121,7 @@ export interface ResolvedComponent {
   readonly declaration: ComponentDeclaration;
   readonly filePath: string;
   readonly expansions: CollectedExpansion;
-  readonly conceptNamespace: ResolvedConceptNamespace;
+  readonly tagScope: ResolvedTagScope;
 }
 
 /**
@@ -129,19 +129,19 @@ export interface ResolvedComponent {
  * Reuse an accessible imported identity when meaning matches; consumer Facets
  * retain their context rather than becoming provider-owned requirements.
  */
-export interface ConceptIdentity {
+export interface TagIdentity {
   readonly identifier: string;
   readonly normalizedIdentifier: string;
   readonly componentName: string;
   readonly filePath: string;
 }
 
-export interface ResolvedConceptOccurrence {
+export interface ResolvedTagOccurrence {
   readonly componentName: string;
   readonly filePath: string;
   readonly ownerKind: SigilFormKind;
   readonly sectionName: SigilSectionName;
-  readonly block: ConceptBlock;
+  readonly block: TagGroup;
 }
 
 /**
@@ -149,16 +149,16 @@ export interface ResolvedConceptOccurrence {
  * Identity groups contributions; it does not make their meanings equivalent.
  * Direct Facets remain on their sections, outside this collection.
  */
-export interface ResolvedConcept {
-  readonly identity: ConceptIdentity;
+export interface ResolvedTag {
+  readonly identity: TagIdentity;
   readonly identifier: string;
   readonly isPublic: boolean;
   readonly isImported: boolean;
-  readonly occurrences: readonly ResolvedConceptOccurrence[];
+  readonly occurrences: readonly ResolvedTagOccurrence[];
 }
 
-export interface ResolvedConceptReference {
-  readonly conceptIdentity: ConceptIdentity;
+export interface ResolvedTagReference {
+  readonly tagIdentity: TagIdentity;
   readonly componentName: string;
   readonly filePath: string;
   readonly ownerKind: SigilFormKind;
@@ -167,12 +167,12 @@ export interface ResolvedConceptReference {
   readonly range: SourceRange;
 }
 
-export interface ResolvedConceptNamespace {
+export interface ResolvedTagScope {
   readonly componentName: string;
-  readonly concepts: readonly ResolvedConcept[];
-  readonly accessibleConcepts: readonly ResolvedConcept[];
-  readonly publicConcepts: readonly ResolvedConcept[];
-  readonly references: readonly ResolvedConceptReference[];
+  readonly tags: readonly ResolvedTag[];
+  readonly accessibleTags: readonly ResolvedTag[];
+  readonly publicTags: readonly ResolvedTag[];
+  readonly references: readonly ResolvedTagReference[];
 }
 
 // @sigil implements packages/core/src/model/resolution.sigil::SigilResolutionModel::ResolutionModel interface

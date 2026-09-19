@@ -2,7 +2,7 @@ import type {
   CollectedExpansion,
   ComponentContractView,
   ResolvedComponent,
-  ResolvedConceptNamespace,
+  ResolvedTagScope,
   SigilDiagnostic,
 } from "@qoherent/sigil-core";
 import type { CoreAdapter } from "./core-adapter.ts";
@@ -10,7 +10,7 @@ import type { ContextCommandResult } from "./output-model.ts";
 import type {
   RetrievalProjection,
   RetrievalProjectionComponent,
-  RetrievalProjectionConcept,
+  RetrievalProjectionTag,
   RetrievalProjectionItem,
   RetrievalProjectionOwnership,
 } from "@qoherent/sigil-core";
@@ -116,15 +116,15 @@ function appendSelectedSection(
 
 function appendSelectedInterface(
   lines: string[],
-  concepts: readonly RetrievalProjectionConcept[],
+  tags: readonly RetrievalProjectionTag[],
 ): void {
   if (
-    !concepts.some((concept) =>
+    !tags.some((concept) =>
       concept.items.length || concept.ownership.length
     )
   ) return;
   lines.push("### Interface");
-  for (const concept of concepts) {
+  for (const concept of tags) {
     if (!concept.items.length && !concept.ownership.length) continue;
     if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
     lines.push(
@@ -170,15 +170,15 @@ function appendRelatedLabeled(
 
 function appendRelatedInterface(
   lines: string[],
-  concepts: readonly RetrievalProjectionConcept[],
+  tags: readonly RetrievalProjectionTag[],
 ): void {
   if (
-    !concepts.some((concept) =>
+    !tags.some((concept) =>
       concept.items.length || concept.ownership.length
     )
   ) return;
   lines.push("**Interface**");
-  for (const concept of concepts) {
+  for (const concept of tags) {
     if (!concept.items.length && !concept.ownership.length) continue;
     if (concept.name) lines.push("", `#### ${escapeMarkdown(concept.name)}`);
     lines.push(
@@ -280,13 +280,13 @@ export function renderContextMarkdown(result: ContextCommandResult): string {
         lines.push(...formatCollectedExpansion(expansion));
       }
 
-      const conceptNamespace = conceptNamespaceForComponent(
+      const tagScope = tagScopeForComponent(
         result,
         component,
         index,
       );
-      if (conceptNamespace) {
-        lines.push(...formatConceptNamespace(conceptNamespace));
+      if (tagScope) {
+        lines.push(...formatTagScope(tagScope));
       }
 
       const dependencyContext = agentDependencyContextForComponent(
@@ -379,10 +379,10 @@ function formatContractBody(
   ];
   if (contract.ungroupedInterfaceLines.length) {
     lines.push(...formatList(contract.ungroupedInterfaceLines));
-  } else if (!contract.interfaceConcepts.length) {
+  } else if (!contract.interfaceTags.length) {
     lines.push("- none");
   }
-  for (const concept of contract.interfaceConcepts) {
+  for (const concept of contract.interfaceTags) {
     lines.push(
       "",
       `${heading(headingLevel + 1)} ${concept.identifier}`,
@@ -489,23 +489,23 @@ function formatAgentDependentContext(
   return lines;
 }
 
-function formatConceptNamespace(
-  namespace: ResolvedConceptNamespace,
+function formatTagScope(
+  namespace: ResolvedTagScope,
 ): string[] {
-  const lines = ["", "### Concept Namespace"];
-  lines.push("", "#### Public Concepts");
-  lines.push(...formatConcepts(namespace.publicConcepts));
-  lines.push("", "#### Accessible Concepts");
-  lines.push(...formatConcepts(namespace.accessibleConcepts));
-  lines.push("", "#### Declared Concepts");
-  lines.push(...formatConcepts(namespace.concepts));
+  const lines = ["", "### Tag Scope"];
+  lines.push("", "#### Public Tags");
+  lines.push(...formatTags(namespace.publicTags));
+  lines.push("", "#### Accessible Tags");
+  lines.push(...formatTags(namespace.accessibleTags));
+  lines.push("", "#### Declared Tags");
+  lines.push(...formatTags(namespace.tags));
   lines.push("", "#### References");
   if (!namespace.references.length) {
     lines.push("- none");
   } else {
     for (const reference of namespace.references) {
       lines.push(
-        `- ${reference.conceptIdentity.identifier} from ${reference.conceptIdentity.componentName} (${reference.conceptIdentity.filePath}) referenced by ${reference.ownerKind} ${reference.ownerName} ${reference.sectionName} in ${reference.filePath}`,
+        `- ${reference.tagIdentity.identifier} from ${reference.tagIdentity.componentName} (${reference.tagIdentity.filePath}) referenced by ${reference.ownerKind} ${reference.ownerName} ${reference.sectionName} in ${reference.filePath}`,
       );
     }
   }
@@ -532,11 +532,11 @@ function uniqueDependencyDecisions(
   });
 }
 
-function formatConcepts(
-  concepts: ResolvedConceptNamespace["concepts"],
+function formatTags(
+  tags: ResolvedTagScope["tags"],
 ): string[] {
-  if (!concepts.length) return ["- none"];
-  return concepts.map((concept) => {
+  if (!tags.length) return ["- none"];
+  return tags.map((concept) => {
     const visibility = concept.isPublic ? "public" : "private";
     const origin = concept.isImported ? "imported" : "declared";
     const occurrences = concept.occurrences
@@ -612,17 +612,17 @@ function expansionForComponent(
   return undefined;
 }
 
-function conceptNamespaceForComponent(
+function tagScopeForComponent(
   result: ContextCommandResult,
   component: ResolvedComponent,
   index: number,
-): ResolvedConceptNamespace | undefined {
-  if (namespaceMatchesComponent(component.conceptNamespace, component)) {
-    return component.conceptNamespace;
+): ResolvedTagScope | undefined {
+  if (namespaceMatchesComponent(component.tagScope, component)) {
+    return component.tagScope;
   }
-  const indexed = result.conceptNamespaces[index];
+  const indexed = result.tagScopes[index];
   if (indexed && namespaceMatchesComponent(indexed, component)) return indexed;
-  return result.conceptNamespaces.find((namespace) =>
+  return result.tagScopes.find((namespace) =>
     namespaceMatchesComponent(namespace, component)
   );
 }
@@ -689,14 +689,14 @@ function componentIdentityMatches(
 }
 
 function namespaceMatchesComponent(
-  namespace: ResolvedConceptNamespace,
+  namespace: ResolvedTagScope,
   component: ResolvedComponent,
 ): boolean {
   if (namespace.componentName !== component.name) return false;
   return [
-    ...namespace.concepts,
-    ...namespace.accessibleConcepts,
-    ...namespace.publicConcepts,
+    ...namespace.tags,
+    ...namespace.accessibleTags,
+    ...namespace.publicTags,
   ].some((concept) =>
     concept.identity.componentName === component.name &&
     concept.identity.filePath === component.filePath

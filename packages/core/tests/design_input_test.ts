@@ -5,7 +5,7 @@ import {
 import { InMemorySigilFileSystem, loadDesignInput } from "../src/mod.ts";
 
 const config = JSON.stringify({
-  sigilVersion: "0.7.0",
+  sigilVersion: "0.8.0",
   workspace: { name: "fixture", members: [] },
   files: { include: ["**/*.sigil"], exclude: [] },
 });
@@ -78,7 +78,7 @@ Deno.test("Design transport preserves physical units and resolved identity witho
     bundle.units.find((u) => u.source === "unresolved.sigil")?.owner,
     null,
   );
-  assert(bundle.entities.some((e) => e.type === "Concept" && e.exported));
+  assert(bundle.entities.some((e) => e.type === "Tag" && e.exported));
   assert(bundle.diagnostics.some((d) => d.severity === "error"));
   assertEquals(bundle.imports.find((i) => i.source === "index.sigil")?.names, [
     { name: "Base", entity: base.id },

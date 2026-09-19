@@ -17,7 +17,7 @@ fn frontend() -> DesignInput {
             {"id":"urn:sigil:component:a.sigil:A","type":"Component","label":"A","source":"a.sigil","owner":null,"exported":true},
             {"id":"urn:sigil:component:b.sigil:B","type":"Component","label":"B","source":"b.sigil","owner":null,"exported":true}
         ],
-        "units":[{"id":"urn:sigil:unit:a.sigil:1:1","source":"a.sigil","owner":"urn:sigil:component:a.sigil:A","form":"component","section":"goal","concept":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":14}}}]
+        "units":[{"id":"urn:sigil:unit:a.sigil:1:1","source":"a.sigil","owner":"urn:sigil:component:a.sigil:A","form":"component","section":"goal","tag":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":14}}}]
     })).unwrap()).unwrap()
 }
 

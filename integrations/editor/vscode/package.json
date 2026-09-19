@@ -2,7 +2,7 @@
   "name": "sigil",
   "displayName": "Sigil",
   "description": "Language support and component previews for Sigil.",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "publisher": "sigil-dev",
   "license": "MIT",
   "repository": {

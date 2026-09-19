@@ -13,7 +13,7 @@ pub const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
 pub const LANG_STRING: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
 pub const CLASSES: &[&str] = &[
     "Component",
-    "Concept",
+    "Tag",
     "Capability",
     "Artifact",
     "Boundary",

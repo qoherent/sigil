@@ -1,11 +1,11 @@
 import type { SigilDiagnostic } from "./diagnostics.ts";
 import type { SourceLocation, SourceRange } from "./language.ts";
-import type { ResolvedComponent, ResolvedConcept } from "./resolution.ts";
+import type { ResolvedComponent, ResolvedTag } from "./resolution.ts";
 export type { SigilDiagnostic } from "./diagnostics.ts";
 export type { SourceRange } from "./language.ts";
 export type {
   ResolvedComponent,
-  ResolvedConcept,
+  ResolvedTag,
   ResolvedSigilWorkspace,
 } from "./resolution.ts";
 
@@ -50,7 +50,7 @@ export interface OwnedImplementationTarget {
 
 export interface OwnedImplementationProjection {
   readonly owningComponent: ResolvedComponent;
-  readonly concept?: ResolvedConcept;
+  readonly concept?: ResolvedTag;
   readonly sectionName?: ImplementationSection;
   readonly targets: readonly OwnedImplementationTarget[];
   readonly diagnostics: readonly SigilDiagnostic[];

@@ -13,7 +13,7 @@ fn fixture() -> Value {
         "diagnostics": [{"code":"SIGIL_MISSING_GOAL", "severity":"warning", "message":"Missing goal", "filePath":"a.sigil"}],
         "imports": [{"source":"a.sigil", "target":null,"names":[{"name":"Unknown","entity":null}]}],
         "entities": [{"id":"urn:sigil:component:a.sigil:A", "type":"Component", "label":"A", "source":"a.sigil", "owner":null, "exported":true}],
-        "units": [{"id":"urn:sigil:unit:a.sigil:1:1", "source":"a.sigil", "owner":"urn:sigil:component:a.sigil:A", "form":"component", "section":"goal", "concept":null, "range":{"start":{"line":1,"column":1},"end":{"line":1,"column":15}}}]
+        "units": [{"id":"urn:sigil:unit:a.sigil:1:1", "source":"a.sigil", "owner":"urn:sigil:component:a.sigil:A", "form":"component", "section":"goal", "tag":null, "range":{"start":{"line":1,"column":1},"end":{"line":1,"column":15}}}]
     })
 }
 

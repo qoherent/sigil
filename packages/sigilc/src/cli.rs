@@ -529,7 +529,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message == "unknown Sigil class" {
         return Some(
-            "use rdf:type with one class IRI from ontology.json (for example sigil:Component, sigil:Concept or sigil:Contract); do not invent class names",
+            "use rdf:type with one class IRI from ontology.json (for example sigil:Component, sigil:Tag or sigil:Contract); do not invent class names",
         );
     }
     if message.starts_with("frontend source changed:")
@@ -553,12 +553,12 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message.starts_with("foreign or changed reserved declaration: urn:sigil:component:") {
         return Some(
-            "emit reserved Component/Concept declarations only for the requested source; dependency identities are foreign references and must not be redeclared",
+            "emit reserved Component/Tag declarations only for the requested source; dependency identities are foreign references and must not be redeclared",
         );
     }
     if message == "unknown predicate or literal expected: owner" {
         return Some(
-            "use ontology predicates: sigil:from for unit ownership, sigil:owns for component-to-Concept links, and sigil:hasContract for component-to-unit links; sigil:owner is not valid",
+            "use ontology predicates: sigil:from for unit ownership, sigil:owns for component-to-Tag links, and sigil:hasContract for component-to-unit links; sigil:owner is not valid",
         );
     }
     if message == "unknown predicate namespace" {
@@ -573,7 +573,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message.starts_with("interpretation unit is not a domain endpoint:") {
         return Some(
-            "target a prepared domain Component, Concept or entity, never another interpretation unit",
+            "target a prepared domain Component, Tag or entity, never another interpretation unit",
         );
     }
     if message.starts_with("interpretation unit has conflicting relations:") {
@@ -588,7 +588,7 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
     }
     if message.starts_with("unknown domain identity:") {
         return Some(
-            "reference only the exact prepared Component, Concept and entity IDs; do not derive nested or renamed IDs from a label",
+            "reference only the exact prepared Component, Tag and entity IDs; do not derive nested or renamed IDs from a label",
         );
     }
     if message.starts_with("unknown source-bound unit identity:") {
@@ -606,9 +606,9 @@ fn ingest_hint(message: &str) -> Option<&'static str> {
             "encode sigil:relation as a plain string literal containing one fixed entity predicate; use IRIs for the subject and other entity-valued predicates",
         );
     }
-    if message == "Component and Concept identities are reserved by the frontend" {
+    if message == "Component and Tag identities are reserved by the frontend" {
         return Some(
-            "preserve prepared Component and Concept declarations instead of redeclaring them as domain entities",
+            "preserve prepared Component and Tag declarations instead of redeclaring them as domain entities",
         );
     }
     if message.starts_with("entity requires one type and label:") {

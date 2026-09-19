@@ -1,13 +1,13 @@
 import type {
   ComponentIdentity,
-  ConceptIdentity,
+  TagIdentity,
   GlossaryTerm,
   ImplementationSection,
   ImplementationSource,
   OwnedImplementationProjection,
   OwnedImplementationTarget,
   ResolvedComponent,
-  ResolvedConcept,
+  ResolvedTag,
   ResolvedSigilWorkspace,
   Section,
   Facet,
@@ -46,8 +46,8 @@ interface ComponentReference {
   readonly includeExpansions: boolean;
 }
 
-interface ConceptReference {
-  readonly concept: ResolvedConcept;
+interface TagReference {
+  readonly concept: ResolvedTag;
   readonly context: ResolvedComponent;
   readonly sectionName: SigilSectionName;
   readonly range: Range;
@@ -99,12 +99,12 @@ export class OwnershipHoverCache {
 
   projection(
     componentIdentity: ComponentIdentity,
-    conceptName?: string,
+    tagName?: string,
     sectionName?: ImplementationSection,
   ): Promise<OwnedImplementationProjection | undefined> {
     const key =
       `${componentIdentity.declarationPath}\0${componentIdentity.componentName}\0${
-        conceptName ?? ""
+        tagName ?? ""
       }\0${sectionName ?? ""}`;
     let projection = this.#projections.get(key);
     if (!projection) {
@@ -113,7 +113,7 @@ export class OwnershipHoverCache {
           this.#resolved,
           sources,
           componentIdentity,
-          conceptName,
+          tagName,
           sectionName,
         )
       );
@@ -233,13 +233,13 @@ export async function definitionAt(
     }
   }
 
-  const conceptReference = conceptReferences(
+  const tagReference = tagReferences(
     resolved,
     normalized,
     source,
   ).find((item) => contains(item.range, position));
-  if (conceptReference) {
-    return await conceptDefinition(resolved, fs, conceptReference.concept);
+  if (tagReference) {
+    return await conceptDefinition(resolved, fs, tagReference.concept);
   }
 
   const glossaryReference = glossaryReferences(resolved, normalized).find(
@@ -265,7 +265,7 @@ export async function definitionAt(
 
 /*
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
- * @sigil implements packages/lsp/_module.sigil::SigilLsp::ConceptLanguageFeatures interface,logic,constraints,cases
+ * @sigil implements packages/lsp/_module.sigil::SigilLsp::TagLanguageFeatures interface,logic,constraints,cases
  * @sigil implements packages/lsp/_module.sigil::SigilLsp::OwnershipHoverCache state,logic,constraints,cases
  */
 export async function hoverAt(
@@ -278,7 +278,7 @@ export async function hoverAt(
   const source = await fs.readTextFile(filePath);
   const normalized = normalizePath(filePath);
   const markdown = new HoverMarkdownRenderer(resolved, fs, ownership);
-  const conceptReference = conceptReferences(
+  const tagReference = tagReferences(
     resolved,
     normalized,
     source,
@@ -286,11 +286,11 @@ export async function hoverAt(
   const glossaryOccurrence = glossaryReferences(resolved, normalized).find(
     (item) => contains(item.range, position),
   );
-  if (conceptReference) {
+  if (tagReference) {
     const glossaryReference = glossaryOccurrence ??
-      glossaryReferenceForConcept(resolved, normalized, conceptReference);
-    const concept = await conceptMarkdown(conceptReference, markdown);
-    const identity = conceptReference.concept.identity;
+      glossaryReferenceForConcept(resolved, normalized, tagReference);
+    const concept = await conceptMarkdown(tagReference, markdown);
+    const identity = tagReference.concept.identity;
     const owningComponent = markdown.component(
       identity.componentName,
       identity.filePath,
@@ -299,7 +299,7 @@ export async function hoverAt(
       ? await markdown.ownedImplementationLines(
         owningComponent,
         identity.identifier,
-        implementationSection(conceptReference.sectionName),
+        implementationSection(tagReference.sectionName),
       )
       : [];
     const sections = [
@@ -314,7 +314,7 @@ export async function hoverAt(
         kind: "markdown",
         value: sections.join("\n\n---\n\n"),
       },
-      range: conceptReference.range,
+      range: tagReference.range,
     };
   }
   if (glossaryOccurrence) {
@@ -351,10 +351,10 @@ export function semanticTokens(
 ): SemanticTokens {
   const byRange = new Map<string, SemanticReference>();
   const components = componentReferences(resolved, filePath, source);
-  const concepts = conceptReferences(resolved, filePath, source);
+  const tags = tagReferences(resolved, filePath, source);
   const structuredRanges = [
     ...components.map((item) => item.range),
-    ...concepts.map((item) => item.range),
+    ...tags.map((item) => item.range),
   ];
   for (const item of glossaryReferences(resolved, filePath)) {
     if (structuredRanges.some((range) => overlaps(range, item.range))) continue;
@@ -369,7 +369,7 @@ export function semanticTokens(
       tokenType: SEMANTIC_TOKEN_COMPONENT,
     });
   }
-  for (const item of concepts) {
+  for (const item of tags) {
     byRange.set(rangeKey(item.range), {
       range: item.range,
       tokenType: SEMANTIC_TOKEN_CONCEPT,
@@ -418,13 +418,13 @@ function glossaryReferences(
 function glossaryReferenceForConcept(
   resolved: ResolvedSigilWorkspace,
   filePath: string,
-  conceptReference: ConceptReference,
+  tagReference: TagReference,
 ): GlossaryReference | undefined {
   const relativeFilePath = relativePath(resolved.workspace.root, filePath);
   const context = resolved.glossary.resolvedContexts.find((item) =>
     normalizePath(item.filePath) === normalizePath(relativeFilePath)
   );
-  const identifier = conceptReference.concept.identity.identifier;
+  const identifier = tagReference.concept.identity.identifier;
   const normalizedIdentifier = identifier.toLowerCase();
   const term = context?.entries.find((entry) =>
     [entry.term, ...entry.aliases].some(
@@ -435,7 +435,7 @@ function glossaryReferenceForConcept(
     ? {
       term,
       matchedSpelling: identifier,
-      range: conceptReference.range,
+      range: tagReference.range,
     }
     : undefined;
 }
@@ -538,18 +538,18 @@ function componentReferences(
   return deduplicateReferences(references);
 }
 
-function conceptReferences(
+function tagReferences(
   resolved: ResolvedSigilWorkspace,
   filePath: string,
   source: string,
-): readonly ConceptReference[] {
+): readonly TagReference[] {
   const normalized = normalizePath(filePath);
   const document = resolved.workspace.files.find((item) =>
     normalizePath(item.path) === normalized
   )?.document;
   if (!document) return [];
 
-  const references: ConceptReference[] = [];
+  const references: TagReference[] = [];
   for (const declaration of [...document.components, ...document.expands]) {
     const context = componentContext(
       resolved,
@@ -559,15 +559,15 @@ function conceptReferences(
     );
     if (!context) continue;
     for (const section of declaration.sections) {
-      for (const block of section.concepts) {
-        const localConcept = context.conceptNamespace.concepts.find((item) =>
+      for (const block of section.tags) {
+        const localTag = context.tagScope.tags.find((item) =>
           item.occurrences.some((occurrence) => occurrence.block === block)
         );
-        const concept = localConcept &&
-          (context.conceptNamespace.accessibleConcepts.find((item) =>
-            conceptIdentityKey(item.identity) ===
-              conceptIdentityKey(localConcept.identity)
-          ) ?? localConcept);
+        const concept = localTag &&
+          (context.tagScope.accessibleTags.find((item) =>
+            tagIdentityKey(item.identity) ===
+              tagIdentityKey(localTag.identity)
+          ) ?? localTag);
         if (concept) {
           references.push({
             concept: conceptForHover(concept, context),
@@ -585,12 +585,12 @@ function conceptReferences(
   }
 
   for (const context of resolved.components) {
-    for (const reference of context.conceptNamespace.references) {
+    for (const reference of context.tagScope.references) {
       if (normalizePath(reference.filePath) !== normalized) continue;
-      const concept = context.conceptNamespace.accessibleConcepts.find(
+      const concept = context.tagScope.accessibleTags.find(
         (candidate) =>
-          conceptIdentityKey(candidate.identity) ===
-            conceptIdentityKey(reference.conceptIdentity),
+          tagIdentityKey(candidate.identity) ===
+            tagIdentityKey(reference.tagIdentity),
       );
       if (concept) {
         references.push({
@@ -602,13 +602,13 @@ function conceptReferences(
       }
     }
   }
-  return deduplicateConceptReferences(references);
+  return deduplicateTagReferences(references);
 }
 
 function conceptForHover(
-  concept: ResolvedConcept,
+  concept: ResolvedTag,
   context: ResolvedComponent,
-): ResolvedConcept {
+): ResolvedTag {
   const isContextualReuse = concept.identity.componentName !== context.name ||
     normalizePath(concept.identity.filePath) !==
       normalizePath(context.filePath);
@@ -704,13 +704,13 @@ function deduplicateReferences(
   return [...unique.values()];
 }
 
-function deduplicateConceptReferences(
-  references: readonly ConceptReference[],
-): readonly ConceptReference[] {
-  const unique = new Map<string, ConceptReference>();
+function deduplicateTagReferences(
+  references: readonly TagReference[],
+): readonly TagReference[] {
+  const unique = new Map<string, TagReference>();
   for (const reference of references) {
     const key = `${rangeKey(reference.range)}:${
-      conceptIdentityKey(reference.concept.identity)
+      tagIdentityKey(reference.concept.identity)
     }`;
     if (!unique.has(key)) unique.set(key, reference);
   }
@@ -721,7 +721,7 @@ function rangeKey(range: Range): string {
   return `${range.start.line}:${range.start.character}:${range.end.line}:${range.end.character}`;
 }
 
-function conceptIdentityKey(identity: ConceptIdentity): string {
+function tagIdentityKey(identity: TagIdentity): string {
   return `${
     normalizePath(identity.filePath)
   }::${identity.componentName}::${identity.normalizedIdentifier}`;
@@ -746,7 +746,7 @@ function sectionSymbol(section: Section, source: string): DocumentSymbol {
         character: section.range.start.column - 1 + section.name.length,
       },
     },
-    children: section.concepts.map((concept) => ({
+    children: section.tags.map((concept) => ({
       name: concept.identifier,
       detail: "concept",
       kind: SYMBOL_PROPERTY,
@@ -864,20 +864,20 @@ export async function renderDocumentMarkdown(
 async function conceptDefinition(
   resolved: ResolvedSigilWorkspace,
   fs: SigilFileSystem,
-  concept: ResolvedConcept,
+  concept: ResolvedTag,
 ): Promise<Location | null> {
   const origin = resolved.components.find((component) =>
     component.name === concept.identity.componentName &&
     normalizePath(component.filePath) ===
       normalizePath(concept.identity.filePath)
   );
-  const resolvedConcept = origin?.conceptNamespace.concepts.find((item) =>
-    conceptIdentityKey(item.identity) === conceptIdentityKey(concept.identity)
+  const resolvedTag = origin?.tagScope.tags.find((item) =>
+    tagIdentityKey(item.identity) === tagIdentityKey(concept.identity)
   );
   const occurrence =
-    resolvedConcept?.occurrences.find((item) =>
+    resolvedTag?.occurrences.find((item) =>
       item.sectionName === "interface"
-    ) ?? resolvedConcept?.occurrences[0];
+    ) ?? resolvedTag?.occurrences[0];
   if (!occurrence) return null;
   const source = await fs.readTextFile(occurrence.filePath);
   return {
@@ -891,7 +891,7 @@ async function conceptDefinition(
 }
 
 async function conceptMarkdown(
-  reference: ConceptReference,
+  reference: TagReference,
   markdown: HoverMarkdownRenderer,
 ): Promise<string> {
   const identity = reference.concept.identity;
@@ -986,7 +986,7 @@ class HoverMarkdownRenderer {
     });
   }
 
-  async conceptLink(concept: ResolvedConcept): Promise<string> {
+  async conceptLink(concept: ResolvedTag): Promise<string> {
     const target = await conceptDefinition(this.#resolved, this.#fs, concept);
     return target
       ? markdownLink(concept.identifier, target)
@@ -996,13 +996,13 @@ class HoverMarkdownRenderer {
   // @sigil implements packages/lsp/_module.sigil::SigilLsp::NavigationAndInspection interface,logic,constraints,cases
   async ownedImplementationLines(
     component: ResolvedComponent,
-    conceptName?: string,
+    tagName?: string,
     sectionName?: ImplementationSection,
   ): Promise<string[]> {
-    if (conceptName && !sectionName) return [];
+    if (tagName && !sectionName) return [];
     const projection = await this.#ownership.projection(
       { componentName: component.name, declarationPath: component.filePath },
-      conceptName,
+      tagName,
       sectionName,
     );
     if (!projection || projection.targets.length === 0) return [];
@@ -1100,7 +1100,7 @@ class HoverMarkdownRenderer {
       });
     }
     for (
-      const reference of conceptReferences(
+      const reference of tagReferences(
         this.#resolved,
         filePath,
         source,

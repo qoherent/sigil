@@ -23,7 +23,7 @@ export interface DesignInput {
   }[];
   readonly entities: readonly {
     id: string;
-    type: "Component" | "Concept";
+    type: "Component" | "Tag";
     label: string;
     source: string;
     owner: string | null;
@@ -35,7 +35,7 @@ export interface DesignInput {
     owner: string | null;
     form: "component" | "expand";
     section: string;
-    concept: string | null;
+    tag: string | null;
     range: SourceRange;
   }[];
 }
@@ -91,17 +91,17 @@ export async function loadDesignInput(
     for (const expand of component.expansions.expands) {
       owners.set(formKey(expand.filePath, expand.declaration.range), id);
     }
-    for (const concept of component.conceptNamespace.concepts) {
-      if (concept.isImported) continue;
+    for (const tag of component.tagScope.tags) {
+      if (tag.isImported) continue;
       entities.push({
-        id: `${id}:concept:${
-          encodeURIComponent(concept.identity.normalizedIdentifier)
+        id: `${id}:tag:${
+          encodeURIComponent(tag.identity.normalizedIdentifier)
         }`,
-        type: "Concept",
-        label: concept.identifier,
-        source: path(concept.identity.filePath),
+        type: "Tag",
+        label: tag.identifier,
+        source: path(tag.identity.filePath),
         owner: id,
-        exported: concept.isPublic,
+        exported: tag.isPublic,
       });
     }
   }
@@ -120,7 +120,7 @@ export async function loadDesignInput(
             owner: owners.get(formKey(file.path, form.range)) ?? null,
             form: form.kind,
             section: section.name,
-            concept: unit.conceptIdentifier ?? null,
+            tag: unit.conceptName ?? null,
             range: unit.range,
           });
         }

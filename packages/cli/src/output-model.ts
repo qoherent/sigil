@@ -11,7 +11,7 @@ import type {
   OwnedImplementationProjection,
   PurposeRetrievalResult,
   ResolvedComponent,
-  ResolvedConceptNamespace,
+  ResolvedTagScope,
   ResolvedGlossaryContext,
   SigilConfig,
   SigilDiagnostic,
@@ -124,7 +124,7 @@ export interface ContextCommandResult extends WorkspaceMetadata {
   readonly command: "context";
   readonly selectedComponents: readonly ResolvedComponent[];
   readonly componentContracts: readonly ComponentContractView[];
-  readonly conceptNamespaces: readonly ResolvedConceptNamespace[];
+  readonly tagScopes: readonly ResolvedTagScope[];
   readonly collectedExpansions: readonly CollectedExpansion[];
   readonly agentDependencyContexts: readonly AgentDependencyContext[];
   readonly agentDependentContexts?: readonly AgentDependentContext[];

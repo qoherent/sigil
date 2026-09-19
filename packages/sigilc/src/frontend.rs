@@ -79,7 +79,7 @@ pub struct Entity {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum EntityType {
     Component,
-    Concept,
+    Tag,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -90,7 +90,7 @@ pub struct Unit {
     pub owner: Option<String>,
     pub form: Form,
     pub section: Section,
-    pub concept: Option<String>,
+    pub tag: Option<String>,
     pub range: Range,
 }
 
@@ -199,12 +199,12 @@ impl DesignInput {
                         "component identity does not match its source and name",
                     )?;
                 }
-                EntityType::Concept => ensure(
+                EntityType::Tag => ensure(
                     entity
                         .owner
                         .as_deref()
                         .is_some_and(|o| components.contains(o)),
-                    "Concept owner is not a component",
+                    "Tag owner is not a component",
                 )?,
             }
         }

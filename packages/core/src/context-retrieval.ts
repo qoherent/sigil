@@ -49,7 +49,7 @@ const RELATION_ORDER: readonly RetrievalRelation[] = [
   "direct-importer",
   "containing-module-index",
   "cycle-member",
-  "public-concept-origin",
+  "public-tag-origin",
   "owned-implementation",
 ];
 const EVIDENCE_ORDER: readonly EvidenceKind[] = [
@@ -60,7 +60,7 @@ const EVIDENCE_ORDER: readonly EvidenceKind[] = [
   "importer-contract",
   "cycle-contract",
   "module-index-summary",
-  "public-concept-origin",
+  "public-tag-origin",
   "glossary-definition",
   "ownership-projection",
   "diagnostic",
@@ -111,7 +111,7 @@ interface EvidenceDraft {
     | "logic"
     | "constraints"
     | "cases";
-  readonly conceptIdentity?: string;
+  readonly tagIdentity?: string;
   readonly range?: SourceRange;
   readonly location?: SourceLocation;
   readonly text: string;
@@ -126,7 +126,7 @@ interface ProjectionEntry {
   readonly path: string;
   role: RetrievalProjectionComponent["role"];
   goal: RetrievalProjectionItem[];
-  interface: ProjectionConceptDraft[];
+  interface: ProjectionTagDraft[];
   state: RetrievalProjectionItem[];
   logic: RetrievalProjectionItem[];
   constraints: RetrievalProjectionItem[];
@@ -134,10 +134,10 @@ interface ProjectionEntry {
   cases: RetrievalProjectionItem[];
   ownership: RetrievalProjectionOwnership[];
   links: RetrievalProjectionLink[];
-  concepts: Map<string, ProjectionConceptDraft>;
+  tags: Map<string, ProjectionTagDraft>;
 }
 
-interface ProjectionConceptDraft {
+interface ProjectionTagDraft {
   readonly name?: string;
   readonly items: RetrievalProjectionItem[];
   readonly ownership: RetrievalProjectionOwnership[];
@@ -247,7 +247,7 @@ export async function projectRetrieval(
       cases: [],
       ownership: [] as RetrievalProjectionOwnership[],
       links: [],
-      concepts: new Map(),
+      tags: new Map(),
     };
     if (rank(nextRole) < rank(entry.role)) {
       entry.role = nextRole;
@@ -264,11 +264,11 @@ export async function projectRetrieval(
       range: item.range,
     };
     if (item.sectionName === "interface") {
-      const key = item.conceptIdentity ?? "";
-      const concept = entry.concepts.get(key) ??
-        { name: item.conceptIdentity, items: [], ownership: [] };
+      const key = item.tagIdentity ?? "";
+      const concept = entry.tags.get(key) ??
+        { name: item.tagIdentity, items: [], ownership: [] };
       concept.items.push(value);
-      entry.concepts.set(key, concept);
+      entry.tags.set(key, concept);
     } else if (
       ["goal", "state", "logic", "constraints", "decisions", "cases"].includes(
         String(item.sectionName),
@@ -297,7 +297,7 @@ export async function projectRetrieval(
     }
   }
   for (const entry of entries.values()) {
-    entry.interface = [...entry.concepts.values()];
+    entry.interface = [...entry.tags.values()];
   }
   const nodeIds = new Map(
     result.graph.nodes.filter((node) => node.componentName).map((
@@ -319,7 +319,7 @@ export async function projectRetrieval(
   const compare = (left: string, right: string) =>
     left < right ? -1 : left > right ? 1 : 0;
   const components = [...entries.values()].map((
-    { concepts: _concepts, ...entry },
+    { tags: _tags, ...entry },
   ) => ({
     ...entry,
     links: entry.links.sort((left, right) =>
@@ -842,7 +842,7 @@ export async function retrievePurposeContext(
       );
       if (role === "seed") {
         for (
-          const concept of component.conceptNamespace.accessibleConcepts.filter(
+          const concept of component.tagScope.accessibleTags.filter(
             (item) => item.isImported && item.isPublic,
           )
         ) {
@@ -859,7 +859,7 @@ export async function retrievePurposeContext(
               rangeKey(occurrence.block.range)
             }`,
             {
-              kind: "public-concept-origin",
+              kind: "public-tag-origin",
               path: relativePath(
                 resolved.workspace.root,
                 concept.identity.filePath,
@@ -869,8 +869,8 @@ export async function retrievePurposeContext(
               classRank: 7,
             },
           );
-          const conceptEdge = addEdge({
-            relation: "public-concept-origin",
+          const tagEdge = addEdge({
+            relation: "public-tag-origin",
             sourceKey,
             targetKey: originKey,
             originPath: relativePath(
@@ -882,10 +882,10 @@ export async function retrievePurposeContext(
           addContractEvidence(
             evidence,
             provider,
-            "public-concept-origin",
-            "select-public-concept-origin",
+            "public-tag-origin",
+            "select-public-tag-origin",
             componentKey(component),
-            [conceptEdge],
+            [tagEdge],
             ["goal", "interface"],
           );
           void providerKey;
@@ -1072,7 +1072,7 @@ function addDeclarationEvidence(
       path: unit.filePath,
       componentName,
       sectionName: unit.sectionName,
-      conceptIdentity: unit.conceptIdentifier,
+      tagIdentity: unit.conceptName,
       range: unit.range,
       text: unit.prose,
       rule,
@@ -1249,7 +1249,7 @@ async function materialize(
         path: draft.path,
         componentName: draft.componentName,
         sectionName: draft.sectionName,
-        conceptIdentity: draft.conceptIdentity,
+        tagIdentity: draft.tagIdentity,
         range: draft.range,
         location: draft.location,
       })}`,
@@ -1257,7 +1257,7 @@ async function materialize(
       path: draft.path,
       componentName: draft.componentName,
       sectionName: draft.sectionName,
-      conceptIdentity: draft.conceptIdentity,
+      tagIdentity: draft.tagIdentity,
       range: draft.range,
       location: draft.location,
       text: draft.text,

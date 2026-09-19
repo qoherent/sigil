@@ -8,7 +8,7 @@ import {
   componentContracts,
   type ComponentContractView,
   type ComponentIdentity,
-  conceptNamespaceFor,
+  tagScopeFor,
   DEFAULT_SIGIL_EXCLUDES,
   DEFAULT_SIGIL_INCLUDES,
   type DesignInput,
@@ -35,7 +35,7 @@ import {
   type PurposeRetrievalResult,
   type PurposeRetrievalTarget,
   relativePath,
-  type ResolvedConceptNamespace,
+  type ResolvedTagScope,
   type ResolvedSigilWorkspace,
   resolveSigilWorkspace,
   type RetrievalPurpose,
@@ -326,14 +326,14 @@ export class CoreAdapter {
     resolved: ResolvedSigilWorkspace,
     implementationSources: readonly ImplementationSource[],
     componentIdentity: ComponentIdentity,
-    conceptName?: string,
+    tagName?: string,
     sectionName?: ImplementationSection,
   ): OwnedImplementationProjection | undefined {
     return coreOwnedImplementationTargetsFor(
       resolved,
       implementationSources,
       componentIdentity,
-      conceptName,
+      tagName,
       sectionName,
     );
   }
@@ -437,12 +437,12 @@ export class CoreAdapter {
   ): AgentDependentContext | undefined {
     return agentDependentContextFor(resolved, componentName);
   }
-  // @sigil uses packages/core/src/projections.sigil::SigilProjections::ConceptNamespaceProjection interface,logic,cases
-  conceptNamespaceFor(
+  // @sigil uses packages/core/src/projections.sigil::SigilProjections::TagScopeProjection interface,logic,cases
+  tagScopeFor(
     resolved: ResolvedSigilWorkspace,
     componentName: string,
-  ): ResolvedConceptNamespace | undefined {
-    return conceptNamespaceFor(resolved, componentName);
+  ): ResolvedTagScope | undefined {
+    return tagScopeFor(resolved, componentName);
   }
   /*
    * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface

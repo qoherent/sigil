@@ -84,7 +84,7 @@ interface ParsedAnnotation {
   readonly relation: ImplementationRelation;
   readonly sigilPath: string;
   readonly componentName: string;
-  readonly conceptName?: string;
+  readonly tagName?: string;
   readonly sectionNames: readonly string[];
 }
 
@@ -133,7 +133,7 @@ export function ownedImplementationTargetsFor(
   resolved: ResolvedSigilWorkspace,
   implementationSources: readonly ImplementationSource[],
   componentIdentity: ComponentIdentity,
-  conceptName?: string,
+  tagName?: string,
   sectionName?: ImplementationSection,
 ): OwnedImplementationProjection | undefined {
   const componentName = componentIdentity.componentName;
@@ -143,12 +143,12 @@ export function ownedImplementationTargetsFor(
   );
   if (!owningComponent) return undefined;
 
-  const concept = conceptName
-    ? owningComponent.conceptNamespace.concepts.find((item) =>
-      item.identifier === conceptName
+  const concept = tagName
+    ? owningComponent.tagScope.tags.find((item) =>
+      item.identifier === tagName
     )
     : undefined;
-  if (conceptName && !concept) return undefined;
+  if (tagName && !concept) return undefined;
 
   const diagnostics: SigilDiagnostic[] = [];
   const targets: OwnedImplementationTarget[] = [];
@@ -169,8 +169,8 @@ export function ownedImplementationTargetsFor(
     ) {
       if (
         result.annotation.componentName !== componentName ||
-        (conceptName !== undefined &&
-          result.annotation.conceptName !== conceptName) ||
+        (tagName !== undefined &&
+          result.annotation.tagName !== tagName) ||
         (sectionName !== undefined &&
           !result.target.sections.includes(sectionName))
       ) continue;
@@ -352,7 +352,7 @@ function parseImplementationAnnotation(
     relation,
     sigilPath,
     componentName: parts[1],
-    conceptName: parts[2],
+    tagName: parts[2],
     sectionNames: match[3].split(",").map((section) => section.toLowerCase()),
   };
 }
@@ -373,12 +373,12 @@ function resolveAnnotationTarget(
     return `Ownership annotation references unknown Sigil component ${annotation.componentName} in ${annotation.sigilPath}.`;
   }
   if (
-    annotation.conceptName &&
-    !component.conceptNamespace.concepts.some((concept) =>
-      concept.identifier === annotation.conceptName
+    annotation.tagName &&
+    !component.tagScope.tags.some((concept) =>
+      concept.identifier === annotation.tagName
     )
   ) {
-    return `Ownership annotation references unknown concept ${annotation.conceptName} on ${annotation.componentName}.`;
+    return `Ownership annotation references unknown concept ${annotation.tagName} on ${annotation.componentName}.`;
   }
   if (
     annotation.sectionNames.length === 0 ||
@@ -398,9 +398,9 @@ function resolveAnnotationTarget(
   if (unsupportedSection) {
     return `Ownership annotation uses unsupported section selector ${unsupportedSection}.`;
   }
-  const availableSections = annotation.conceptName
-    ? component.conceptNamespace.concepts
-      .find((concept) => concept.identifier === annotation.conceptName)
+  const availableSections = annotation.tagName
+    ? component.tagScope.tags
+      .find((concept) => concept.identifier === annotation.tagName)
       ?.occurrences.map((occurrence) => occurrence.sectionName) ?? []
     : [
       ...component.declaration.sections.map((section) => section.name),
@@ -412,8 +412,8 @@ function resolveAnnotationTarget(
     !availableSections.includes(section as ImplementationSection)
   );
   if (unresolvedSection) {
-    const target = annotation.conceptName
-      ? `concept ${annotation.conceptName} on ${annotation.componentName}`
+    const target = annotation.tagName
+      ? `concept ${annotation.tagName} on ${annotation.componentName}`
       : `component ${annotation.componentName}`;
     return `Ownership annotation references section ${unresolvedSection} without a matching occurrence on ${target}.`;
   }

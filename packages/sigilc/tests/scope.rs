@@ -29,7 +29,7 @@ fn input(root: &Workspace) -> DesignInput {
         {"id":"urn:sigil:component:a.sigil:A","type":"Component","label":"A","source":"a.sigil","owner":null,"exported":true}
     ]);
     value["units"] = json!([
-        {"id":"urn:sigil:unit:exp.sigil:1:1","source":"exp.sigil","owner":"urn:sigil:component:a.sigil:A","form":"expand","section":"goal","concept":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":4}}}
+        {"id":"urn:sigil:unit:exp.sigil:1:1","source":"exp.sigil","owner":"urn:sigil:component:a.sigil:A","form":"expand","section":"goal","tag":null,"range":{"start":{"line":1,"column":1},"end":{"line":1,"column":4}}}
     ]);
     DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap()
 }

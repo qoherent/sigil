@@ -7,7 +7,7 @@ import type {
   DependencyDecisionView,
   DependentImportingFileContext,
   ResolvedComponent,
-  ResolvedConceptNamespace,
+  ResolvedTagScope,
   ResolvedSigilWorkspace,
 } from "./model/resolution.ts";
 
@@ -18,14 +18,14 @@ export function componentContracts(
   return resolved.components.map(componentContractView);
 }
 
-// @sigil implements packages/core/src/projections.sigil::SigilProjections::ConceptNamespaceProjection interface,logic,cases
-export function conceptNamespaceFor(
+// @sigil implements packages/core/src/projections.sigil::SigilProjections::TagScopeProjection interface,logic,cases
+export function tagScopeFor(
   resolved: ResolvedSigilWorkspace,
   componentName: string,
-): ResolvedConceptNamespace | undefined {
+): ResolvedTagScope | undefined {
   return resolved.components.find((component) =>
     component.name === componentName
-  )?.conceptNamespace;
+  )?.tagScope;
 }
 
 // @sigil implements packages/core/src/projections.sigil::SigilProjections::ExpansionProjection interface,logic,cases
@@ -180,10 +180,10 @@ function componentContractView(
     goalLines: goal?.units.map((unit) => unit.prose) ?? [],
     interfaceLines: iface?.units.map((unit) => unit.prose) ?? [],
     ungroupedInterfaceLines:
-      iface?.units.filter((unit) => unit.conceptIdentifier === undefined).map((
+      iface?.units.filter((unit) => unit.conceptName === undefined).map((
         unit,
       ) => unit.prose) ?? [],
-    interfaceConcepts: iface?.concepts.map((concept) => ({
+    interfaceTags: iface?.tags.map((concept) => ({
       identifier: concept.identifier,
       lines: concept.units.map((unit) => unit.prose),
       sourceRange: concept.range,

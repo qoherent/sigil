@@ -4,7 +4,7 @@ import {
   ancestorsFrom,
   collectedExpansionFor,
   componentContracts,
-  conceptNamespaceFor,
+  tagScopeFor,
   dirname,
   formatSigilDocument,
   glossaryContextForFiles,
@@ -37,8 +37,8 @@ import { isEmbeddedFacet } from "../src/model/source.ts";
  * @sigil tests packages/core/src/model/language.sigil::SigilLanguageModel::LanguageModel interface
  */
 Deno.test("separates the core artifact and language contract versions", () => {
-  assertEquals(SIGIL_CORE_VERSION, "0.7.1");
-  assertEquals(SIGIL_VERSION, "0.7.0");
+  assertEquals(SIGIL_CORE_VERSION, "0.8.0");
+  assertEquals(SIGIL_VERSION, "0.8.0");
 });
 
 /*
@@ -75,7 +75,7 @@ Deno.test("parses Facets and Embedded Facets and formats idempotently", () => {
   const goal = parsed.document.components[0].sections[0];
   assertEquals(goal.units.length, 1);
   assert(isEmbeddedFacet(goal.units[0]));
-  assertEquals(goal.units[0].conceptIdentifier, undefined);
+  assertEquals(goal.units[0].conceptName, undefined);
   assert(goal.units[0].prose.startsWith("Describe a configuration"));
   assert(!isEmbeddedFacet(parsed.document.components[0].sections[1].units[0]));
   assertEquals(goal.units[0].literalBlocks[0].type, "json");
@@ -2470,7 +2470,7 @@ expand Shared {
   );
   assert(
     resolved.components.filter((item) => item.name === "Shared").every(
-      (item) => item.conceptNamespace.accessibleConcepts.length === 0,
+      (item) => item.tagScope.accessibleTags.length === 0,
     ),
   );
 });
@@ -2587,7 +2587,7 @@ expand Account {
     parsed.diagnostics.filter((item) => item.severity === "warning").length,
     0,
   );
-  assertHasCode(parsed.diagnostics, "SIGIL_CONCEPT_IDENTIFIER_STYLE");
+  assertHasCode(parsed.diagnostics, "SIGIL_TAG_NAME_STYLE");
   assertNoErrors(parsed.diagnostics);
   const iface = parsed.document.components[0].sections.find((item) =>
     item.name === "interface"
@@ -2595,14 +2595,14 @@ expand Account {
   assert(iface);
   assertEquals(iface.units.length, 4);
   assertEquals(iface.units[0].prose, "ungrouped first");
-  assertEquals(iface.units[0].conceptIdentifier, undefined);
+  assertEquals(iface.units[0].conceptName, undefined);
   assertEquals(iface.units[3].prose, "ungrouped second");
-  assertEquals(iface.units[3].conceptIdentifier, undefined);
-  assertEquals(iface.concepts.length, 1);
-  assertEquals(iface.concepts[0].identifier, "SessionLifecycle");
-  assertEquals(iface.concepts[0].units.length, 2);
+  assertEquals(iface.units[3].conceptName, undefined);
+  assertEquals(iface.tags.length, 1);
+  assertEquals(iface.tags[0].identifier, "SessionLifecycle");
+  assertEquals(iface.tags[0].units.length, 2);
   assertEquals(
-    iface.concepts[0].units[0].conceptIdentifier,
+    iface.tags[0].units[0].conceptName,
     "SessionLifecycle",
   );
 });
@@ -2629,11 +2629,11 @@ Deno.test("preserves blank-line-separated ungrouped Interface Facets without war
     item.name === "interface"
   );
   assert(iface);
-  assertEquals(iface.concepts.length, 0);
+  assertEquals(iface.tags.length, 0);
   assertEquals(iface.units.length, 2);
   assertEquals(iface.units[0].prose, "first ungrouped region");
   assertEquals(iface.units[1].prose, "second ungrouped region");
-  assert(iface.units.every((facet) => facet.conceptIdentifier === undefined));
+  assert(iface.units.every((facet) => facet.conceptName === undefined));
 });
 
 // @sigil tests packages/core/src/parser.sigil::SigilParser::SourceDocument logic,constraints,cases
@@ -2673,11 +2673,11 @@ expand Payments {
     item.name === "decisions"
   );
   assert(decisions);
-  assertEquals(decisions.concepts.length, 1);
-  assertEquals(decisions.concepts[0].identifier, "PersistenceChoice");
-  assertEquals(decisions.concepts[0].units.length, 3);
+  assertEquals(decisions.tags.length, 1);
+  assertEquals(decisions.tags[0].identifier, "PersistenceChoice");
+  assertEquals(decisions.tags[0].units.length, 3);
   assertEquals(decisions.units.at(-1)?.prose, "Free-form decision note.");
-  assertEquals(decisions.units.at(-1)?.conceptIdentifier, undefined);
+  assertEquals(decisions.units.at(-1)?.conceptName, undefined);
 });
 
 // @sigil tests packages/core/src/parser.sigil::SigilParser::SourceDocument logic,constraints,cases
@@ -2718,24 +2718,24 @@ ${["state", "logic", "constraints", "decisions", "cases"].map(contract).join("\n
   assertEquals(sections.length, 7);
   for (const section of sections) {
     assertEquals(section.units.length, 4);
-    assertEquals(section.concepts.length, 1);
-    assertEquals(section.concepts[0].identifier, "Shared");
+    assertEquals(section.tags.length, 1);
+    assertEquals(section.tags[0].identifier, "Shared");
     const [first, grouped, embedded, last] = section.units;
     assertEquals(first.prose, "First contribution.");
-    assertEquals(first.conceptIdentifier, undefined);
+    assertEquals(first.conceptName, undefined);
     assertEquals(grouped.prose, "Grouped contribution.");
-    assertEquals(grouped.conceptIdentifier, "Shared");
-    assertEquals(section.concepts[0].units[0], grouped);
+    assertEquals(grouped.conceptName, "Shared");
+    assertEquals(section.tags[0].units[0], grouped);
     assert(isEmbeddedFacet(embedded));
     assertEquals(embedded.prose, "Structured contribution:");
-    assertEquals(embedded.conceptIdentifier, undefined);
+    assertEquals(embedded.conceptName, undefined);
     assertEquals(embedded.literalBlocks.length, 1);
     assertEquals(embedded.literalBlocks[0].type, "json");
     assert(embedded.literalBlocks[0].body.includes("\n\n"));
     assert(embedded.range.start.line < embedded.literalBlocks[0].range.start.line);
     assertEquals(embedded.range.end.line, embedded.literalBlocks[0].range.end.line);
     assertEquals(last.prose, "Last contribution.");
-    assertEquals(last.conceptIdentifier, undefined);
+    assertEquals(last.conceptName, undefined);
     assert(!isEmbeddedFacet(first));
     assert(!isEmbeddedFacet(grouped));
     assert(!isEmbeddedFacet(last));
@@ -2744,7 +2744,7 @@ ${["state", "logic", "constraints", "decisions", "cases"].map(contract).join("\n
 
 // @sigil tests packages/core/src/parser.sigil::SigilParser::SourceDocument logic,constraints,cases
 Deno.test("rejects empty, nested, and invalid concept blocks", () => {
-  const source = `component BrokenConcepts {
+  const source = `component BrokenTags {
   goal {
     Exercise concept diagnostics.
   }
@@ -2768,12 +2768,12 @@ Deno.test("rejects empty, nested, and invalid concept blocks", () => {
   const parsed = parseSigilDocument("broken-concepts.sigil", source, {
     sigilVersion: SIGIL_VERSION,
   });
-  assertHasCode(parsed.diagnostics, "SIGIL_EMPTY_CONCEPT_BLOCK");
-  assertHasCode(parsed.diagnostics, "SIGIL_NESTED_CONCEPT_BLOCK");
-  assertHasCode(parsed.diagnostics, "SIGIL_INVALID_CONCEPT_IDENTIFIER");
+  assertHasCode(parsed.diagnostics, "SIGIL_EMPTY_CONCEPT");
+  assertHasCode(parsed.diagnostics, "SIGIL_NESTED_CONCEPT");
+  assertHasCode(parsed.diagnostics, "SIGIL_INVALID_TAG_NAME");
 });
 
-// @sigil tests packages/core/src/resolver.sigil::SigilResolver::ConceptResolution interface,logic,constraints,cases
+// @sigil tests packages/core/src/resolver.sigil::SigilResolver::TagResolution interface,logic,constraints,cases
 Deno.test("resolves collective and contextual concept identities", async () => {
   const fs = new InMemorySigilFileSystem({
     ".sigil/config.json": configSource(),
@@ -2866,17 +2866,17 @@ expand App {
     await loadSigilWorkspace(fs, { startPath: "." }),
   );
   assertNoErrors(resolved.diagnostics);
-  const account = conceptNamespaceFor(resolved, "Account");
-  const dashboard = conceptNamespaceFor(resolved, "Dashboard");
-  const app = conceptNamespaceFor(resolved, "App");
+  const account = tagScopeFor(resolved, "Account");
+  const dashboard = tagScopeFor(resolved, "Dashboard");
+  const app = tagScopeFor(resolved, "App");
   assert(account && dashboard && app);
-  const accountSession = account.publicConcepts.find((item) =>
+  const accountSession = account.publicTags.find((item) =>
     item.identifier === "Session"
   );
-  const dashboardSession = dashboard.publicConcepts.find((item) =>
+  const dashboardSession = dashboard.publicTags.find((item) =>
     item.identifier === "Session"
   );
-  const appSession = app.publicConcepts.find((item) =>
+  const appSession = app.publicTags.find((item) =>
     item.identifier === "Session"
   );
   assert(accountSession && dashboardSession && appSession);
@@ -2892,17 +2892,17 @@ expand App {
   assertEquals(dashboardSession.occurrences.length, 2);
   assertEquals(appSession.occurrences.length, 3);
   assert(
-    !dashboard.accessibleConcepts.some((item) =>
+    !dashboard.accessibleTags.some((item) =>
       item.identifier === "SessionCache"
     ),
   );
   assert(
     !dashboardSession.occurrences.some((item) => item.sectionName === "state"),
   );
-  const dashboardAccessibleSession = dashboard.accessibleConcepts.find((item) =>
+  const dashboardAccessibleSession = dashboard.accessibleTags.find((item) =>
     item.identifier === "Session"
   );
-  const accountAccessibleSession = account.accessibleConcepts.find((item) =>
+  const accountAccessibleSession = account.accessibleTags.find((item) =>
     item.identifier === "Session"
   );
   assert(dashboardAccessibleSession && accountAccessibleSession);
@@ -2918,7 +2918,7 @@ expand App {
   );
 });
 
-// @sigil tests packages/core/src/resolver.sigil::SigilResolver::ConceptResolution interface,logic,constraints,cases
+// @sigil tests packages/core/src/resolver.sigil::SigilResolver::TagResolution interface,logic,constraints,cases
 Deno.test("keeps component concepts local when an imported name matches", async () => {
   const fs = new InMemorySigilFileSystem({
     ".sigil/config.json": configSource(),
@@ -2953,13 +2953,13 @@ component Dashboard {
     await loadSigilWorkspace(fs, { startPath: "." }),
   );
   const ambiguities = resolved.diagnostics.filter((item) =>
-    item.code === "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER"
+    item.code === "SIGIL_AMBIGUOUS_TAG"
   );
   assertEquals(ambiguities.length, 1);
   assertEquals(ambiguities[0].filePath, "dashboard.sigil");
-  const dashboard = conceptNamespaceFor(resolved, "Dashboard");
+  const dashboard = tagScopeFor(resolved, "Dashboard");
   assert(dashboard);
-  const sessions = dashboard.accessibleConcepts.filter((item) =>
+  const sessions = dashboard.accessibleTags.filter((item) =>
     item.identifier === "Session"
   );
   assertEquals(sessions.length, 2);
@@ -2972,7 +2972,7 @@ component Dashboard {
   assertEquals(dashboard.references.length, 0);
 });
 
-// @sigil tests packages/core/src/resolver.sigil::SigilResolver::ConceptResolution interface,logic,constraints,cases
+// @sigil tests packages/core/src/resolver.sigil::SigilResolver::TagResolution interface,logic,constraints,cases
 Deno.test("resolves contextual whole-word concept references in source order", async () => {
   const consumerSource = `@account.sigil import { Account }
 
@@ -3019,8 +3019,8 @@ expand Consumer {
   );
 
   assertNoErrors(resolved.diagnostics);
-  const account = conceptNamespaceFor(resolved, "Account");
-  const consumer = conceptNamespaceFor(resolved, "Consumer");
+  const account = tagScopeFor(resolved, "Account");
+  const consumer = tagScopeFor(resolved, "Consumer");
   assert(account && consumer);
   assertEquals(account.references.length, 0);
   assertEquals(consumer.references.length, 5);
@@ -3038,8 +3038,8 @@ expand Consumer {
     assertEquals(reference.componentName, "Consumer");
     assertEquals(reference.filePath, "consumer.sigil");
     assertEquals(reference.ownerName, "Consumer");
-    assertEquals(reference.conceptIdentity.componentName, "Account");
-    assertEquals(reference.conceptIdentity.identifier, "Session");
+    assertEquals(reference.tagIdentity.componentName, "Account");
+    assertEquals(reference.tagIdentity.identifier, "Session");
     const line = consumerSource.split("\n")[reference.range.start.line - 1];
     assertEquals(
       line.slice(
@@ -3051,7 +3051,7 @@ expand Consumer {
   }
 });
 
-// @sigil tests packages/core/src/resolver.sigil::SigilResolver::ConceptResolution interface,logic,constraints,cases
+// @sigil tests packages/core/src/resolver.sigil::SigilResolver::TagResolution interface,logic,constraints,cases
 Deno.test("rejects case-insensitive concept ambiguity across imports", async () => {
   const provider = (component: string, concept: string) =>
     `component ${component} {\n  goal {\n    Provide ${component}.\n  }\n\n  interface {\n    ${concept} {\n      Public ${concept}.\n    }\n  }\n}\n`;
@@ -3080,9 +3080,9 @@ component Consumer {
   );
   assertHasCode(
     resolved.diagnostics,
-    "SIGIL_AMBIGUOUS_CONCEPT_IDENTIFIER",
+    "SIGIL_AMBIGUOUS_TAG",
   );
-  const consumer = conceptNamespaceFor(resolved, "Consumer");
+  const consumer = tagScopeFor(resolved, "Consumer");
   assert(consumer);
   assertEquals(consumer.references.length, 0);
 });
@@ -3309,33 +3309,33 @@ Deno.test("purpose retrieval emits one evidence unit per SemanticUnit", async ()
   assertEquals(
     JSON.stringify(selected.map((unit) => ({
       sectionName: unit.sectionName,
-      conceptIdentity: unit.conceptIdentity ?? null,
+      tagIdentity: unit.tagIdentity ?? null,
       text: unit.text,
     }))),
     JSON.stringify([
       {
         sectionName: "goal",
-        conceptIdentity: null,
+        tagIdentity: null,
         text: "First goal sentence.",
       },
       {
         sectionName: "goal",
-        conceptIdentity: null,
+        tagIdentity: null,
         text: "Second goal sentence.",
       },
       {
         sectionName: "interface",
-        conceptIdentity: "FeatureApi",
+        tagIdentity: "FeatureApi",
         text: "first()",
       },
       {
         sectionName: "interface",
-        conceptIdentity: "FeatureApi",
+        tagIdentity: "FeatureApi",
         text: "second()",
       },
       {
         sectionName: "interface",
-        conceptIdentity: null,
+        tagIdentity: null,
         text: "ungrouped interface unit",
       },
     ]),

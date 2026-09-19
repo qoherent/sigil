@@ -122,7 +122,7 @@ pub fn compile(
     for entity in &input.entities {
         let kind = match entity.kind {
             EntityType::Component => "Component",
-            EntityType::Concept => "Concept",
+            EntityType::Tag => "Tag",
         };
         assertions.push(Assertion {
             subject: entity.id.clone(),

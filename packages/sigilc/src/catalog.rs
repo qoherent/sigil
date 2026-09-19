@@ -80,7 +80,7 @@ fn reserved(input: &DesignInput) -> Result<BTreeMap<String, Identity>, String> {
                     id: entity.id.clone(),
                     kind: match entity.kind {
                         EntityType::Component => "Component",
-                        EntityType::Concept => "Concept",
+                        EntityType::Tag => "Tag",
                     }
                     .into(),
                     label: text(&entity.label),
@@ -214,8 +214,8 @@ fn declarations(
                 unreachable!()
             };
             let kind = value.strip_prefix(ONTOLOGY).expect("validated class");
-            if ["Component", "Concept"].contains(&kind) {
-                return Err("Component and Concept identities are reserved by the frontend".into());
+            if ["Component", "Tag"].contains(&kind) {
+                return Err("Component and Tag identities are reserved by the frontend".into());
             }
             types.insert(kind.into());
         } else {
