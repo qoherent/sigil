@@ -1,21 +1,20 @@
 # <img src="docs/sigil.png" height="30" /> Sigil
 
-Sigil is an inferential modeling language (IML).
-It's text-only, with a cool 7-word syntax.
-AI writes it for you, don't worry (^_~). Unlike descriptive modeling languages,
-Sigil design files (*.sigil) compile into **world models (Semantic Worlds)** that compute what
-follows from what you specify, and whether an implementation realizes it.
-It records what a system is, why it exists, how it behaves, and how its
+Sigil is an inferential modeling language (IML). It is text-only, with a seven-word
+syntax; AI writes it for you (^_~). Unlike descriptive modeling languages, Sigil
+design files (`*.sigil`) compile into **world models (Semantic Worlds)** that
+compute what follows from what you specify and whether an implementation realizes
+it. A design records what a system is, why it exists, how it behaves, and how its
 implementation should be understood and changed over time.
 
-This puts some new superpowers on the table. A Sigil design can **infer facts
-nobody explicitly wrote**, turn intent into **computable obligations**, and
-independently reconstruct the implementation into a second world to ask whether
-the two actually realize each other. Change the code and Sigil can follow its
-semantic correspondence back through the design to show what may be affected.
-Ambiguity stays ambiguity; contradictions become errors; missing realization
-becomes a warning. The model is no longer documentation sitting next to the
-software. **It computes.**
+This puts new superpowers on the table. A Sigil design can **infer facts nobody
+explicitly wrote**, turn intent into **computable obligations**, and independently
+reconstruct the implementation into a second world to ask whether the two actually
+realize each other. Change the code and Sigil can follow its semantic
+correspondence back through the design to show what may be affected. Ambiguity
+stays ambiguity; contradictions become errors; missing realization becomes a
+warning. The model is no longer documentation sitting next to the software. **It
+computes.**
 
 ## Start vibing:
 
@@ -31,13 +30,12 @@ Windows PowerShell:
 irm https://github.com/qoherent/sigil/releases/latest/download/install.ps1 | iex
 ```
 
-Set `SIGIL_VERSION` to install a specific release. To inspect an installer
-before running it, download the script first instead of piping it directly to a
-shell. Every archive is verified against the release's SHA-256 manifest before
+Set `SIGIL_VERSION` to install a specific release. To inspect an installer before
+running it, download the script first instead of piping it directly to a shell.
+Every archive is verified against the release's SHA-256 manifest before
 installation.
 
-Install the bundled Sigil skill globally for Codex, Claude Code, OpenCode, and
-Pi:
+Install the bundled Sigil skill globally for Codex, Claude Code, OpenCode, and Pi:
 
 ```bash
 sigil skill install
@@ -51,15 +49,14 @@ VS Code extension releases are currently available as manually installable
 [GitHub Releases page](https://github.com/qoherent/sigil/releases). Marketplace
 publishing remains deferred.
 
-
-The [language guide](spec/sigil-language.md) teaches the upcoming 0.8.0 language;
+The [authoring guide](spec/sigil-language.md) teaches the upcoming 0.8.0 language;
 the [normative reference](spec/sigil-reference.md) and [EBNF grammar](spec/sigil.ebnf)
-define its rules:
-inline `*Tags*`, unchanged Concept Tag grouping syntax, and explicit imports
-such as `@search/records.sigil from RecordSearch import { query, search results }`.
-All seven contracts belong directly to components; `expand` and language-level
-public/private distinctions are removed. Tags introduced in any contract may
-be imported. The installed tooling and walkthrough below still target 0.7.0; see the
+define its rules: inline `*Tags*`, Concept grouping syntax (`tag_group`/`group_open`/
+`tag_name` headings that reuse a local Tag), and explicit imports such as
+`@search/records.sigil from RecordSearch import { query, search results }`. All
+seven contracts belong directly to components; `expand` and language-level
+public/private distinctions are removed. Tags introduced in any contract may be
+imported. The tooling and walkthrough below target 0.8.0; see the
 [Tag migration guide](spec/migrating-to-0.8.md).
 
 ## Seven Words
@@ -101,11 +98,10 @@ cases
     What should we actually observe?
 ```
 
-They are intentionally broad enough for humans to write naturally and narrow enough for an AI semanticizer to project into a fixed vocabulary.
-
-The prose is not the final computational representation.
-
-It is the human-authored surface from which the Semantic World is compiled.
+They are intentionally broad enough for humans to write naturally and narrow
+enough for an AI semanticizer to project into a fixed vocabulary. The prose is not
+the final computational representation; it is the human-authored surface from
+which the Semantic World is compiled.
 
 ---
 
@@ -196,11 +192,12 @@ Read [more about the syntax here.](spec/sigil-language.md)
 
 ## What Just Changed
 
-Software models used to be pictures humans looked at.
+Software models used to be pictures humans looked at. Sigil models are inputs to a
+compiler.
 
-Sigil models are inputs to a compiler.
-
-A Design becomes a Semantic World `D`. The implementation is independently reconstructed into another Semantic World `I`. Compiler-owned laws expand both worlds until no more consequences can be derived:
+A Design becomes a Semantic World `D`. The implementation is independently
+reconstructed into another Semantic World `I`. Compiler-owned laws expand both
+worlds until no more consequences can be derived:
 
 ```text
 D* = saturate(D)
@@ -215,36 +212,16 @@ That small change unlocks a very different kind of modeling.
 
 ### Models can infer things nobody wrote
 
-If:
-
-```text
-A depends on B
-B depends on C
-```
-
-Sigil can derive:
-
-```text
-A reaches C
-```
-
-If:
-
-```text
-A requires X
-```
-
-the model can derive an obligation that X must somehow become available to A.
-
-If two individually reasonable statements cannot both be true, the contradiction appears when the world is compiled.
-
-The author supplies the generators. The kernel computes closure under composition.
+If `A depends on B` and `B depends on C`, Sigil derives `A reaches C`. If `A
+requires X`, the model derives an obligation that X must somehow become available
+to A. If two individually reasonable statements cannot both be true, the
+contradiction appears when the world is compiled. The author supplies the
+generators; the kernel computes closure under composition.
 
 ### A design can ask whether reality realizes it
 
-Sigil does not ask the coding agent whether it implemented the spec correctly.
-
-The Design and Implementation worlds are built independently.
+Sigil does not ask the coding agent whether it implemented the spec correctly. The
+Design and Implementation worlds are built independently.
 
 ```text
 Design                         Implementation
@@ -279,7 +256,8 @@ Design itself has the matching progression:
 🟢 Coherent    closed under the current Design laws
 ```
 
-Yellow is useful. Unknown stays unknown instead of being converted into confidence theater.
+Yellow is useful. Unknown stays unknown instead of being converted into confidence
+theater.
 
 ### Meaning survives different spellings and different languages
 
@@ -293,7 +271,8 @@ age
 age_years
 ```
 
-Sigil preserves those as different **source-local anchors** connected by explicit correspondence.
+Sigil preserves those as different **source-local anchors** connected by explicit
+correspondence.
 
 ```text
 Origin        Design        Implementation
@@ -302,11 +281,10 @@ Age  ◀──────  age  ◀──────  age_years
         denotes       denotes
 ```
 
-The compiler does not lowercase them, fuzzy-match them, or pretend they are one global identifier.
-
-The LLM interpreting each source understands its local language and proposes the mapping. Sigil preserves that mapping as graph structure.
-
-From those direct mappings the kernel can derive broader correspondence:
+The compiler does not lowercase them, fuzzy-match them, or pretend they are one
+global identifier. The LLM interpreting each source understands its local language
+and proposes the mapping; Sigil preserves that mapping as graph structure. From
+those direct mappings the kernel derives broader correspondence:
 
 ```text
 denotes(A, B)
@@ -315,17 +293,14 @@ denotes(B, C)
 → correspondsTo(A, C)
 ```
 
-without erasing A, B, or C.
-
-That means the path by which meaning crossed Markdown, Sigil, Rust, Python, TypeScript, or anything else remains inspectable.
+without erasing A, B, or C. The path by which meaning crossed Markdown, Sigil,
+Rust, Python, TypeScript, or anything else remains inspectable.
 
 ### Refactors acquire a semantic blast radius
 
 When code changes, its old semantic facts immediately stop being current truth.
-
-But the last known correspondence is still useful for a different question:
-
-> What might this change affect?
+But the last known correspondence still answers a different question: *what might
+this change affect?*
 
 ```text
 changed source
@@ -341,17 +316,14 @@ Sigil contracts
 origin material
 ```
 
-So a changed Rust file can point back toward the Design decisions, interface Facets, constraints, or origin sections it previously realized.
-
-Stale knowledge may explain impact.
-
-It can never make the current implementation green.
+So a changed Rust file can point back toward the Design decisions, interface
+Facets, constraints, or origin sections it previously realized. Stale knowledge may
+explain impact; it can never make the current implementation green.
 
 ### Numbers can participate too
 
-Semantic facts do not have to carry only true/false information.
-
-The kernel can define different algebras for different properties:
+Semantic facts do not have to carry only true/false information. The kernel can
+define different algebras for different properties:
 
 ```text
 path cost
@@ -367,9 +339,8 @@ latency
     emit a crisp violation
 ```
 
-This is why Semantic Worlds are more than graphs with labels.
-
-Their edges participate in computation.
+This is why Semantic Worlds are more than graphs with labels: their edges
+participate in computation.
 
 ---
 
@@ -397,13 +368,10 @@ source ───────→ Turtle generators
                 richer world
 ```
 
-The LLM is good at understanding language, code, aliases, intent, and local meaning.
-
-The kernel is good at composition, closure, contradictions, obligations, correspondence, arithmetic, and comparison.
-
-Neither is asked to impersonate the other.
-
-The rule is:
+The LLM is good at understanding language, code, aliases, intent, and local
+meaning. The kernel is good at composition, closure, contradictions, obligations,
+correspondence, arithmetic, and comparison. Neither is asked to impersonate the
+other.
 
 > **LLMs emit generators. The kernel owns composition.**
 
@@ -442,31 +410,17 @@ I
 I*
 ```
 
-Only after both have independently reached closure does comparison begin.
-
-This prevents:
-
-```text
-"Design says A provides X"
-```
-
-from somehow becoming evidence that:
-
-```text
-"the implementation provides X"
-```
-
-Design determines the obligations.
-
-Implementation has to realize them on its own.
+Only after both have independently reached closure does comparison begin. This
+prevents `"Design says A provides X"` from becoming evidence that `"the
+implementation provides X"`. Design determines the obligations; Implementation has
+to realize them on its own.
 
 ---
 
 ## Local Facts, Global Meaning
 
-Semanticization is incremental.
-
-Each source file produces one disposable semantic object:
+Semanticization is incremental. Each source file produces one disposable semantic
+object:
 
 ```text
 auth.ts        → auth.ts.egg
@@ -474,9 +428,8 @@ storage.py     → storage.py.egg
 engine.rs      → engine.rs.egg
 ```
 
-Each object contains only direct facts attributable to that source.
-
-It does not attempt fuzzy whole-program analysis.
+Each object contains only direct facts attributable to that source; it does not
+attempt fuzzy whole-program analysis.
 
 ```text
 a.ts.egg:
@@ -486,27 +439,30 @@ b.ts.egg:
 B dependsOn C
 ```
 
-The objects are linked into one world and Egglog derives:
-
-```text
-A reaches C
-```
-
-So changing `b.ts` requires reconstructing `b.ts.egg`, not `a.ts.egg`.
-
-Then the cheap deterministic world closure runs again.
+The objects are linked into one world and Egglog derives `A reaches C`. So changing
+`b.ts` requires reconstructing `b.ts.egg`, not `a.ts.egg`. Then the cheap
+deterministic world closure runs again.
 
 > **Local facts in files. Global meaning in closure.**
 
-The expensive part, LLM semanticization, is incremental. The deterministic circuitry can simply recompute.
+The expensive part, LLM semanticization, is incremental. The deterministic
+circuitry can simply recompute.
 
 ---
 
-## Concepts and Facets
+## Tag and Facet
 
-A **Concept** is the semantic thing that persists across contracts and source languages.
+A **Tag** is the umbrella term for a component-owned identifier. It has two
+variants:
 
-A **Facet** is one named contribution to that Concept.
+- An **Inline Tag** is the prose variant, introduced once as `*name*` and reused
+  bare afterward.
+- A **Concept** is the heading variant, `name { ... }` — a flat, nonempty heading
+  that gathers related Facets. The same exact Concept can gather Facets across
+  contracts.
+
+A **Facet** is the smallest independently reviewable unit within a contract: one
+named contribution to a Concept.
 
 For example:
 
@@ -529,9 +485,11 @@ Concept: Authentication
     invalid password is rejected
 ```
 
-This distinction matters during implementation.
+Reusing a Concept across contracts adds Facets to one Concept while preserving
+each contract's role; it does not make the resources or actions in those Facets
+identical.
 
-A source anchor may broadly:
+This distinction matters during implementation. A source anchor may broadly:
 
 ```text
 implement Authentication
@@ -543,23 +501,20 @@ while specifically:
 realize Authentication.Login
 ```
 
-Implementing the Concept does not magically realize every Facet.
-
-Correspondence alone also proves no behavior.
-
-A concrete local fact must participate in a compiler-owned composition law before an Implementation realization can satisfy a Design obligation.
-
-That keeps semantic traceability rich without turning “these things seem related” into “therefore the code is correct.”
+Implementing the Concept does not magically realize every Facet. Correspondence
+alone also proves no behavior. A concrete local fact must participate in a
+compiler-owned composition law before an Implementation realization can satisfy a
+Design obligation. That keeps semantic traceability rich without turning "these
+things seem related" into "therefore the code is correct."
 
 ---
 
 ## Why AI Changes The Modeling Problem
 
-Before AI coding, the implementation itself was expensive enough that engineers naturally carried much of its context in their heads.
-
-Now code can appear faster than a team can build a shared mental model of it.
-
-The scarce resource moves upward:
+Before AI coding, the implementation itself was expensive enough that engineers
+naturally carried much of its context in their heads. Now code can appear faster
+than a team can build a shared mental model of it, so the scarce resource moves
+upward:
 
 ```text
 not:
@@ -574,10 +529,9 @@ but:
     checking whether generated code still realizes the design
 ```
 
-That is the problem Sigil is built around.
-A model that participates in the software system itself.
-The problem statement that lead us to Sigil is captured in [PROBLEM.md](PROBLEM.md).
-
+That is the problem Sigil is built around: a model that participates in the
+software system itself. The problem statement that led us to Sigil is captured in
+[PROBLEM.md](PROBLEM.md).
 
 ## Where To Start
 
@@ -587,7 +541,7 @@ The problem statement that lead us to Sigil is captured in [PROBLEM.md](PROBLEM.
 | Setting up a repository properly | [Setting Up A Project](docs/setting-up-a-project.md)                                    |
 | Code exists, contracts do not    | [Setting Up A Project](docs/setting-up-a-project.md#adopting-into-an-existing-codebase) |
 | Designing something new          | [Greenfield Design](integrations/skills/sigil/references/greenfield-design.md)          |
-| Writing Sigil, need the syntax   | [Language Guide](spec/sigil-language.md)                                        |
+| Writing Sigil, need the syntax   | [Authoring Guide](spec/sigil-language.md)                                               |
 | Tuning `.sigil/config.json`      | [Config Reference](spec/sigil-config.md)                                                |
 | Upgrading an existing workspace  | [Compatibility](COMPATIBILITY.md), then the `spec/migrating-to-*.md` for your target    |
 | Changing Sigil itself            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                      |
@@ -598,7 +552,7 @@ you by installing the skill above.
 
 ## Setup for development
 
-For Contributors using the codebase directly, use the following.
+For contributors using the codebase directly, use the following.
 
 1. Clone the repo:
 
@@ -610,17 +564,17 @@ cd sigil
 Use `git@github.com:qoherent/sigil.git` instead if you have SSH keys set up for
 GitHub.
 
-2. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/)
+2. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/).
 
-   A fresh Deno install adds `~/.deno/bin` to your `PATH` only for new shells.
-   If `deno` or `sigil` is not found afterwards, open a new terminal or reload
-   your shell:
+   A fresh Deno install adds `~/.deno/bin` to your `PATH` only for new shells. If
+   `deno` or `sigil` is not found afterwards, open a new terminal or reload your
+   shell:
 
    ```sh
    exec $SHELL -l
    ```
 
-3. Install the Sigil CLI with deno, changes to code are hot reloaded this way:
+3. Install the Sigil CLI with deno; changes to code are hot reloaded this way:
 
 ```sh
 deno task --cwd packages/cli install
@@ -628,8 +582,8 @@ sigil --version
 ```
 
 The installed command runs this clone, so it follows whichever branch is checked
-out here. To pin one instead, add a detached worktree and install it under its
-own name:
+out here. To pin one instead, add a detached worktree and install it under its own
+name:
 
 ```sh
 git worktree add --detach ../sigil-pinned <branch-or-commit>
@@ -641,9 +595,8 @@ deno install --global --force --config "$PWD/deno.json" \
 
 ## Usage
 
-The `.sigil` files are the durable place where
-decisions, assumptions, component boundaries, and behavior are recorded before
-implementation.
+The `.sigil` files are the durable place where decisions, assumptions, component
+boundaries, and behavior are recorded before implementation.
 
 The intended workflow is:
 
@@ -658,10 +611,10 @@ The intended workflow is:
 5. The user approves, rejects, or revises the proposed contract and semantic
    lines.
 6. The agent writes only the approved Sigil and stops at a semantic review gate.
-7. After approval, the agent colocates Sigil with the implementation and uses
-   the agreed contract to generate or change code.
-8. If implementation reveals a missing material decision, the workflow returns
-   to Sigil and human review.
+7. After approval, the agent colocates Sigil with the implementation and uses the
+   agreed contract to generate or change code.
+8. If implementation reveals a missing material decision, the workflow returns to
+   Sigil and human review.
 
 The full workflow is described in
 [spec/sigil-workflow.md](spec/sigil-workflow.md).
@@ -674,8 +627,8 @@ and anchors is recorded in
 [ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md),
 but those capabilities are outside the active v0.7 workspace.
 
-Project-specific terms, statuses, reserved names, and abbreviations are defined
-in the [Sigil glossary](spec/glossary.md).
+Project-specific terms, statuses, reserved names, and abbreviations are defined in
+the [Sigil glossary](spec/glossary.md).
 
 Open design questions are tracked in
 [spec/open-questions.md](spec/open-questions.md).
@@ -683,35 +636,31 @@ Open design questions are tracked in
 ## Repository Layout
 
 The root [.sigil/config.json](./.sigil/config.json) defines this repository as a
-Sigil 0.7.0 workspace and excludes the independent example projects. The root
-[_module.sigil](./_module.sigil) is its directory-import index and contains the
-ordinary high-level project summary for this configured boundary.
+Sigil 0.8.0 workspace and excludes the independent example projects. The root
+[_module.sigil](./_module.sigil) is an ordinary summary source containing the
+high-level project summary for this configured boundary.
 
 - `spec/` contains language, workflow, platform architecture, and open-question
   documents.
 - `examples/` contains independently configured Sigil projects used as
   design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core`, `sigil-compiler`,
-  standalone Claude, OpenCode, and Pi compiler adapters, `sigil-cli`, and
-  initial `sigil-lsp`.
-- `integrations/` contains host adapters such as coding-agent skills, the
-  initial VS Code extension, and future editor integrations.
+- `packages/` contains the implemented `sigil-core`, `sigil-compiler`, standalone
+  Claude, OpenCode, and Pi compiler adapters, `sigil-cli`, and initial `sigil-lsp`.
+- `integrations/` contains host adapters such as coding-agent skills, the initial
+  VS Code extension, and future editor integrations.
 
 ## Examples
 
 `Promise` in [examples/promise/promise.sigil](examples/promise/promise.sigil)
 shows how Sigil can describe a programming abstraction with an API, lifecycle
-states, and transition logic.
-
-Its [.sigil/config.json](examples/promise/.sigil/config.json) makes it an
-independent workspace named `promise`.
+states, and transition logic. Its
+[.sigil/config.json](examples/promise/.sigil/config.json) makes it an independent
+workspace named `promise`.
 
 `Slotted` in [examples/slotted/_module.sigil](examples/slotted/_module.sigil) is
 an example room booking product used to test Sigil against product and module
-modeling.
-
-Its [.sigil/config.json](examples/slotted/.sigil/config.json) makes it an
-independent workspace named `slotted`; imports beginning with `@` resolve from
+modeling. Its [.sigil/config.json](examples/slotted/.sigil/config.json) makes it
+an independent workspace named `slotted`; imports beginning with `@` resolve from
 that directory.
 
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil)
@@ -723,8 +672,8 @@ an imported component with a TypeScript-shaped public interface.
 
 `BookingCalendarView` in
 [examples/slotted/booking-calendar-view.sigil](examples/slotted/booking-calendar-view.sigil)
-shows a UI component whose interface combines natural language, an ASCII
-wireframe, and a repository image reference.
+shows a UI component whose interface combines natural language, an ASCII wireframe,
+and a repository image reference.
 
 `Slotted` is only an example project used to test the language. It is not the
 purpose of this repository.
@@ -748,13 +697,12 @@ The skill teaches coding-agent hosts to:
   implementation pitfalls;
 - introduce Sigil incrementally into brownfield codebases through a
   change-frontier pilot;
-- derive provisional boundary pictures from documentation, dependency
-  definitions, executable configuration, and entrypoints, then confirm goals and
-  interfaces before proposing ordinary summaries at the workspace root and
-  declared members;
+- derive provisional boundary pictures from documentation, dependency definitions,
+  executable configuration, and entrypoints, then confirm goals and interfaces
+  before proposing ordinary summaries at the workspace root and declared members;
 - preserve material boundary-wide runtime modes, flows, binding architecture
-  decisions, and observable outcomes in minimal expands while excluding
-  incidental and task-specific details;
+  decisions, and observable outcomes in minimal expands while excluding incidental
+  and task-specific details;
 - record durable rationale for material selected choices in optional `decisions`
   sections while keeping binding outcomes in `constraints`;
 - propose brownfield and externally informed semantic units before editing;
@@ -767,58 +715,58 @@ The compact `SKILL.md` dispatches into progressive references. The
 reference defines root discovery, configuration-state handling, initialization,
 and compatibility validation. The
 [authoring conventions](integrations/skills/sigil/references/authoring-conventions.md)
-reference owns section discipline, concept identifiers, decision rationale, and
-colocation. The reference file at
+reference owns section discipline, Concepts, decision rationale, and colocation.
+The reference file at
 [integrations/skills/sigil/references/sigil-format.md](integrations/skills/sigil/references/sigil-format.md)
 is a concise agent-facing guide. The
 [standards review](integrations/skills/sigil/references/standards-review.md) and
 [brownfield adoption](integrations/skills/sigil/references/brownfield-adoption.md)
 references define the corresponding host-side workflows. The canonical language
 specification is [spec/sigil-reference.md](spec/sigil-reference.md), with the
-[EBNF grammar](spec/sigil.ebnf). The [language guide](spec/sigil-language.md)
+[EBNF grammar](spec/sigil.ebnf). The [authoring guide](spec/sigil-language.md)
 provides authoring explanations and examples.
 
 ## Current Status
 
 The core, CLI, LSP, VS Code extension, and Sigil skill are pre-production
-artifacts at 0.7.1, over Sigil Language and configuration contract 0.7.0. See
+artifacts at 0.8.0, over Sigil Language and configuration contract 0.8.0. See
 [PRE_RELEASE.md](PRE_RELEASE.md), [configuration](spec/sigil-config.md), and the
 [0.7 language migration guide](spec/migrating-to-0.7.md). Reviewed project
 vocabulary is described in the
 [workspace glossary guide](spec/sigil-glossary.md).
 
-This repository contains the Sigil language and workflow specifications,
-platform architecture, examples, a shared Deno TypeScript core, a working CLI,
-and portable coding-agent skill integration.
+This repository contains the Sigil language and workflow specifications, platform
+architecture, examples, a shared Deno TypeScript core, a working CLI, and portable
+coding-agent skill integration.
 
 `sigil-core` implements explicit language-version parsing, strict config
 validation, config-based discovery, declared workspace-member metadata, glob
 filtering, source ranges and semantic units, reviewed workspace-glossary
 validation and occurrence matching, explicit file and directory-index import
-resolution, collective expansion, graphs, scoped glossary context projections,
-and stable diagnostics. `sigil-cli` implements `init`, `version`, `parse`,
-`check`, `glossary`, `graph`, `context`, Markdown `render`, and explicit `fmt`
-commands with machine-readable output and stable exit behavior.
+resolution, collective expansion, graphs, scoped glossary context projections, and
+stable diagnostics. `sigil-cli` implements `init`, `version`, `parse`, `check`,
+`glossary`, `graph`, `context`, Markdown `render`, and explicit `fmt` commands with
+machine-readable output and stable exit behavior.
 
 `sigil-lsp` is an implemented pre-production deliverable. Its initial contract
 covers LSP 3.18 lifecycle, full document synchronization, diagnostics, document
 symbols, definition navigation, hover, and resolver-backed semantic highlighting
-for components, concepts, and reviewed glossary terms over a stdio transport.
+for components, Concepts, and reviewed glossary terms over a stdio transport.
 
 The Sigil VS Code extension is an implemented pre-production deliverable. Its
 initial contract covers TextMate syntax highlighting, bundled LSP startup,
-resolver-backed component highlighting through LSP semantic tokens,
-editor-native language features, and a read-only component preview derived from
-standard hover responses.
+resolver-backed component highlighting through LSP semantic tokens, editor-native
+language features, and a read-only component preview derived from standard hover
+responses.
 
 Semantic readiness, standards research, brownfield reconciliation, reviewed
 post-Sigil glossary extraction, proposal gates, scoped terminology handoff, and
 implementation colocation live in the host-neutral Sigil skill rather than
-`sigil-core`. The skill also discovers coherent implementation and UI
-components, distinguishes component contracts from implementation-specific
-expands and trivial mechanics, and requires an implementation coverage map
-before coding. The active boundary keeps deterministic facts in shared packages
-and model-assisted interpretation in the host-neutral skill workflow.
+`sigil-core`. The skill also discovers coherent implementation and UI components,
+distinguishes component contracts from implementation-specific expands and trivial
+mechanics, and requires an implementation coverage map before coding. The active
+boundary keeps deterministic facts in shared packages and model-assisted
+interpretation in the host-neutral skill workflow.
 
 Editor integrations other than VS Code, stricter body semantics, and additional
 project configuration remain deferred.
@@ -828,5 +776,5 @@ active or deferred Sigil components.
 [ADR-011](spec/decisions/adr-011-generated-rationale-evidence-and-review-records.md)
 records the rejected proposal for deterministic shared packages, attributed
 host-assisted interpretation, a `sigil-indexer`, and generated review records
-without adding inline Sigil syntax. Its indexer and anchor contracts are not
-part of the active v0.7 workspace.
+without adding inline Sigil syntax. Its indexer and anchor contracts are not part
+of the active v0.7 workspace.

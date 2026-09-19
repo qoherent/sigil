@@ -56,7 +56,7 @@ expand SigilSkillCompatibility {
 
   cases {
     SkillCompatibility {
-      CLI 0.8.0 and sigilc 0.1.0 can be supported together with language 0.7.0; their
+      CLI 0.8.0 and sigilc 0.1.0 can be supported together with language 0.8.0; their
       distinct versions are intentional. A removed command remains removed.
     }
   }

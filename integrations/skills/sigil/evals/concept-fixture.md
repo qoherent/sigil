@@ -7,7 +7,7 @@ recognize useful semantic grouping without treating ungrouped content as broken.
 
 A small Lookup component describes one operation through ungrouped Interface,
 Logic, Constraint, and Case Facets. Its meaning is clear and the requested edit
-does not introduce another concept.
+does not introduce another Concept.
 
 Expected behavior:
 
@@ -15,8 +15,8 @@ Expected behavior:
 - Do not add a Lookup Concept wrapper merely to repeat the component identity.
 - Do not describe ungrouped Interface content as a warning, defect, or migration
   requirement.
-- Preserve public identifiers defined within Interface Facets; exports do not
-  require a Concept block.
+- Preserve Tags introduced in Interface Facets; exports do not require a Concept
+  grouping.
 
 ## Several concepts in one component
 
@@ -32,15 +32,15 @@ Expected behavior:
 - Actively identify the distinct concepts and recommend useful cross-contract
   grouping. Optional syntax is not a reason to leave meaningful structure hidden.
 - Inspect local occurrences, matching expands, and accessible imports before
-  proposing identifiers. Preserve existing coherent groups.
-- Reuse the matching accessible public identity; treat inaccessible consumer
+  proposing Concepts. Preserve existing coherent groups.
+- Reuse the matching accessible public Tag; treat inaccessible consumer
   terminology as naming evidence, not reusable identity.
-- Introduce local Concept IDs for distinct meanings when they improve the
+- Introduce local Concepts for distinct meanings when they improve the
   connections. Do not create a new component merely to name a Concept.
 - Preserve provider identity and consumer contribution context without importing
   private Facets or rewriting provider behavior upstream.
-- Check authored identifiers for flat, nonempty blocks, valid syntax, accessible
-  uniqueness, and ambiguity. These rules govern chosen identifiers, not a
+- Check authored Concepts for flat, nonempty groupings, valid syntax, accessible
+  uniqueness, and ambiguity. These rules govern chosen Concepts, not a
   requirement to invent one for every Facet.
 - Do not require one Concept per implementation function or populate all seven
   contracts for every Concept. Group according to meaning, not code layout.
@@ -57,7 +57,7 @@ Expected behavior:
 
 - Proactively recommend distinct Admission and Publication Concepts rather than
   merely noting that Concept syntax is optional.
-- Reuse each ID for its concern across the applicable contracts and expands.
+- Reuse each Concept for its concern across the applicable contracts and expands.
 - Keep the operation signature and shared state-preservation guarantee direct
   where clearer; do not invent a third catch-all Concept.
 - Connect publication to admission through its explicit eligibility condition,
@@ -73,7 +73,7 @@ Expected behavior:
 
 ## Mixed ordinary and Embedded Facets
 
-A contract contains an ungrouped promise, a Concept block reused in another
+A contract contains an ungrouped promise, a Concept grouping reused in another
 contract, an ungrouped Embedded Facet with introducing prose and a Mermaid
 body, and another ordinary Facet. Blank lines and braces occur inside the fence.
 

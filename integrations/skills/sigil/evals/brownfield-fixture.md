@@ -28,14 +28,14 @@ Expected skill behavior:
    dependencies, low-level configuration, and task-specific details.
 7. Propose an exact meaningful ordinary summary component in the workspace-root
    `_module.sigil`; keep it small by responsibility and include direct imports
-   only when they assemble intentional directory-import shorthand.
+   only when they assemble an intentional boundary surface.
 8. Move independently owned state, operational logic, lifecycle behavior, and
    policy into components or expands beside their owners.
-9. Inspect accessible imported public identities and reuse every semantic match
-    before creating a local component or concept.
+9. Inspect accessible imported Tags and reuse every semantic match
+    before creating a local component or Concept.
 10. Show how the proposed contracts decompose implementation ownership rather
     than treating the high-level boundary summary as sufficient coverage.
-11. Write the exact boundary module index directly, validate and compile it,
+11. Write the exact boundary summary source directly, validate and compile it,
    then review the written result in the file.
 12. After the ready boundary summary is written and validated, focus on the
     requested component, classify its coverage, and gather task-specific

@@ -1,6 +1,6 @@
 {
   "cliVersion": "^0.8.0",
-  "coreVersion": "^0.7.0",
-  "sigilVersion": "0.7.0",
+  "coreVersion": "^0.8.0",
+  "sigilVersion": "0.8.0",
   "sigilcVersion": "^0.1.0"
 }

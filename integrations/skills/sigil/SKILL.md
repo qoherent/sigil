@@ -11,11 +11,11 @@ description: Author and inspect Sigil contracts, use native sigilc scope and sem
 # Sigil
 
 `sigil` owns language inspection and structural Design export. Use `sigilc`
-directly for scope, freshness, preparation, ingestion, catalogs and semantic
+directly for scope, freshness, preparation, ingestion, catalogs, and semantic
 gates. The native compiler never starts models or owns the coding loop.
 
 Inspect governing Sigil before every implementation mutation. Read the
-component, matching expands, imports and relevant implementation before changing
+component, matching expands, imports, and relevant implementation before changing
 its contract. Existing user authorization remains effective; a compiler report
 is evidence, not a separate permission system.
 
@@ -34,29 +34,28 @@ sigil glossary . --format json
 
 Use [greenfield design](references/greenfield-design.md) for new boundaries and
 [brownfield adoption](references/brownfield-adoption.md) for existing behavior.
-For unresolved intent, read
-[design conversation](references/design-conversation.md) and ask about the
-material decision that available evidence cannot resolve. Read
+For unresolved intent, read [design conversation](references/design-conversation.md)
+and ask about the material decision that available evidence cannot resolve. Read
 [authoring conventions](references/authoring-conventions.md) and
 [language syntax](references/sigil-format.md) when writing contracts. Reuse
-accessible identities and keep each responsibility with its owner.
+accessible Tag identities and keep each responsibility with its owner.
 
-## Make recurring concepts explicit
+## Make recurring Concepts explicit
 
 When authoring or reviewing Sigil, actively look for concerns whose Facets recur
 across contracts: request lifecycle, selection, cancellation, publication,
-authorization. Prefer Concept IDs when they make those connections explicit;
-real components commonly have several. Reuse the same resolved identifier for
-the same concern across contracts and matching expands, and reuse accessible
-imported identities when their meaning matches.
+authorization. Prefer Concepts when they make those connections explicit; real
+components commonly have several. Reuse the same resolved Tag for the same
+concern across contracts and matching expands, and reuse accessible imported
+Tags when their meaning matches.
 
 Keep shared component-wide promises and standalone Facets ungrouped where that
-is clearer. Mix them with Concept blocks in the same contract. A small component
-with one clear concern may need no Concept wrapper. Do not manufacture one per
-function, paragraph, or contract, or require every Concept in all seven
-contracts. Grouping identifies related meaning; it does not prescribe code
-structure or prove behavior. Use the selection examples in
-[authoring conventions](references/authoring-conventions.md#concept-identifiers).
+is clearer. Mix them with Concepts in the same contract. A small component with
+one clear concern may need no Concept. Do not manufacture one per function,
+paragraph, or contract, or require every Concept in all seven contracts. Concept
+grouping identifies related meaning; it does not prescribe code structure or
+prove behavior. Use the selection examples in
+[authoring conventions](references/authoring-conventions.md#concepts).
 
 ## Use the native flow
 
@@ -94,13 +93,13 @@ fixtures, or hand-authored Turtle does not establish a fresh semantic result.
 See [Design review](references/design-compilation-review.md) and
 [implementation design](references/implementation-design.md) for interpretation.
 These operations derive meaning from independently supplied assertions; passing
-fixtures, ownership comments or tests do not establish reconstruction fidelity.
+fixtures, ownership comments, or tests do not establish reconstruction fidelity.
 Delivery, tests, removals, and other product decisions remain outside the
 compiler and this semantic gate.
 
 Keep `.sigil/worlds/` ignored: it is disposable generated state. Keep
 preparation and report files outside selected source scope. Human decisions,
-model calls, isolation, scheduling and the convergence loop belong to the
+model calls, isolation, scheduling, and the convergence loop belong to the
 external host. Use existing native functions before inventing temporary
 mechanisms. An observed missing capability belongs in authored Design and its
 responsible implementation; use it on real work before removing the duplicate
@@ -109,14 +108,14 @@ mechanism.
 ## Conditional references
 
 - [Frontend surface review](references/frontend-surface-review.md): routing,
-  client-state ownership, async modes, accessibility and UI contracts.
+  client-state ownership, async modes, accessibility, and UI contracts.
 - [Glossary workflow](references/glossary-workflow.md): reviewed vocabulary.
-  State whether extraction is required, deferred or inspection-only when
+  State whether extraction is required, deferred, or inspection-only when
   relevant; ordinary inspection does not require a glossary rewrite.
 - [Design intake](references/design-intake.md): ambiguous task boundaries.
 - [External guidance](references/external-guidance-evidence.md) and
   [standards review](references/standards-review.md): evidence needed by the
   task.
 
-Update this repository-owned skill, metadata and evals together. Do not modify
+Update this repository-owned skill, metadata, and evals together. Do not modify
 an installed global copy to compensate for obsolete repository guidance.

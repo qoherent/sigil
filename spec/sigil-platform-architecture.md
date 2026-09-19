@@ -139,8 +139,8 @@ term when needed. Platform packages walk upward and select the nearest ancestor
 config when every higher configured workspace excludes that nearer root, unless
 an explicit root containing the config is supplied. Missing and unexcluded
 nested configs are errors; configs inside excluded subtrees define independent
-workspaces. `_module.sigil` may appear in any included directory as its explicit
-directory-import index. Package manifests do not independently declare workspace
+workspaces. `_module.sigil` may appear in any included directory as an ordinary
+summary source. Package manifests do not independently declare workspace
 members or Brownfield summary boundaries.
 
 All workspace-dependent machine-readable outputs include the resolved root,

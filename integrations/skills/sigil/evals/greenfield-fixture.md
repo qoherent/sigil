@@ -39,9 +39,9 @@ Expected skill behavior:
 14. Split independently changing responsibilities with distinct contracts,
     state, lifecycle, policy, or reasons to change instead of hiding them beneath
     one high-level component.
-15. Keep any module index as a concise architectural summary and intentional
-    namespace-assembly surface, with operational detail beside narrower owners.
-16. Inspect accessible imported public identities and reuse every semantic match
+15. Keep any summary source as a concise architectural summary and intentional
+    import-assembly surface, with operational detail beside narrower owners.
+16. Inspect accessible imported Tags and reuse every semantic match
     before creating a local component or concept.
 17. Confirm that the Sigil decomposition can guide generated implementation into
     cohesive owning modules.

@@ -16,7 +16,7 @@ Review `files.exclude`, especially in large repositories. For example:
 
 ```json
 {
-  "sigilVersion": "0.7.0",
+  "sigilVersion": "0.8.0",
   "workspace": { "name": "my-project", "members": [] },
   "files": {
     "include": ["**/*.sigil"],

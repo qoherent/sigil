@@ -1,6 +1,6 @@
 <!--
 @sigil implements integrations/skills/sigil/standards-review.sigil::SigilStandardsReview::StandardsReview interface,state,logic,constraints,cases
-@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ConceptIdentifierWorkflow interface,logic,constraints
+@sigil implements integrations/skills/sigil/authoring-workflow.sigil::SigilAuthoringWorkflow::ConceptWorkflow interface,logic,constraints
 -->
 
 # Standards And Evidence Review
@@ -58,12 +58,12 @@ Do not assign a duplicate host semantic color or modularity score. Investigate
 suspected findings before calling them defects. Correct established problems
 within authorization and ask about material intent only when evidence cannot
 resolve it. Missing reconstruction leaves semantic verification unavailable;
-it does not prohibit useful authoring or concept grouping.
+it does not prohibit useful authoring or Concept grouping.
 
-Follow [authoring conventions](authoring-conventions.md) for concept identities.
-After changes, rerun structural validation and refresh native input/projections
-before relying on a current semantic report. Glossary work follows task scope and
-material terminology needs, not a compiler-stage sequence.
+Follow [authoring conventions](authoring-conventions.md) for Concept grouping and
+naming. After changes, rerun structural validation and refresh native
+input/projections before relying on a current semantic report. Glossary work
+follows task scope and material terminology needs, not a compiler-stage sequence.
 
 ### Decision-Rationale Coverage
 
@@ -82,17 +82,18 @@ For each material selected choice, verify one of:
 
 Report the audit as:
 
-| Material choice | Decision concept | Coverage |
+| Material choice | Decision Concept | Coverage |
 | --- | --- | --- |
-| Exact selected choice | Matching concept or omission evidence | `covered`, `missing`, or `justified omission` |
+| Exact selected choice | Matching Concept or omission evidence | `covered`, `missing`, or `justified omission` |
 
-When a confirmed choice lacks a decision record, add the exact decision block to
+When a confirmed choice lacks a decision record, add the exact decision record to
 the semantic proposal. When its governing rationale is unresolved or conflicts
-with evidence, return to DesignConversation in the applicable mode. Record missing rationale as authored work; do not treat a native gate as
-proof that rationale or implementation delivery is complete.
+with evidence, return to DesignConversation in the applicable mode. Record missing
+rationale as authored work; do not treat a native gate as proof that rationale or
+implementation delivery is complete.
 
-After validated written Sigil is updated, repeat the audit against the exact resulting
-Facets. Successful CLI validation never substitutes for this audit.
+After validated written Sigil is updated, repeat the audit against the exact
+resulting Facets. Successful CLI validation never substitutes for this audit.
 
 ### Goal Clarity
 
@@ -128,10 +129,10 @@ Implementation-hiding rules and forbidden internal access belong in
 `constraints` unless they define an externally observable promise.
 
 Review Interface meaning and actively identify useful cross-contract Concept
-groups, reusing accessible identities. Real components often need several such
+groups, reusing accessible Tag identities. Real components often need several such
 groups. Ungrouped Facets and mixed grouping remain valid, and smaller components
-may need no additional identifier.
-Repeated identifiers must describe one coherent concept. Imported provider
+may need no additional Concept.
+Repeated Concepts must describe one coherent concern. Imported provider
 expands remain outside the consumer's public dependency context.
 
 For UI components, also check when applicable:
@@ -200,10 +201,10 @@ Assess modularity qualitatively:
   force one component to change.
 - **Contract-to-code structure:** the component and expand decomposition is
   specific enough to guide implementation into cohesive owning modules.
-- **Module indexes:** each `ModuleIndexFile` remains a concise architectural
-  summary and intentional namespace-assembly surface rather than an owner of
+- **Summary sources:** each summary source remains a concise architectural
+  summary and intentional import-assembly surface rather than an owner of
   unrelated operational behavior or mutable state.
-- **Imported namespace reuse:** semantically matching imported public identities
+- **Imported Tag reuse:** semantically matching imported accessible Tags
   are reused before local synonyms or duplicate contracts are proposed.
 
 Apply these heuristics at implementation boundaries as well as product and
@@ -251,8 +252,8 @@ conversation, a directly relevant source identity and link may accompany an
 evidence-informed recommendation. During standards review, retain the complete
 records under `Sources Consulted`.
 
-Validated written Sigil may retain a source identifier and applicable version only when
-needed to reconstruct material decision rationale or its revisit condition.
+Validated written Sigil may retain a source identifier and applicable version only
+when needed to reconstruct material decision rationale or its revisit condition.
 Keep source URLs and full bibliographic records outside Sigil unless the user
 approves a different project policy. Never write certification or complete
 compliance claims into Sigil.
@@ -280,7 +281,7 @@ work.
 
 Route only confirmed material problems to DesignConversation in correction
 mode. Do not silently repair them, treat preference as evidence, or continue to
-concept grouping or glossary candidate extraction.
+Concept grouping or glossary candidate extraction.
 
 Classify every researched finding:
 
@@ -323,9 +324,9 @@ material problem, enter DesignConversation in correction mode and report:
 - the focused decision required from the user.
 
 Keep design review blocked until the confirmed problem is resolved. A confirmed
-material problem cannot be deferred, provisionally
-assumed, or bypassed for approval or implementation. Resolve dependent changes within existing authorization; ask only about
-material intent that evidence cannot settle.
+material problem cannot be deferred, provisionally assumed, or bypassed for
+approval or implementation. Resolve dependent changes within existing
+authorization; ask only about material intent that evidence cannot settle.
 
 ### Compatible Guidance
 
@@ -338,9 +339,9 @@ Before editing, present:
 - whether the suggestion is blocking or optional.
 
 Compatible guidance may identify an optional improvement to coherent validated
-written Sigil. Present it through DesignConversation improvement mode when adopting it
-requires a material project decision. Rejecting or deferring an optional
-improvement does not make the existing contract defective.
+written Sigil. Present it through DesignConversation improvement mode when
+adopting it requires a material project decision. Rejecting or deferring an
+optional improvement does not make the existing contract defective.
 
 Write the exact lines as project decisions, not claims such as “ISO requires
 this.” Then run `sigil check`, use `sigil retrieve --purpose architecture` when
@@ -427,7 +428,7 @@ Report unavailable material, remaining uncertainty, and whether it blocks.
 ### Proposed Sigil Edits
 
 Show exact Facets and their target sections without editing first.
-Include required decision blocks and the decision-rationale coverage map.
+Include required decision records and the decision-rationale coverage map.
 
 ### Material decisions
 

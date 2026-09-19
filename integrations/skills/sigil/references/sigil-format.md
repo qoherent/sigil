@@ -1,10 +1,13 @@
 # Sigil Format Reference
 
-This is a concise agent-facing reference for Sigil. The canonical language
-specification lives at repository path `spec/sigil-language.md`.
+This is a compact agent-facing reference for Sigil syntax, section placement,
+and review heuristics during a coding-agent session.
 
-Use this file when you need a quick reminder of syntax, section placement, or
-review heuristics during a coding-agent session.
+The author-facing canon is the Sigil authoring guide at repository path
+`spec/sigil-language.md`. The normative specification is
+`spec/sigil-reference.md`, with its grammar in `spec/sigil.ebnf`. This file
+restates that material for quick recall and does not add language rules. It
+describes Sigil language version `0.8.0`.
 
 ## CLI Assistance
 
@@ -27,9 +30,9 @@ Typical repository-local command shape:
 deno run --allow-read packages/cli/src/main.ts check . --format json --pretty
 ```
 
-Run `sigil version . --format json --pretty` before `check`. This reference
-describes Sigil version `0.7.0`; do not apply it to an
-unsupported workspace version.
+Run `sigil version . --format json --pretty` before `check`. A source requires a
+tool that supports its configured language version; do not apply this reference
+to an unsupported workspace version.
 
 Use CLI diagnostics as stable coded findings. Use CLI context output as a
 starting point, then read source files before editing them.
@@ -38,68 +41,52 @@ starting point, then read source files before editing them.
 
 Sigil source files use `.sigil`.
 
-The directory-index filename is `_module.sigil`. It may appear in any included
-directory and must declare at least one local component. Its local components
-and independently resolved imported names form that directory's converged import
-surface. Repeated declaration identities deduplicate; conflicting identities
-leave the name unresolved without removing unaffected names. An imports-only
-index produces `SIGIL_MODULE_WITHOUT_COMPONENT` without discarding independently
-resolved names. The legacy `#module.sigil` basename is an ordinary source and
-requires an explicit file import.
-
 A strict JSON `.sigil/config.json` is mandatory at the workspace root. It selects
-Sigil version, provides `workspace.name`, declares
-optional `workspace.members`, and defines file include and exclude globs. A nested config defines an independent workspace only
-when its entire subtree is excluded by each configured parent; otherwise it is
-invalid.
+the Sigil version, provides `workspace.name`, optionally declares
+`workspace.members`, and defines file include and exclude globs. The workspace
+root is the directory containing `.sigil`; an explicit root must contain
+`.sigil/config.json` directly. A nested config defines an independent workspace
+only when its entire subtree is excluded by each configured parent; otherwise it
+is invalid.
 
-Sigil files should live as near as practical to the code they describe.
-Configured workspace boundaries use ordinary summary components in the
-workspace-root and declared-member `_module.sigil` files. Internal contracts
-use descriptive `.sigil` filenames, while internal directories may add a module
-index when they need import shorthand. If the main `component` must live
-elsewhere, a nearby `expand Name` may live beside the code it explains.
+`_module.sigil` is an ordinary source filename that may hold a project summary.
+It has no import-resolution, directory-index, export, or re-export behavior.
+Imports use explicit included `.sigil` paths, regardless of directory
+membership.
 
-When implementation establishes a clear owner directory, relocate a temporary
-Sigil file beside that implementation and update affected imports. Keep the
-configured-boundary `_module.sigil` in place. Internal module indexes may move
-with their owning directories. If a shared component contract cannot move,
-colocate its implementation-specific `expand Name` instead.
+Keep Sigil files as near as practical to the code they describe. Keep a
+configured-boundary summary source at the workspace root or declared-member
+boundary; put implementation-specific Facets beside the code they explain.
+Update affected imports and relative links after any placement-only move.
 
-### Module indexes and boundary summaries
+### Module summaries
 
-Every component is public and may be imported through its explicit `.sigil`
-source path whether or not a module index names it. `_module.sigil` controls
-only which names resolve through a directory import. Sigil has no export or
-re-export form.
+Each configured workspace boundary receives an ordinary summary component in its
+summary source. Its `goal` and `interface` describe that boundary; other
+contracts carry boundary-wide architecture, constraints, and durable design
+decisions. This summary has no special parser or resolver status.
 
-For Brownfield adoption, each configured workspace boundary receives an
-ordinary summary component in its `_module.sigil`. Its `goal` and `interface`
-describe that boundary, and a matching expand uses the general section meanings.
-This summary has no special parser or resolver status.
+As an authoring convention, keep every summary small by responsibility. Use it
+to describe the boundary and retain only boundary-wide architectural constraints
+and durable design decisions. Put material state, operational logic, detailed
+lifecycle behavior, and independently changing policy in narrower components
+beside their owners.
 
-As an authoring convention, keep every module index small by responsibility.
-Use it to assemble the intentional directory-import namespace and retain only
-the local summary plus boundary-wide architecture constraints and durable design
-decisions. Put material state, operational logic, detailed lifecycle behavior,
-and independently changing policy in components or expands beside their owners.
-
-Before creating local components or concepts, inspect accessible imported public
-identities and reuse every semantic match. Similar wording does not justify
-reuse when the underlying responsibility or meaning differs.
+Before creating local components or Concepts, inspect every accessible imported
+Tag and reuse each semantic match. Similar wording does not justify reuse when
+the underlying responsibility or meaning differs.
 
 Exclude secrets, incidental dependencies, low-level configuration, and
-module-specific implementation details from configured-boundary summaries.
-`.sigil/config.json` remains the workspace marker and sole workspace-membership
-authority. Package manifests and directory structure alone do not declare
-additional Brownfield summary boundaries. An excluded nested directory with its
-own config is an independent workspace, not a parent workspace member.
+module-specific implementation details from boundary summaries. `.sigil/config.json`
+remains the workspace marker and sole workspace-membership authority. Package
+manifests and directory structure alone do not declare additional Brownfield
+summary boundaries. An excluded nested directory with its own config is an
+independent workspace, not a parent workspace member.
 
 ## Top-Level Forms
 
 ```sigil
-@packages/member import { ComponentName }
-@sub/folder/auth.sigil import { Auth }
+@providers/worker.sigil from Worker import { Running, Idle }
 
 component Name {
   goal {
@@ -111,9 +98,7 @@ component Name {
       how this component interacts with the outside world
     }
   }
-}
 
-expand Name {
   state {
     RuntimeState {
       meaningful configurations that persist or change during execution
@@ -144,40 +129,36 @@ expand Name {
 }
 ```
 
-`@packages/member import { ComponentName }` imports from that directory's
-`_module.sigil`, regardless of whether the directory is a declared member.
-`@sub/folder/auth.sigil import { Auth }` imports from `sub/folder/auth.sigil`.
+There are two top-level forms: a Tag import and a component. A component owns one
+bounded responsibility with one workspace-unique name and holds all seven
+contracts inside its single declaration. Each contract appears at most once.
+`component` is the only declaration form; there is no separate operational
+detail form.
 
-Importing `Name` makes the component's public `goal`, `interface`, and public
-interface concepts available to the current file. Matching expands remain
-private and are available only when the provider is explicitly selected for
-review or implementation.
+A Tag import selects Tags owned by one component in an explicit `.sigil` source.
+The provider component is not itself imported and no namespace is introduced.
 
-`component` defines the reusable public contract of a coherent system part
-through its public `goal` and `interface`. `expand` adds collective operational
-detail without changing or overriding that public contract. Put state,
-behavior, constraints, decision rationale, and representative cases in
-`expand`.
-
-Public is relative to the component's dependents. A component may represent a
-product surface, domain module, programming abstraction, internal API, state
-machine, screen, view, or reusable UI surface even when it is not externally
-visible. Do not mechanically create a component for every code symbol or visual
-element; use cohesive responsibility and a relied-upon contract as the boundary.
+A component's responsibility is relative to its dependents. A component may
+represent a product surface, domain module, programming abstraction, internal
+API, state machine, screen, view, or reusable UI surface even when it is not
+externally visible. Do not mechanically create a component for every code symbol
+or visual element; use cohesive responsibility and a relied-upon contract as the
+boundary. A component can describe code in multiple implementation files without
+splitting its declaration.
 
 ## Required And Optional Sections
 
-`component` requires:
+A component requires:
 
 - `goal`
 - `interface`
 
-`goal` publicly describes why the component exists, the responsibility it owns,
-and its intended outcome. `interface` contains only the operations, data,
-events, results, errors, and observable promises publicly available to
-dependents.
+`goal` describes why the component exists, the responsibility it owns, and its
+intended outcome. `interface` contains only the operations, data, events,
+results, errors, and observable promises available to dependents. Each required
+contract must contain at least one Facet, directly or inside a Concept.
 
-`expand` may contain:
+A component may also contain:
 
 - `state`
 - `logic`
@@ -185,16 +166,11 @@ dependents.
 - `decisions`
 - `cases`
 
-Conventional `component` order:
+Conventional section order:
 
 ```text
 goal
 interface
-```
-
-Conventional `expand` order:
-
-```text
 state
 logic
 constraints
@@ -204,9 +180,9 @@ cases
 
 The order is only a readability convention.
 
-## Concept Blocks
+## Concepts
 
-Concept block syntax:
+Concept syntax:
 
 ```sigil
 interface {
@@ -218,73 +194,71 @@ interface {
 }
 ```
 
-`SessionLifecycle` is a reusable concept identifier. A block may contain one
-heavily reused idea or several related Facets. Concept blocks are flat,
-nonempty, and cannot nest.
+A Concept (`tag_group`) is a bare `tag_name` heading with a braced body that
+gathers related Facets. Its `group_open` header identifies and groups Facets but
+is not itself a Facet. Concepts are flat, nonempty, and cannot nest. Direct,
+grouped, and mixed Facets are valid in every contract.
 
-Identifiers match `[A-Za-z][A-Za-z0-9_-]*`. References are case-sensitive, but
-accessible namespace uniqueness is case-insensitive. PascalCase without
-hyphens or underscores is preferred formatting rather than a validity rule.
+A heading introduces or reuses a local Tag. Reuse the same exact Concept across
+contracts when its Facets address one concern; this gathers them into one
+cross-contract Concept without merging their contract roles. Copy its spelling
+and case exactly. A Concept need not occur in all seven contracts, and its
+identity does not require a matching class or function in code.
 
-Concept IDs are encouraged for organizing the several concepts commonly found
-in a component and connecting their Facets across contracts. They are optional
-syntax in every contract, including `interface` and `decisions`: smaller
-components may not need them, and ungrouped Facets can freely mix with grouped
-Facets without warnings. Preserve meaningful groups; avoid mechanical wrappers.
+Tag names are nonempty, may contain multiple words, and are case-sensitive;
+commas, braces, and asterisks are not name content. Accessible Tag names must
+resolve unambiguously. PascalCase without hyphens or underscores is the preferred
+formatting, not a validity rule.
 
-Use the same ID when a concern such as SessionLifecycle connects Interface
-promises, State, Logic, and Cases. Give a distinct concern its own ID rather
-than putting every Facet in one catch-all block. Keep shared guarantees and
-standalone Facets direct where clearer. A Concept need not occur in all seven
-contracts, and its identity does not require a matching class or function in
-code. For concrete use-or-skip guidance, see
-[Concept Identifiers](authoring-conventions.md#concept-identifiers).
+Concepts are encouraged when they organize the several concerns commonly found
+in a component and connect their Facets across contracts. They are optional in
+every contract: smaller components may not need them, and ungrouped Facets can
+freely mix with grouped Facets. Preserve meaningful groups; avoid mechanical
+wrappers. Give a distinct concern its own Concept rather than one catch-all
+block, and keep shared guarantees and standalone Facets direct where clearer.
+For concrete use-or-skip guidance, see
+[Concepts](authoring-conventions.md#concepts).
 
-A component and all matching expands share one flat namespace. Repeated blocks
-are collective and retain their section and source locations. A concept is
-public when it occurs in `interface`; otherwise it remains private.
+Every Tag a component introduces, inline or as a heading, is owned by that
+component and may be selected by a Tag import. Headings never receive their
+identity from imports.
 
-Imports expose public concepts as bare identifiers. Reusing an imported concept
-keeps its originating identity while consumer lines remain contextual to the
-consumer. Reusing it in `interface` re-exposes the same identity downstream.
-Provider context never gains consumer lines. Sigil provides no dotted concept
-notation, aliases, local shadowing, or nested concept blocks.
-
-Known whole-word identifiers inside semantic content resolve as references for
+Known whole-word Tag names inside semantic content resolve as references for
 navigation and highlighting. Unknown words remain ordinary free-form content
-without unresolved-reference diagnostics.
+without unresolved-reference diagnostics. Sigil provides no dotted Tag notation,
+aliases, local shadowing, or nested Concepts.
 
 ## Imports
 
 Import syntax:
 
 ```sigil
-@path import { Name }
-@path import { Name, OtherName }
+@providers/worker.sigil from Worker import { Running }
+@providers/worker.sigil from Worker import { Running, Idle }
 ```
 
-A path without a `.sigil` filename resolves to `_module.sigil` in the target
-directory. A name resolves from that index's local components or successfully
-resolved direct imports. Components omitted from the index remain public through
-their explicit `.sigil` filenames. The `@` prefix resolves from the workspace
-root selected by the single ancestor `.sigil/config.json`. An explicit root must
-contain `.sigil/config.json` directly.
+A path without a `.sigil` filename is not a directory shorthand; a directory
+path does not resolve through `_module.sigil`. The path resolves from the
+workspace root selected by the single ancestor `.sigil/config.json`. An explicit
+root must contain `.sigil/config.json` directly. Resolve source, provider
+component, and selected Tags separately. Imported names are case-sensitive and
+must resolve to Tags owned by the named component in that exact source.
 
-Imported names must resolve to matching `component` declarations. Imported names
-are case-sensitive. Dependents receive only public goal, interface, and public
-concept information. Matching expands remain collective private detail when the
-provider itself is selected.
+Imports are the dependency declarations between Sigil components. Do not
+restate an import as an `interface` Facet.
 
-Imports are the dependency declarations between Sigil components. Do not repeat
-an imported-component dependency in `interface`.
+Every resolved selected Tag must have a qualifying exact-case bare reference
+somewhere in the importing source. Any contract counts, including `goal` and
+`decisions`. Introductions to Embedded Facets count; headings, fenced content,
+complete Inline Links, and mere provider-component mentions do not count. An
+unused selection is an error reported as `SIGIL_UNUSED_TAG_IMPORT`.
 
-Every resolved imported name must have a qualifying exact-case use in its
-declaring source. Component names and imported public concepts count in
-`interface`, `state`, `logic`, `constraints`, or `cases`. A matching local
-`expand` and a direct `_module.sigil` surface import also count. Mentions in
-`goal`, `decisions`, fenced content, comments, annotations, other files,
-differently cased words, or identifier substrings do not count. An unused
-resolved name is a syntax error reported as `SIGIL_UNUSED_IMPORT`.
+Only selected provider identities enter the importing source's accessible
+vocabulary; all components in that source see the same imports. Importing a Tag
+neither copies provider obligations into the consumer nor creates a re-export.
+Duplicate selections, unknown or ambiguous selections, and local/imported name
+collisions are errors. Import cycles are allowed; a cycle supplies no missing
+definition and changes no ownership.
 
 ## Section Placement
 
@@ -326,8 +300,8 @@ Implementation-hiding rules and forbidden internal access belong in
 `constraints` unless they define an externally observable promise.
 
 Use the optional `decisions` section for durable rationale behind a material
-selected choice. Language syntax does not require concept blocks or labeled
-fields, but the Sigil skill uses this convention:
+selected choice. Language syntax does not require Concepts or labeled fields,
+but the Sigil skill uses this convention:
 
 ```sigil
 decisions {
@@ -351,39 +325,39 @@ decisions {
 }
 ```
 
-For a material decision, record its choice and scope as Facets. A Concept block
-is optional and useful only when its identity connects related contributions
+For a material decision, record its choice and scope as Facets. A Concept is
+optional and useful only when its identity connects related contributions
 across contracts. `Decision` and `Scope` labels may improve clarity but are not
 mandatory syntax. Scope states the governed boundary and important exclusions
 without enumerating every current dependent. Add `Assumptions`, `Trade-offs`,
-`Design issues addressed`,
-`Discarded alternatives`, `Consequences`, and `Revisit when` when materially
-applicable, and omit inapplicable labels.
+`Design issues addressed`, `Discarded alternatives`, `Consequences`, and
+`Revisit when` when materially applicable, and omit inapplicable labels.
 
-Keep the binding selected outcome in `constraints`. Reuse an accessible public
-concept identifier when a contextual decision concerns the same semantic idea,
-but keep Scope local: concept reuse does not make the decision transitively
-binding. Imports do not expose a provider's private decision rationale as part
-of the language-level contract. Treat direct-dependency decisions supplied by
-agent context as scoped rationale, and inspect the provider and matching expands
-explicitly for transitive decisions or other private operational detail.
+Keep the binding selected outcome in `constraints`. Reuse an accessible Tag when
+a contextual decision concerns the same semantic idea, but keep Scope local: Tag
+reuse does not make the decision transitively binding. Imports select vocabulary,
+not a provider's private decision rationale. Treat direct-dependency decisions
+supplied by agent context as scoped rationale, and inspect the provider and its
+component explicitly for transitive decisions or other operational detail.
 
 Do not store prompts, raw session transcripts, or hidden reasoning.
 Responsibility, accountability, approver, and handoff metadata are outside the
 initial convention.
 
 Use `cases` for examples and acceptance criteria that can be observed from
-outside the component.
+outside the component. Cases expose decisions rather than merely declaring
+success: a Case is a situation plus an observation.
 
 ## Facets
 
 Each blank-line-delimited prose paragraph inside a section is one Facet.
 Adjacent physical lines belong to that unit, so prose may be rewrapped without
 changing semantic identity. Separate distinct ideas with blank lines. Blank
-lines terminate Facets and do not create them.
+lines terminate Facets and do not create them. Structural boundaries also
+terminate them.
 
-A concept-block header identifies and groups Facets but is not itself a
-Facet. Each paragraph inside the block records its concept identifier.
+A Concept heading identifies and groups Facets but is not itself a Facet. Each
+paragraph inside the Concept records that heading's Tag.
 
 Prefer one distinct idea per Facet. Avoid burying multiple decisions in a
 paragraph when they may need separate review, diffing, or source mapping.
@@ -393,7 +367,8 @@ count. Run `sigil fmt [path]` to wrap selected valid sources, or add `--check`
 to verify canonical formatting without writing.
 
 Use a directly attached typed fenced content for multiline code, JSON,
-configuration, diagrams, or other layout-sensitive content:
+configuration, pseudocode, Markdown lists and tables, diagrams, or other
+layout-sensitive content:
 
 ````sigil
 The service uses this configuration:
@@ -416,41 +391,36 @@ import-use, glossary, and ownership scanning.
 When reviewing Sigil, check:
 
 - Does every component explain why it exists?
-- Does every `_module.sigil` declare at least one local component?
-- Does each `_module.sigil` remain a concise architectural summary and
-  intentional namespace-assembly surface?
+- Does each summary source stay a concise architectural summary and an
+  intentional boundary description rather than an operational dumping ground?
 - Are material state, operational logic, lifecycle behavior, and independently
   changing policy colocated with narrower owners?
 - Does every component expose how callers, users, modules, or other parts
   interact with it?
-- Have the component's distinct concepts been identified and usefully connected
+- Have the component's distinct concerns been identified and usefully connected
   across contracts, while preserving clear ungrouped and mixed Facets?
-- Are repeated concept blocks coherent, flat, nonempty, and unambiguous across
-  the accessible import graph?
-- Do imported dependency views exclude private concepts and expands?
-- Were semantically matching imported public identities reused before local
-  synonyms or duplicate contracts were introduced?
+- Are repeated Concepts coherent, flat, nonempty, and unambiguous across the
+  accessible import graph?
+- Were semantically matching imported Tags reused before local synonyms or
+  duplicate contracts were introduced?
 - Were coherent internal abstractions and UI surfaces considered as components
   rather than hidden beneath only high-level project or service contracts?
-- Can the component and expand decomposition guide implementation into cohesive
-  modules whose entrypoints only assemble the approved public namespace?
-- Does each imported name resolve to a matching component in the imported Sigil
-  source?
-- Does each resolved imported name have a qualifying use outside `goal`,
-  `decisions`, and fenced content?
+- Can the component decomposition guide implementation into cohesive modules
+  whose entrypoints only assemble the approved surface?
+- Does each imported Tag resolve to a matching component-owned Tag in the
+  imported Sigil source?
+- Does each resolved imported Tag have a qualifying use outside headings,
+  fenced content, and complete Inline Links?
 - Are ordinary prose lines at most 79 content characters excluding indentation?
 - Does every fenced content immediately follow its introducing prose?
-- Does each `expand Name` have a matching `component Name`?
-- Are details such as `state`, `logic`, `constraints`, `decisions`, and `cases` kept in
-  `expand` rather than inside `component`?
 - Are architecture and stack decisions expressed as constraints?
-- Do material skill-authored decisions record Decision, Scope, and
-  applicable rationale without treating concept reuse as transitive authority?
+- Do material skill-authored decisions record Decision, Scope, and applicable
+  rationale without treating Tag reuse as transitive authority?
 - Are implementation-hiding rules and forbidden internal access in constraints
   unless they define an externally observable promise?
 - Are roles, states, permissions, and lifecycle transitions explicit enough to
   test?
-- For abstractions and APIs, are constructor/functions, return values,
+- For abstractions and APIs, are constructors/functions, return values,
   settlement/lifecycle behavior, and error behavior explicit?
 - For UI components, are visible regions, actions, navigation, feedback, and
   applicable loading, empty, error, disabled, responsive, keyboard, and
@@ -459,10 +429,9 @@ When reviewing Sigil, check:
   when different interpretations would change implementation?
 - Are examples in `cases` externally observable?
 
-Multiple `expand Name` blocks for the same component are collective. When using
-expanded detail for `Name`, read all matching expands as one collected
-expansion. If collected expands contradict each other, treat that as a
-specification issue to resolve with the user.
+A component's repeated Concepts are collective: read all Facets under one exact
+Concept as gathered contributions. If they contradict each other, treat that as
+a specification issue to resolve with the user.
 
 ## Examples
 
@@ -493,9 +462,7 @@ component Promise {
       catch(onRejected) returns Promise
     }
   }
-}
 
-expand Promise {
   state {
     Settlement {
       Pending
@@ -524,16 +491,14 @@ expand Promise {
 }
 ```
 
-Stack as a constraint:
+Stack as a constraint (a component-body fragment):
 
 ```sigil
-expand Slotted {
-  constraints {
-    Stack is Next.js, Neon Postgres, and Drizzle ORM.
+constraints {
+  Stack is Next.js, Neon Postgres, and Drizzle ORM.
 
-    The system ships as a single Next.js app.
+  The system ships as a single Next.js app.
 
-    Database access goes through Drizzle.
-  }
+  Database access goes through Drizzle.
 }
 ```

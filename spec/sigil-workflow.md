@@ -121,14 +121,14 @@ with targeted follow-up questions. It synthesizes a candidate goal and
 interface for each boundary, then asks the user to confirm or correct them.
 
 After confirmation, the agent proposes an ordinary summary component in each
-configured boundary's `_module.sigil`. A boundary module index may combine that
-summary with direct imports defining its directory-import surface. Material
-boundary-wide evidence may be proposed in a matching `expand` using the general
-section meanings. Incidental dependencies, secrets, low-level configuration,
-and task-specific behavior remain outside boundary summaries. Approved boundary
-summaries are written, validated, and reviewed before the agent focuses on the
-requested implementation task. Internal module indexes outside configured
-boundaries require no project summary.
+configured boundary's `_module.sigil`. That summary source may import the
+components it intends to expose, but directory paths do not resolve through it.
+Material boundary-wide evidence may be proposed in a matching `expand` using the
+general section meanings. Incidental dependencies, secrets, low-level
+configuration, and task-specific behavior remain outside boundary summaries.
+Approved boundary summaries are written, validated, and reviewed before the
+agent focuses on the requested implementation task. Internal summary sources
+outside configured boundaries require no project summary.
 Component contracts and implementation-specific expands are placed beside the code they describe.
 
 ## Greenfield Design
@@ -165,8 +165,9 @@ Approved Sigil should live beside the module, feature, abstraction, or implement
 If a public component contract must remain in a shared location, an implementation-specific `expand Name` should be colocated with the code.
 
 The workspace-root `.sigil/config.json` remains the discovery marker.
-`_module.sigil` is a directory-import index and has no discovery authority;
-configured boundary indexes conventionally contain ordinary summary components.
+`_module.sigil` is an ordinary source filename and has no discovery authority;
+a configured boundary's summary source conventionally holds an ordinary summary
+component.
 Moving or splitting Sigil requires affected imports to be updated and validated with `sigil check`, plus `graph` or `context` when relationships change.
 
 ## Agent Review Heuristics
