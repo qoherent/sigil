@@ -3,26 +3,27 @@
 
 component SigilAuthoringWorkflow {
   goal {
-    Author coherent Sigil boundaries, Facets, concept identities, imports,
-    module indexes, and durable decision rationale as an initial written draft,
-    then revise it from provisional design evidence.
+    Author coherent Sigil boundaries, Facets, Tag identities, imports,
+    summary sources, and durable *decision rationale* as an initial
+    *written draft*, then revise it from provisional design evidence.
   }
 
   interface {
 ImportSemanticsGuidance {
       ImportSemanticsGuidance adapts ImportSemantics into authoring guidance.
 
-      inspects the complete accessible imported public namespace before creating a
-      local component or concept with overlapping meaning
+      inspects the complete accessible *imported Tag scope* before creating a
+      local component or Concept with overlapping meaning
 
-      reuses every semantically matching imported component and public concept so
-      dependency contracts retain provider identity and vocabulary
+      reuses every semantically matching imported component, and every Tag
+      introduced in `interface`, so dependency contracts retain
+      *provider identity* and vocabulary
     }
 
 ModuleIndexFileGuidance {
       ModuleIndexFileGuidance adapts ModuleIndexFile into authoring guidance.
 
-      keeps one small local summary component and assembles an intentional
+      keeps one small local *summary component* and assembles an intentional
       directory-import surface from cohesive imported components
 
       retains only boundary-wide goal, interface, architectural constraints, and
@@ -32,16 +33,17 @@ ModuleIndexFileGuidance {
       implementation detail to components and expands colocated with their owners
     }
 
-ConceptIdentifierWorkflow {
+ConceptWorkflow {
       discovers reusable identities across the complete component, matching expands,
       accessible imports, and relevant direct consumers
 
-      proactively recommends Concept IDs for recurring cross-contract concerns and
-      useful public identities, with concrete guidance for leaving Facets ungrouped
+      proactively recommends Concept names for recurring cross-contract concerns
+      and each useful *public identity*, with concrete guidance for leaving
+      Facets ungrouped
 
-      checks deterministic concept diagnostics before proposing identifiers
+      checks deterministic *Tag diagnostics* before proposing names
 
-      uses one proposal-only concept-identifier subagent when subagents are available
+      uses one proposal-only Concept-name subagent when subagents are available
     }
 
 FacetDisciplineGuidance {
@@ -49,21 +51,21 @@ FacetDisciplineGuidance {
       guidance.
 
       preserves one distinct idea per blank-line-delimited Facet and allows
-      physical prose wrapping without changing semantic identity
+      physical prose wrapping without changing *semantic identity*
 
-      places an attached EmbeddedContent directly after its introducing prose without a
-      blank line
+      places an attached EmbeddedContent directly after its introducing prose
+      without a blank line
 
       limits ordinary prose to 79 content characters without counting leading
       indentation
     }
 
 DecisionRationaleWorkflow {
-      records material selected choices and the rationale needed for future review,
-      maintenance, and agent sessions
+      records each material *selected choice* and the rationale needed for
+      future review, maintenance, and agent sessions
 
-      applies a consistent authoring convention while preserving the language's
-      free-form decisions syntax
+      applies a consistent *authoring convention* while preserving the
+      language's free-form decisions syntax
 
       uses automatically projected direct-dependency decisions as scoped rationale
       without treating them as imported public contract
@@ -80,17 +82,18 @@ DecisionRationaleWorkflow {
 expand SigilAuthoringWorkflow {
   logic {
 DirectAuthoringLifecycle {
-      After material design intent is resolved, write the exact scoped Sigil draft
-      directly to the selected file before DesignCompilationReview.
+      After *material design intent* is resolved, write the exact scoped Sigil
+      draft directly to the selected file before DesignCompilationReview.
 
-      Use DesignCompilationReview evidence only to revise, validate, and complete
-      that written draft. Investigate native Disjoint findings and preserve Loose
-      warnings. Missing reconstruction does not prevent authoring.
+      Use DesignCompilationReview evidence only to revise, validate, and
+      complete that written draft. Investigate native *Disjoint findings* and
+      preserve *Loose warnings*. Missing reconstruction does not prevent
+      authoring.
     }
 
 ImportSemantics {
-      Inspect accessible imported components and public concepts before proposing
-      local identities.
+      Inspect accessible imported components and Tags introduced in `interface`
+      before proposing local identities.
 
       Reuse every semantic match and create a local identity only for a materially
       distinct responsibility or meaning.
@@ -104,19 +107,21 @@ ModuleIndexFile {
       summary focused on boundary-wide architecture.
     }
 
-ConceptIdentifierWorkflow {
-      Inspect meaning before choosing concept identities. Use native
-      DesignCompilationReview for available semantic evidence; concept grouping does
-      not depend on a removed evaluator stage or separate warning approval.
+ConceptWorkflow {
+      Inspect meaning before choosing Tag identities. Use native
+      DesignCompilationReview for available *semantic evidence*. Concept
+      grouping does not depend on a removed evaluator stage or separate
+      warning approval.
 
       Inspect the affected section, every other section of the component, and every
       matching expand for the same semantic idea.
 
-      Inspect accessible imported public concepts before creating a local identity.
+      Inspect accessible imported Tags introduced in `interface` before creating
+      a local identity.
 
       Inspect direct importers for relevant use cases and established terminology.
 
-      Traverse transitive importers only when a concept is re-exposed or namespace
+      Traverse transitive importers only when a Tag is re-exposed or Tag scope
       ambiguity must be assessed.
 
       Classify each affected region as remaining ungrouped, local reuse, imported
@@ -137,7 +142,7 @@ ConceptIdentifierWorkflow {
     }
 
 DecisionRationaleWorkflow {
-      Use one concise PascalCase concept block for each material decision.
+      Use one concise PascalCase Concept for each material decision.
 
       Record Decision and Scope for every authored material decision.
 
@@ -149,18 +154,18 @@ DecisionRationaleWorkflow {
 
       Omit an inapplicable rationale label instead of adding filler.
 
-      Reuse an accessible concept identifier when decisions concern the same semantic
+      Reuse an accessible Concept name when decisions concern the same semantic
       idea.
 
-      Scope states the local boundary of a contextual decision occurrence; concept
+      Scope states the local boundary of a contextual decision occurrence; Tag
       reuse does not make a decision transitively binding.
 
       Keep the binding selected outcome in constraints and use decisions to explain
       why it was selected.
 
-      Before presenting an exact semantic proposal, inventory every new or changed
-      selected choice expressed across goal, interface, state, logic, constraints,
-      and cases.
+      Before presenting an exact *semantic proposal*, inventory every new or
+      changed selected choice expressed across goal, interface, state, logic,
+      constraints, and cases.
 
       Treat a choice as material when future review, maintenance, or implementation
       cannot safely reconstruct why it was selected or what alternatives it excludes.
@@ -168,22 +173,22 @@ DecisionRationaleWorkflow {
       Map each material selected choice to a matching decisions occurrence that
       preserves its durable rationale.
 
-      When the binding outcome is confirmed but its decision record is missing,
-      include the exact decision record in the semantic proposal.
+      When the *binding outcome* is confirmed but its *decision record* is
+      missing, include the exact decision record in the semantic proposal.
 
       When the governing rationale is unresolved or conflicts with evidence, return
       to DesignConversation in the applicable mode before proposing the decision
       record.
 
-      Repeat the decision-rationale coverage audit after writing validated Sigil and
-      before relying on the changed contract for implementation.
+      Repeat the *decision-rationale coverage audit* after writing validated
+      Sigil and before relying on the changed contract for implementation.
     }
   }
 
   constraints {
 ImportSemantics {
-      Namespace reuse is maximized only where meaning is coherent; superficially
-      similar but materially distinct concepts retain separate identities.
+      Tag reuse is maximized only where meaning is coherent; superficially
+      similar but materially distinct Tags retain separate identities.
 
       Imported public identities are reused directly without aliases, dotted
       notation, local synonyms, or duplicated provider contracts.
@@ -203,18 +208,18 @@ ModuleIndexFile {
       line-count threshold.
     }
 
-ConceptIdentifierWorkflow {
-      Actively identify the concepts in a component and use Concept identifiers to
+ConceptWorkflow {
+      Actively identify the Concepts in a component and use Concept names to
       connect their Facets across contracts. Preserve ungrouped and mixed Facets;
-      smaller components may need no additional grouping identifier.
+      smaller components may need no additional Concept.
 
       Do not manufacture a Concept per function, Facet, or contract, require each
-      Concept in all seven contracts, or group remaining prose under a catch-all ID.
+      Concept in all seven contracts, or group remaining prose under a catch-all Tag.
 
       Concept grouping does not dictate implementation decomposition or establish
       behavioral equality. Related Facets retain their contract roles and support.
 
-      Consumer terminology is naming evidence but is not reusable identity unless
+      *Consumer terminology* is naming evidence but is not reusable identity unless
       accessible through valid imports.
 
       The subagent reports each region, grouping decision, new or reused status,
@@ -223,17 +228,17 @@ ConceptIdentifierWorkflow {
       Authorized Concept creation, reuse, regrouping, and renaming are written
       directly to scoped Sigil, then return to DesignCompilationReview.
 
-      Concept-identifier work does not invoke anchor persistence, proposal, or
+      Concept-name work does not invoke anchor persistence, proposal, or
       reconciliation behavior.
     }
 
 FacetDiscipline {
-      Concept blocks group coherent identities without merging distinct semantic
+      Concepts group coherent identities without merging distinct semantic
       ideas into one unit.
 
-      Goal and decisions references never satisfy strict import use.
+      Goal and decisions references never satisfy *strict import use*.
 
-      EmbeddedContent content remains excluded from import, concept, glossary, and
+      EmbeddedContent content remains excluded from import, Tag, glossary, and
       ownership reference evidence.
     }
 
@@ -260,10 +265,10 @@ FacetDiscipline {
   decisions {
 ImportSemantics {
       Decision: Maximize coherent reuse of accessible imported public identities
-      before introducing local component or concept identities.
+      before introducing local component or Tag identities.
 
       Scope: Governs Sigil authoring across direct imports and accessible public
-      concept namespaces.
+      Tag scopes.
 
       Trade-offs: Authors must inspect provider contracts before choosing local
       names.
@@ -271,13 +276,13 @@ ImportSemantics {
       Design issues addressed: Local synonyms and duplicated contracts fragment
       architecture vocabulary and obscure dependency ownership.
 
-      Consequences: Importers remain consistent with provider namespaces while
-      materially distinct meanings retain independent identities.
+      Consequences: Importers remain consistent with *provider Tag* scopes
+      while materially distinct meanings retain independent identities.
     }
 
 ModuleIndexFile {
       Decision: Keep ModuleIndexFile as a small architectural summary and intentional
-      directory-namespace assembly surface.
+      directory-import assembly surface.
 
       Scope: Governs configured-boundary and internal module indexes; excludes
       independently owned operational behavior and state.
@@ -288,7 +293,7 @@ ModuleIndexFile {
       whose unrelated responsibilities change together.
 
       Consequences: Detailed responsibilities move beside their owners while the
-      index preserves the high-level architecture and public usable namespace.
+      index preserves the high-level architecture and public usable Tag vocabulary.
 
       Revisit when: A boundary-wide responsibility cannot be assigned coherently to a
       narrower component.
@@ -315,11 +320,11 @@ DecisionRationaleWorkflow {
       without treating model judgment as language validity.
     }
 
-    ConceptProposalIsolation {
-      Decision: Use one proposal-only concept-identifier subagent when available and
+    TagProposalIsolation {
+      Decision: Use one proposal-only Concept-name subagent when available and
       otherwise perform the same evidence-bounded analysis in the primary agent.
 
-      Scope: Governs concept reuse, grouping, and identifier proposals after accepted
+      Scope: Governs Tag reuse, grouping, and name proposals after accepted
       DesignCompilationReview evidence; excludes repository mutation and approval.
 
       Trade-offs: Delegation adds coordination overhead and may be unavailable.
@@ -337,8 +342,8 @@ DecisionRationaleWorkflow {
 
   cases {
 ImportSemantics {
-      An importer reuses an accessible provider concept instead of introducing a
-      synonymous local concept, but creates a new identity when the meanings differ.
+      An importer reuses an accessible provider Tag instead of introducing a
+      synonymous local Tag, but creates a new identity when the meanings differ.
     }
 
 ModuleIndexFile {
@@ -347,9 +352,9 @@ ModuleIndexFile {
       ModuleIndexFile instead of placing operational detail in its local summary.
     }
 
-ConceptIdentifierWorkflow {
+ConceptWorkflow {
       The same idea in an interface and matching expand reuses one collective
-      identifier.
+      Concept name.
 
       A component with recurring admission and publication concerns uses two
       Concepts while keeping its operation signature and shared guarantees direct.
@@ -357,7 +362,7 @@ ConceptIdentifierWorkflow {
       A small single-concern component keeps clear direct Facets without a wrapper
       that only repeats its component identity.
 
-      A public concern can receive an Interface Concept identity for consumer reuse
+      A public concern can receive an interface Tag identity for consumer reuse
       without filler occurrences in the remaining contracts.
 
       An accessible imported public identity is reused instead of creating a synonym.
@@ -367,8 +372,9 @@ ConceptIdentifierWorkflow {
     }
 
 DecisionRationaleWorkflow {
-      An importer may reuse a provider's public concept in decisions to explain local
-      rationale while Scope confines that decision to the importer.
+      An importer may reuse a provider's Tag introduced in `interface` in
+      decisions to explain local rationale, while Scope confines that decision
+      to the importer.
 
       A proposal that changes validation and enrichment ordering includes a matching
       decision record explaining why the order was selected.

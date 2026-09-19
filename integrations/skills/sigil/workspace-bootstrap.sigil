@@ -4,92 +4,101 @@
 
 component SigilWorkspaceBootstrap {
   goal {
-    Locate the selected workspace and supported tools without silently changing
-    unrelated configuration or adding runtime provider configuration.
+    Locate the *selected workspace* and *supported tools* without silently
+    changing unrelated configuration or adding runtime provider configuration.
   }
   interface {
     WorkspaceBootstrap {
-      Use SigilCli and SigilWorkspaceConfig to discover the eligible workspace from
-      the selected path.
+      Use SigilCli and SigilWorkspaceConfig to discover the *eligible workspace*
+      from the *selected path*.
 
       Validate supported versions with SigilSkillCompatibility.
 
       Report missing or invalid configuration distinctly.
     }
     WorkflowSelection {
-      Choose new-boundary design, existing-code adoption or established-contract work
-      from inspected evidence within the user's requested scope.
+      Choose *new-boundary design*, *existing-code adoption* or
+      *established-contract work* from inspected evidence within the user's
+      *requested scope*.
     }
   }
 }
 expand SigilWorkspaceBootstrap {
   state {
     WorkspaceBootstrap {
-      The selected target is configured, unconfigured with or without authored Sigil,
-      invalidly configured, or outside the governing workspace.
+      The selected target is *configured*, *unconfigured* with or without
+      authored Sigil, *invalidly configured*, or
+      *outside the governing workspace*.
     }
   }
   logic {
     WorkspaceBootstrap {
-      Discover eligible ancestor configuration without inferring membership from
-      package manifests.
+      Discover *eligible ancestor configuration* without inferring membership
+      from *package manifests*.
 
-      Inspect both sigil and sigilc executable identities.
+      Inspect both sigil and sigilc *executable identities*.
 
       Validate existing configuration in place.
 
-      When initialization is authorized by the task, use sigil init on the selected
-      root and inspect its output.
+      When initialization is authorized by the task, use sigil init on the
+      selected root and inspect its output.
     }
     GreenfieldWorkflow {
-      Establish the requested outcome, callers, responsibility and constraints.
+      Establish the *requested outcome*, callers, responsibility and
+      constraints.
 
-      Reuse existing contracts and choose the smallest cohesive boundaries.
+      Reuse existing contracts and choose the smallest *cohesive boundaries*.
 
-      Resolve material unknowns from evidence or the user before dependent edits.
+      Resolve *material unknowns* from evidence or the user before dependent
+      edits.
 
-      Write scoped contracts and validate current language and native semantics.
+      Write scoped contracts and validate current language and native
+      semantics.
     }
     BrownfieldWorkflow {
-      Inspect configured boundaries, actual entrypoints, tests and dependencies.
+      Inspect *configured boundaries*, *actual entrypoints*, tests and
+      dependencies.
 
-      Distinguish intended behavior from observed implementation and drift.
+      Distinguish *intended behavior* from *observed implementation* and
+      *drift*.
 
-      Model the requested responsibility with components and colocated expands; keep
-      directory module indexes focused on boundary summary and exports.
+      Model the *requested responsibility* with components and colocated
+      expands; keep directory summary sources focused on boundary summary and
+      exports.
     }
   }
   constraints {
     WorkspaceBootstrap {
-      Read-only diagnosis does not initialize files.
+      *Read-only diagnosis* does not initialize files.
 
       Preserve invalid existing configuration and unrelated work.
 
-      Existing task authorization persists; this workflow adds no separate approval
-      or tool-owned decision registry.
+      Existing *task authorization* persists; this workflow adds no separate
+      approval or tool-owned decision registry.
     }
     GreenfieldWorkflow {
-      Do not invent material product intent or decompose a small area into a fixed
-      hierarchy.
+      Do not invent *material product intent* or decompose a small area into a
+      fixed hierarchy.
 
-      Use native scope for comparison, not a second selection algorithm.
+      Use *native scope* for comparison, not a second *selection algorithm*.
     }
     BrownfieldWorkflow {
       Code alone does not define intended behavior.
 
-      Missing coverage is work to inspect and reconcile, not a reason to generate
-      contracts for every file.
+      Missing coverage is work to inspect and reconcile, not a reason to
+      generate contracts for every file.
     }
   }
   cases {
     WorkspaceBootstrap {
-      A review of an unconfigured repository reports that fact without mutation. A
-      requested initialization creates configuration using the language CLI; it does
-      not install or select a model provider.
+      A review of an *unconfigured repository* reports that fact without
+      mutation. A *requested initialization* creates configuration using the
+      language CLI; it does not install or select a *model provider*.
     }
     GreenfieldWorkflow {
-      A fully specified change proceeds within authorization after inspection; an
-      unresolved public behavior requires a decision before dependent work.
+      A *fully specified change* proceeds within authorization after
+      inspection; an *unresolved public behavior* requires a decision before
+      dependent work.
     }
     BrownfieldWorkflow {
       An intentionally deleted backend concept and its dedicated UI are removed

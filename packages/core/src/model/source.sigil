@@ -10,26 +10,28 @@ component SigilSourceModel {
   interface {
     SourceModel {
       SigilLanguageModel supplies structural vocabulary and source positions, and
-      SigilDiagnosticModel supplies diagnostics. Facet, EmbeddedFacet,
-      EmbeddedContent, concept
-      blocks, sections, declarations, SigilDocument, ParseResult, FormatResult, and
-      ParseOptions preserve recovered source structures and diagnostics.
+      SigilDiagnosticModel supplies diagnostics. *Facet*, *EmbeddedFacet*,
+      *EmbeddedContent*, Concepts, *sections*, *declarations*, *SigilDocument*,
+      *ParseResult*, *FormatResult*, and *ParseOptions* preserve recovered source
+      structures and diagnostics.
 
-      A Facet preserves its introducing prose, source location, owner, contract,
-      optional Concept identifier, and any fenced EmbeddedContent. An EmbeddedFacet
-      is the complete Facet with nonempty fenced content, not the fenced body alone.
+      A Facet preserves its introducing prose, *source location*, *owner*,
+      *contract*, optional *Concept name*, and any fenced EmbeddedContent.
+      An EmbeddedFacet is the complete Facet with nonempty fenced content, not
+      the fenced body alone.
 
-      isEmbeddedFacet identifies the content-bearing form. Existing serialized
-      units and literalBlocks field names remain stable while their TypeScript
+      *isEmbeddedFacet* identifies the content-bearing form. Existing serialized
+      units and *literalBlocks* field names remain stable while their TypeScript
       types use native Facet terminology.
 
-      Component is the ownership container. A contract can freely mix direct
-      Facets and multiple Concept blocks; an absent Concept identifier does not
-      require a synthetic wrapper identity.
+      *Component* is the ownership container. A contract can freely mix direct
+      Facets and multiple Concepts; an absent Concept name does not require a
+      synthetic wrapper identity.
 
       Type documentation encourages Concepts for recurring cross-contract concerns
-      and useful public identities while preserving direct shared guarantees and
-      small single-concern components without redundant grouping.
+      and useful `interface`-introduced Tag identities while preserving direct
+      shared guarantees and small single-concern components without redundant
+      grouping.
     }
   }
 }

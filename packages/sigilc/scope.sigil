@@ -1,60 +1,60 @@
 component SigilComparisonScope {
   goal {
-    Focus native Design and Implementation comparison on explicit source
-    membership so callers do not need duplicate scope assembly.
+    Focus native Design and *Implementation comparison* on explicit
+    *source membership* so callers do not need duplicate *scope assembly*.
   }
 
   interface {
     ScopeInput {
-      Accept a versioned scope containing ordered workspace-relative Design
-      root paths and the existing language-neutral Implementation selection.
-      Design roots name authored Sigil files in the validated frontend bundle.
-      Reject unknown fields, duplicate roots, missing roots, paths outside the
-      workspace, and accidental empty selection. Intentional emptiness is
-      explicit for each side and visible in the result.
-      Without an explicit scope, retain full frontend Design membership and
-      ordinary Implementation selection. Reject conflicting selection inputs.
+      Accept a versioned scope containing ordered workspace-relative *Design root*
+      paths and the existing language-neutral *Implementation selection*. Design
+      roots name authored Sigil files in the validated *frontend bundle*. Reject
+      unknown fields, duplicate roots, missing roots, paths outside the workspace,
+      and accidental empty selection. *Intentional emptiness* is explicit for each
+      side and visible in the result. Without an explicit scope, retain full
+      *frontend Design membership* and ordinary Implementation selection. Reject
+      conflicting selection inputs.
     }
 
     FocusOrder {
-      Preserve the caller's explicit root order as focus priority. Do not sort
-      it away during normalization or replace it with filesystem discovery order.
-      Return that order from scoped commands so the frontend and caller
-      can see what to address first and next without a temporary priority table.
-      Report dependency additions deterministically after the requested roots,
-      retaining their inclusion reasons without displacing explicit priorities.
-      Identify requested order separately from unordered effective membership.
-      Reprioritization changes order identity, not unchanged semantic bindings.
-      Order guides caller priority; sigilc does not schedule interpretation or
-      infer that an earlier entry has been completed.
+      Preserve the caller's explicit *root order* as *focus priority*. Do not sort it
+      away during normalization or replace it with *filesystem discovery order*.
+      Return that order from scoped commands so the frontend and caller can see what
+      to address first and next without a temporary priority table. Report dependency
+      additions deterministically after the requested roots, retaining their
+      inclusion reasons without displacing explicit priorities. Identify
+      *requested order* separately from unordered *effective membership*.
+      Reprioritization changes *order identity*, not unchanged semantic bindings.
+      Order guides *caller priority*, and sigilc does not schedule interpretation
+      or infer that an earlier entry has been completed.
     }
 
     DesignMembership {
-      Resolve Design roots through frontend imports and structural ownership to
-      a closed set of physical files. Include transitive import targets and
-      owner declarations required by selected expansions and Concepts. Terminate
-      cycles with a visited set. Preserve every authored unit in each included
-      file with its physical source and canonical owner.
-      Report requested roots separately from files included by dependency
-      closure. Included dependency files participate in Design compilation and
-      catalog construction, rather than supplying hidden comparison assumptions.
-      Do not silently drop unresolved references or errors. When unresolved
-      imports require conservative full-bundle membership, report that widening.
-      Preserve applicable configuration, glossary context and global diagnostics.
-      Do not infer source membership from temporary prose or caller metadata.
+      Resolve Design roots through frontend imports and *structural ownership* to a
+      closed set of physical files. Include *transitive import targets* and
+      *owner declarations* required by selected expansions and Tags. Terminate
+      cycles with a *visited set*. Preserve every *authored unit* in each included
+      file with its physical source and *canonical owner*. Report requested roots
+      separately from files included by *dependency closure*. Included dependency
+      files participate in *Design compilation* and catalog construction, rather than
+      supplying hidden comparison assumptions. Do not silently drop
+      *unresolved references* or errors. When unresolved imports require conservative
+      *full-bundle membership*, report that widening. Preserve applicable
+      configuration, glossary context and global diagnostics. Do not infer source
+      membership from temporary prose or caller metadata.
     }
 
     ScopedComparison {
-      Expose scope inspection without requiring reconstructed projections or a
-      current catalog. Return current input identities and retained frontend
-      diagnostics; inspection success is not a completed semantic gate.
-      Use the same resolved scope for freshness inspection, preparation,
-      ingestion, Design compilation, catalog export and Implementation comparison.
-      Require per-source operations to target a member of their selected side.
-      Report deterministic requested and effective membership and its fingerprint
-      alongside current input identities and the ordinary native named states.
-      Keep excluded cached objects reusable. Distinguish outside-scope objects
-      from deleted sources; neither contributes assertions to the selected world.
+      Expose *scope inspection* without requiring reconstructed projections or a
+      current catalog. Return current *input identities* and retained
+      *frontend diagnostics*. Inspection success is not a completed *semantic gate*.
+      Use the same resolved scope for freshness inspection, preparation, ingestion,
+      Design compilation, catalog export and Implementation comparison. Require
+      per-source operations to target a member of their selected side. Report
+      deterministic requested and effective membership and its fingerprint alongside
+      current input identities and the ordinary native *named states*. Keep
+      *excluded cached objects* reusable. Distinguish *outside-scope objects* from
+      deleted sources; neither contributes assertions to the *selected world*.
     }
   }
 }
@@ -62,13 +62,13 @@ component SigilComparisonScope {
 expand SigilComparisonScope {
   constraints {
     SemanticIdentity {
-      Scope membership affects assembled worlds and reports. A scope name,
-      filename or external requirement ID is not a per-source semantic input.
-      Reuse a projection when its existing complete semantic binding is unchanged.
-      A changed effective Design identity catalog still invalidates Implementation
-      projections under the existing full-catalog binding policy.
-      Scoping never gives Implementation interpreters Design prose or relationships;
-      their inputs remain captured source, fixed ontology and identity catalog.
+      Scope membership affects assembled worlds and reports. A scope name, filename
+      or external requirement ID is not a *per-source semantic input*. Reuse a
+      projection when its existing complete *semantic binding* is unchanged. A
+      changed *effective Design identity catalog* still invalidates Implementation
+      projections under the existing *full-catalog binding policy*. Scoping never
+      gives *Implementation interpreters* Design prose or relationships; their inputs
+      remain captured source, fixed ontology and identity catalog.
     }
 
   }
@@ -83,32 +83,33 @@ expand SigilComparisonScope {
     }
 
     ScopeChanges {
-      Reordering the same roots changes reported focus order and its identity,
-      while preserving membership identity. Adding a source
+      Reordering the same roots changes reported *focus order* and its identity,
+      while preserving *membership identity*. Adding a source
       changes world membership without invalidating unchanged per-source inputs.
       Removing a file from scope does not delete it or its cached projection.
-      Narrowing Design enough to change catalog identity invalidates dependent
+      Narrowing Design enough to change *catalog identity* invalidates dependent
       Implementation projections instead of reusing a previous comparison.
     }
 
     ObservedPriority {
-      Preserve caller-defined priority in native scope output so callers can
+      Preserve *caller-defined priority* in *native scope output* so callers can
       address selected roots in the reported order without maintaining a second
-      focus-priority table.
-      Selecting roots A then B reports A first. Reprioritizing B then A reports
-      B first without invalidating otherwise identical per-source projections.
-      Repeated runs preserve order even when frontend or filesystem enumeration
-      changes. The caller still establishes which interpretation is complete.
+      focus-priority table. Selecting roots A then B reports A first. Reprioritizing
+      B then A reports B first without invalidating otherwise identical per-source
+      projections. Repeated runs preserve order even when frontend or filesystem
+      enumeration changes. The caller still establishes which interpretation is
+      complete.
 
       Focus order is a priority and reporting order, not a demand to serialize
       independent reconstructions. External callers may prepare independent
-      sources concurrently while native publication remains authoritative.
+      sources concurrently while *native publication* remains authoritative.
     }
 
     ScopeLimits {
-      A typo in a root fails instead of producing an empty green result.
-      A successful focused comparison is not reported as complete-refactor
-      convergence. Gate exits retain their subcommand-specific named states.
+      A typo in a root fails instead of producing an *empty green result*. A
+      successful focused comparison is not reported as
+      *complete-refactor convergence*. Gate exits retain their subcommand-specific
+      named states.
     }
   }
 }

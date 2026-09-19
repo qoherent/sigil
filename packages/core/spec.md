@@ -16,8 +16,8 @@ and tests one consistent way to understand Sigil.
 ## 2. Version 0.7 Scope
 
 Version 0.7 extends the parser and resolver foundation with reviewed glossary
-authority, scoped terminology projections, reusable concept identifiers, and
-public/private concept visibility, and optional decision rationale.
+authority, scoped terminology projections, reusable Concepts, and visibility for
+Tags introduced in or outside `interface`, and optional decision rationale.
 
 It must:
 
@@ -33,7 +33,7 @@ It must:
 - match reviewed canonical terms and aliases in eligible Sigil prose using
   case-insensitive whole-phrase, longest-first rules;
 - preserve glossary declaration and occurrence source ranges;
-- parse flat, nonempty concept blocks and retain each line's concept identifier;
+- parse flat, nonempty Concepts and retain each line's Tag name;
 - parse optional `decisions` sections as free-form grouped or ungrouped semantic
   content;
 - discover the nearest eligible ancestor config or use an explicit configured
@@ -51,15 +51,15 @@ It must:
 - identify public components and matching expansions;
 - collect all matching `expand Name` blocks without override or shadowing
   semantics;
-- share one case-insensitively unique concept namespace across each component
+- share one case-insensitively unique Tag scope across each component
   and all matching expands;
-- expose imported public interface concepts without making private expansion
+- expose imported Tags introduced in `interface` without making private expansion
   details part of the dependent-facing contract;
 - project direct dependencies' public contracts and `decisions` sections as
   bounded agent rationale while excluding transitive and other private
   dependency sections by default;
-- preserve an imported concept's originating identity through contextual reuse
-  and downstream interface re-exposure;
+- preserve an imported Tag's originating identity through contextual reuse
+  and downstream `interface` re-exposure;
 - build graph primitives for files, imports, components, and expansions;
 - return partial models plus diagnostics when source is malformed;
 - expose stable machine-readable diagnostic codes.
@@ -79,8 +79,8 @@ Version 0.7 must not implement:
 - anchors or code/spec synchronization;
 - generated diagrams;
 - export forms, import aliases, or wildcard imports;
-- dotted concept notation, concept aliases, shadowing, or nested concept blocks;
-- concept-based anchoring behavior.
+- dotted Concept notation, Concept aliases, shadowing, or nested Concepts;
+- Concept-based anchoring behavior.
 - inferred glossary definitions or automatic glossary mutation.
 
 Anchors remain outside `sigil-core`. The historical design in ADR-011 described
@@ -112,7 +112,7 @@ The public API should be usable by:
 
 ## 5. Required Types
 
-The model should include typed concepts equivalent to:
+The model should include typed entities equivalent to:
 
 - `SourceRange`;
 - `SourceLocation`;
@@ -124,15 +124,15 @@ The model should include typed concepts equivalent to:
 - `Facet`;
 - `EmbeddedFacet`;
 - `EmbeddedContent`;
-- `ConceptBlock`;
+- `TagGroup`;
 - `WorkspaceGlossary`;
 - `GlossaryTerm`;
 - `GlossaryContext`;
 - `GlossaryOccurrence`;
 - `GlossaryProjection`;
 - `GlossaryContextProjection`;
-- `ResolvedConceptReference`;
-- `ResolvedConceptNamespace`;
+- `ResolvedTagReference`;
+- `ResolvedTagScope`;
 - `SigilWorkspace`;
 - `SigilConfig`;
 - `ResolvedComponent`;
@@ -154,7 +154,7 @@ selected source files.
 - owner kind;
 - owner name;
 - section name;
-- optional concept identifier;
+- optional Concept grouping;
 - normalized prose;
 - original physical lines;
 - attached fenced content.
@@ -207,8 +207,8 @@ Version 0.7 diagnostics must include stable codes for:
 - duplicate component ambiguity;
 - missing, malformed, invalid, unsupported, existing, or nested config;
 - import cycle protection.
-- missing, invalid, empty, nested, ambiguous, and non-preferred concept
-  identifiers.
+- incomplete, invalid, ambiguous, and non-preferred Tag names, and empty or
+  nested Concepts.
 
 ## 8. Workspace And Import Requirements
 
@@ -261,22 +261,23 @@ Version 0.7 is acceptable when tests demonstrate that `sigil-core` can:
 - keep omitted components importable through explicit `.sigil` paths;
 - resolve `examples/slotted/auth.sigil` imports from the Slotted workspace root;
 - diagnose each resolved imported name without qualifying use;
-- exclude embedded-content content from import, concept, and glossary references;
+- exclude embedded-content content from import, Tag, and glossary references;
 - format prose idempotently at 79 content characters while preserving literal
   bodies and structural indentation;
 - collect matching expansions for resolved components;
 - preserve ungrouped and Concept-grouped Facets in source order without grouping
   diagnostics in any contract;
-- resolve public imported concepts as bare identifiers and keep private concepts
-  inaccessible to dependents;
+- resolve imported Tags introduced in `interface` as bare names and keep Tags
+  introduced outside `interface` inaccessible to dependents;
 - project each direct dependency contract and decision section once for agent
   context while excluding transitive decisions and non-decision private
   sections;
-- resolve exact-case whole-word concept references into contextual namespaces
+- resolve exact-case whole-word Tag references into Tag scopes
   with originating identities and source ranges;
 - exclude ambiguous identities, case mismatches, substrings, and unmatched words
-  from contextual references without producing unresolved-concept diagnostics;
-- diagnose case-insensitive ambiguity and invalid, empty, or nested blocks;
+  from contextual references without producing unresolved-Tag diagnostics;
+- diagnose case-insensitive ambiguity and invalid Tag names or empty or nested
+  Concepts;
 - return partial models plus diagnostics for malformed files;
 - emit stable diagnostic codes;
 - run core tests with an in-memory filesystem implementation.

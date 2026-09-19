@@ -121,8 +121,8 @@ expand SigilGlossaryEngine {
 
       Unknown prose remains ordinary text without a missing-glossary-term diagnostic.
 
-      EmbeddedContent type and body content are excluded without independently tracking
-      fence state.
+      EmbeddedContent type and body content are excluded without independently
+      tracking fence state.
     }
 
     GlossaryInspection {

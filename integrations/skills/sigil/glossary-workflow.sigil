@@ -2,66 +2,71 @@
 
 component SigilGlossaryWorkflow {
   goal {
-    Inspect and maintain reviewed vocabulary when relevant to the requested work,
-    without making candidate extraction a compiler stage or an automatic mutation.
+    Inspect and maintain *reviewed vocabulary* when relevant to the requested
+    work, without making *candidate* extraction a compiler stage or an
+    automatic mutation.
   }
   interface {
     GlossaryWorkflow {
-      Distinguish deterministic glossary inspection from model-assisted candidate
-      extraction and authorized glossary edits.
+      Distinguish *deterministic glossary inspection* from
+      *model-assisted candidate extraction* and *authorized glossary edits*.
 
-      State required, deferred or inspection-only status when it affects the authored
-      workflow.
+      State required, deferred or inspection-only status when it affects the
+      authored workflow.
 
-      SigilContextRetrieval supplies relevant existing vocabulary to coding work;
-      native prepared inputs control what independent reconstruction workers see.
+      SigilContextRetrieval supplies relevant existing vocabulary to coding
+      work; native prepared inputs control what
+      *independent reconstruction workers* see.
     }
   }
 }
 expand SigilGlossaryWorkflow {
   logic {
     GlossaryWorkflow {
-      Inspect existing glossary definitions, bounded contexts, aliases, source
-      occurrences and diagnostics.
+      Inspect existing glossary definitions, *bounded contexts*, aliases,
+      *source occurrences* and diagnostics.
 
-      When requested or when terminology ambiguity affects the task, inspect selected
-      prose for candidates and conflicts.
+      When requested or when *terminology ambiguity* affects the task, inspect
+      selected prose for each candidate and conflict.
 
-      Record candidate occurrences and proposed scope, or an evidence-based reason no
-      material candidate exists.
+      Record candidate occurrences and proposed scope, or an evidence-based
+      reason no material candidate exists.
 
       Make only authorized changes and recheck them.
 
-      Refresh native Design capture after glossary changes.
+      Refresh *native Design capture* after glossary changes.
     }
   }
   constraints {
     GlossaryWorkflow {
       Diagnostic absence does not prove that vocabulary is complete.
 
-      An absent glossary can be valid.
+      An *absent glossary* can be valid.
 
       Repeated usage does not automatically become authority.
 
-      Normative contracts govern over conflicting glossary prose.
+      *Normative contracts* govern over conflicting glossary prose.
 
-      Concepts and glossary terms are distinct; definitions never change language
+      Tags and glossary terms are distinct; definitions never change language
       resolution.
 
-      Preserve nonoverlapping context scope and unrelated terms.
+      Preserve nonoverlapping *context scope* and unrelated terms.
 
-      Do not extract from code literals or infer behavior from an undefined term.
+      Do not extract from code literals or infer behavior from an undefined
+      term.
 
-      Routine implementation or inspection does not require a glossary rewrite.
+      Routine implementation or inspection does not require a
+      *glossary rewrite*.
 
-      Missing native reconstruction does not prevent inspecting terminology.
+      Missing *native reconstruction* does not prevent inspecting terminology.
     }
   }
   cases {
     GlossaryWorkflow {
-      A vocabulary request examines selected prose even with zero diagnostics. A
-      refactor with an explicit inspection-only glossary policy preserves that
-      policy. A glossary change refreshes captured inputs before native comparison.
+      A *vocabulary request* examines selected prose even with zero
+      diagnostics. A refactor with an explicit
+      *inspection-only glossary policy* preserves that policy. A glossary
+      change refreshes *captured inputs* before native comparison.
     }
   }
 }

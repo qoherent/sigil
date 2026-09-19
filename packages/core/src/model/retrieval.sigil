@@ -11,58 +11,62 @@ component SigilRetrievalModel {
     RetrievalModel {
       SigilSourceModel and SigilDiagnosticModel provide source and diagnostic data.
 
-      PurposeRetrievalResult and its target, graph, evidence, inclusion, exclusion,
-      context, and fingerprint data preserve deterministic retrieval output.
+      *PurposeRetrievalResult* and its *target*, *graph*, *evidence*, *inclusion*,
+      *exclusion*, *context*, and *fingerprint* data preserve deterministic
+      retrieval output.
     }
 
     RetrievalProjection {
-      RetrievalProjection is the separately versioned sigil-retrieval-projection/v1
-      agent presentation schema derived deterministically from one
-      PurposeRetrievalResult.
+      RetrievalProjection is the separately versioned
+      sigil-retrieval-projection/v1 agent presentation schema derived
+      deterministically from one PurposeRetrievalResult.
 
       RetrievalProjection does not embed or re-export the raw
-      sigil-purpose-retrieval/v1 result or its fingerprint. It leaves that result
-      unchanged and derives a separate projection fingerprint from its own content.
+      sigil-purpose-retrieval/v1 result or its fingerprint. It leaves that
+      result unchanged and derives a separate *projection fingerprint* from
+      its own content.
 
-      RetrievalProjection contains purpose, target, ordered RetrievedComponent
-      entries, glossary entries derived from glossary-definition evidence in their
-      existing order, diagnostics copied from the raw result in their existing order,
-      and a projection fingerprint.
+      RetrievalProjection contains purpose, target, ordered *RetrievedComponent*
+      entries, glossary entries derived from glossary-definition evidence in
+      their existing order, diagnostics copied from the raw result in their
+      existing order, and a projection fingerprint.
 
-      A projection glossary entry has the canonical term and definition from one
-      glossary-definition EvidenceUnit. It does not include occurrence records or
-      unused GlossaryFile entries.
+      A *projection glossary entry* has the canonical term and definition from
+      one glossary-definition *EvidenceUnit*. It does not include occurrence
+      records or unused *GlossaryFile* entries.
 
-      RetrievedComponent has one stable component identity, path, one role,
-      component-owned links, and one purpose-appropriate contract projection. When
-      multiple graph relationships apply, its role uses the first applicable
-      priority: selected, dependency, importer, then cycle-member. A module-index
-      summary creates one module-context role only when no other RetrievedComponent
-      already represents its exact component identity.
+      RetrievedComponent has one stable *component identity*, path, one *role*,
+      *component-owned links*, and one purpose-appropriate *contract projection*.
+      When multiple graph relationships apply, its role uses the first
+      applicable priority: *selected*, *dependency*, *importer*, then
+      *cycle-member*. A *module-index summary* creates one module-context role
+      only when no other RetrievedComponent already represents its exact
+      component identity.
 
-      A component-owned link has one relation, an exact target component identity,
-      and its available import or annotation location. Links do not require a
-      separate presentation-level relationship map.
+      A component-owned link has one *relation*, an exact target component
+      identity, and its available import or *annotation location*. Links do
+      not require a separate presentation-level relationship map.
 
       A selected component contract groups goal, interface, state, logic,
       constraints, decisions, and cases by their owning component.
 
-      Every RetrievedComponent interface groups SemanticUnits by concept when a
-      concept identity exists and retains ungrouped interface units without inventing
-      a concept.
+      Every RetrievedComponent interface groups *SemanticUnits* by Concept when
+      a *Tag identity* exists and retains ungrouped interface units without
+      inventing a Concept.
 
-      A non-selected dependency, importer, or cycle-member contract exposes only its
-      goal and interface. A module-context contract exposes its selected summary
-      sections only when that component identity has no other projection entry.
+      A non-selected dependency, importer, or cycle-member contract exposes
+      only its goal and interface. A *module-context contract* exposes its
+      selected summary sections only when that component identity has no
+      other *projection entry*.
 
-      Matching expansion SemanticUnits merge into the owning component and matching
-      concept or section. An expansion is not a presentation component, relationship
-      category, or heading.
+      Matching *expansion* SemanticUnits merge into the owning component and
+      matching Concept or section. An expansion is not a presentation
+      component, relationship category, or heading.
 
-      OwnershipLink records an advisory implements, uses, or tests relation, a
-      repository-relative one-way implementation location, optional symbol, and
-      selected sections. It belongs to its owning component or concept and does not
-      prove implementation completeness or alignment.
+      *OwnershipLink* records an advisory implements, uses, or tests relation,
+      a repository-relative one-way *implementation location*, optional symbol,
+      and selected sections. It belongs to its owning component or Concept
+      and does not prove implementation completeness or alignment.
     }
   }
 
@@ -71,17 +75,18 @@ component SigilRetrievalModel {
       Projection component identities and links are exact, stable, and resolvable
       within the same projection.
 
-      A raw graph edge whose source or target does not correspond to a projected
-      component is omitted from projection links. Every emitted link therefore
-      resolves to an entry in the same projection.
+      A raw *graph edge* whose source or target does not correspond to a
+      projected component is omitted from projection links. Every emitted
+      link therefore resolves to an entry in the same projection.
 
-      Projection ordering is deterministic. Components sort by selected status, role
-      priority, normalized path, declaration start and end location with an absent
-      location after a present location, component name, then stable identity; string
-      comparisons use Unicode scalar order and numeric locations sort ascending.
-      Links sort by relation, target identity, origin path, origin start and end
-      location with an absent location after a present location, then stable source
-      identity. Section units retain raw evidence order.
+      Projection ordering is deterministic. Components sort by selected status,
+      *role priority*, *normalized path*, declaration start and end location with
+      an absent location after a present location, component name, then
+      *stable identity*. String comparisons use *Unicode scalar order* and
+      numeric locations sort ascending. Links sort by relation, target identity,
+      origin path, origin start and end location with an absent location after
+      a present location, then stable source identity. Section units retain raw
+      evidence order.
 
       Module-context components sort after cycle members and before no other
       component category; duplicate module-index summaries are omitted.
@@ -89,21 +94,22 @@ component SigilRetrievalModel {
       Projection locations use normalized repository-relative paths and one-based
       line and column values already carried by raw retrieval evidence.
 
-      A projection fingerprint covers purpose, target, components, glossary entries,
-      and diagnostics in their emitted order, excluding the projection fingerprint
-      field itself. It does not replace the raw PurposeRetrievalResult fingerprint.
+      A projection fingerprint covers purpose, target, components, glossary
+      entries, and diagnostics in their emitted order, excluding the projection
+      fingerprint field itself. It does not replace the raw
+      PurposeRetrievalResult fingerprint.
     }
   }
 
   decisions {
     UnifiedRetrievalModel {
       Decision: Keep evidence-first retrieval and component-first projection in one
-      SigilRetrievalModel while versioning their wire contracts separately.
+      SigilRetrievalModel while versioning their *wire contracts* separately.
 
-      Scope: Governs semantic model ownership; excludes raw-result and projection
-      consumer protocols.
+      Scope: Governs semantic model ownership; excludes raw-result and
+      projection consumer protocols.
 
-      Rationale: Both contracts share retrieval identities, source locations,
+      Rationale: Both contracts share *retrieval identities*, source locations,
       diagnostics, and deterministic derivation rules.
 
       Consequences: Consumers can evolve either schema independently while one
@@ -111,87 +117,95 @@ component SigilRetrievalModel {
     }
 
     ProjectionRolePrecedence {
-      Decision: Represent each RetrievedComponent with one highest-priority role:
-      selected, dependency, importer, then cycle-member.
+      Decision: Represent each RetrievedComponent with one highest-priority
+      role: selected, dependency, importer, then cycle-member.
 
       Scope: Governs the agent-facing component role; excludes graph edges and
       component-owned links, which retain all selected relationships.
 
-      Rationale: A single role keeps component grouping and ordering stable while the
-      selected contract remains primary and each lower role conveys progressively
-      less direct retrieval relevance.
+      Rationale: A single role keeps component grouping and ordering stable
+      while the selected contract remains primary and each lower role conveys
+      progressively less direct retrieval relevance.
 
-      Consequences: Multiple raw relationships remain visible through links without
-      duplicating a component or making its contract depend on evidence order.
+      Consequences: Multiple raw relationships remain visible through links
+      without duplicating a component or making its contract depend on evidence
+      order.
     }
 
     ProjectionGlossary {
-      Decision: Carry selected glossary-definition evidence on RetrievalProjection as
-      ordered term-and-definition entries instead of making Markdown reread raw
-      evidence.
+      Decision: Carry selected glossary-definition evidence on
+      RetrievalProjection as ordered term-and-definition entries instead of
+      making Markdown reread raw evidence.
 
-      Scope: Governs agent-facing projection membership; excludes glossary selection,
-      GlossaryFile authorship, and raw PurposeRetrievalResult shape.
+      Scope: Governs agent-facing projection membership; excludes glossary
+      selection, GlossaryFile authorship, and raw PurposeRetrievalResult shape.
 
-      Rationale: RetrievalMarkdown takes the projection as its sole input, so omitted
-      glossary entries cannot appear in Markdown without a second parse.
+      Rationale: RetrievalMarkdown takes the projection as its sole input,
+      so omitted glossary entries cannot appear in Markdown without a second
+      parse.
 
-      Consequences: Projection fingerprints include glossary entries. Unused glossary
-      rows remain absent.
+      Consequences: Projection fingerprints include glossary entries. Unused
+      glossary rows remain absent.
     }
 
     AgentRetrievalProjection {
-      Decision: Preserve the evidence-first PurposeRetrievalResult v1 protocol and
-      derive a separately versioned component-first retrieval projection for agents.
+      Decision: Preserve the evidence-first PurposeRetrievalResult v1 protocol
+      and derive a separately versioned component-first retrieval projection
+      for agents.
 
-      Scope: Governs agent-facing retrieval data and Markdown rendering; excludes raw
-      retrieval membership, evidence, graph, ordering, JSON Lines, and compiler
-      report protocols.
+      Scope: Governs agent-facing retrieval data and Markdown rendering;
+      excludes raw retrieval membership, evidence, graph, ordering, JSON
+      Lines, and compiler report protocols.
 
-      Trade-offs: The projection adds a maintained schema, but avoids making every
-      host reconstruct component, concept, expansion, ownership, and link grouping.
+      Trade-offs: The projection adds a maintained schema, but avoids making
+      every host reconstruct component, Concept, expansion, ownership, and
+      link grouping.
 
       Design issues addressed: Flat evidence kinds expose expansions and source
-      slices as peer content, producing repetitive Markdown that is difficult for
-      people and agents to navigate.
+      slices as peer content, producing repetitive Markdown that is difficult
+      for people and agents to navigate.
 
-      Discarded alternatives: Replacing raw v1 with a breaking grouped result and
-      making every Markdown renderer infer groups from evidence were rejected.
+      Discarded alternatives: Replacing raw v1 with a breaking grouped result
+      and making every Markdown renderer infer groups from evidence were
+      rejected.
 
-      Consequences: Hosts can consume a stable grouped projection while automation
-      retains the complete raw evidence result and its established fingerprint.
+      Consequences: Hosts can consume a stable grouped projection while
+      automation retains the complete raw evidence result and its established
+      fingerprint.
 
-      Revisit when: A consumer requires a projection role, section, or relation that
-      cannot be derived deterministically from purpose retrieval.
+      Revisit when: A consumer requires a projection role, section, or relation
+      that cannot be derived deterministically from purpose retrieval.
     }
   }
 
   cases {
     RetrievalProjection {
-      A selected component with a MarkdownOutput concept groups its declaration and
-      matching expansion interface units beneath MarkdownOutput without an expansion
-      heading.
+      A selected component with a MarkdownOutput Concept groups its declaration
+      and matching expansion interface units beneath MarkdownOutput without an
+      expansion heading.
 
-      A selected component exposes its state, logic, constraints, decisions, and
-      cases even when direct dependencies expose only their goal and interface.
+      A selected component exposes its state, logic, constraints, decisions,
+      and cases even when direct dependencies expose only their goal and
+      interface.
 
-      A component that is both a dependency and cycle member has dependency role; an
-      importer that is also a cycle member has importer role.
+      A component that is both a dependency and cycle member has dependency
+      role; an importer that is also a cycle member has importer role.
 
       A graph edge whose endpoint has no projected component produces no
       component-owned link.
 
-      An ownership annotation for a selected concept becomes an OwnershipLink under
-      that concept with the annotation's repository-relative line and column.
+      An *ownership annotation* for a selected Concept becomes an
+      OwnershipLink under that Concept with the annotation's repository-relative
+      line and column.
 
-      An implementation-purpose result contains advisory OwnershipLinks with a start
-      location only and never embeds implementation-source slices.
+      An implementation-purpose result contains advisory OwnershipLinks with
+      a start location only and never embeds implementation-source slices.
 
-      A dependency interface unit with a concept identity occupies that named
+      A dependency interface unit with a Tag identity occupies that named
       interface group on the dependency RetrievedComponent.
 
-      Glossary-definition evidence becomes one projection glossary entry each and
-      does not become a RetrievedComponent.
+      Glossary-definition evidence becomes one projection glossary entry each
+      and does not become a RetrievedComponent.
     }
   }
 }

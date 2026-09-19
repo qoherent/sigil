@@ -38,8 +38,8 @@ expand SigilFormatter {
       Place an attached opening fence directly after its introducing prose without an
       intervening blank line.
 
-      Preserve EmbeddedContent source lines, internal blank lines, trailing whitespace,
-      and relative indentation.
+      Preserve EmbeddedContent source lines, internal blank lines, trailing
+      whitespace, and relative indentation.
 
       Compare the rendered source with the input to derive changed status.
     }
@@ -59,8 +59,8 @@ expand SigilFormatter {
       Prose wrapping occurs only at whitespace boundaries and never changes
       Facet identity.
 
-      Structural lines, fence delimiters, and EmbeddedContent bodies are excluded from
-      prose-width wrapping.
+      Structural lines, fence delimiters, and EmbeddedContent bodies are excluded
+      from prose-width wrapping.
 
       Formatting does not normalize structural indentation.
 

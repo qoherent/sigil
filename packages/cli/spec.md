@@ -27,7 +27,7 @@ Version 0.7 must provide commands to:
 - render a simple Markdown review view.
 - initialize a non-interactive versioned workspace config;
 - report CLI, core, and Sigil versions.
-- surface concept-identifier diagnostics and resolved concept namespaces.
+- surface Tag name diagnostics and resolved Tag scopes.
 - export the complete structural Design bundle for direct native `sigilc` use.
 
 Version 0.7 should favor predictable, machine-readable behavior over rich
@@ -249,7 +249,7 @@ Required output data:
 - selected components;
 - component contracts;
 - collected expansions;
-- resolved concept namespaces;
+- resolved Tag scopes;
 - related file paths;
 - a scoped glossary context containing accepted terms, aliases, definitions,
   resolved bounded contexts, and occurrences from those related files, or `null`
@@ -347,7 +347,7 @@ Version 0.7 is acceptable when tests or scripted checks demonstrate that
 - accept ungrouped and mixed Concept-grouped Interface Facets without warnings;
 - emit graph JSON with file and expansion edges;
 - emit context JSON for `--component Auth`;
-- emit resolved concept namespaces in context JSON;
+- emit resolved Tag scopes in context JSON;
 - emit each direct dependency's public contract and decision sections once in
   context JSON while excluding transitive and other private dependency details;
 - render Markdown for the Slotted example;

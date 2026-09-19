@@ -6,14 +6,14 @@ component SigilDesignInput {
 
   interface {
     ResolvedDesignInput {
-      Load the existing Sigil workspace through its parser and resolver. Return
-      a versioned bundle of exact source buffers, input context, diagnostics,
-      resolved imports, canonical component and Concept identities, and physical
-      authored interpretation units.
+      Load the existing Sigil workspace through its parser and resolver. Return a
+      versioned *bundle* of exact *source buffers*, *input context*, diagnostics,
+      *resolved imports*, canonical component and *Tag identities*, and physical
+      authored *interpretation units*.
 
       Record config and glossary buffers used during loading, including absent
-      optional inputs. Rust validates current bytes and owns their fingerprints.
-      Keep expansions attributed to their physical file and canonical owner.
+      optional inputs. Rust validates current bytes and owns their *fingerprints*.
+      Keep *expansions* attributed to their physical file and *canonical owner*.
       Preserve units even when owner resolution fails, alongside diagnostics.
       Export this capability from the core language package. Keep no forwarding
       export or compatibility helper in the removed TypeScript compiler package.
@@ -27,21 +27,22 @@ expand SigilDesignInput {
       The bundle contains no Turtle, semantic laws, inferred relationships,
       obligations, implementation requirements, ranking, or semantic verdicts.
       Imports provide language visibility, never automatic runtime dependencies.
-      Source ranges identify authored units, not evidence of implementation.
+      *Source ranges* identify authored units, not evidence of implementation.
       Input capture invokes no model and selects no external workflow.
     }
   }
 
   cases {
     PhysicalInventory {
-      A component and its expansion in different files produce separate source
-      inventories with shared owner identity. Prose and fenced content remain
-      present in the captured source even when no model interprets them.
+      A component and its expansion in different files produce separate
+      *source inventories* with shared *owner identity*. Prose and fenced content
+      remain present in the captured source even when no model interprets
+      them.
     }
 
     SourceCapture {
-      A config or source changing after loading cannot change the captured
-      bundle. Rust rejects publication against mismatching current inputs.
+      A config or source changing after loading cannot change the bundle.
+      Rust rejects publication against mismatching current inputs.
     }
   }
 }

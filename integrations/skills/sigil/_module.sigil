@@ -60,8 +60,8 @@ SkillPackage {
 
       SigilDesignIntake remains available through its imported owning contract
 
-      directory imports expose those cohesive workflow components without making the
-      module index own their operational policy or mutable lifecycle
+      explicit imports expose those cohesive workflow components without making the
+      summary source own their operational policy or mutable lifecycle
     }
 
   }
@@ -82,7 +82,7 @@ SkillPackage {
       Skill artifact version ownership is independent from language and distributable
       tool versions.
 
-      Compatibility policy remains outside this module index and is exposed through
+      Compatibility policy remains outside this summary source and is exposed through
       the imported SigilSkillCompatibility component.
     }
   }

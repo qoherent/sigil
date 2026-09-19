@@ -44,8 +44,9 @@ expand SigilReleaseDistribution {
       Windows.
 
       Package stable platform-specific archive names containing versioned
-      bin/sigil, bin/sigilc and integrations/skills paths. Each binary reports its owning manifest
-      version; the archive version follows the language CLI manifest.
+      bin/sigil, bin/sigilc and integrations/skills paths. Each binary reports
+      its owning manifest version; the archive version follows the language CLI
+      manifest.
 
       Detect host operating system and architecture before selecting an archive.
 
@@ -54,9 +55,10 @@ expand SigilReleaseDistribution {
       Verify SHA-256 before extracting or changing the active executable.
 
       Install into a versioned user-data directory and expose both selected
-      executables through a user PATH directory. Verify both binaries before activation.
-      Reinstallation checks existing bytes against the verified archive, including
-      skills; corrupt existing installations fail without selecting a new version.
+      executables through a user PATH directory. Verify both binaries before
+      activation. Reinstallation checks existing bytes against the verified
+      archive, including skills; corrupt existing installations fail without
+      selecting a new version.
     }
 
     VsCodeRelease {

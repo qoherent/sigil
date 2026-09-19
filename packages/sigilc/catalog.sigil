@@ -1,38 +1,38 @@
 component SigilEntityCatalog {
   goal {
-    Share canonical semantic identities without exposing Design relationships
-    to independent Implementation reconstruction.
+    Share *canonical semantic identities* without exposing *Design relationships*
+    to *independent Implementation reconstruction*.
   }
 
   interface {
     SourceOwnership {
-      Reserve frontend Component and Concept identities and physical authored
-      unit identities. A Design source may repeat its own unchanged declarations.
-      Other sources reference those identities without redeclaring them.
-      New domain entities use urn:sigil:entity followed by the encoded physical
-      source path and encoded local name. Require exactly one fixed type and
-      nonempty label. Reject unknown references at world assembly, collisions,
+      Reserve frontend Component and Tag identities and physical *authored unit*
+      identities. A *Design source* may repeat its own unchanged declarations. Other
+      sources reference those identities without redeclaring them. New
+      *domain entities* use urn:sigil:entity followed by the encoded
+      *physical source path* and encoded local name. Require exactly one fixed type
+      and nonempty label. Reject unknown references at *world assembly*, collisions,
       foreign declarations and mutations of reserved identities.
-      Interpretation units remain internal and never enter the domain catalog.
+      *Interpretation units* remain internal and never enter the *domain catalog*.
       Only their physical source may describe their interpretation. Each unit may
-      name at most one fixed entity relation. Units cannot serve as domain
-      endpoints in relationships or code obligations.
+      name at most one *fixed entity relation*. Units cannot serve as
+      *domain endpoints* in relationships or *code obligations*.
     }
 
     FrozenIdentity {
-      Freeze only current non-Disjoint Design. Sort canonical identity, type,
-      label and language-defined exported names, and hash only that content.
-      Keep the current Design fingerprint and provisional or authoritative
-      status outside the identity fingerprint. Exclude relationships, descriptions,
-      obligations and interpretation identifiers from the worker catalog.
+      Freeze only *current non-Disjoint Design*. Sort canonical identity, type, label
+      and *language-defined exported names*, and hash only that content. Keep the
+      current *Design fingerprint* and provisional or authoritative status outside
+      the *identity fingerprint*. Exclude relationships, descriptions, obligations
+      and interpretation identifiers from the *worker catalog*.
     }
 
     ImplementationIdentity {
-      Validate every Implementation domain subject and resource object against
-      the frozen catalog. Ontology classes and literal datatypes are vocabulary.
-      Permit exact type and label repetition but reject identity mutation.
-      Empty assertions remain valid. Catalog membership supplies no evidence
-      that an entity or relationship has been implemented.
+      Validate every Implementation *domain subject* and *resource object* against
+      the *frozen catalog*. *Ontology classes and literal datatypes* are vocabulary.
+      Permit exact type and label repetition but reject *identity mutation*. Empty
+      assertions remain valid. *Catalog membership* supplies no evidence that an
+      entity or relationship has been implemented.
     }
   }
 }

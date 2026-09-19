@@ -28,12 +28,12 @@ findings rather than treating this baseline as permanent truth.
 
 ## The adopted design
 
-The core container is Component; contracts contain Facets. Concept IDs are
-encouraged to group and connect the several concepts commonly present in real
+The core container is Component; contracts contain Facets. Concepts are
+encouraged to group and connect the several concerns commonly present in real
 components. Smaller components may not need them. Ungrouped and grouped Facets
 may freely mix, and no synthetic wrapper is required for comparison. Ordinary Facets end at an
 empty line; Embedded Facets retain their introducing prose and fenced content.
-Interface-defined identifiers are public vocabulary even without Concept blocks.
+Identifiers defined in `interface` are public vocabulary even without Concept grouping.
 Imports and module assembly preserve ownership and do not imply runtime calls.
 
 The algebra gives that language a shared calculation surface: values,
@@ -225,8 +225,8 @@ Current sources: [design-input.ts](../core/src/design-input.ts),
 
 The frontend already inventories physical Facets and emits Component
 and locally owned Concept entities. `Unit.concept` is text rather than a
-resolved Concept reference per contribution. Entity types do not include
-non-Concept public identifiers defined inside Interface Facets, and the
+resolved Concept reference per contribution. Entity types do not include Tags
+introduced in `interface` that are not Concepts, and the
 transport lacks explicit Embedded Facet representation metadata. The core
 source model now names Facet, EmbeddedFacet, and its fenced EmbeddedContent;
 the narrower structural Design transport still needs that representation.
@@ -238,7 +238,7 @@ support the target's independent source-local anchors.
 Concept, contextual owner, contract, and range; carry Embedded Facet structure;
 extend accepted Design/public descriptors for source-supported Interface
 definitions; and admit appropriately typed local observation subjects. Do not
-force every operation, branch, or public term into a Concept block.
+force every operation, branch, or public term into a Concept.
 
 Structural identity and arbitrary prose interpretation remain separate owners.
 Use core resolution for scope and originating identities. Accepted Design
@@ -423,7 +423,7 @@ These specify future implementation checks, not results obtained in this audit.
 | An operation Concept returns a separately defined result Concept | Explicit result relationship; neither Concept is reclassified as a Facet of the other. |
 | Wrapped prose, an empty-line separator, and ungrouped/mixed Interface statements | Native Facet boundaries and optional Concept are preserved without grouping warnings or synthetic wrappers. |
 | Embedded content contains blank lines and braces | Introducing prose, notation, body, and ranges remain intact; unsupported interpretation is an explicit gap. |
-| Interface defines a public term without a Concept block | Importable typed identity with defining Facet and originating owner; ordinary prose words are not all exports. |
+| Interface defines a public term without a Concept | Importable typed identity with defining Facet and originating owner; ordinary prose words are not all exports. |
 | Consumer adds Facets about an imported Concept | Consumer obligations retain their context; provider meaning is not rewritten upstream. |
 | Nested module exposes selected components | Explicit public surface and ownership, without directory sweeping or invented runtime sequencing. |
 | Pure early returns and conjunction describe the same decision | Equal for the complete declared finite domain, with distinct source occurrences and a supported derivation. |

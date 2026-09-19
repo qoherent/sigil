@@ -4,37 +4,44 @@
 
 component SigilImplementationWorkflow {
   goal {
-    Implement the requested contract in cohesive owners, verify actual delivery and
-    inspect native comparison without confusing annotations with proof.
+    Implement the requested contract in *cohesive owners*, verify
+    *actual delivery* and inspect *native comparison* without confusing
+    annotations with proof.
   }
   interface {
     ImplementationCoverage {
-      Classify each material responsibility as a component, an expand owned by an
-      existing component, or a trivial mechanic needing no separate contract.
+      Classify each *material responsibility* as a component, an expand owned
+      by an existing component, or a *trivial mechanic* needing no separate
+      contract.
 
-      Keep public index files as namespace assembly rather than behavior owners.
+      Keep public index files as *import-surface assembly* rather than
+      behavior owners.
     }
     ImplementationOwnershipWorkflow {
-      Use SigilImplementationOwnership comments to link stable implementation
-      entrypoints or agent-facing Markdown to governing section occurrences.
+      Use SigilImplementationOwnership comments to link stable
+      *implementation entrypoints* or agent-facing Markdown to governing
+      *section occurrences*.
 
-      These links support navigation and context, not semantic proof.
+      These links support navigation and context, not *semantic proof*.
     }
     FrontendSurfaceReview {
-      Inspect routing, composition, shared state and design-system contracts.
+      Inspect routing, composition, shared state and
+      *design-system contracts*.
 
-      Describe props, events, regions, actions, navigation, asynchronous modes,
-      accessibility, responsive behavior and single ownership of client state.
+      Describe props, events, regions, actions, navigation, asynchronous
+      modes, accessibility, responsive behavior and single ownership of client
+      state.
     }
     ImplementationGovernance {
       Inspect governing Sigil and implementation before mutation; prefer
       SigilContextRetrieval for existing context.
 
-      Honor the user's ongoing task authorization and resolve material unknowns
-      before dependent changes.
+      Honor the user's ongoing *task authorization* and resolve
+      *material unknowns* before dependent changes.
     }
     ImplementationAlignment {
-      Use SigilCompilationExecution with current independently reconstructed sources.
+      Use SigilCompilationExecution with current
+      *independently reconstructed sources*.
 
       Native comparison and ordinary delivery checks remain distinct.
     }
@@ -45,26 +52,27 @@ expand SigilImplementationWorkflow {
     ImplementationCoverage {
       Inspect owning code, direct dependents, tests and governing contracts.
 
-      Record actual missing or conflicting behavior; update authored Design when a
-      material requirement changes.
+      Record actual missing or conflicting behavior; update *authored Design*
+      when a *material requirement* changes.
 
       Use existing primitives before new code.
     }
     ImplementationOwnershipWorkflow {
       Inspect the component, matching expands and relevant code.
 
-      Place comments beside stable entrypoints; use HTML comments for agent-facing
-      Markdown.
+      Place comments beside stable entrypoints; use HTML comments for
+      agent-facing Markdown.
 
-      Verify normalized Sigil paths, component and optional concept selectors,
-      section occurrences and entrypoint association after a change.
+      Verify *normalized Sigil paths*, component and optional Concept
+      selectors, section occurrences and *entrypoint association* after a
+      change.
     }
     FrontendSurfaceReview {
-      Inventory routes, composition roots, stores and shared visual primitives before
-      summarizing a screen.
+      Inventory routes, *composition roots*, stores and
+      *shared visual primitives* before summarizing a screen.
 
-      Identify local and shared state owners, then describe loading, empty, error,
-      retry, stale and cancelled behavior where applicable.
+      Identify local and shared state owners, then describe loading, empty,
+      error, retry, stale and cancelled behavior where applicable.
 
       Feed material uncovered surfaces into ImplementationCoverage.
     }
@@ -72,77 +80,83 @@ expand SigilImplementationWorkflow {
       Make cohesive authorized contract and implementation changes.
 
       Delete obsolete behavior and dedicated callers rather than preserving an
-      adapter surface.
+      *adapter surface*.
 
-      Keep language interpretation in the frontend and native world semantics in
-      sigilc.
+      Keep language interpretation in the frontend and
+      *native world semantics* in sigilc.
 
       Keep coding and reconstruction orchestration external.
     }
     ImplementationAlignment {
       Run applicable checks for behavior, dependents and integration.
 
-      Capture fresh inputs after coding; the coding agent must spawn a subagent for
-      each selected stale source using only native prepared inputs.
+      Capture fresh inputs after coding; the coding agent must spawn a
+      subagent for each *selected stale source* using only
+      *native prepared inputs*.
 
       Ingest returned Turtle and inspect the native comparison.
 
-      Confirmed delivery defects return to implementation; material intent questions
-      return to design.
+      Confirmed delivery defects return to implementation; material intent
+      questions return to design.
 
-      Retain evidence limitations.
+      Retain *evidence limitations*.
     }
   }
   constraints {
     ImplementationCoverage {
       A public summary does not cover unspecified material responsibilities.
 
-      Trivial wrappers or passive markup need no artificial component inventory.
+      *Trivial wrappers* or *passive markup* need no artificial component
+      inventory.
     }
     ImplementationOwnershipWorkflow {
-      Use supported annotation relations and interface, state, logic, constraints or
-      cases sections; never goal or decisions.
+      Use supported *annotation relations* and interface, state, logic,
+      constraints or cases sections; never goal or decisions.
 
-      Component selectors include matching expands; concept selectors address that
-      concept's occurrences.
+      Component selectors include matching expands; Concept selectors address
+      that Concept's occurrences.
 
       Do not put annotations in Sigil or JSON.
 
-      An ownership link is not an obligation discharge, execution observation or
-      reconstruction assertion.
+      An *ownership link* is not an obligation discharge, execution
+      observation or reconstruction assertion.
     }
     FrontendSurfaceReview {
       Reuse design-system contracts.
 
       Do not infer intent from filenames, classes or directory shape.
 
-      Unavailable visual evidence stays unavailable.
+      *Unavailable visual evidence* stays unavailable.
     }
     ImplementationGovernance {
-      Tests and compiler results do not grant permission for unrelated actions.
+      Tests and compiler results do not grant permission for unrelated
+      actions.
 
-      Existing user authorization does not expire merely because evidence changed.
+      Existing user authorization does not expire merely because evidence
+      changed.
 
-      No required compiler result can be fabricated from task flags or annotations.
+      No required compiler result can be fabricated from task flags or
+      annotations.
     }
     ImplementationAlignment {
-      Closed and Converged exit zero; Drift exits one.
+      *Closed* and *Converged* exit zero; *Drift* exits one.
 
-      Missing comparison remains unset.
+      *Missing comparison* remains unset.
 
-      Converged warnings may remain as explained evidence limitations, but known
-      missing functionality or unrun required checks prevent completion.
+      Converged warnings may remain as explained evidence limitations, but
+      known missing functionality or unrun required checks prevent completion.
 
-      Focused comparison does not establish complete task delivery.
+      *Focused comparison* does not establish complete task delivery.
 
-      Tests do not prove independent reconstruction, and a semantic gate does not
-      prove tests.
+      Tests do not prove *independent reconstruction*, and a *semantic gate*
+      does not prove tests.
     }
   }
   cases {
     ImplementationCoverage {
-      A reusable promise-like API is a component; an owner's retry algorithm can be
-      an expand; a trivial formatter needs no standalone contract.
+      A reusable *promise-like API* is a component; an owner's
+      *retry algorithm* can be an expand; a *trivial formatter* needs no
+      standalone contract.
     }
     ImplementationOwnershipWorkflow {
       One function can link to logic and constraints occurrences.
@@ -153,13 +167,13 @@ expand SigilImplementationWorkflow {
     FrontendSurfaceReview {
       A route with no dedicated file still has observable behavior.
 
-      Missing loading or error behavior is a contract gap; a modal flag and session
-      state need explicit local and shared owners respectively.
+      Missing loading or error behavior is a *contract gap*. A modal flag
+      and session state need explicit local and shared owners respectively.
     }
     ImplementationAlignment {
       Passing focused tests with an unrun required integration check remains
-      incomplete. A Converged report with a known unimplemented requirement also
-      remains incomplete; a warning is not a delivery waiver.
+      incomplete. A Converged report with a known unimplemented requirement
+      also remains incomplete; a warning is not a *delivery waiver*.
     }
   }
 }

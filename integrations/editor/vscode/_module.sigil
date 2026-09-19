@@ -8,13 +8,13 @@ component SigilVsCodeExtension {
     Provide a VS Code authoring and review surface for file-backed Sigil
     workspaces.
 
-    Connect editor-native features to the bundled language server without
+    Connect editor-native features to the *bundled language server* without
     duplicating deterministic Sigil semantics.
   }
 
   interface {
     ExtensionPackage {
-      provides an installable VSIX whose artifact version is owned by package.json
+      provides an installable *VSIX* whose artifact version is owned by package.json
 
       the VSIX is distributed through a versioned GitHub Release
     }
@@ -22,32 +22,32 @@ component SigilVsCodeExtension {
     EditorLanguageSupport {
       registers the sigil language for .sigil files
 
-      provides TextMate syntax highlighting before extension-host activation
+      provides *TextMate syntax highlighting* before extension-host activation
 
       starts the bundled language server through vscode-languageclient
 
       surfaces diagnostics, document symbols, definition navigation, hover, and
-      semantic highlighting
+      *semantic highlighting*
 
-      accepts the bundled server's dynamic registration for supported ownership
-      implementation-source changes
+      accepts the bundled server's *dynamic registration* for supported
+      ownership *implementation-source changes*
     }
 
     DocumentPreview {
-      contributes a Sigil: Open Preview command and an editor-title action for Sigil
-      documents
+      contributes a Sigil: *Open Preview command* and an *editor-title action*
+      for Sigil documents
 
-      renders the whole active .sigil file to Markdown and opens it as a read-only
-      preview beside the editor
+      renders the whole active .sigil file to Markdown and opens it as a
+      *read-only preview* beside the editor
     }
 
     SupportedExtensionHosts {
-      runs as a workspace extension in trusted desktop and remote Node extension
-      hosts
+      runs as a workspace extension in trusted desktop and remote Node
+      *extension hosts*
 
-      supports file-backed workspaces and file URIs
+      supports *file-backed workspaces* and *file URIs*
 
-      does not support VS Code for the Web or virtual workspaces
+      does not support VS Code for the Web or *virtual workspaces*
     }
 
     ReadOnlyEditorSupport {
@@ -57,16 +57,19 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Use SigilCli for structural export, SigilComparisonScope for native file
-      membership, and SigilGateDiagnostics for compiler-owned presentation.
-      Contribute Compile File and Compile Workspace with Design or Implementation
-      focus. Export current structure through sigil export design, then invoke
-      native sigilc directly and display its named state and native diagnostics.
-      File focus uses the active physical Sigil file as an ordered native Design
-      root; native scope adds imports and structural owners. Show the effective
-      scope honestly, including wider dependencies, rather than claiming a
-      cursor-selected component was independently compiled.
-      Implementation focus requires an explicit native source-selection JSON path.
+      Use SigilCli for *structural export*, SigilComparisonScope for
+      *native file membership*, and SigilGateDiagnostics for compiler-owned
+      presentation.
+      Contribute *Compile File* and *Compile Workspace* with Design or
+      Implementation focus. Export current structure through sigil export
+      design, then invoke native sigilc directly and display its *named state*
+      and *native diagnostics*.
+      File focus uses the active physical Sigil file as an ordered native
+      *Design root*, and *native scope* adds imports and structural owners.
+      Show the effective scope honestly, including wider dependencies, rather
+      than claiming a cursor-selected component was independently compiled.
+      Implementation focus requires an explicit
+      *native source-selection JSON path*.
       No model invocation, compiler package, profile or legacy event adapter.
     }
 
@@ -76,7 +79,7 @@ component SigilVsCodeExtension {
 expand SigilVsCodeExtension {
   state {
     EditorLanguageSupport {
-      The language client lifecycle is stopped, starting, running, or stopping.
+      The *language client lifecycle* is stopped, starting, running, or stopping.
     }
 
     DocumentPreview {
@@ -85,10 +88,10 @@ expand SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      The current operation is starting, running, completed, unavailable, failed,
+      The *current operation* is starting, running, completed, unavailable, failed,
       cancelled or stale. A replacement cancels and supersedes the previous run.
       Focus is ask, design or implementation; displayed semantic state comes
-      directly from the completed native gate, never from diagnostic absence.
+      directly from the completed *native gate*, never from diagnostic absence.
     }
   }
 
@@ -97,46 +100,47 @@ expand SigilVsCodeExtension {
       Opening or activating a Sigil document starts the bundled server when it is not
       already running.
 
-      The language client forwards document lifecycle and language-feature requests
-      through LSP.
+      The *language client* forwards document lifecycle and language-feature
+      requests through LSP.
 
       The language client delivers file events for watcher patterns dynamically
       registered by the bundled server.
 
-      Startup and runtime failures are written to the Sigil output channel and
+      Startup and runtime failures are written to the *Sigil output channel* and
       surfaced to the user.
 
       Deactivation stops the language client and server process.
     }
 
     DocumentPreview {
-      The preview command requests a whole-document Markdown render from the language
-      server for the active file.
+      The *preview command* requests a *whole-document Markdown render* from the
+      language server for the active file.
 
-      A successful render opens beside the source in the built-in Markdown preview.
+      A successful render opens beside the source in the
+      *built-in Markdown preview*.
 
       An empty render or an unavailable language server shows a non-destructive
-      informational message.
+      *informational message*.
 
       The editor-title action invokes the same preview command.
     }
 
     CompilationSurface {
-      Export the complete file-backed workspace to a temporary frontend bundle.
+      Export the complete file-backed workspace to a temporary *frontend bundle*.
       Design Workspace invokes compile design. Implementation Workspace invokes
       compile implementation with the configured native selection. File commands
       supply a native scope with that ordered Design root and the Implementation
       selection. Design-only file scope explicitly excludes all Implementation
-      files; it makes no Implementation comparison claim.
-      Native source selection and dependency closure remain compiler-owned.
+      files; it makes no *Implementation comparison* claim.
+      Native source selection and *dependency closure* remain compiler-owned.
       File compilation uses its containing workspace; multi-root workspace
       compilation uses the active folder or asks for an eligible folder.
-      Keep stdout as one native JSON report and stderr as operational progress.
-      Display findings at their native locations and retain bounded witnesses in
+      Keep stdout as one *native JSON report* and stderr as operational progress.
+      Display findings at their native locations and retain *bounded witnesses* in
       output. Missing code ranges stay file-only. Report omitted finding counts.
       Use exactly Coherent/Loose/Disjoint and Closed/Converged/Drift with their
       native green/yellow/red mapping. Unavailable comparison is not a color.
-      Refuse dirty workspace documents before capture. Clear displayed findings
+      Refuse dirty *workspace documents* before capture. Clear displayed findings
       and mark stale after workspace document, disk or relevant settings changes.
       Cancel on replacement or extension deactivation; discard superseded results.
     }
@@ -175,8 +179,8 @@ expand SigilVsCodeExtension {
     DocumentPreview {
       Preview renders the whole active file and is not cursor-dependent.
 
-      The editor-title action is visible only for Sigil editors, and the Command
-      Palette action remains available.
+      The editor-title action is visible only for Sigil editors, and the
+      *Command Palette action* remains available.
     }
 
     SupportedExtensionHosts {
@@ -191,7 +195,8 @@ expand SigilVsCodeExtension {
 
     ReadOnlyEditorSupport {
       The extension edits no authored source and collects no telemetry. Explicit
-      compilation uses disposable temporary captures and native disposable worlds.
+      compilation uses disposable *temporary captures* and native
+      *disposable worlds*.
     }
 
     RemovedWorkflowSurface {
@@ -208,7 +213,7 @@ expand SigilVsCodeExtension {
       Keep bundled language support and ordinary preview independent of installed
       compiler executables. Compilation needs current sigil and sigilc tools;
       show actionable settings guidance for missing or incompatible tools.
-      Validate the final native result shape and its exit/state pairing before
+      Validate the final native result shape and its *exit/state pairing* before
       displaying success. Design Coherent/Loose and Implementation Closed/Converged
       exit 0; Design Disjoint and Implementation Drift exit 1. Exit 3 with an
       unavailable report leaves Implementation unset; operational failures and
@@ -263,8 +268,8 @@ expand SigilVsCodeExtension {
 
     OwnershipCacheInvalidation {
       Decision: Let the bundled language server dynamically register supported
-      ownership-source watcher patterns through standard Language Server Protocol
-      capability registration.
+      ownership-source watcher patterns through standard
+      *Language Server Protocol* capability registration.
 
       Scope: Governs VS Code delivery of registered ownership-source changes;
       excludes ownership parsing, cache storage, and source-support policy.
@@ -293,7 +298,7 @@ expand SigilVsCodeExtension {
       unsupported trust or virtual-workspace modes.
 
       Revisit when: The server supports browser or VS Code filesystem abstractions,
-      or a security review approves a useful Restricted Mode subset.
+      or a security review approves a useful *Restricted Mode* subset.
     }
 
     ExternalCompilerIntegration {
@@ -333,11 +338,11 @@ expand SigilVsCodeExtension {
 
       Malformed source displays ranged diagnostics.
 
-      Imported components and concepts support navigation, hover, and semantic
+      Imported components and Concepts support navigation, hover, and semantic
       highlighting.
 
-      Changing an ownership annotation invalidates the server cache and the next
-      component or concept hover shows refreshed links.
+      Changing an *ownership annotation* invalidates the server cache and the next
+      component or Concept hover shows refreshed links.
 
       A failed bundled server produces visible output and an error without crashing
       VS Code.
@@ -375,12 +380,12 @@ expand SigilVsCodeExtension {
       scope root, independent of cursor position. Expanded-file and duplicate-name
       cases use the same physical-file boundary, with native ownership closure.
       Scope output exposes included dependency files and explicit root order.
-      All six state/exit pairings display their native name and correct color;
+      All six *state/exit pairings* display their native name and correct color;
       unavailable comparison remains unset. Reject malformed or mismatched results.
       The extension-host test exercises current structural export and native
       diagnostic projection, with separate fixed-report fixtures for gate states.
       Language navigation and ordinary Markdown preview still work. Removed
-      workflow commands and the obsolete Compile Component alias are absent.
+      workflow commands and the obsolete *Compile Component* alias are absent.
       Dirty documents prevent capture; edits and settings changes invalidate the
       displayed result. Failed/cancelled/superseded runs never overwrite a newer
       result. No profile or event-protocol arguments reach sigilc.

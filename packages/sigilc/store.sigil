@@ -1,97 +1,98 @@
 component SigilProjectionStore {
   goal {
-    Publish disposable source-bound assertions without accepting stale or
-    out-of-order reconstruction as current.
+    Publish *disposable source-bound assertions* without accepting stale or
+    *out-of-order reconstruction* as current.
   }
 
   interface {
     DisposableCleanup {
-      Clean only generated worlds while holding the same exclusive writer lock.
-      Recover even from a malformed index without interpreting its contents.
-      Remove symlink artifacts themselves without following their targets.
-      Keep the lock inode in place so cleanup cannot split concurrent writers.
-      Preserve authored sources, workspace configuration and external preparation inputs.
+      Clean only *generated worlds* while holding the same exclusive *writer lock*.
+      Recover even from a *malformed index* without interpreting its contents. Remove
+      symlink artifacts themselves without following their targets. Keep the
+      *lock inode* in place so cleanup cannot split *concurrent writers*. Preserve
+      *authored sources*, workspace configuration and *external preparation inputs*.
     }
 
     ImplementationCommands {
-      Prepare exactly one copied source file, fixed ontology and identity-only
-      catalog for the external semanticizer. Keep its binding with the caller.
-      Require current non-Disjoint Design and validate all catalog references
-      before ingesting Implementation. Accept an explicit source selection for
-      stale inspection and comparison. Compile each world independently, then
-      compare Design obligations with Implementation closure in the fixed matcher.
-      Completed Closed is green and Converged is yellow with warnings; both exit
-      zero. Drift is red and exits one. Apply this mapping to compile
-      implementation and compare. Missing current Design catalog leaves
-      comparison unavailable, exits three, and never reports Drift.
+      Prepare exactly one copied source file, *fixed ontology* and
+      *identity-only catalog* for the *external semanticizer*. Keep its binding with
+      the caller. Require *current non-Disjoint Design* and validate all catalog
+      references before ingesting Implementation. Accept an
+      *explicit source selection* for stale inspection and comparison. Compile each
+      world independently, then compare *Design obligations* with
+      *Implementation closure* in the *fixed matcher*. Completed *Closed* is green
+      and *Converged* is yellow with warnings; both exit zero. *Drift* is red and
+      exits one. Apply this mapping to compile implementation and compare. Missing
+      current Design catalog leaves comparison unavailable, exits three, and never
+      reports Drift.
     }
 
     CurrentImplementation {
-      Select arbitrary-language source files and assemble only fresh indexed
-      assertions against the current frozen Design catalog. Validate resource
-      identity again on reading and enforce aggregate assertion limits before
-      closure. Keep the catalog out of Implementation evidence.
-      Saturate in an independent EGraph and identify the captured selection,
-      catalog and assertion contents. Missing sources and completed empty facts
-      remain distinct. Explicit empty selection is visible in the report.
+      Select *arbitrary-language source files* and assemble only
+      *fresh indexed assertions* against the *current frozen Design catalog*.
+      Validate *resource identity* again on reading and enforce
+      *aggregate assertion limits* before closure. Keep the catalog out of
+      *Implementation evidence*. Saturate in an independent *EGraph* and identify the
+      *captured selection*, catalog and assertion contents. Missing sources and
+      completed empty facts remain distinct. Explicit empty selection is visible in
+      the report.
     }
 
     DesignCommands {
       Expose prepare, ingest, stale and compile for Design and entities for its
-      catalog. Accept an explicit frontend bundle and workspace root. Preparation
-      writes only bound Design context, fixed ontology and a semantic binding
-      into a new caller-selected directory; refuse to overwrite existing
-      directories. Ingestion checks the binding source and current inputs before
-      publication.
-      Compile Design exits zero for Coherent (green) or Loose (yellow with
-      warnings), and one only for Disjoint (red). Invalid options exit two;
-      operational failure without a completed semantic result exits three.
-      Inspection exits are command-specific: stale returns one for nonfresh
-      sources, and entities returns one when no current catalog is available.
-      Neither inspection exit is a semantic color.
-      No provider, model or automatic repair options exist.
+      catalog. Accept an explicit *frontend bundle* and workspace root. Preparation
+      writes only bound Design context, fixed ontology and a *semantic binding* into
+      a new *caller-selected directory*. Refuse to overwrite existing directories.
+      Ingestion checks the binding source and current inputs before publication.
+      Compile Design exits zero for *Coherent* (green) or *Loose* (yellow with
+      warnings), and one only for *Disjoint* (red). Invalid options exit two;
+      *operational failure* without a completed *semantic result* exits three.
+      Inspection exits are command-specific: stale returns one for nonfresh sources,
+      and entities returns one when no current catalog is available. Neither
+      inspection exit is a semantic color. No provider, model or
+      *automatic repair options* exist.
     }
 
     CurrentDesign {
-      Assemble fresh source projections against a recaptured frontend snapshot.
-      Add only structural type and label facts plus required unit inventory from
-      the frontend. Missing projections leave Design Loose unless fresh facts
-      already establish Disjoint. Frontend errors produce no completed verdict.
-      Validate the complete identity set before freezing a current catalog.
-      Reports identify captured inputs, projection contents and compiled eqval.
-      Prepare Design context only from its bound source and dependency closure.
+      Assemble *fresh source projections* against a recaptured *frontend snapshot*.
+      Add only structural type and label facts plus required *unit inventory* from
+      the frontend. Missing projections leave Design Loose unless fresh facts already
+      establish Disjoint. Frontend errors produce no completed verdict. Validate the
+      complete identity set before freezing a current catalog. Reports identify
+      captured inputs, projection contents and *compiled eqval*. Prepare Design
+      context only from its bound source and *dependency closure*.
     }
 
     ProjectionPublication {
-      Capture the expected per-source generation before reconstruction.
-      Under one OS file lock, compare the prepared binding and generation with
-      current inputs and recheck source and Design dependency bytes. Publish
-      bounded data-only assertions by temporary-file replacement, then atomically
-      replace the index that binds their checksum to inputs and generation.
-      Reject duplicate preparations and changed source, catalog or format
-      inputs. Publication tokens cannot repeat after cache deletion and
-      reconstruction; an old binding cannot regain authority when disposable
-      generations restart. Keep scheduling and workers outside the store.
+      Capture the expected *per-source generation* before reconstruction. Under one
+      OS file lock, compare the *prepared binding* and generation with current inputs
+      and recheck source and *Design dependency bytes*. Publish bounded
+      *data-only assertions* by temporary-file replacement, then atomically replace
+      the index that binds their checksum to inputs and generation. Reject duplicate
+      preparations and changed source, catalog or format inputs. *Publication tokens*
+      cannot repeat after cache deletion and reconstruction; an old binding cannot
+      regain authority when disposable generations restart. Keep scheduling and
+      workers outside the store.
     }
 
     BindingHistory {
-      Retain accepted projections for distinct semantic bindings of the same
-      source in the disposable world store. Keep one current source-path
-      publication and address superseded projections by their complete binding
-      fingerprint, including the Implementation Design-catalog identity.
-      Reuse a retained projection only when its complete binding is fresh for the
-      current operation. Do not key this cache by worker or scope identity, and
-      do not turn it into an external-work ledger.
+      Retain accepted projections for distinct semantic bindings of the same source
+      in the *disposable world store*. Keep one current source-path publication and
+      address superseded projections by their complete *binding fingerprint*,
+      including the Implementation Design-catalog identity. Reuse a retained
+      projection only when its complete binding is fresh for the current operation.
+      Do not key this cache by worker or scope identity, and do not turn it into an
+      *external-work ledger*.
     }
 
     IndexedAssembly {
-      Mirror normalized source paths with their original extensions plus egg.
-      Load only index-selected assertions with matching complete input bindings
-      and checksums. Parse them as restricted data. Missing, stale, corrupt,
-      deleted and unindexed objects contribute no current facts.
-      Bound index and assertion bytes separately. Refuse path traversal,
-      symlinked artifact paths and malformed index metadata.
-      A busy writer lock is an operational failure, never a semantic result.
+      Mirror *normalized source paths* with their original extensions plus egg. Load
+      only *index-selected assertions* with matching complete input bindings and
+      checksums. Parse them as *restricted data*. Missing, stale, corrupt, deleted
+      and unindexed objects contribute no *current facts*. Bound index and assertion
+      bytes separately. Refuse *path traversal*, *symlinked artifact paths* and
+      malformed index metadata. A *busy writer lock* is an operational failure, never
+      a semantic result.
     }
   }
 }

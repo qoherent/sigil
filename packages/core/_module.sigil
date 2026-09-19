@@ -22,23 +22,23 @@ component SigilCore {
     Provide the deterministic language implementation shared by Sigil command-line,
     language-server, editor, and agent integrations.
 
-    Compose source interpretation, configuration, workspace loading, glossary
-    interpretation, relationship resolution, graph construction, projections, and
-    diagnostics without owning host interaction or semantic judgment.
+    Compose source interpretation, *configuration*, *workspace* loading, *glossary*
+    interpretation, relationship *resolution*, *graph* construction, projections,
+    and diagnostics without owning *host* interaction or *semantic judgment*.
   }
 
   interface {
     CorePackage {
       SigilCore exports the deterministic Sigil language, configuration, workspace,
-      resolution, graph, glossary, projection, ownership, retrieval, and immutable
-      semantic-model contracts assembled from SigilLanguage,
+      resolution, graph, glossary, *projection*, *ownership*, *retrieval*, and
+      immutable semantic-model contracts assembled from SigilLanguage,
       SigilConfigurationParser, SigilSemanticModel, SigilDiagnostics,
       SigilFileSystem, SigilParser, SigilFormatter, SigilPath, SigilWorkspaceLoader,
       SigilResolver, SigilGraphBuilder, SigilWorkspaceResolutionPipeline,
       SigilProjections, SigilGlossaryEngine, SigilImplementationOwnership, and
       SigilContextRetrieval and SigilDesignInput.
 
-      Export structural Design transport through the core package. Parsing and
+      Export structural Design transport through the *core package*. Parsing and
       resolution remain language operations; the export never invokes sigilc,
       reconstructs semantic assertions or presents compiler verdicts.
 
@@ -51,7 +51,8 @@ component SigilCore {
 expand SigilCore {
   constraints {
     CorePackageBoundary {
-      The module index is a concise boundary summary and namespace-assembly surface.
+      The *module index* is a concise *boundary* summary and namespace-assembly
+      surface.
 
       Operational parsing, formatting, path, configuration, workspace, resolution,
       graph, glossary, projection, ownership, and retrieval behavior remains owned by
@@ -80,10 +81,10 @@ expand SigilCore {
 
       SigilFormatter consumes parser output and foundation contracts.
 
-      SigilPath is a filesystem-independent foundation contract consumed by core and
-      host integrations.
+      SigilPath is a filesystem-independent *foundation contract* consumed by core
+      and host integrations.
 
-      SigilGlossaryEngine consumes model and diagnostic contracts.
+      SigilGlossaryEngine consumes model and *diagnostic* contracts.
 
       SigilWorkspaceLoader composes configuration, filesystem, parser, and glossary
       contracts into a loaded workspace.
@@ -104,10 +105,10 @@ expand SigilCore {
       resolve a compilation seed into a covering boundary.
 
       No core operational component imports SigilCore; the module index only
-      assembles the public namespace.
+      assembles the public *namespace*.
 
       Host integrations consume core semantics instead of implementing independent
-      Sigil parsers, workspace rules, resolvers, or concept interpretation.
+      Sigil parsers, workspace rules, resolvers, or Concept interpretation.
     }
 
   }

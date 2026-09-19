@@ -3,22 +3,23 @@
 
 component SigilResolutionModel {
   goal {
-    Define immutable import, component, concept, and contract-resolution data.
+    Define immutable import, component, Concept, and contract-resolution data.
   }
 
   interface {
     ResolutionModel {
-      SigilSourceModel and SigilWorkspaceModel provide input shapes. SigilResolution
-      and its resolved imports, components, expansions, concepts, namespaces, and
-      dependency contexts preserve relationship-resolution output.
+      SigilSourceModel and SigilWorkspaceModel provide input shapes.
+      *SigilResolution* and its *resolved imports*, *expansions*, *Tag scopes*,
+      and *dependency contexts* preserve relationship-resolution output.
 
-      Repeated Concept occurrences preserve their collective identity and each
-      contribution's contract and source location. Imported reuse preserves the
-      originating identity without transferring consumer requirements upstream.
+      Repeated Concept occurrences preserve their collective *Tag identity* and
+      each contribution's *contract* and *source location*. *Imported reuse*
+      preserves the originating Tag identity without transferring consumer
+      requirements upstream.
 
-      Concept identity groups related contributions but does not establish
-      behavioral equality. Direct Facets remain in their component's sections
-      without a synthetic Concept entry.
+      Tag identity groups related contributions but does not establish
+      *behavioral equality*. *Direct Facets* remain in their component's
+      sections without a *synthetic Concept entry*.
     }
   }
 }

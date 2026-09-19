@@ -18,33 +18,33 @@ component SigilCli {
       sigil export design [path] [--root workspace] [--pretty]
 
       Use the core loadDesignInput operation to export the complete discovered
-      workspace as its closed structural JSON bundle. A path locates a workspace;
-      native sigilc scope selects focused Design roots afterward.
-      Write the raw bundle to stdout without a CLI envelope, semantic lowering,
-      display-path substitution or changes to captured text. Retain diagnostics
-      and return the ordinary language diagnostic exit code. Runtime failures
-      produce no partial bundle. Support only JSON; reject quiet suppression.
-      Never invoke sigilc, a model, a profile or the removed semantic compiler.
+      workspace as its closed *structural JSON bundle*. A path locates a workspace;
+      native sigilc scope selects focused *Design roots* afterward. Write the raw
+      bundle to stdout without a *CLI envelope*, *semantic lowering*,
+      *display-path substitution* or changes to *captured text*. Retain diagnostics
+      and return the ordinary *language diagnostic exit code*. Runtime failures
+      produce no partial bundle. Support only JSON; reject quiet suppression. Never
+      invoke sigilc, a model, a profile or the removed *semantic compiler*.
     }
 
     SourceDiscovery {
-      Host listing skips git metadata and symlinks. Within a Sigil metadata
-      directory, list only config.json, local.json and glossary.json so nested
-      workspace configuration remains visible while generated source is excluded.
-      Use core path normalization and joining directly. Do not depend on an
-      obsolete compiler artifact taxonomy or retain duplicate path algorithms.
+      Host listing skips git metadata and symlinks. Within a
+      *Sigil metadata directory*, list only config.json, local.json and glossary.json
+      so nested workspace configuration remains visible while *generated source* is
+      excluded. Use core *path normalization* and joining directly. Do not depend on
+      an obsolete *compiler artifact taxonomy* or retain *duplicate path algorithms*.
     }
 
     RemovedSemanticCommands {
-      Remove semantic, compile, doctor and obsolete config authoring commands,
-      their handlers, compiler adapter dispatch and tests dedicated to
-      beams, accepted worlds, managed views, handoffs, receipts and TS7 verification.
-      An invocation of a removed command returns ordinary invalid usage. No
-      compatibility dispatch or renamed legacy command survives. Export structural
-      Design through core; the model or operator uses native sigilc directly.
-      Retain normal configuration discovery/validation, init and version metadata.
-      No JSONL compiler event stream, compiler history or compiler subprocess
-      belongs in this language command path.
+      Remove semantic, compile, doctor and obsolete config authoring commands, their
+      handlers, compiler adapter dispatch and tests dedicated to beams, accepted
+      worlds, managed views, handoffs, receipts and TS7 verification. An invocation
+      of a *removed command* returns ordinary *invalid usage*. No
+      *compatibility dispatch* or *renamed legacy command* survives. Export
+      structural Design through core; the model or operator uses native sigilc
+      directly. Retain normal configuration discovery/validation, init and
+      *version metadata*. No JSONL *compiler event stream*, *compiler history* or
+      *compiler subprocess* belongs in this language *command path*.
     }
 
     CliInvocation {
@@ -52,8 +52,8 @@ component SigilCli {
 
       sigil <command-path> --help
 
-      A command path consists of a command followed by zero or more nested
-      subcommands.
+      A command path consists of a command followed by zero or more
+      *nested subcommands*.
 
       Empty, unknown, incomplete, or invalid invocations report the specific usage
       problem together with help for the longest recognized command path.
@@ -62,7 +62,7 @@ component SigilCli {
     }
 
     SkillCatalogCommand {
-      SkillCatalogCommand adapts SkillCatalog into a CLI command surface.
+      SkillCatalogCommand adapts SkillCatalog into a CLI *command surface*.
 
       sigil skill list
     }
@@ -76,8 +76,8 @@ component SigilCli {
     WorkspaceInitialization {
       sigil init [path] [--name value] [--include glob ...] [--exclude glob ...]
 
-      init writes an empty tools object. It never seeds model providers,
-      evaluator profiles, compilation stages or runtime configuration.
+      init writes an empty tools object. It never seeds *model providers*,
+      *evaluator profiles*, *compilation stages* or *runtime configuration*.
     }
 
     WorkspaceInspection {
@@ -94,21 +94,21 @@ component SigilCli {
       sigil render [path]
 
       check reports resolved workspace diagnostics together with deterministic
-      ownership-annotation diagnostics from supported implementation sources
+      *ownership-annotation diagnostics* from *supported implementation sources*
 
-      context reports a scoped glossary projection for the selected component or file
-      and its related sources
+      context reports a *scoped glossary projection* for the selected component
+      or file and its related sources
 
       when --file selects a source containing one or more expands, context selects
       each parent component represented by those expands together with components
       declared directly in that source
 
-      context automatically reports public contracts and durable decisions from
+      context automatically reports *public contracts* and *durable decisions* from
       direct dependencies
 
       context with --include-dependents reports direct importing files for the
       selected component and contextual public contracts declared in those files
-      without proving component-level dependency
+      without proving *component-level dependency*
     }
 
     PurposeContextRetrieval {
@@ -117,7 +117,7 @@ component SigilCli {
 
       retrieve supports --format json and --format markdown; JSON is the default
 
-      retrieve returns the complete PurposeRetrievalResult produced by
+      retrieve returns the complete *PurposeRetrievalResult* produced by
       SigilContextRetrieval without changing membership, ordering, explanations,
       diagnostics, context, or fingerprint
     }
@@ -130,13 +130,13 @@ component SigilCli {
       sigil retrieve [path] (--component name | --file file) --purpose
       semantic|architecture|implementation --format markdown
 
-      render markdown reports workspace metadata, component contracts, collected
+      render markdown reports *workspace metadata*, component contracts, collected
       expansions, and diagnostics as deterministic Markdown.
 
       context markdown reports selected component contracts, selected expansions,
-      concept namespace details, direct dependency contracts and dependency
-      decisions, owned implementation projections, related files, glossary context,
-      and diagnostics as deterministic Markdown.
+      *Tag scope* details, direct dependency contracts and *dependency decisions*,
+      owned implementation projections, *related files*, *glossary context*, and
+      diagnostics as deterministic Markdown.
 
       retrieve Markdown delegates component-first retrieval presentation to
       SigilRetrievalMarkdown.
@@ -150,19 +150,20 @@ component SigilCli {
       sigil fmt [path] --check
 
       a .sigil file selects that file while a directory selects included .sigil
-      sources beneath that path through ConfigFile source-selection rules
+      sources beneath that path through ConfigFile *source-selection rules*
     }
 
     OwnershipContext {
-      context reports one owned-implementation projection for each selected component
+      context reports one *owned-implementation projection* for each selected
+      component
 
-      Each projection contains normalized owned implementation targets and ownership
-      diagnostics from supported workspace implementation sources.
+      Each projection contains normalized owned implementation targets and
+      *ownership diagnostics* from supported workspace implementation sources.
 
       Each owned implementation target preserves its relation, artifact kind, file
       path, selected sections, and optional symbol identity.
 
-      When implementation-source enumeration fails after workspace resolution,
+      When implementation-source enumeration fails after *workspace resolution*,
       context returns resolved contracts and one empty ownership projection per
       selected component with a warning diagnostic.
     }
@@ -183,10 +184,10 @@ component SigilCli {
     }
 
     StructuredOutput {
-      structured output supports --format json and --pretty
+      *structured output* supports --format json and --pretty
 
       markdown output supports --format markdown for workspace inspection, purpose
-      retrieval without changing JSON result shapes
+      retrieval without changing *JSON result shapes*
 
       commands that produce no required stdout support --quiet
     }
@@ -211,8 +212,8 @@ component SigilCli {
 expand SigilCli {
   logic {
     CliInvocation {
-      Top-level --help lists supported commands and global options without workspace
-      discovery.
+      Top-level --help lists supported commands and global options without
+      *workspace discovery*.
 
       --help following any recognized command path reports usage, operands, options,
       and immediate subcommands scoped to that path before ordinary validation or
@@ -221,7 +222,7 @@ expand SigilCli {
       Usage failures select help for the longest recognized command path and report
       it together with the specific problem.
 
-      --version prints the CLI artifact version from packages/cli/deno.json without
+      --version prints the *CLI artifact version* from packages/cli/deno.json without
       workspace discovery.
     }
 
@@ -250,14 +251,14 @@ expand SigilCli {
       init applies SigilWorkspaceConfig's default SourceSelection values and writes
       an empty tools object.
 
-      init creates a missing GlossaryFile containing only the decision-record field
-      labels.
+      init creates a missing GlossaryFile containing only the
+      *decision-record field* labels.
 
       The seeded entries are Decision:, Scope:, Assumptions:, Trade-offs:, Design
       issues addressed:, Discarded alternatives:, Consequences:, and Revisit when:.
 
-      Every seeded entry sets agentContext to false and the glossary has no bounded
-      contexts.
+      Every seeded entry sets agentContext to false and the glossary has no
+      *bounded contexts*.
 
       init preserves an existing GlossaryFile instead of merging, replacing, or
       normalizing it.
@@ -277,7 +278,7 @@ expand SigilCli {
 
       context resolves a file selection to components declared in that source and
       parent components represented by expands in that source, deduplicated by exact
-      component identity
+      *component identity*
 
       check reports core warnings, hints, and errors without reinterpreting them.
 
@@ -289,18 +290,19 @@ expand SigilCli {
     }
 
     PurposeContextRetrieval {
-      retrieve resolves the workspace and exact target through SigilCore and loads
-      the complete workspace GlossaryProjection. SigilContextRetrieval derives its
-      scoped GlossaryContextProjection after selecting Sigil evidence paths. The CLI
-      enumerates supported implementation sources once only for implementation
-      purpose and otherwise supplies null implementation evidence.
+      retrieve resolves the workspace and exact target through SigilCore and
+      loads the complete workspace *GlossaryProjection*. SigilContextRetrieval
+      derives its scoped *GlossaryContextProjection* after selecting Sigil
+      evidence paths. The CLI enumerates supported implementation sources once
+      only for implementation purpose and otherwise supplies null
+      *implementation evidence*.
 
       retrieve passes those complete inputs and the requested purpose to
       SigilContextRetrieval and performs no independent graph traversal, evidence
       ranking, membership filtering, or context aggregation.
 
-      Legacy context remains a compatibility projection with its existing result
-      shape. It does not claim the schema, policy version, fingerprint, or
+      Legacy context remains a *compatibility projection* with its existing
+      result shape. It does not claim the schema, policy version, fingerprint, or
       authoritative membership of a PurposeRetrievalResult.
 
       JSON serializes the structured result. Retrieval Markdown delegates its
@@ -329,12 +331,12 @@ expand SigilCli {
       renders the resolved expansion projection already carried by each rendered
       component.
 
-      context command assembly derives selected contracts, expansions, concept
-      namespaces, and dependency contexts from each exact selected component
+      context command assembly derives selected contracts, expansions, Tag scopes,
+      and dependency contexts from each exact selected component
       identity.
 
-      context markdown renders only selected contracts, expansions, concept
-      namespaces, dependency contexts, and ownership projections that match the
+      context markdown renders only selected contracts, expansions, Tag scopes,
+      dependency contexts, and ownership projections that match the
       selected component identity.
 
       dependency decisions are attached to a dependency contract only when the
@@ -425,7 +427,7 @@ expand SigilCli {
       path when an exact identity is present in the command result.
 
       Markdown rendering does not use name-only fallback to associate contracts,
-      dependency contexts, dependency decisions, expansions, concept namespaces, or
+      dependency contexts, dependency decisions, expansions, Tag scopes, or
       ownership projections with a selected component when duplicate component names
       can exist.
 
@@ -492,14 +494,14 @@ expand SigilCli {
       Empty, unknown, incomplete, or invalid usage exits with code 2, writes the
       problem and contextually relevant help to stderr, and leaves stdout empty.
 
-      Exit code 0 means success or warnings only.
+      *Exit code 0* means success or warnings only.
 
-      Exit code 1 means configuration or Sigil error
+      *Exit code 1* means configuration or Sigil error
       diagnostics.
 
-      Exit code 2 means invalid command usage.
+      *Exit code 2* means invalid command usage.
 
-      Exit code 3 means a host or runtime failure.
+      *Exit code 3* means a host or runtime failure.
     }
 
   }
@@ -644,7 +646,7 @@ expand SigilCli {
       when workspace resolution already produced meaningful context.
 
       Scope: Governs component and file selections for context and post-resolution
-      ownership enrichment; excludes concept-scoped CLI selection, LSP presentation,
+      ownership enrichment; excludes Tag-scoped CLI selection, LSP presentation,
       and required workspace loading.
 
       Trade-offs: Context performs a workspace implementation-source scan and may
@@ -751,10 +753,10 @@ expand SigilCli {
 
       check from a nested directory resolves the nearest eligible ConfigFile.
 
-      Missing interface concept identifiers appear in text and JSON output while
+      Missing interface Concept names appear in text and JSON output while
       check exits successfully when no errors exist.
 
-      Invalid or ambiguous concept identities make check exit with code 1.
+      Invalid or ambiguous Tag identities make check exit with code 1.
 
       render JSON includes workspace metadata and Markdown review content.
 
