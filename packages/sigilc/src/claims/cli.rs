@@ -3,7 +3,7 @@
 //! Deterministic, like the compiler's: no process launchers and no model
 //! options. The external interpretation is an input the caller supplies and can
 //! supply again, which is what makes a run reproducible.
-use super::{context, dialect, findings, guidance, identity, prepare, program, vocabulary};
+use super::{context, dialect, findings, guidance, identity, memo, prepare, program, vocabulary};
 use crate::{cli::Output, eqval, frontend::DesignInput};
 use std::{collections::BTreeMap, path::Path};
 
@@ -14,7 +14,7 @@ pub fn help() -> String {
     r#"sigil-claims — computed design validation
 
 Commands:
-  prepare --frontend FILE --source PATH --out NEW_DIR
+  prepare --frontend FILE --source PATH --out NEW_DIR [--root DIR]
   ingest --frontend FILE --binding FILE --claims FILE|- [--claims-repeat FILE|-] [--root DIR]
   extract-guidance --out DIR [--root DIR]
 
@@ -53,7 +53,9 @@ pub fn run(args: &[&str]) -> Output {
     };
 
     let allowed: &[&str] = match command {
-        "prepare" => &["--frontend", "--source", "--out"],
+        // `--root` reaches prepare too: the store of past interpretations lives
+        // under it, and prepare is what decides which units are still stale.
+        "prepare" => &["--frontend", "--source", "--out", "--root"],
         "ingest" => &[
             "--frontend",
             "--binding",
@@ -97,14 +99,23 @@ pub fn run(args: &[&str]) -> Output {
             );
             let input = frontend(&frontend_path)?;
             let request = prepare::project(&input, &source).map_err(usage)?;
-            let written = prepare::write(&request, Path::new(&out)).map_err(operational)?;
+
+            // Ask only for what is stale. The binding is left whole: it is what
+            // ingest recomputes and compares, so narrowing it would make every
+            // prepared directory fail its own check. Only the presentation
+            // narrows, and a request with nothing stale is valid and asks for
+            // nothing.
+            let (stale, reused) = memo::split(&request, Path::new(&root));
+            let asked = prepare::presenting(&request, &stale);
+            let written = prepare::write(&asked, Path::new(&out)).map_err(operational)?;
             json(
                 0,
                 &serde_json::json!({
                     "version": findings::REPORT_VERSION,
                     "binding": Path::new(&out).join("binding.json"),
                     "inputs": written,
-                    "facets": request.rows.len(),
+                    "facets": asked.rows.len(),
+                    "reusedUnits": reused.len(),
                     "bindingDigest": request.binding.digest(),
                 }),
             )
@@ -135,8 +146,39 @@ fn ingest(options: &BTreeMap<String, String>, root: &str) -> Output {
 
     let limits = dialect::Limits::default();
     let first_text = artifact(&claims_path, limits)?;
-    let rows = dialect::parse(&first_text, limits).map_err(gate)?;
+    let supplied = dialect::parse(&first_text, limits).map_err(gate)?;
+
+    // Stored rows join the supplied ones before admission, so the closure sees
+    // the whole design either way. They are re-admitted rather than trusted:
+    // grounding runs here, so a stored claim naming an entity that has since
+    // left the closure is refused like any other.
+    let (_, reused) = memo::split(&request, Path::new(root));
+    let mut rows = supplied.clone();
+    for (unit, stored) in &reused {
+        if supplied
+            .iter()
+            .any(|r| unit.facets.iter().any(|f| f == r.facet()))
+        {
+            continue; // the caller answered this unit anyway; theirs is a second reading
+        }
+        rows.extend(stored.iter().cloned());
+    }
+    rows.sort();
+    rows.dedup();
     let facts = identity::admit(&request, &input, &rows).map_err(gate)?;
+
+    // Only what the caller actually supplied is stored, and only after it was
+    // admitted, so a refused artifact leaves the store untouched.
+    for unit in memo::units(&request) {
+        let mine: Vec<_> = supplied
+            .iter()
+            .filter(|r| unit.facets.iter().any(|f| f == r.facet()))
+            .cloned()
+            .collect();
+        if !mine.is_empty() {
+            memo::save(Path::new(root), &unit.key, &mine).map_err(operational)?;
+        }
+    }
 
     let mut digests = vec![crate::sources::hash(first_text.as_bytes())];
     let repeat = match options.get("--claims-repeat") {

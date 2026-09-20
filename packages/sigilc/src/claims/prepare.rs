@@ -11,12 +11,19 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
 /// Changes when the request or binding layout becomes incompatible.
-pub const REQUEST_FORMAT: u32 = 1;
+///
+/// 2 adds the Logic grouping: a flow spans a component's whole Logic section,
+/// so a request that presents those Facets only one at a time cannot express
+/// one. 3 widens presentation from the selected source to its whole resolved
+/// closure, so a claim in one component can be checked against a flow graph in
+/// a component it depends on. A directory prepared under either earlier format
+/// carries a narrower Facet set and must be re-prepared.
+pub const REQUEST_FORMAT: u32 = 3;
 
 /// One Facet handed to the interpreter, pre-filled with its own identity.
 ///
@@ -69,17 +76,76 @@ impl Binding {
     }
 }
 
+/// One component's Logic section, named as a whole.
+///
+/// A flow spans a section rather than a Facet, because a Facet is a paragraph:
+/// the flow in `packages/core/src/pipeline.sigil` runs through three of its five
+/// Logic Facets. An interpreter shown those Facets one at a time cannot express
+/// an edge between them, so the section is named here and its Facets listed in
+/// source order.
+///
+/// This carries no prose. Each Facet keeps its own row in `rows`, with its own
+/// identity and prose slice, exactly as every other role does; the grouping adds
+/// membership and order, and takes nothing away.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LogicSection {
+    pub component: String,
+    pub component_label: String,
+    pub source: String,
+    /// The section's Facet identities in source order. A step's ordinal runs
+    /// across this whole list, which is what lets an edge cross from one Facet
+    /// to another.
+    pub facets: Vec<String>,
+}
+
 /// A prepared interpretation request, before it reaches disk.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Request {
     pub binding: Binding,
     pub rows: Vec<FacetRow>,
+    /// One entry per component that declares a Logic section, in component
+    /// order. A component without one appears nowhere here rather than as an
+    /// empty group.
+    pub flows: Vec<LogicSection>,
     pub entities: Vec<AdmissibleEntity>,
     /// Contract roles that declare at least one Facet, as `component\tsection`
     /// pairs. This is the denominator for whether an interpretation covered the
     /// design, so it is recorded at preparation rather than recomputed later.
     pub declared: Vec<(String, String)>,
+}
+
+/// The same request, presenting only the units named.
+///
+/// The binding is copied whole rather than narrowed. Ingest recomputes the
+/// request from the export and compares bindings, so a narrowed binding would
+/// make every prepared directory fail its own check. What narrows is what the
+/// interpreter is shown; what it may return is unchanged, and a row it sends
+/// back for a unit that was not asked for is a second interpretation of that
+/// unit rather than an error.
+pub fn presenting(request: &Request, units: &[super::memo::Unit]) -> Request {
+    let asked: BTreeSet<&str> = units
+        .iter()
+        .flat_map(|u| u.facets.iter().map(String::as_str))
+        .collect();
+    Request {
+        binding: request.binding.clone(),
+        rows: request
+            .rows
+            .iter()
+            .filter(|r| asked.contains(r.facet.as_str()))
+            .cloned()
+            .collect(),
+        flows: request
+            .flows
+            .iter()
+            .filter(|f| f.facets.iter().any(|x| asked.contains(x.as_str())))
+            .cloned()
+            .collect(),
+        entities: request.entities.clone(),
+        declared: request.declared.clone(),
+    }
 }
 
 /// Digest of the whole export, so ingest can tell it was handed the same one.
@@ -98,15 +164,49 @@ pub fn project(input: &DesignInput, source: &str) -> Result<Request, String> {
     let closure = scope::design_membership(input, [source]).sources;
 
     let mut rows = Vec::new();
+    // Coverage stays the selected source's. `declared` is the denominator for
+    // the uninterpreted-section finding, so widening it with the closure would
+    // turn one run's 16 Facets of coverage into 441 and report roughly 400 gaps
+    // that are not this source's business. The closure is context, not scope.
     let mut declared = BTreeSet::new();
-    for unit in input.units.iter().filter(|u| u.source == source) {
+    // Logic Facets, keyed by component, in the order the prose is authored.
+    // Ordered by the unit's byte offset rather than by Facet identity: an
+    // identity embeds that offset as text, so sorting identities puts offset
+    // 1000 before 999.
+    let mut flows: BTreeMap<(String, String, String), Vec<(usize, String)>> = BTreeMap::new();
+    for unit in input.units.iter().filter(|u| closure.contains(&u.source)) {
         let Some(row) = facet_row(input, unit)? else {
             continue;
         };
-        declared.insert((row.component.clone(), row.section.clone()));
+        if row.source == source {
+            declared.insert((row.component.clone(), row.section.clone()));
+        }
+        if row.section == "logic" {
+            flows
+                .entry((
+                    row.component.clone(),
+                    row.component_label.clone(),
+                    row.source.clone(),
+                ))
+                .or_default()
+                .push((unit.prose_range.start, row.facet.clone()));
+        }
         rows.push(row);
     }
     rows.sort_by(|a, b| a.facet.cmp(&b.facet));
+
+    let flows: Vec<LogicSection> = flows
+        .into_iter()
+        .map(|((component, component_label, source), mut facets)| {
+            facets.sort_by_key(|(offset, _)| *offset);
+            LogicSection {
+                component,
+                component_label,
+                source,
+                facets: facets.into_iter().map(|(_, facet)| facet).collect(),
+            }
+        })
+        .collect();
 
     let mut entities: Vec<_> = input
         .entities
@@ -134,6 +234,7 @@ pub fn project(input: &DesignInput, source: &str) -> Result<Request, String> {
     Ok(Request {
         binding,
         rows,
+        flows,
         entities,
         declared: declared.into_iter().collect(),
     })

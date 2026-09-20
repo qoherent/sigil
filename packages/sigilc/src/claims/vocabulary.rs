@@ -1,5 +1,5 @@
 //! The published claim vocabulary. Guidance describes it; the validator enforces it.
-use crate::{frontend::Section, turtle};
+use crate::frontend::Section;
 use std::{collections::BTreeSet, sync::LazyLock};
 
 /// Changes when the accepted claim profile becomes incompatible.
@@ -74,35 +74,66 @@ pub fn returned(name: &str) -> Option<&'static Returned> {
     RETURNED.iter().find(|row| row.name == name)
 }
 
-/// Relation names a claim may use: the compiler's entity predicates.
+/// The accepted set: this component's own, read from nothing at runtime.
 ///
-/// Read through the public `turtle::vocabulary()` rather than the predicate
-/// tables themselves. `TEXT_PREDICATES`, `BOOLEAN_PREDICATES` and
-/// `NUMBER_PREDICATES` are private, and widening them would edit `turtle.rs`,
-/// whose text `eqval::fingerprint()` hashes.
+/// These names began as a copy of the compiler's ontology and deliberately do
+/// not track it. Reading `turtle::vocabulary()` here folded the compiler's
+/// ontology into `guidance::fingerprint()`, so an edit anywhere in the compiler
+/// invalidated every prepared interpretation directory; holding the two equal
+/// by test would have kept the same coupling in a weaker form. Being able to
+/// diverge is the point, and it is what lets the compiler's own vocabulary be
+/// replaced without moving what an interpretation may return.
+///
+/// `claims_guidance.rs` asserts these carry every name the laws in `claims.egg`
+/// read. A missing name would not fail: it would make a law that never fires
+/// and reports nothing.
+const RELATION_NAMES: &[&str] = &[
+    "owns",
+    "provides",
+    "requires",
+    "dependsOn",
+    "excludes",
+    "delegates",
+    "routesThrough",
+    "persistsAt",
+    "authorityFor",
+    "trusts",
+    "invokes",
+    "reads",
+    "writes",
+    "uses",
+    "hasContract",
+    "from",
+    "to",
+    "target",
+    "initialState",
+    "transitionsTo",
+];
+
+const BOOLEAN_NAMES: &[&str] = &["required", "exclusive", "assumed", "expected"];
+
+const NUMERIC_NAMES: &[&str] = &["cost", "latencyBudgetMs", "latencyMs", "risk"];
+
+/// Relation names a claim may use.
+// @sigil implements packages/sigilc/vocabulary.sigil::SigilClaimsVocabulary::AcceptedVocabulary interface,constraints
 pub fn relations() -> &'static BTreeSet<&'static str> {
-    static RELATIONS: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("entity"));
+    static RELATIONS: LazyLock<BTreeSet<&'static str>> =
+        LazyLock::new(|| RELATION_NAMES.iter().copied().collect());
     &RELATIONS
 }
 
 /// Property names a property row may use.
 pub fn boolean_properties() -> &'static BTreeSet<&'static str> {
-    static BOOLEAN: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("boolean"));
+    static BOOLEAN: LazyLock<BTreeSet<&'static str>> =
+        LazyLock::new(|| BOOLEAN_NAMES.iter().copied().collect());
     &BOOLEAN
 }
 
 /// Property names a measure row may use.
 pub fn numeric_properties() -> &'static BTreeSet<&'static str> {
-    static NUMERIC: LazyLock<BTreeSet<&'static str>> = LazyLock::new(|| named("number"));
+    static NUMERIC: LazyLock<BTreeSet<&'static str>> =
+        LazyLock::new(|| NUMERIC_NAMES.iter().copied().collect());
     &NUMERIC
-}
-
-fn named(range: &str) -> BTreeSet<&'static str> {
-    turtle::vocabulary()
-        .into_iter()
-        .filter(|(_, kind)| *kind == range)
-        .map(|(name, _)| name)
-        .collect()
 }
 
 /// The contract role of a Facet, as the evaluated program spells it.

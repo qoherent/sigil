@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- `sigil-claims` now owns the vocabulary it accepts instead of reading the
+  compiler's ontology at runtime. Its runtime identity no longer folds in that
+  ontology, so an edit to the compiler's predicate list no longer invalidates
+  every prepared interpretation directory. The accepted set is fixed in
+  `SigilClaimsVocabulary` and may diverge from the compiler's deliberately. This
+  moves the guidance fingerprint once: re-run `sigil-claims prepare` on any
+  directory prepared before this release.
+
 - Add `sigil-claims`, a second native binary that computes design findings from
   an external model's reading of Facet prose. It prepares an interpretation
   request from the existing Design export, accepts returned Datalog claims as

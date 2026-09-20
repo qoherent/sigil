@@ -40,31 +40,26 @@ pub fn document(name: &str) -> Option<&'static Document> {
 }
 
 /// Identity of everything that decides what the interpreter is told and what the
-/// tool derives: the guidance text, the vocabulary definition, the laws, and the
-/// compiler's own accepted ontology.
+/// tool derives: the guidance text, the vocabulary definition, and the laws.
 ///
 /// This is the claims-side analogue of `eqval::fingerprint()`, and it is
 /// deliberately separate from it: that value covers the compiler's runtime and
 /// must not move, so this component hashes its own sources instead. The
-/// compiler's ontology is folded in even though this crate does not own it,
-/// because `vocabulary::relations()` reads `turtle::vocabulary()` at runtime:
-/// without this, a compiler change that widens the accepted predicate set
-/// would silently widen what this tool accepts too, with no move in the
-/// fingerprint the binding staleness check depends on.
+/// compiler's ontology is no longer folded in, because `vocabulary.rs` now
+/// carries the accepted set outright rather than reading `turtle::vocabulary()`
+/// at runtime. Hashing `vocabulary.rs` therefore already covers every name this
+/// tool accepts, and an unrelated compiler edit no longer invalidates every
+/// prepared interpretation directory.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::CompiledGuidance interface,constraints
 pub fn fingerprint() -> String {
     hash(
-        format!(
-            "{}{}",
-            concat!(
-                include_str!("guidance/sections.md"),
-                include_str!("guidance/vocabulary.md"),
-                include_str!("guidance/examples.md"),
-                include_str!("guidance/rejected.md"),
-                include_str!("vocabulary.rs"),
-                include_str!("claims.egg")
-            ),
-            crate::turtle::ontology_fingerprint()
+        concat!(
+            include_str!("guidance/sections.md"),
+            include_str!("guidance/vocabulary.md"),
+            include_str!("guidance/examples.md"),
+            include_str!("guidance/rejected.md"),
+            include_str!("vocabulary.rs"),
+            include_str!("claims.egg")
         )
         .as_bytes(),
     )

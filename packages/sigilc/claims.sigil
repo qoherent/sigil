@@ -1,5 +1,5 @@
-@packages/sigilc/turtle.sigil from SigilTurtleInput import { AssertionValidation, FixedOntology }
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput, PhysicalInventory }
+@packages/sigilc/vocabulary.sigil from SigilClaimsVocabulary import { AcceptedVocabulary, AtomDiscipline }
+@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 
 component SigilComputedClaims {
   goal {
@@ -27,56 +27,162 @@ component SigilComputedClaims {
       immutable binding over the export digest, the selected source, the guidance
       fingerprint and the vocabulary generation. The caller keeps the directory
       and produces claims independently.
+
+      Every Facet in the closure is presented, not only the selected source's.
+
+      A request asks only for units whose stored interpretation is stale. A
+      stored interpretation is keyed on the unit's prose, its owning component,
+      its contract role, the guidance fingerprint and the vocabulary generation,
+      never on the binding. A Logic unit is a whole section and is keyed on that
+      section's prose; a unit in every other role is a Facet and is keyed on its
+      own. A supplied interpretation of a unit that is not stale is a second
+      interpretation of that unit. A reused interpretation is admitted afresh
+      against the current closure, so a claim naming an entity that has since
+      left it is refused like any other.
+
+      Logic is the exception to presenting each Facet alone: a component's Logic
+      Facets are presented together, in source order, each keeping its own row,
+      identity and prose slice.
     }
 
     ReturnedClaims {
-      Accept interpreted claims as data-only egglog atoms under AssertionValidation
-      discipline: bound bytes before parsing and atom count before validation,
-      reject every rule, command, schedule and non-literal argument, and refuse the
-      whole artifact rather than its valid portion. Relations and properties are
-      closed over FixedOntology. Modality distinguishes required, permitted and
-      assumed commitments. A reading row records a Facet the interpreter read and
-      found no commitment in, or whose intent is unresolved. Mint every claim
-      identity; refuse interpreter-declared Component and Tag identities and any
-      entity outside the resolved closure.
+      Accept interpreted claims under AtomDiscipline. Relations and properties
+      are closed over AcceptedVocabulary. Modality distinguishes required,
+      permitted and assumed commitments, and an expectation records whether a
+      claim asserts its relation holds or asserts it must not; a required claim
+      expected not to hold is a prohibition. A reading row records a Facet the
+      interpreter read and found no commitment in, or whose intent is
+      unresolved. The tool mints every identity and refuses any the
+      interpretation declares, and any entity outside the resolved closure.
+
+      A component's Logic prose describing a sequence of steps is interpreted as
+      one flow graph spanning that section's Facets.
+
+      A step and a graph are entities this tool mints. The graph is returned as
+      a row declaring each step and a row per guard a step applies; everything
+      else is an ordinary claim about those entities — a state the step reads or
+      writes, an operation it calls, an edge to a later step.
+
+      A returned row names a step by its ordinal and the graph by its component
+      and section, never by an identity. An ordinal is unique across the
+      presented section, and a row naming one that no step declaration carries
+      is refused.
+
+      An edge runs from a step to whatever the prose describes as consuming what
+      that step produced: a later step, or the flow's result. What a step reads,
+      writes and calls are claims about that step rather than edge targets. An
+      edge may cross from one Facet of the section to another. An edge to the
+      graph is what declares an end, and a graph declaring no end is refused.
+
+      A step row names the Facet it was authored in, and identity, grounding and
+      the Facet's own interpretation all follow that naming. A Facet that
+      contributed a step counts as interpreted. A step naming a Facet outside
+      the presented section is refused.
+
+      A flow step's guard compares a state read, an input value or a Constraints
+      Facet; no other operand is accepted. An input value is text and is never
+      resolved as an entity. Guarding on a Facet answers every obligation that
+      Facet's claims raise against the graph.
+
+      A step's and a graph's identities depend on nothing the interpretation
+      chose but the ordinal, so two supplied orderings of one flow mint the
+      same identities. A step that calls an already-declared Component or Tag
+      operation names that operation as the object of a claim rather than
+      taking its identity.
+
+      A second interpretation of a unit, when the caller supplies one, is
+      compared against the first: claims and flow-graph rows alike. Disagreement
+      is reported as an observation about interpretation stability. The first
+      interpretation remains the sole basis for findings, and the comparison
+      gates no acceptance.
+
+      Refusing any row refuses the whole supplied interpretation, never its
+      valid portion.
     }
 
     SectionAwareClosure {
-      Re-emit accepted facts from parsed values into a tool-authored program and
-      fill each claim's contract role from the PhysicalInventory unit it derives
-      from. Derive holding relations, reachability, delegation, contradictions,
-      ownership conflicts and obligations under finite tool-owned laws, then
-      inspect absence only after the closure stabilizes. Rationale contributes no
-      commitment: a claim whose role is Decisions is retained and reported but
-      raises no obligation and satisfies none.
+      Fill each claim's contract role from the unit it derives from, as
+      ResolvedDesignInput attributes it, then derive holding relations,
+      reachability, delegation, contradictions, ownership conflicts and
+      obligations under finite tool-owned laws, inspecting absence only after
+      the closure stabilizes. A claim whose role is Decisions is retained and
+      reported but raises no obligation and fills none. An assumed claim raises
+      an obligation to state what it leans on, and fills none.
+
+      Two committing claims that cannot both hold contradict each other: they
+      assert one proposition with opposite expectations, one asserts what
+      another excludes, or they disagree about a property or a measure of one
+      entity. State a claim marks exclusive, owned by two components, is an
+      ownership conflict. These laws read no flow.
+
+      Derive, for every flow graph, whether each step's edges reach one of the
+      graph's declared ends. A branching flow declares one end per branch.
+
+      Grounding asks whether the entity a row names could have come from the
+      Facet that names it, and reads the kind of what it names: a Tag or
+      Component against that Facet's resolved references, its owning component
+      and its providers; a step against the Facet its declaration names; a graph
+      against the section it is minted from. It applies to every returned row,
+      including a guard's operands, at admission. A degenerate or ungrounded row
+      in a graph suppresses that graph's reachability check, and both the row
+      and the suppression are reported. An edge from a step to itself is a loop
+      rather than a claim that says nothing.
+
+      A claim whose role is Constraints reaches the flow graphs its own
+      component owns and those of every component it transitively depends on,
+      independently of grounding.
+
+      A step in a graph a Constraints claim reaches is checked against that
+      claim by what the step's own rows say it does. A step doing what the claim
+      forbids contradicts it. A claim whose relation requires something of the
+      graph, and whose Facet no step guards on, is unmet; a prohibition raises
+      no obligation, because the contradiction above already answers it.
+
+      A step writing state a claim marks exclusive, whose component does not own
+      that state, is an ownership conflict.
     }
 
     ComputedFindings {
       Report contradictions, ownership conflicts and unmet obligations with the
-      claims and the law that produced each one. Report a claim whose subject and
-      object coincide as degenerate, and a claim naming an entity absent from its
-      own Facet's resolved references, owning component and provider components as
-      ungrounded; neither satisfies its unit. Name a declared role that yielded
-      neither a claim nor a reading row, and attribute that gap to the
-      interpretation. An unchanged export and an unchanged interpretation produce
-      an identical report.
+      law that produced each one, with the claims it rests on where it rests on
+      any, and with the steps and the graph where steps produced it. Report a
+      claim whose subject and object coincide as degenerate, and one that
+      grounding refuses as ungrounded; neither satisfies its unit. Name a Facet
+      of the selected source in a declared role that yielded nothing — no
+      interpretation satisfying its unit and no reading row — and attribute that
+      gap to the interpretation.
+
+      Report a flow-graph step with no path to one of its graph's declared ends
+      as its own finding, naming the step and the graph it belongs to, whether
+      or not a claim whose role is Constraints reaches that graph.
+
+      A finding is reported by each run whose selected source authored a step it
+      names or a Facet it names, so one spanning two sources reaches both
+      authors and one spanning none is reported nowhere.
+
+      An unchanged export, selected source, runtime identity, store and set of
+      supplied interpretations produce an identical report.
     }
 
     JudgmentContext {
-      Emit one entry per unit in the design, including units the closure found
-      nothing about. Carry derived facts, obligation state and the provenance of
-      each derived conclusion, and for every unfilled obligation the promise that
-      raised it and where that promise is stated. Propose simplification
-      candidates without ruling on them. Carry the Facet prose an entry refers to,
-      so a consumer needs no access to the sources.
+      Emit one entry per unit of the selected source, including units the
+      closure found nothing about. Carry derived facts, obligation state and the
+      provenance of each derived conclusion, and for every unfilled obligation
+      the promise that raised it and where that promise is stated. Propose
+      simplification candidates without ruling on them. Carry the prose an entry
+      refers to, which for a Logic entry is every Facet of its section, so a
+      consumer needs no access to the sources.
     }
 
     ClaimsCommands {
       Offer preparation, ingestion and guidance extraction as a separate
       executable beside the compiler. Refuse a binding that does not match the
-      supplied export or the running guidance fingerprint. Exit zero for pass and
-      warning, one for a gate failure, two for usage and three for operational
-      failure.
+      running invocation on any of its four parts. Exit zero for pass and
+      warning, one for a gate failure, two for usage and a refused input, and
+      three for operational failure. Only a contradiction or an ownership
+      conflict the closure derives without reading a flow is a gate failure;
+      every other finding, including one resting on the interpretation's reading
+      of a flow, is a warning.
     }
   }
 
@@ -84,21 +190,21 @@ component SigilComputedClaims {
     ClaimsCommands {
       Launch no model, worker or task workflow. The external interpretation is an
       input the caller supplies and re-supplies, never a call this executable
-      makes.
+      makes. Reusing a stored interpretation is reuse of what a caller already
+      supplied.
     }
 
     ReturnedClaims {
-      Interpreted text is data and is never executed as a program. Accepting a
-      claim establishes neither that it is true of its Facet nor that the
-      interpretation was faithful. No file outside the compiled binary widens what
-      is accepted.
+      Accepting a claim establishes neither that it is true of its Facet nor that
+      the interpretation was faithful.
     }
 
     SectionAwareClosure {
       Workers supply no laws and fill no tool-owned table. The compiler's stored
-      projections, its world cache and the files its runtime identity fingerprints
-      are read-only to this component; writing any of them would invalidate every
-      stored world. Findings and stores live under a path this component owns.
+      projections, its world cache and the files its runtime identity
+      fingerprints are read-only to this component; writing any of them would
+      invalidate every stored world. Findings and stores live under a path this
+      component owns.
     }
 
     CompiledGuidance {
@@ -107,18 +213,108 @@ component SigilComputedClaims {
     }
   }
 
+  decisions {
+    ReturnedClaims {
+      Extending identity minting to flow steps, instead of restricting
+      decomposition to steps that call an already-declared operation, was chosen
+      so decomposition covers the internal steps flow-shaped prose actually
+      describes.
+
+      A step and a graph are minted entity kinds rather than shapes of their own,
+      so a flow fact is an ordinary claim. An earlier draft gave every flow fact
+      its own row kind, on the reasoning that a claim's operands must be a
+      declared Component or Tag. That reasoning was wrong: identity here was
+      never only those two, and treating it that way turned seven ordinary facts
+      into seven bespoke shapes and a join in every law.
+
+      A step's identity is minted from the Facet its declaration names and the
+      ordinal it carries; a graph's from its component and section. The ordinal
+      is the one reference both sides can compute, because the interpretation
+      cannot name a minted identity and the tool cannot read the prose.
+
+      Flow-graph rows join the same repeat-interpretation comparison as claims
+      rather than getting a stability mechanism of their own, because a graph is
+      a harder extraction than a flat claim and carries the same risk: a
+      nondeterministic reading presented as settled fact.
+
+      A guard names a Constraints Facet rather than a claim because claim
+      identities are minted after an interpretation returns, so a returned row
+      could not carry one.
+    }
+
+    SectionAwareClosure {
+      Facts are re-emitted from parsed values into a program this tool authors,
+      so an interpretation is data the laws read rather than anything that runs.
+
+      Contradiction and ownership conflict were drafted for steps, withdrawn and
+      redefined. The withdrawn ownership draft fired on every cross-component
+      call, because flows are written as delegation; reading a step's writes
+      rather than its calls is what fixed it.
+
+      The obligation law covers only claims that require something of the graph.
+      Applied to prohibitions it double-reported with the contradiction law, and
+      guarding on a prohibition is not a meaningful act.
+
+      The ownership law requires a claim marking the state exclusive, because a
+      component declaring state does not thereby say another may not write it.
+      The claim-level ownership law needs the same marking for the same reason.
+      Without it this tool would report a design that contradicts nothing. One
+      foreign write is enough once the marking exists: exclusivity is what the
+      marking asserts, so a second writer is not needed to contradict it.
+
+      One bad row suppresses a whole graph's reachability check rather than being
+      dropped, because dropping one edge would manufacture dead ends on
+      well-formed steps upstream.
+
+      A flow is expected to declare more than one end, because a returned
+      result, an outward call and a terminating state write all end one and a
+      branch may end each way. Each is declared by the same edge to the graph;
+      none is inferred from what a step does.
+    }
+
+    ComputedFindings {
+      A finding naming two sources is reported to both authors rather than routed
+      to one, because neither author can fix it alone. An ownership conflict is
+      the case that made this necessary: it names steps in two components by
+      construction, so a rule routing it to one would always blind the other.
+    }
+
+    InterpretationRequest {
+      A flow graph spans a section rather than a Facet because a Facet is a
+      paragraph: projecting two real designs produced five and six separate Logic
+      Facets, and in the five-Facet case the flow runs through three of them with
+      the closing return in a Facet of its own. A Logic section mixes flow Facets
+      with others, so the count is not the span. Scoping a graph to one Facet was
+      rejected on that evidence — it would have left the common shape
+      unexpressible while appearing to work on contrived single-paragraph flows.
+      Scoping a graph to one grouping block instead was considered and not taken:
+      the evidence cannot separate the two, because the flow observed sits in a
+      single block. A component that names two Logic flows therefore yields one
+      graph today, and that is the case to revisit if it appears.
+
+      The request widened to the whole closure because every design source
+      measured declares exactly one component, so a claim had no dependency
+      graph to reach. Storing interpretations is what keeps that widening from
+      re-reading every shared dependency once per dependent.
+    }
+  }
+
   cases {
     SectionAwareClosure {
       The same claim text raises an obligation from a Constraints Facet and none
       from a Decisions Facet. A permitted commitment raises no obligation where a
       required one does. A Facet in a declared role that yields only a reading row
-      is interpreted, and one that yields nothing at all is a named gap.
+      is interpreted, and one that yields nothing at all is a named gap. A Logic
+      Facet that contributes no step but yields a claim is interpreted, not a gap.
+      A step writing state another component declares is no ownership conflict;
+      the same write is one where a claim marks that state exclusive.
     }
 
     ReturnedClaims {
       An artifact carrying one valid claim beside one rule declaration is refused
       whole. A claim relating a local Facet to a Tag imported from a source in the
-      closure is accepted.
+      closure is accepted. A guard comparing an input value to a state read is
+      accepted. An edge naming an ordinal no step declares is refused.
     }
   }
 }

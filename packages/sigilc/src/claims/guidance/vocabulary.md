@@ -50,6 +50,25 @@ written as a string. `risk` is between zero and one.
 assert, or `unresolved` when a consequential choice is left open or the material
 you would need is unavailable. Return one for every Facet that yields no claim.
 
+## Logic sections are presented whole
+
+Every other contract role is presented one Facet at a time. Logic is not.
+
+The request's `flows` list names each component's Logic section and lists its
+Facet identities **in source order**. Each of those Facets still has its own row
+in `rows`, with its own identity and its own prose — the grouping adds order and
+membership and takes nothing away.
+
+Read a section's Facets together. A Facet is a paragraph, and flow-shaped prose
+routinely runs across several of them: one real design states its first step in
+one paragraph, its middle two in a second, and its closing return in a third.
+Reading any one of those alone, you cannot see where the flow goes.
+
+A Logic section may also mix flow prose with prose that is not flow at all — a
+paragraph stating which component owns which result shape is an ordinary claim,
+not a step. Returning no step for such a Facet is correct, and does not make it
+uninterpreted.
+
 ## Relation names
 
 A claim's relation is one of these, and nothing else:

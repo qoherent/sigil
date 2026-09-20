@@ -394,20 +394,44 @@ fn the_compilers_own_command_surface_is_unchanged() {
 #[test]
 fn every_claims_module_is_owned_by_a_tag_the_contract_declares() {
     let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let contract = fs::read_to_string(crate_dir.join("claims.sigil")).unwrap();
-    let declared: Vec<&str> = contract
-        .lines()
-        .filter_map(|line| {
-            let trimmed = line.trim();
-            trimmed.strip_suffix(" {").filter(|name| {
-                name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
-                    && name.chars().all(|c| c.is_ascii_alphanumeric())
+
+    // The subsystem is owned by two contracts: the claims component, and the
+    // vocabulary component that owns the accepted set and the atom discipline.
+    // An annotation must name one of them and a Tag that contract declares.
+    let tags_of = |contract: &str| -> Vec<String> {
+        contract
+            .lines()
+            .filter_map(|line| {
+                let trimmed = line.trim();
+                trimmed
+                    .strip_suffix(" {")
+                    .filter(|name| {
+                        name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
+                            && name.chars().all(|c| c.is_ascii_alphanumeric())
+                    })
+                    .map(str::to_owned)
             })
-        })
-        .collect();
+            .collect()
+    };
+    let owners: Vec<(&str, Vec<String>)> = vec![
+        (
+            "packages/sigilc/claims.sigil::SigilComputedClaims::",
+            tags_of(&fs::read_to_string(crate_dir.join("claims.sigil")).unwrap()),
+        ),
+        (
+            "packages/sigilc/vocabulary.sigil::SigilClaimsVocabulary::",
+            tags_of(&fs::read_to_string(crate_dir.join("vocabulary.sigil")).unwrap()),
+        ),
+    ];
     assert!(
-        declared.contains(&"ClaimsCommands"),
-        "expected the contract's concepts, got {declared:?}"
+        owners[0].1.contains(&"ClaimsCommands".to_owned()),
+        "expected the claims contract's concepts, got {:?}",
+        owners[0].1
+    );
+    assert!(
+        owners[1].1.contains(&"AcceptedVocabulary".to_owned()),
+        "expected the vocabulary contract's concepts, got {:?}",
+        owners[1].1
     );
 
     let mut checked = 0;
@@ -430,20 +454,21 @@ fn every_claims_module_is_owned_by_a_tag_the_contract_declares() {
             "{name} carries no ownership annotation"
         );
         for annotation in annotations {
-            assert!(
-                annotation.contains("packages/sigilc/claims.sigil::SigilComputedClaims::"),
-                "{name}: {annotation}"
-            );
+            let owner = owners
+                .iter()
+                .find(|(prefix, _)| annotation.contains(prefix))
+                .unwrap_or_else(|| panic!("{name}: {annotation} names neither owning contract"));
             let tag = annotation
-                .split("SigilComputedClaims::")
+                .split(owner.0)
                 .nth(1)
                 .unwrap()
                 .split_whitespace()
                 .next()
                 .unwrap();
             assert!(
-                declared.contains(&tag),
-                "{name} claims {tag}, which the contract does not declare"
+                owner.1.iter().any(|declared| declared == tag),
+                "{name} claims {tag}, which {} does not declare",
+                owner.0
             );
         }
         checked += 1;
