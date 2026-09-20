@@ -57,6 +57,54 @@ a property of the state, so it travels on a `property` row.
 The second claim's `expected` is `false`: the Facet asserts the relation must
 not hold. That is a prohibition, not an absence.
 
+### `logic` that describes a flow
+
+Logic prose that walks through a sequence of steps is returned as a graph
+instead. The Facets of one Logic section are presented together; number the
+steps across the whole section.
+
+> **f5** — Consume the loaded *WorkspaceModel* through *RelationshipResolution*
+> to obtain relationship data and diagnostics.
+>
+> **f6** — Derive the workspace glossary projection through
+> *GlossaryInspection*, then construct the relationship graph through
+> *GraphConstruction*.
+>
+> **f7** — Return one *ResolvedSigilWorkspace* containing resolution data,
+> graph data, glossary data, and merged diagnostics.
+
+```
+(step "f5" "1")
+(step "f6" "2")
+(step "f6" "3")
+(step "f7" "4")
+(claim "f5" "step:1" "reads" "WorkspaceModel" "required" "true")
+(claim "f5" "step:1" "invokes" "RelationshipResolution" "required" "true")
+(claim "f6" "step:2" "invokes" "GlossaryInspection" "required" "true")
+(claim "f6" "step:3" "invokes" "GraphConstruction" "required" "true")
+(claim "f7" "step:4" "invokes" "ResolvedSigilWorkspace" "required" "true")
+(claim "f5" "step:1" "to" "step:4" "required" "true")
+(claim "f6" "step:2" "to" "step:4" "required" "true")
+(claim "f6" "step:3" "to" "step:4" "required" "true")
+(claim "f7" "step:4" "to" "graph" "required" "true")
+```
+
+Read the edges carefully, because they are what the check rests on.
+
+**f6 sequences its two steps with "then", and that is not an edge.** The
+paragraph says construct the graph *after* deriving the glossary. It does not
+say the graph construction uses the glossary projection. So there is no edge
+from step 2 to step 3 — and it would be wrong to add one, because it would make
+step 2 reach the end through step 3 no matter what actually consumes the
+glossary.
+
+The edges that do exist come from **f7**, which names what the result contains:
+resolution data, graph data and glossary data. Each of those is something a
+step produced and this step consumes, so each is an edge.
+
+**Step 4 ends the flow**, and its edge to `graph` is what says so. Returning a
+result does not end a flow by itself; nothing is inferred from what a step does.
+
 ## `constraints`
 
 > Search must answer within 200 milliseconds. The panel may not reach the

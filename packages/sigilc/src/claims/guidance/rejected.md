@@ -98,3 +98,46 @@ not exist; the three are `required`, `permitted`, and `assumed`.
 role. The tool fills the role from the export. Supplying it is not merely
 redundant — it is the drift the tool exists to detect, so the column is not
 yours to write.
+
+## A sequence read as a flow's edges
+
+> Derive the workspace glossary projection through GlossaryInspection, then
+> construct the relationship graph through GraphConstruction.
+
+```
+(claim "f6" "step:2" "to" "step:3" "required" "true")
+```
+
+Wrong. "Then" states an order, not a consumption. The paragraph does not say
+the graph construction uses the glossary projection, so nothing here says step
+3 consumes what step 2 produced.
+
+This is the single easiest way to make the whole flow check useless. Every step
+in a section reads as leading to the next, every step therefore reaches the end
+transitively, and no step is ever a dead end. Read the paragraph that consumes
+the results — usually the one describing what is returned — and take the edges
+from there.
+
+An edge exists only where the prose names something that uses what a step
+produced.
+
+## A guard comparing against something else
+
+```
+(guard "f6" "2" "mood" "confident")
+```
+
+Wrong. A guard's operand is `state`, `input` or `constraint` and nothing else.
+Use `state` for a Tag the design declares, `input` for a literal value written
+as text, and `constraint` for the Facet that authored the constraint.
+
+## A step you named yourself
+
+```
+(step "f6" "glossary-step")
+```
+
+Wrong. A step is named by its ordinal — its position across the Logic section,
+counting from 1. You never coin an identity for anything; the tool mints every
+one after reading your answer, which is why an ordinal is the only reference
+you can write.

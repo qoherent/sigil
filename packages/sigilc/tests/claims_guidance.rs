@@ -435,6 +435,12 @@ code:
                 Row::Reading { .. } | Row::Step { .. } | Row::Guard { .. } => vec![],
             };
             for name in names {
+                // A step ordinal and the graph reference are not entities; the
+                // tool mints what they resolve to after reading the answer, so
+                // they cannot be marked in the prose the way a Tag is.
+                if vocabulary::is_flow_ref(name) {
+                    continue;
+                }
                 assert!(
                     components.contains(name) || ground.contains(name),
                     "{quote:?} claims {name:?}, which is neither a component nor                      asterisk-marked in that same prose"
