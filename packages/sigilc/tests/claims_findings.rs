@@ -648,3 +648,142 @@ fn a_dependencys_finding_is_not_repeated_in_its_dependents_report() {
         "a finding must be reported by the run that owns it"
     );
 }
+
+// ------------------------------- flow rows in the repeat comparison (U8)
+
+fn admit_flow(paragraphs: &[&str], artifact: &str) -> (Request, Vec<Fact>) {
+    let (input, _) = flow_design(paragraphs);
+    let request = prepare::project(&input, "flow.sigil").unwrap();
+    let rows = dialect::parse(artifact, Limits::default()).unwrap();
+    let facts = identity::admit(&request, &input, &rows).unwrap();
+    (request, facts)
+}
+
+#[test]
+fn two_readings_differing_in_one_edge_disagree_about_that_facet_only() {
+    let (_, f) = flow_design(&["first", "second"]);
+    let base = format!(
+        "(step {0:?} \"1\")\n(step {1:?} \"2\")\n\
+         (claim {1:?} \"step:2\" \"to\" \"graph\" \"required\" \"true\")\n",
+        f[0], f[1]
+    );
+    let (_, first) = admit_flow(&["first", "second"], &base);
+    let (_, repeat) = admit_flow(
+        &["first", "second"],
+        &format!(
+            "{base}(claim {0:?} \"step:1\" \"to\" \"step:2\" \"required\" \"true\")\n",
+            f[0]
+        ),
+    );
+
+    let out = findings::disagreements(&first, &repeat);
+    assert_eq!(
+        out.len(),
+        1,
+        "one edge differs, so one disagreement: {out:?}"
+    );
+    assert_eq!(
+        out[0].facet, f[0],
+        "named by the Facet the edge was authored in"
+    );
+    assert_eq!(out[0].only_in, "repeat");
+}
+
+#[test]
+fn two_identical_readings_carrying_graph_rows_disagree_about_nothing() {
+    let (_, f) = flow_design(&["first"]);
+    let artifact = format!(
+        "(step {0:?} \"1\")\n(claim {0:?} \"step:1\" \"to\" \"graph\" \"required\" \"true\")\n",
+        f[0]
+    );
+    let (_, a) = admit_flow(&["first"], &artifact);
+    let (_, b) = admit_flow(&["first"], &artifact);
+    assert!(findings::disagreements(&a, &b).is_empty());
+}
+
+#[test]
+fn a_second_reading_suppresses_no_finding_from_the_first() {
+    let (_, f) = flow_design(&["first", "second"]);
+    let first_text = format!(
+        "(step {0:?} \"1\")\n(step {1:?} \"2\")\n\
+         (claim {1:?} \"step:2\" \"to\" \"graph\" \"required\" \"true\")\n",
+        f[0], f[1]
+    );
+    let report = run_flow(&["first", "second"], &first_text);
+    assert!(
+        report.findings.iter().any(|x| x.law == "unreached-step"),
+        "precondition: the first reading leaves step 1 dangling"
+    );
+
+    // A repeat that happens to fix the edge must not erase the first's finding.
+    let (_, first) = admit_flow(&["first", "second"], &first_text);
+    let (_, repeat) = admit_flow(
+        &["first", "second"],
+        &format!(
+            "{first_text}(claim {0:?} \"step:1\" \"to\" \"step:2\" \"required\" \"true\")\n",
+            f[0]
+        ),
+    );
+    let mut report = report;
+    findings::attach(&mut report, findings::disagreements(&first, &repeat));
+    assert!(
+        report.findings.iter().any(|x| x.law == "unreached-step"),
+        "the first interpretation remains the sole basis for findings"
+    );
+    assert!(
+        report.disagreements.is_some(),
+        "and the comparison is reported beside it"
+    );
+}
+
+#[test]
+fn a_repeat_that_splits_one_step_in_two_disagrees_in_bounded_fashion() {
+    // Step position lives inside the compared body, so a granularity
+    // difference shifts every later position. Pinned here deliberately: this
+    // is the ordinary variance between two model runs over the same prose, and
+    // the size of the report is what a reader has to live with.
+    let (_, f) = flow_design(&["first", "second"]);
+    let (_, first) = admit_flow(
+        &["first", "second"],
+        &format!("(step {0:?} \"1\")\n(step {1:?} \"2\")\n", f[0], f[1]),
+    );
+    let (_, repeat) = admit_flow(
+        &["first", "second"],
+        &format!(
+            "(step {0:?} \"1\")\n(step {0:?} \"2\")\n(step {1:?} \"3\")\n",
+            f[0], f[1]
+        ),
+    );
+    let out = findings::disagreements(&first, &repeat);
+    let facets: std::collections::BTreeSet<&str> = out.iter().map(|d| d.facet.as_str()).collect();
+    assert_eq!(
+        out.len(),
+        3,
+        "the added step, and the renumbered one in each direction: {out:?}"
+    );
+    assert_eq!(
+        facets.len(),
+        2,
+        "both Facets are named, because the renumbering crosses them"
+    );
+}
+
+#[test]
+fn a_logic_facet_yielding_only_graph_rows_is_interpreted() {
+    let (_, f) = flow_design(&["first"]);
+    let report = run_flow(
+        &["first"],
+        &format!(
+            "(step {0:?} \"1\")\n(claim {0:?} \"step:1\" \"to\" \"graph\" \"required\" \"true\")\n\
+             (reading {1:?} \"no-commitment\")\n",
+            f[0], f[1]
+        ),
+    );
+    assert!(
+        !report
+            .findings
+            .iter()
+            .any(|x| x.law == "uninterpreted-section"),
+        "graph rows are an interpretation of the Facet that authored them"
+    );
+}
