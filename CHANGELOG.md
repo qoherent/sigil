@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- `sigil-claims` decomposes flow-shaped Logic prose into a checked graph. A
+  component's Logic section is presented whole, a step and its section's flow
+  are entities the tool mints, and what a step reads, writes, calls and leads to
+  are ordinary claims about them. Every graph is checked for a step whose edges
+  reach none of its declared ends, and that finding is a warning rather than a
+  gate failure: it rests on a model's reading of prose, and a misreading must
+  not fail a build. A defective row suppresses its whole graph's check rather
+  than being dropped alone, and the suppression is reported, because dropping
+  one edge would manufacture dead ends on well-formed steps upstream. The
+  accepted profile moves to 2 and the report to 2.
+
 - `sigil-claims` now owns the vocabulary it accepts instead of reading the
   compiler's ontology at runtime. Its runtime identity no longer folds in that
   ontology, so an edit to the compiler's predicate list no longer invalidates

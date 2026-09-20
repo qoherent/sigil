@@ -295,5 +295,7 @@ fn the_context_round_trips_through_its_serialized_form() {
     // prepared directory that what it may return has changed. 2 is the step and
     // guard rows and the step and graph reference forms.
     assert_eq!(context.identity.vocabulary_generation, 2);
-    assert_eq!(findings::REPORT_VERSION, 1);
+    // Pinned and moved with the class that changed the report's shape: a
+    // consumer reading version 1 does not know the flow classes.
+    assert_eq!(findings::REPORT_VERSION, 2);
 }
