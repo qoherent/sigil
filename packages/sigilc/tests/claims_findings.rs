@@ -380,3 +380,177 @@ fn supplying_a_second_artifact_changes_the_recorded_report_identity() {
     );
     assert_eq!(two.identity.interpretations.len(), 2);
 }
+
+// ------------------------------------------------- flow findings (U6)
+
+/// A one-component export with a Logic section, since base.sigil has none.
+fn flow_design(paragraphs: &[&str]) -> (sigilc::frontend::DesignInput, Vec<String>) {
+    use serde_json::{Value, json};
+    let path = "flow.sigil";
+    let mut text = String::from("component Flow {\n  logic {\n");
+    let mut spans = Vec::new();
+    for p in paragraphs {
+        let at = text.len() + 4;
+        text.push_str(&format!("    {p}\n"));
+        spans.push((at, at + p.len()));
+    }
+    text.push_str("  }\n  constraints {\n");
+    let guard_at = text.len() + 4;
+    text.push_str("    a stated constraint\n");
+    let guard_span = (guard_at, guard_at + "a stated constraint".len());
+    text.push_str("  }\n}\n");
+    let id = format!("urn:sigil:component:{path}:Flow");
+    let units: Vec<Value> = spans
+        .iter()
+        .map(|(s, e)| {
+            json!({"id": format!("facet:{path}:{s}"), "source": path, "owner": id,
+                   "section": "logic", "range": {"start": s, "end": e},
+                   "proseRange": {"start": s, "end": e}, "grouping": null,
+                   "introductions": [], "references": [], "links": [], "payload": null,
+                   "valid": true, "complete": true})
+        })
+        .collect();
+    let mut units = units;
+    units.push(
+        json!({"id": format!("facet:{path}:{}", guard_span.0), "source": path,
+        "owner": id, "section": "constraints",
+        "range": {"start": guard_span.0, "end": guard_span.1},
+        "proseRange": {"start": guard_span.0, "end": guard_span.1}, "grouping": null,
+        "introductions": [], "references": [], "links": [], "payload": null,
+        "valid": true, "complete": true}),
+    );
+    // Logic Facets first, then the constraints Facet, so callers index by order.
+    let mut facets: Vec<String> = spans
+        .iter()
+        .map(|(s, _)| format!("facet:{path}:{s}"))
+        .collect();
+    facets.push(format!("facet:{path}:{}", guard_span.0));
+    let input = sigilc::frontend::DesignInput::parse(
+        &serde_json::to_vec(&json!({
+            "schemaVersion": 2, "languageVersion": "0.8.0", "frontendVersion": "test",
+            "sources": [{"path": path, "text": text}],
+            "context": [
+                {"path": ".sigil/config.json", "text": "{\"sigilVersion\":\"0.8.0\"}"},
+                {"path": ".sigil/local.json", "text": null},
+                {"path": ".sigil/glossary.json", "text": null}
+            ],
+            "diagnostics": [], "entities": [json!({
+                "id": id, "type": "Component", "label": "Flow", "source": path, "owner": null,
+                "range": {"start": 0, "end": text.len()}, "nameRange": {"start": 10, "end": 14},
+                "identityResolved": true, "valid": true, "complete": true})],
+            "units": units, "imports": [], "groups": [], "introductions": [],
+            "references": [], "links": []
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    (input, facets)
+}
+
+fn run_flow(paragraphs: &[&str], artifact: &str) -> Report {
+    let (input, _) = flow_design(paragraphs);
+    let request = prepare::project(&input, "flow.sigil").unwrap();
+    let rows = dialect::parse(artifact, Limits::default()).unwrap();
+    let facts = identity::admit(&request, &input, &rows).unwrap();
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    findings::report(&request, &facts, &world, &["artifact-digest".into()])
+}
+
+#[test]
+fn a_dead_end_step_is_reported_and_does_not_fail_the_build() {
+    let (_, f) = flow_design(&["first", "second"]);
+    let report = run_flow(
+        &["first", "second"],
+        &format!(
+            "(step {0:?} \"1\")\n(step {1:?} \"2\")\n\
+             (claim {1:?} \"step:2\" \"to\" \"graph\" \"required\" \"true\")\n",
+            f[0], f[1]
+        ),
+    );
+    let flow: Vec<&findings::Finding> = report
+        .findings
+        .iter()
+        .filter(|x| x.class == findings::Class::Flow)
+        .collect();
+    assert_eq!(flow.len(), 1, "step 1 leads nowhere; step 2 ends the flow");
+    assert_eq!(flow[0].law, "unreached-step");
+    assert!(!flow[0].subject.is_empty(), "the finding names the step");
+    assert_eq!(flow[0].section, "logic", "and where it was authored");
+
+    // The whole point of the class: a misreading of prose must not fail a build.
+    assert_ne!(
+        report.state,
+        findings::State::Disjoint,
+        "a dead-end step rests on a model's reading and cannot gate"
+    );
+}
+
+#[test]
+fn a_dead_end_does_not_mask_a_real_contradiction() {
+    let (_, f) = flow_design(&["first", "second"]);
+    let report = run_flow(
+        &["first", "second"],
+        &format!(
+            "(step {0:?} \"1\")\n\
+             (claim {1:?} \"Flow\" \"provides\" \"Flow\" \"required\" \"true\")\n",
+            f[0], f[2]
+        ),
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|x| x.class == findings::Class::Flow),
+        "the dead end is still reported"
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|x| x.class == findings::Class::Interpretation),
+        "and the degenerate claim alongside it"
+    );
+}
+
+#[test]
+fn a_suppressed_graph_says_so_rather_than_only_flagging_a_row() {
+    let (_, f) = flow_design(&["first", "second"]);
+    // A degenerate claim authored in a Logic Facet: its subject and object
+    // coincide, so it asserts nothing, and a defective row suppresses its
+    // whole graph rather than being dropped alone.
+    let report = run_flow(
+        &["first", "second"],
+        &format!(
+            "(step {0:?} \"1\")\n\
+             (claim {0:?} \"Flow\" \"provides\" \"Flow\" \"required\" \"true\")\n",
+            f[0]
+        ),
+    );
+    let laws: Vec<&str> = report.findings.iter().map(|x| x.law.as_str()).collect();
+    assert!(
+        laws.contains(&"suppressed-graph"),
+        "a reader learns the check did not run, not only that a row was flagged: {laws:?}"
+    );
+    assert!(
+        !laws.contains(&"unreached-step"),
+        "and no dead end is manufactured while it is suppressed: {laws:?}"
+    );
+}
+
+#[test]
+fn two_runs_over_one_unchanged_interpretation_report_identically() {
+    let artifact = {
+        let (_, f) = flow_design(&["first", "second"]);
+        format!(
+            "(step {0:?} \"1\")\n(step {1:?} \"2\")\n\
+             (claim {0:?} \"step:1\" \"to\" \"step:2\" \"required\" \"true\")\n\
+             (claim {1:?} \"step:2\" \"to\" \"graph\" \"required\" \"true\")\n",
+            f[0], f[1]
+        )
+    };
+    let a = run_flow(&["first", "second"], &artifact);
+    let b = run_flow(&["first", "second"], &artifact);
+    assert_eq!(a.findings, b.findings);
+    assert_eq!(a.state, b.state);
+    assert_eq!(a.version, 2, "the report version moved with the new class");
+}

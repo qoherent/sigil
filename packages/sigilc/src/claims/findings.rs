@@ -14,7 +14,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub const REPORT_VERSION: u32 = 1;
+/// Changes when the on-disk report's shape changes.
+///
+/// 2 adds the flow finding classes. They are part of the report a consumer
+/// reads, so a reader pinned to 1 cannot be handed one.
+pub const REPORT_VERSION: u32 = 2;
 
 /// The directory this component owns. Never the compiler's world cache.
 pub const STORE: &str = ".sigil/claims";
@@ -31,6 +35,13 @@ pub enum Class {
     UnmetObligation,
     /// A defect in the interpretation rather than in the design.
     Interpretation,
+    /// Something a flow's own shape shows: a step that leads nowhere, or a
+    /// graph whose check could not run.
+    ///
+    /// Its own class because it rests on a model's reading of prose, and
+    /// weighting that the same as a derived contradiction would fail a build
+    /// on a misreading. `state_of` below is what keeps it a warning.
+    Flow,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -141,6 +152,42 @@ pub fn report(
             component,
             section,
             detail: String::new(),
+        });
+    }
+
+    // A step whose edges reach none of its graph's declared ends. Reported
+    // whether or not a Constraints claim reaches that graph: the check needs no
+    // governance, only the flow's own shape.
+    for row in world.table("unreached-step") {
+        let step = text(row, 0);
+        let (component, section) = where_of(&step);
+        findings.push(Finding {
+            class: Class::Flow,
+            law: "unreached-step".into(),
+            subject: step.clone(),
+            object: text(row, 1),
+            claims: vec![step],
+            component,
+            section,
+            detail: "this step's edges reach none of its flow's declared ends".into(),
+        });
+    }
+
+    // A graph whose check did not run, so a reader learns that rather than
+    // only that one of its rows was flagged.
+    for row in world.table("suppressed-graph") {
+        let component = text(row, 0);
+        findings.push(Finding {
+            class: Class::Flow,
+            law: "suppressed-graph".into(),
+            subject: component.clone(),
+            object: String::new(),
+            claims: Vec::new(),
+            component,
+            section: "logic".into(),
+            detail: "a row of this flow carries a defect, so its dead-end check did not run; \
+                 dropping the row instead would manufacture dead ends upstream"
+                .into(),
         });
     }
 
