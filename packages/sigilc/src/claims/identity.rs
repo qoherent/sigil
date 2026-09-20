@@ -49,6 +49,16 @@ pub enum Body {
     Reading {
         outcome: String,
     },
+    /// A declared step of its Facet's Logic section.
+    Step {
+        ordinal: u32,
+    },
+    /// A guard a step applies.
+    Guard {
+        step: u32,
+        operand: String,
+        value: String,
+    },
 }
 
 /// An accepted fact: tool-minted identity, tool-filled role, resolved entities.
@@ -228,6 +238,20 @@ pub fn admit(request: &Request, input: &DesignInput, rows: &[Row]) -> Result<Vec
             }
             Row::Reading { outcome, .. } => Body::Reading {
                 outcome: outcome.clone(),
+            },
+            // U2 owns minting a Step entity from this row and grounding what
+            // refers to it. Admitted unchanged here so the crate compiles with
+            // the row kinds registered and the admission still to come.
+            Row::Step { ordinal, .. } => Body::Step { ordinal: *ordinal },
+            Row::Guard {
+                step,
+                operand,
+                value,
+                ..
+            } => Body::Guard {
+                step: *step,
+                operand: operand.clone(),
+                value: value.clone(),
             },
         };
 

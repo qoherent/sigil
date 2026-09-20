@@ -245,7 +245,9 @@ fn subject_of(body: &Body) -> String {
         Body::Claim { subject, .. }
         | Body::Property { subject, .. }
         | Body::Measure { subject, .. } => subject.clone(),
-        Body::Reading { .. } => String::new(),
+        // U2 mints the Step entity these resolve to; until then they have no
+        // subject to report, and no finding is built from them.
+        Body::Reading { .. } | Body::Step { .. } | Body::Guard { .. } => String::new(),
     }
 }
 

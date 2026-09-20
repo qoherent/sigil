@@ -56,6 +56,18 @@ pub enum Row {
         facet: String,
         outcome: String,
     },
+    /// Declares a step of its Facet's Logic section, at this ordinal.
+    Step {
+        facet: String,
+        ordinal: u32,
+    },
+    /// A guard a step applies, comparing it against one operand.
+    Guard {
+        facet: String,
+        step: u32,
+        operand: String,
+        value: String,
+    },
 }
 
 impl Row {
@@ -64,7 +76,9 @@ impl Row {
             Row::Claim { facet, .. }
             | Row::Property { facet, .. }
             | Row::Measure { facet, .. }
-            | Row::Reading { facet, .. } => facet,
+            | Row::Reading { facet, .. }
+            | Row::Step { facet, .. }
+            | Row::Guard { facet, .. } => facet,
         }
     }
 
@@ -74,6 +88,8 @@ impl Row {
             Row::Property { .. } => "property",
             Row::Measure { .. } => "measure",
             Row::Reading { .. } => "reading",
+            Row::Step { .. } => "step",
+            Row::Guard { .. } => "guard",
         }
     }
 }
@@ -219,11 +235,38 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
                     atom(name, values)
                 ));
             }
+            // A claim about a step is a fact the prose states, not a
+            // commitment with a modality: a step either reads a state or it
+            // does not. Fixing the pair keeps flow facts out of the laws that
+            // fire on disagreeing expectations, while still populating `holds`
+            // so the step laws can read them.
+            let (subject, object) = (get(1), get(3));
+            if vocabulary::is_flow_ref(&subject) || vocabulary::is_flow_ref(&object) {
+                if get(4) != "required" || get(5) != "true" {
+                    return Err(format!(
+                        "a claim about a step or a graph is required and expected to hold; \
+                         got {:?}/{:?} in {}",
+                        get(4),
+                        get(5),
+                        atom(name, values)
+                    ));
+                }
+                for operand in [&subject, &object] {
+                    if operand.starts_with(vocabulary::STEP_REF)
+                        && vocabulary::step_ordinal(operand).is_none()
+                    {
+                        return Err(format!(
+                            "{operand:?} is not a step ordinal in {}",
+                            atom(name, values)
+                        ));
+                    }
+                }
+            }
             Ok(Row::Claim {
                 facet: get(0),
-                subject: get(1),
+                subject,
                 relation,
-                object: get(3),
+                object,
                 modality: get(4),
                 expected: get(5),
             })
@@ -272,6 +315,44 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
             Ok(Row::Reading {
                 facet: get(0),
                 outcome: get(1),
+            })
+        }
+        "step" => {
+            let ordinal = get(1)
+                .parse::<u32>()
+                .ok()
+                .filter(|n| *n > 0)
+                .ok_or_else(|| {
+                    format!(
+                        "a step's ordinal is its position across the section, counting from 1; \
+                     got {:?} in {}",
+                        get(1),
+                        atom(name, values)
+                    )
+                })?;
+            Ok(Row::Step {
+                facet: get(0),
+                ordinal,
+            })
+        }
+        "guard" => {
+            expect(&get(2), vocabulary::GUARD_OPERANDS, "operand", name, values)?;
+            let step = get(1)
+                .parse::<u32>()
+                .ok()
+                .filter(|n| *n > 0)
+                .ok_or_else(|| {
+                    format!(
+                        "a guard names its step by ordinal; got {:?} in {}",
+                        get(1),
+                        atom(name, values)
+                    )
+                })?;
+            Ok(Row::Guard {
+                facet: get(0),
+                step,
+                operand: get(2),
+                value: get(3),
             })
         }
         _ => unreachable!("vocabulary::returned admitted an unhandled row"),

@@ -172,6 +172,11 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
                 quote(&fact.facet),
                 quote(outcome)
             )),
+            // U3 emits these: a step becomes a minted `entity` row of kind
+            // Step, and a guard becomes a relation the obligation law reads.
+            // Emitting nothing here is what keeps U1 and U2 landable on their
+            // own without a law reading a half-built table.
+            Body::Step { .. } | Body::Guard { .. } => {}
         }
     }
     out
