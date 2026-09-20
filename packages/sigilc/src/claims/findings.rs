@@ -10,7 +10,7 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
@@ -173,6 +173,49 @@ pub fn report(
         });
     }
 
+    // The three step laws. Each rests on a model's reading of prose, so each
+    // reports in the flow class and none reaches the gating table.
+    for row in world.table("step-violation") {
+        let (law, step, object, witness) = (text(row, 0), text(row, 1), text(row, 2), text(row, 3));
+        let (component, section) = where_of(&step);
+        findings.push(Finding {
+            class: Class::Flow,
+            law: law.clone(),
+            subject: step.clone(),
+            object,
+            // The witness is a claim for the contradiction and ownership laws;
+            // the step is named so a reader can follow the finding back to the
+            // prose that produced it either way.
+            claims: vec![witness, step],
+            component,
+            section,
+            detail: match law.as_str() {
+                "step-excluded-action" | "step-negated-action" => {
+                    "this step does what a claim reaching its flow forbids".into()
+                }
+                _ => "this step writes state its component does not own, which a claim marks exclusive"
+                    .into(),
+            },
+        });
+    }
+
+    // A requirement a flow touches and no step guards on.
+    for row in world.table("unguarded-flow") {
+        let (claim, object) = (text(row, 0), text(row, 2));
+        let (component, section) = where_of(&claim);
+        findings.push(Finding {
+            class: Class::Flow,
+            law: "unguarded-flow".into(),
+            subject: text(row, 1),
+            object,
+            claims: vec![claim],
+            component,
+            section,
+            detail: "this flow acts on what a reaching claim requires, and no step guards on it"
+                .into(),
+        });
+    }
+
     // A graph whose check did not run, so a reader learns that rather than
     // only that one of its rows was flagged.
     for row in world.table("suppressed-graph") {
@@ -257,6 +300,32 @@ pub fn report(
 
     findings.sort();
     findings.dedup();
+
+    // A finding is reported by each run whose selected source authored a step
+    // or a Facet it names. The closure is presented whole, so without this a
+    // dependency's findings appear in every dependent's report as well as its
+    // own. A finding naming two sources reaches both authors deliberately:
+    // an ownership conflict names a step and the owning component by
+    // construction, and neither author can fix it alone.
+    let mine: BTreeSet<&str> = request
+        .rows
+        .iter()
+        .filter(|r| r.source == request.binding.source)
+        .map(|r| r.facet.as_str())
+        .collect();
+    let owned = |id: &str| {
+        origin
+            .get(id)
+            .is_some_and(|f| mine.contains(f.facet.as_str()))
+    };
+    findings.retain(|f| {
+        f.claims.iter().any(|id| owned(id))
+            || request
+                .rows
+                .iter()
+                .any(|r| r.component == f.component && r.source == request.binding.source)
+    });
+
     let state = state_of(&findings);
     Report {
         version: REPORT_VERSION,

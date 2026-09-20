@@ -66,6 +66,16 @@
 ; A graph whose check did not run, so a reader learns that rather than only
 ; that a row was flagged.
 (relation suppressed-graph (String))
+; A Constraints claim and a flow graph it reaches.
+(relation constraint-governs (String String))
+; A finding a step produced. Deliberately not `violation`: that table is classed
+; a contradiction or an ownership conflict and flips the design state to
+; disjoint, which would fail a build on a model's misreading of prose.
+(relation step-violation (String String String String))
+; A governing requirement a graph must guard on, and whether it does.
+(relation flow-obligation (String String String))
+(function flow-guarded (String String String) i64 :merge (max old new))
+(relation unguarded-flow (String String String))
 (relation holds (String String String))
 ; subject, relation, object, law, witness: a claim id, or an intermediary entity.
 (relation because (String String String String String))
@@ -124,6 +134,54 @@
 ; the suppression is itself reported
 (rule ((entity g "Graph" l own src) (= (graph-suppressed own) 1))
       ((suppressed-graph own)) :ruleset diagnostics)
+
+; --- governance: which graphs a Constraints claim reaches --------------------
+; Its own component's, and those of every component it transitively depends on.
+; Reach follows the dependency claims an interpretation emitted, not the
+; export's import graph: a real dependency no claim names is not reached.
+(rule ((claim id f "constraints" s p o m e) (facet f own sec src)
+       (entity g "Graph" l own gs))
+      ((constraint-governs id g)) :ruleset closure)
+(rule ((claim id f "constraints" s p o m e) (facet f own sec src)
+       (reachable own dep) (entity g "Graph" l dep gs))
+      ((constraint-governs id g)) :ruleset closure)
+
+; --- the three step laws ----------------------------------------------------
+; None writes to `violation`. Each rests on a model's reading of prose, which is
+; why the dead-end finding does not gate either.
+
+; 1. contradiction: a governed step does what a reaching constraint forbids
+(rule ((claim id f sec a "excludes" obj "required" "true") (commits sec)
+       (constraint-governs id g) (in-graph st g) (flow-touches st obj))
+      ((step-violation "step-excluded-action" st obj id)) :ruleset closure)
+(rule ((claim id f sec a rel obj "required" "false") (commits sec)
+       (constraint-governs id g) (in-graph st g) (holds st rel obj))
+      ((step-violation "step-negated-action" st obj id)) :ruleset closure)
+
+; 2. ownership: a step writes state a claim marks exclusive that its component
+; does not own. The marking claim is what makes this a contradiction rather than
+; a layering opinion: declaring state does not by itself say another component
+; may not write it, which is why the claim-level law needs the same marker. Not
+; gated by reach -- it cites the marking claim instead.
+(rule ((property id f sec obj "exclusive" "true") (commits sec)
+       (holds st "writes" obj) (entity st "Step" sl cmp ssrc)
+       (entity obj "Tag" ol owner osrc) (!= owner cmp) (!= owner ""))
+      ((step-violation "exclusive-foreign-write" st obj id)) :ruleset closure)
+
+; 3. obligation: a governing requirement the flow touches must be guarded on.
+; `requires` only: a prohibition is answered by the contradiction law above, and
+; raising an obligation for one would report the same problem twice.
+(rule ((claim id f "constraints" s "requires" obj "required" "true")
+       (constraint-governs id g) (in-graph st g) (flow-touches st obj))
+      ((flow-obligation id g obj)
+       (set (flow-guarded id g obj) 0)) :ruleset closure)
+; a guard names the constraint's FACET, not the claim: the tool mints claim
+; identities after the interpretation returns, so a row cannot carry one
+(rule ((flow-obligation id g obj) (claim id fct sec2 s2 p2 o2 m2 e2)
+       (in-graph st g) (flow-guard gid ord "constraint" fct))
+      ((set (flow-guarded id g obj) 1)) :ruleset closure)
+(rule ((flow-obligation id g obj) (= (flow-guarded id g obj) 0))
+      ((unguarded-flow id g obj)) :ruleset diagnostics)
 
 ; --- what a claim commits its design to -------------------------------------
 ; An authored commitment holds. An assumption does not: it is something the

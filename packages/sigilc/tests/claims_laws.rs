@@ -958,3 +958,271 @@ fn the_unreached_relation_is_readable_from_the_saturated_world() {
     let world = run(&request, &[step("f1", 1)]);
     assert_eq!(world.table("unreached-step").len(), 1);
 }
+
+// ------------------------------------ governance and the three step laws
+
+fn step_violations(world: &Saturated) -> Vec<(String, String)> {
+    let mut v: Vec<(String, String)> = world
+        .table("step-violation")
+        .iter()
+        .map(|r| (cell(r, 0).to_string(), cell(r, 2).to_string()))
+        .collect();
+    v.sort();
+    v
+}
+
+#[test]
+fn a_constraints_claim_reaches_its_own_components_graph() {
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            step("f2", 1),
+        ],
+    );
+    assert_eq!(world.table("constraint-governs").len(), 1);
+}
+
+#[test]
+fn a_constraints_claim_reaches_a_graph_it_transitively_depends_on() {
+    let request = request(&[("f1", A, "constraints"), ("f2", B, "logic")]);
+    let mut theirs = step("f2", 1);
+    theirs.component = B.to_string();
+    let world = run(
+        &request,
+        &[
+            // A depends on B, so A's constraint reaches B's graph.
+            claim("f1", "constraints", A, "dependsOn", B, "required", "true"),
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            theirs,
+        ],
+    );
+    assert!(
+        !world.table("constraint-governs").is_empty(),
+        "reach follows the dependency claims an interpretation emitted"
+    );
+}
+
+#[test]
+fn a_component_with_no_dependency_claim_is_not_reached() {
+    let request = request(&[("f1", A, "constraints"), ("f2", B, "logic")]);
+    let mut theirs = step("f2", 1);
+    theirs.component = B.to_string();
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            theirs,
+        ],
+    );
+    assert!(
+        world.table("constraint-governs").is_empty(),
+        "a real dependency that no claim names is not reached"
+    );
+}
+
+#[test]
+fn a_governed_step_doing_what_a_constraint_forbids_contradicts_it() {
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "invokes", CAP, "required", "true"),
+        ],
+    );
+    assert_eq!(
+        step_violations(&world),
+        vec![("step-excluded-action".to_string(), CAP.to_string())]
+    );
+}
+
+#[test]
+fn a_step_calling_another_components_operation_is_no_ownership_conflict() {
+    // The regression test for the first withdrawn draft, which fired on every
+    // cross-component call because these flows are written as delegation.
+    let request = request(&[("f1", A, "logic")]);
+    let s = step("f1", 1);
+    let mut theirs = entity(CAP, "Tag", Some(B));
+    theirs.owner = Some(B.to_string());
+    let mut request = request;
+    request.entities.retain(|e| e.id != CAP);
+    request.entities.push(theirs);
+
+    let world = run(
+        &request,
+        &[
+            s.clone(),
+            claim("f1", "logic", &s.id, "invokes", CAP, "required", "true"),
+        ],
+    );
+    assert!(
+        step_violations(&world).is_empty(),
+        "calling across a component boundary is delegation, not a conflict"
+    );
+}
+
+#[test]
+fn an_unmarked_foreign_write_is_no_ownership_conflict_either() {
+    // The regression test for the second withdrawn draft. A component
+    // declaring state does not thereby say another may not write it, so
+    // without a marking claim nothing in the design is contradicted and the
+    // tool would be reporting a layering opinion of its own.
+    let request = request(&[("f1", A, "logic")]);
+    let mut request = request;
+    request.entities.retain(|e| e.id != CAP);
+    request.entities.push(entity(CAP, "Tag", Some(B)));
+    let s = step("f1", 1);
+
+    let world = run(
+        &request,
+        &[
+            s.clone(),
+            claim("f1", "logic", &s.id, "writes", CAP, "required", "true"),
+        ],
+    );
+    assert!(
+        step_violations(&world).is_empty(),
+        "every law must cite authored text; nothing here says this is wrong"
+    );
+}
+
+#[test]
+fn writing_foreign_state_a_claim_marks_exclusive_is_an_ownership_conflict() {
+    let request = request(&[("f1", A, "logic"), ("f2", A, "state")]);
+    let mut request = request;
+    request.entities.retain(|e| e.id != CAP);
+    request.entities.push(entity(CAP, "Tag", Some(B)));
+    let s = step("f1", 1);
+
+    let world = run(
+        &request,
+        &[
+            property("f2", "state", CAP, "exclusive", "true"),
+            s.clone(),
+            claim("f1", "logic", &s.id, "writes", CAP, "required", "true"),
+        ],
+    );
+    assert_eq!(
+        step_violations(&world),
+        vec![("exclusive-foreign-write".to_string(), CAP.to_string())],
+        "the marking claim is what makes this a contradiction rather than an opinion"
+    );
+}
+
+#[test]
+fn the_owning_components_own_step_writing_its_exclusive_state_is_fine() {
+    let request = request(&[("f1", A, "logic"), ("f2", A, "state")]);
+    let s = step("f1", 1); // CAP is owned by A, and this step is A's
+    let world = run(
+        &request,
+        &[
+            property("f2", "state", CAP, "exclusive", "true"),
+            s.clone(),
+            claim("f1", "logic", &s.id, "writes", CAP, "required", "true"),
+        ],
+    );
+    assert!(step_violations(&world).is_empty());
+}
+
+#[test]
+fn a_touched_requirement_no_step_guards_on_is_unmet() {
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "requires", CAP, "required", "true"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "reads", CAP, "required", "true"),
+        ],
+    );
+    assert_eq!(world.table("unguarded-flow").len(), 1);
+}
+
+#[test]
+fn a_guard_naming_the_constraints_facet_clears_the_obligation() {
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let guard = fact(
+        "f2",
+        "logic",
+        Body::Guard {
+            step: 1,
+            operand: "constraint".into(),
+            value: "f1".into(),
+        },
+    );
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "requires", CAP, "required", "true"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "reads", CAP, "required", "true"),
+            guard,
+        ],
+    );
+    assert!(
+        world.table("unguarded-flow").is_empty(),
+        "guarding on a Facet answers every obligation its claims raise"
+    );
+}
+
+#[test]
+fn a_prohibition_raises_no_guard_obligation() {
+    // It is answered by the contradiction law. Raising one here would report
+    // the same problem twice, which is the mistake the narrowing removed.
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "invokes", CAP, "required", "true"),
+        ],
+    );
+    assert!(world.table("unguarded-flow").is_empty());
+    assert_eq!(
+        step_violations(&world).len(),
+        1,
+        "exactly one finding, not two"
+    );
+}
+
+#[test]
+fn a_constraint_the_flow_never_touches_raises_nothing() {
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "requires", CAP, "required", "true"),
+            step("f2", 1),
+        ],
+    );
+    assert!(world.table("unguarded-flow").is_empty());
+}
+
+#[test]
+fn no_step_law_ever_writes_to_the_violation_table() {
+    // That table is classed a contradiction or an ownership conflict and flips
+    // the design state to disjoint. A model's misreading of prose must not.
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", A, "excludes", CAP, "required", "true"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "invokes", CAP, "required", "true"),
+        ],
+    );
+    assert!(!step_violations(&world).is_empty(), "the law fired");
+    assert!(
+        world.table("violation").is_empty(),
+        "and it stayed out of the gating table"
+    );
+}

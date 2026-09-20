@@ -608,3 +608,43 @@ fn a_facet_whose_only_interpretation_is_a_step_is_not_a_gap() {
         report.findings.iter().map(|x| &x.law).collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn a_dependencys_finding_is_not_repeated_in_its_dependents_report() {
+    // The closure is presented whole, so a dependency's Facets reach this run.
+    // Its findings belong to its own run, not to every dependent's.
+    let input = shared_input();
+    let request = prepare::project(&input, CONSUMER).unwrap();
+    let base_facet = request
+        .rows
+        .iter()
+        .find(|r| r.source == BASE)
+        .unwrap()
+        .facet
+        .clone();
+
+    // A degenerate claim authored in the dependency's Facet.
+    let artifact =
+        format!("(claim {base_facet:?} \"Base\" \"provides\" \"Base\" \"required\" \"true\")\n");
+    let rows = dialect::parse(&artifact, Limits::default()).unwrap();
+    let facts = identity::admit(&request, &input, &rows).unwrap();
+    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    let report = findings::report(&request, &facts, &world, &["d".into()]);
+
+    assert!(
+        !report.findings.iter().any(|f| f.law == "degenerate-claim"),
+        "the defect is in {BASE}, so {BASE}'s own run reports it: {:?}",
+        report.findings.iter().map(|f| &f.law).collect::<Vec<_>>()
+    );
+
+    // And the same interpretation, run against the source that authored it,
+    // does report it.
+    let own = prepare::project(&input, BASE).unwrap();
+    let facts = identity::admit(&own, &input, &rows).unwrap();
+    let world = program::saturate(&own, &facts, eqval::Limits::default()).unwrap();
+    let report = findings::report(&own, &facts, &world, &["d".into()]);
+    assert!(
+        report.findings.iter().any(|f| f.law == "degenerate-claim"),
+        "a finding must be reported by the run that owns it"
+    );
+}
