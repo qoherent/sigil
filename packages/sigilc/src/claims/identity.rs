@@ -5,7 +5,11 @@
 //! than admission does — admission asks whether an entity exists in the
 //! design's closure, grounding asks whether *this Facet* could have been
 //! talking about it.
-use super::{dialect::Row, prepare::Request, vocabulary};
+use super::{
+    dialect::Row,
+    prepare::{FacetRow, Request},
+    vocabulary,
+};
 use crate::{
     frontend::{DesignInput, ReferenceStatus},
     sources,
@@ -467,8 +471,16 @@ pub fn uninterpreted(request: &Request, facts: &[Fact]) -> Vec<(String, String)>
         .filter(|f| f.satisfies_unit())
         .map(|f| f.facet.as_str())
         .collect();
+    // Coverage is the selected source's alone. The request presents the whole
+    // resolved closure so a claim in one component can be checked against a
+    // flow graph in a component it depends on, but a dependency's Facet is
+    // context the interpreter was given, never a gap this report names.
+    // Without this line a run answering only its own source reports a gap for
+    // every role in every dependency -- 56 of them on `pipeline.sigil`.
+    let own = |row: &&FacetRow| row.source == request.binding.source;
+
     let mut gaps = BTreeSet::new();
-    for row in &request.rows {
+    for row in request.rows.iter().filter(own) {
         if !satisfied.contains(row.facet.as_str()) {
             gaps.insert((row.component.clone(), row.section.clone()));
         }
@@ -478,6 +490,7 @@ pub fn uninterpreted(request: &Request, facts: &[Fact]) -> Vec<(String, String)>
     let covered: BTreeSet<(String, String)> = request
         .rows
         .iter()
+        .filter(own)
         .filter(|r| satisfied.contains(r.facet.as_str()))
         .map(|r| (r.component.clone(), r.section.clone()))
         .collect();

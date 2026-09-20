@@ -11,7 +11,9 @@ use sigilc::{
 use std::fs;
 
 mod support;
-use support::{BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE, Workspace, shared_input};
+use support::{
+    BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE, CONSUMER, Workspace, shared_input,
+};
 
 const BASE_ID: &str = "urn:sigil:component:base.sigil:Base";
 
@@ -553,4 +555,56 @@ fn two_runs_over_one_unchanged_interpretation_report_identically() {
     assert_eq!(a.findings, b.findings);
     assert_eq!(a.state, b.state);
     assert_eq!(a.version, 2, "the report version moved with the new class");
+}
+
+#[test]
+fn a_dependencys_uninterpreted_role_is_never_this_sources_gap() {
+    // The request presents the whole resolved closure so a claim in one
+    // component can be checked against a flow graph in a component it depends
+    // on. Coverage is a different question, and stays the selected source's:
+    // answering only your own source must not report a gap for every role in
+    // every dependency.
+    let input = shared_input();
+    let request = prepare::project(&input, CONSUMER).unwrap();
+    assert!(
+        request.rows.iter().any(|r| r.source == BASE),
+        "precondition: the dependency's Facets are presented"
+    );
+
+    // Answer nothing at all. Every gap reported must belong to CONSUMER.
+    let gaps = identity::uninterpreted(&request, &[]);
+    assert!(!gaps.is_empty(), "the selected source's own roles are gaps");
+    for (component, _) in &gaps {
+        assert!(
+            request
+                .rows
+                .iter()
+                .any(|r| &r.component == component && r.source == CONSUMER),
+            "{component} is reported as a gap but authored nothing in {CONSUMER}"
+        );
+    }
+}
+
+#[test]
+fn a_facet_whose_only_interpretation_is_a_step_is_not_a_gap() {
+    // A flow spans a section, so a Facet may contribute nothing but one step of
+    // it. That is an interpretation of that Facet, not silence.
+    let (_, f) = flow_design(&["first", "second"]);
+    let report = run_flow(
+        &["first", "second"],
+        &format!(
+            "(step {0:?} \"1\")\n(step {1:?} \"2\")\n\
+             (claim {1:?} \"step:2\" \"to\" \"graph\" \"required\" \"true\")\n\
+             (reading {2:?} \"no-commitment\")\n",
+            f[0], f[1], f[2]
+        ),
+    );
+    assert!(
+        !report
+            .findings
+            .iter()
+            .any(|x| x.law == "uninterpreted-section"),
+        "every Facet contributed: two steps and a reading row. Findings: {:?}",
+        report.findings.iter().map(|x| &x.law).collect::<Vec<_>>()
+    );
 }
