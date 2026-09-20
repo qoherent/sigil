@@ -607,3 +607,354 @@ fn a_defect_carrying_property_or_measure_is_also_excluded_from_the_program() {
     let world = run(&req, std::slice::from_ref(&prop));
     assert!(world.table("violation").is_empty());
 }
+
+// ------------------------------------------ minted flow entities (U3)
+
+fn step(facet: &str, ordinal: u32) -> Fact {
+    fact(facet, "logic", Body::Step { ordinal })
+}
+
+/// The graph identity `program.rs` mints for a component's Logic section.
+fn graph_of(component: &str) -> String {
+    sigilc::sources::hash(
+        &serde_json::to_vec(&("sigil-flow-graph-v1", component, "logic")).expect("serialization"),
+    )
+}
+
+#[test]
+fn a_step_is_emitted_as_an_entity_of_its_own_kind() {
+    let request = request(&[("f1", A, "logic")]);
+    let world = run(&request, &[step("f1", 1)]);
+
+    let kinds: Vec<(&str, &str)> = world
+        .table("entity")
+        .iter()
+        .map(|r| (cell(r, 1), cell(r, 3)))
+        .collect();
+    assert!(
+        kinds.contains(&("Step", A)),
+        "a step is an entity the tool minted, owned by its component: {kinds:?}"
+    );
+    assert!(
+        kinds.contains(&("Graph", A)),
+        "a section that declares a step mints one graph: {kinds:?}"
+    );
+    // The design's own entities are untouched beside them.
+    assert!(kinds.contains(&("Component", "")) || kinds.iter().any(|(k, _)| *k == "Component"));
+}
+
+#[test]
+fn the_required_state_law_is_unchanged_by_minted_entities() {
+    // That law joins `entity` filtering on the literal kind "Tag", which is
+    // what makes adding kinds safe. Pin it: a Step in the table must not reach
+    // it, and a Tag must still reach it exactly as before.
+    let request = request(&[("f1", A, "state"), ("f2", A, "logic")]);
+    let with_steps = run(
+        &request,
+        &[
+            property("f1", "state", CAP, "required", "true"),
+            step("f2", 1),
+        ],
+    );
+    let without = run(
+        &request,
+        &[property("f1", "state", CAP, "required", "true")],
+    );
+
+    let obligations = |w: &Saturated| -> Vec<String> {
+        let mut v: Vec<String> = w
+            .table("obligation")
+            .iter()
+            .map(|r| format!("{} {} {}", cell(r, 1), cell(r, 2), cell(r, 3)))
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(
+        obligations(&with_steps),
+        obligations(&without),
+        "minted entities must not reach a law that filters on kind Tag"
+    );
+    assert!(
+        !obligations(&with_steps).is_empty(),
+        "and that law still fires"
+    );
+}
+
+#[test]
+fn a_step_belongs_to_its_own_components_graph() {
+    let request = request(&[("f1", A, "logic")]);
+    let world = run(&request, &[step("f1", 1), step("f1", 2)]);
+    let pairs: Vec<(&str, &str)> = world
+        .table("in-graph")
+        .iter()
+        .map(|r| (cell(r, 0), cell(r, 1)))
+        .collect();
+    assert_eq!(pairs.len(), 2, "both steps, one graph");
+    for (_, g) in &pairs {
+        assert_eq!(*g, graph_of(A));
+    }
+}
+
+#[test]
+fn what_a_step_does_is_read_straight_out_of_holds() {
+    // The claims are ordinary: `step reads Tag`. No projection from bespoke
+    // rows, which is what removes the join every law would otherwise carry.
+    let request = request(&[("f1", A, "logic")]);
+    let s = step("f1", 1);
+    let reads = claim("f1", "logic", &s.id, "reads", CAP, "required", "true");
+    let world = run(&request, &[s.clone(), reads]);
+
+    let touches: Vec<(&str, &str)> = world
+        .table("flow-touches")
+        .iter()
+        .map(|r| (cell(r, 0), cell(r, 1)))
+        .collect();
+    assert_eq!(touches, vec![(s.id.as_str(), CAP)]);
+}
+
+#[test]
+fn a_guard_reaches_the_program_with_its_operand() {
+    let request = request(&[("f1", A, "logic")]);
+    let g = fact(
+        "f1",
+        "logic",
+        Body::Guard {
+            step: 1,
+            operand: "input".into(),
+            value: "requestId".into(),
+        },
+    );
+    let world = run(&request, &[step("f1", 1), g]);
+    let guards: Vec<(&str, &str, &str)> = world
+        .table("flow-guard")
+        .iter()
+        .map(|r| (cell(r, 1), cell(r, 2), cell(r, 3)))
+        .collect();
+    assert_eq!(guards, vec![("1", "input", "requestId")]);
+}
+
+#[test]
+fn a_defect_carrying_flow_row_never_reaches_the_program() {
+    let request = request(&[("f1", A, "logic")]);
+    let mut bad = step("f1", 1);
+    bad.defects
+        .push(sigilc::claims::identity::Defect::Degenerate);
+    let world = run(&request, &[bad]);
+    assert!(
+        world.table("flow-step").is_empty(),
+        "a defective row is excluded from saturation, not emitted and then ignored"
+    );
+    // The graph is still minted, and deliberately so: the suppression has to
+    // be reported, and it hangs off the graph entity. Excluding the row and
+    // the graph together would leave a reader with a flagged row and no word
+    // that the check stopped running.
+    assert!(
+        world.table("entity").iter().any(|r| cell(r, 1) == "Graph"),
+        "a graph with a defective row is still a graph, so its suppression is reportable"
+    );
+    assert_eq!(
+        world
+            .table("suppressed-graph")
+            .iter()
+            .map(|r| cell(r, 0))
+            .collect::<Vec<_>>(),
+        vec![A],
+        "and the suppression itself is reported"
+    );
+}
+
+#[test]
+fn one_defective_row_suppresses_its_whole_graphs_check() {
+    // Per-row exclusion is safe for a claim, which only ever adds a
+    // derivation. It inverts here: dropping one edge severs a path and
+    // manufactures dead ends on well-formed steps upstream. So the whole
+    // graph's check stops, and says so.
+    let request = request(&[("f1", A, "logic")]);
+    let (s1, s2) = (step("f1", 1), step("f1", 2));
+    let g = graph_of(A);
+    let mut broken = edge("f1", &s1.id, &s2.id);
+    broken
+        .defects
+        .push(sigilc::claims::identity::Defect::Degenerate);
+
+    let world = run(
+        &request,
+        &[s1.clone(), s2.clone(), broken, edge("f1", &s2.id, &g)],
+    );
+    assert!(
+        unreached(&world).is_empty(),
+        "s1 only dangles because the defective edge was dropped; reporting it \
+         would be a finding this tool manufactured"
+    );
+    assert_eq!(
+        world
+            .table("suppressed-graph")
+            .iter()
+            .map(|r| cell(r, 0))
+            .collect::<Vec<_>>(),
+        vec![A]
+    );
+}
+
+#[test]
+fn a_defect_in_one_graph_does_not_suppress_another() {
+    let request = request(&[("f1", A, "logic"), ("f2", B, "logic")]);
+    let mut bad = step("f1", 1);
+    bad.defects
+        .push(sigilc::claims::identity::Defect::Degenerate);
+    let mut good = step("f2", 1);
+    good.component = B.to_string();
+    let world = run(&request, &[bad, good.clone()]);
+
+    assert_eq!(
+        unreached(&world),
+        vec![good.id.clone()],
+        "the well-formed graph is still checked"
+    );
+    assert_eq!(
+        world
+            .table("suppressed-graph")
+            .iter()
+            .map(|r| cell(r, 0))
+            .collect::<Vec<_>>(),
+        vec![A],
+        "and only the graph that carried the defect is suppressed"
+    );
+}
+
+// ------------------------------------------ end reachability (U4)
+
+/// An edge from one step to another, or to the graph.
+fn edge(facet: &str, from: &str, to: &str) -> Fact {
+    claim(facet, "logic", from, "to", to, "required", "true")
+}
+
+fn unreached(world: &Saturated) -> Vec<String> {
+    let mut v: Vec<String> = world
+        .table("unreached-step")
+        .iter()
+        .map(|r| cell(r, 0).to_string())
+        .collect();
+    v.sort();
+    v
+}
+
+#[test]
+fn a_step_whose_result_no_longer_reaches_an_end_is_derived_as_unreached() {
+    // Covers AE1's shape. Three steps; the middle one's output goes nowhere.
+    let request = request(&[("f1", A, "logic")]);
+    let (s1, s2, s3) = (step("f1", 1), step("f1", 2), step("f1", 3));
+    let g = graph_of(A);
+    let world = run(
+        &request,
+        &[
+            s1.clone(),
+            s2.clone(),
+            s3.clone(),
+            edge("f1", &s1.id, &s3.id),
+            edge("f1", &s3.id, &g),
+        ],
+    );
+    assert_eq!(
+        unreached(&world),
+        vec![s2.id.clone()],
+        "only the step with no path to the end is derived"
+    );
+}
+
+#[test]
+fn a_chain_where_every_step_reaches_the_end_derives_nothing() {
+    let request = request(&[("f1", A, "logic")]);
+    let (s1, s2) = (step("f1", 1), step("f1", 2));
+    let g = graph_of(A);
+    let world = run(
+        &request,
+        &[
+            s1.clone(),
+            s2.clone(),
+            edge("f1", &s1.id, &s2.id),
+            edge("f1", &s2.id, &g),
+        ],
+    );
+    assert!(unreached(&world).is_empty());
+}
+
+#[test]
+fn a_branching_flow_reports_only_the_branch_that_dead_ends() {
+    let request = request(&[("f1", A, "logic")]);
+    let (s1, ok, dead) = (step("f1", 1), step("f1", 2), step("f1", 3));
+    let g = graph_of(A);
+    let world = run(
+        &request,
+        &[
+            s1.clone(),
+            ok.clone(),
+            dead.clone(),
+            edge("f1", &s1.id, &ok.id),
+            edge("f1", &s1.id, &dead.id),
+            edge("f1", &ok.id, &g),
+        ],
+    );
+    assert_eq!(unreached(&world), vec![dead.id.clone()]);
+}
+
+#[test]
+fn a_step_pointing_only_at_a_dead_end_is_itself_unreached() {
+    let request = request(&[("f1", A, "logic")]);
+    let (a, b) = (step("f1", 1), step("f1", 2));
+    let world = run(&request, &[a.clone(), b.clone(), edge("f1", &a.id, &b.id)]);
+    let mut want = vec![a.id.clone(), b.id.clone()];
+    want.sort();
+    assert_eq!(unreached(&world), want);
+}
+
+#[test]
+fn a_self_edge_does_not_make_a_step_reach_an_end() {
+    // A loop is a legitimate shape and admission lets it through. It must not
+    // be mistaken for a path to an end, and must not hang the closure.
+    let request = request(&[("f1", A, "logic")]);
+    let s = step("f1", 1);
+    let world = run(&request, &[s.clone(), edge("f1", &s.id, &s.id)]);
+    assert_eq!(unreached(&world), vec![s.id.clone()]);
+}
+
+#[test]
+fn an_outward_call_ends_nothing_unless_the_edge_is_declared() {
+    // Declared, never inferred. Without this rule every step that calls out
+    // would terminate trivially and the check would never fire.
+    let request = request(&[("f1", A, "logic")]);
+    let s = step("f1", 1);
+    let calls = claim("f1", "logic", &s.id, "invokes", CAP, "required", "true");
+    let world = run(&request, &[s.clone(), calls]);
+    assert_eq!(
+        unreached(&world),
+        vec![s.id.clone()],
+        "calling outward is not ending; the edge to the graph is"
+    );
+}
+
+#[test]
+fn the_derivation_carries_the_law_that_reached_it() {
+    let request = request(&[("f1", A, "logic")]);
+    let s = step("f1", 1);
+    let g = graph_of(A);
+    let world = run(&request, &[s.clone(), edge("f1", &s.id, &g)]);
+    let laws: Vec<&str> = world
+        .table("because")
+        .iter()
+        .filter(|r| cell(r, 1) == "flow-end")
+        .map(|r| cell(r, 3))
+        .collect();
+    assert!(laws.contains(&"flow-end-direct"), "got {laws:?}");
+}
+
+#[test]
+fn the_unreached_relation_is_readable_from_the_saturated_world() {
+    // A relation absent from the exported-table list is computed and then
+    // discarded with no error, so the law would look broken rather than
+    // unexported. Pin that it is exported.
+    let request = request(&[("f1", A, "logic")]);
+    let world = run(&request, &[step("f1", 1)]);
+    assert_eq!(world.table("unreached-step").len(), 1);
+}
