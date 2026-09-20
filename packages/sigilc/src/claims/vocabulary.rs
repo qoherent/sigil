@@ -3,7 +3,47 @@ use crate::frontend::Section;
 use std::{collections::BTreeSet, sync::LazyLock};
 
 /// Changes when the accepted claim profile becomes incompatible.
-pub const VOCABULARY_GENERATION: u32 = 1;
+///
+/// 2 adds the step and guard rows and the reference forms a row uses to name a
+/// step or a graph. An interpretation produced against generation 1 knows
+/// neither, so a directory prepared under it can no longer be answered.
+pub const VOCABULARY_GENERATION: u32 = 2;
+
+/// How a returned row names a step, which it cannot name by identity.
+///
+/// A step's identity is minted by the tool after the interpretation returns, so
+/// the interpretation has no way to write one. The ordinal is the one reference
+/// both sides can compute: the interpretation reads the prose and numbers the
+/// steps, and the tool mints from the Facet and that number.
+pub const STEP_REF: &str = "step:";
+
+/// How a returned row names the graph of its Facet's Logic section.
+///
+/// An edge to the graph is what declares an end of the flow, so this has to be
+/// nameable. A graph is minted per component section, which the Facet already
+/// determines, so no further reference is needed.
+pub const GRAPH_REF: &str = "graph";
+
+/// What a guard compares against.
+///
+/// An input value is text and never resolves to an entity; a constraint names
+/// the Facet that authored it, because a claim identity does not exist yet when
+/// the interpretation is written.
+pub const GUARD_OPERANDS: &[&str] = &["state", "input", "constraint"];
+
+/// Whether a name is a reference to a minted flow entity rather than a design
+/// entity the export declares.
+pub fn is_flow_ref(name: &str) -> bool {
+    name == GRAPH_REF || name.starts_with(STEP_REF)
+}
+
+/// The ordinal a step reference carries, if it is well formed.
+///
+/// Ordinals start at 1 so that a missing or zero ordinal is distinguishable
+/// from a real one rather than defaulting to the first step.
+pub fn step_ordinal(name: &str) -> Option<u32> {
+    name.strip_prefix(STEP_REF)?.parse().ok().filter(|n| *n > 0)
+}
 
 /// The seven contract roles, in the order the language reference lists them.
 pub const SECTIONS: &[&str] = &[
@@ -67,6 +107,20 @@ pub const RETURNED: &[Returned] = &[
     Returned {
         name: "reading",
         columns: &["facet", "outcome"],
+    },
+    // A step declaration. It carries the ordinal its identity is minted from,
+    // which is also how every other row refers to it. Everything a step does --
+    // what it reads, writes, calls, and where its output goes -- is an ordinary
+    // claim about the entity this row mints.
+    Returned {
+        name: "step",
+        columns: &["facet", "ordinal"],
+    },
+    // A guard on a step. This stays a row of its own because an input-value
+    // operand is a literal, and a claim row has no column that takes one.
+    Returned {
+        name: "guard",
+        columns: &["facet", "step", "operand", "value"],
     },
 ];
 

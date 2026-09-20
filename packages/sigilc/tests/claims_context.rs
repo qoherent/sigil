@@ -291,6 +291,9 @@ fn the_context_round_trips_through_its_serialized_form() {
     let back: Context = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(back, context);
     // The report and the context agree on identity, so a consumer can pair them.
-    assert_eq!(context.identity.vocabulary_generation, 1);
+    // Pinned, and moved deliberately: the generation is what tells an already
+    // prepared directory that what it may return has changed. 2 is the step and
+    // guard rows and the step and graph reference forms.
+    assert_eq!(context.identity.vocabulary_generation, 2);
     assert_eq!(findings::REPORT_VERSION, 1);
 }

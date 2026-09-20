@@ -668,3 +668,123 @@ fn a_label_shared_by_two_entities_in_the_closure_is_refused_as_ambiguous() {
     let error = identity::admit(&request, &no_source_input(), &rows).unwrap_err();
     assert!(error.contains("more than one entity"), "got: {error}");
 }
+
+// ------------------------------------------------------- flow rows (U1)
+
+#[test]
+fn a_step_declaration_carries_its_ordinal() {
+    let rows = dialect::parse(r#"(step "f1" "3")"#, Limits::default()).unwrap();
+    assert_eq!(
+        rows,
+        vec![Row::Step {
+            facet: "f1".into(),
+            ordinal: 3
+        }]
+    );
+}
+
+#[test]
+fn a_step_ordinal_counts_from_one_and_is_a_number() {
+    // Zero would be indistinguishable from a missing ordinal defaulting to the
+    // first step, which is the kind of silent wrong answer this design keeps
+    // having to design against.
+    for bad in ["0", "-1", "first", "", "1.5"] {
+        let artifact = format!(r#"(step "f1" "{bad}")"#);
+        let err = dialect::parse(&artifact, Limits::default()).unwrap_err();
+        assert!(
+            err.contains("ordinal"),
+            "{bad:?} must be refused as an ordinal, got: {err}"
+        );
+    }
+}
+
+#[test]
+fn a_guard_names_its_step_by_ordinal_and_one_of_three_operands() {
+    let rows = dialect::parse(
+        r#"(guard "f1" "2" "input" "requestId")
+           (guard "f1" "2" "state" "urn:e:Owner:tag:value")
+           (guard "f1" "2" "constraint" "facet:other.sigil:40")"#,
+        Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(rows.len(), 3);
+    assert!(matches!(&rows[0], Row::Guard { operand, value, .. }
+        if operand == "input" && value == "requestId"));
+
+    let err = dialect::parse(r#"(guard "f1" "2" "mood" "x")"#, Limits::default()).unwrap_err();
+    assert!(err.contains("operand"), "got: {err}");
+}
+
+#[test]
+fn a_claim_about_a_step_is_required_and_expected_to_hold() {
+    // Covers KTD38. A step either reads a state or it does not; there is no
+    // permitted or assumed about it, and fixing the pair keeps flow facts out
+    // of the laws that fire on disagreeing expectations.
+    let ok = dialect::parse(
+        r#"(claim "f1" "step:2" "reads" "urn:e:Owner:tag:value" "required" "true")"#,
+        Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(ok.len(), 1);
+
+    for (modality, expected) in [
+        ("permitted", "true"),
+        ("assumed", "true"),
+        ("required", "false"),
+    ] {
+        let artifact = format!(
+            r#"(claim "f1" "step:2" "reads" "urn:e:Owner:tag:value" "{modality}" "{expected}")"#
+        );
+        let err = dialect::parse(&artifact, Limits::default()).unwrap_err();
+        assert!(
+            err.contains("required and expected to hold"),
+            "{modality}/{expected} must be refused, got: {err}"
+        );
+    }
+}
+
+#[test]
+fn an_edge_to_the_graph_is_accepted_and_a_malformed_step_reference_is_not() {
+    let ok = dialect::parse(
+        r#"(claim "f1" "step:5" "to" "graph" "required" "true")
+           (claim "f1" "step:1" "to" "step:2" "required" "true")"#,
+        Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(ok.len(), 2, "an edge to the graph declares an end");
+
+    let err = dialect::parse(
+        r#"(claim "f1" "step:" "to" "graph" "required" "true")"#,
+        Limits::default(),
+    )
+    .unwrap_err();
+    assert!(err.contains("is not a step ordinal"), "got: {err}");
+}
+
+#[test]
+fn a_non_flow_claim_keeps_every_modality() {
+    // The fixed pair applies only where a step or a graph is named. An ordinary
+    // claim between declared entities is unaffected.
+    let rows = dialect::parse(
+        r#"(claim "f1" "urn:e:Owner" "requires" "urn:e:Owner:tag:value" "permitted" "true")"#,
+        Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn either_new_row_at_the_wrong_arity_is_refused_with_the_atom_echoed() {
+    for artifact in [r#"(step "f1")"#, r#"(guard "f1" "2" "input")"#] {
+        let err = dialect::parse(artifact, Limits::default()).unwrap_err();
+        assert!(err.contains("columns"), "got: {err}");
+        assert!(err.contains("f1"), "the offending atom is echoed: {err}");
+    }
+}
+
+#[test]
+fn a_flow_row_beside_a_rule_declaration_is_refused_whole() {
+    let err =
+        dialect::parse("(step \"f1\" \"1\")\n(rule ((f)) ((g)))", Limits::default()).unwrap_err();
+    assert!(!err.is_empty());
+}

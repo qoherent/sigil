@@ -151,11 +151,17 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
         .chain(vocabulary::numeric_properties())
         .copied()
         .collect();
-    let reserved = ["claim", "property", "measure", "reading"];
+    // Read from the registry, not hardcoded: a row kind added there must be
+    // documented, and this direction has to keep saying so as kinds are added.
+    let reserved: Vec<&str> = vocabulary::RETURNED.iter().map(|r| r.name).collect();
     // Fields of the request the interpreter reads, as opposed to rows it
     // returns. The document has to name them to explain what it is shown, and
     // they are deliberately not accepted as row names.
     let request_fields = ["flows", "rows"];
+    // Values a column takes, as opposed to names the vocabulary publishes: a
+    // starting ordinal, the guard operand kinds, and the reference forms a row
+    // uses to name a step or a graph.
+    let literals = ["1", "graph", "step:<ordinal>"];
     for token in &quoted {
         // Documented tokens that are values or column names rather than
         // vocabulary entries are listed here so a genuinely unknown name fails.
@@ -168,6 +174,9 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
                 .iter()
                 .any(|row| row.columns.contains(&token.as_str()))
             || request_fields.contains(&token.as_str())
+            || literals.contains(&token.as_str())
+            || vocabulary::GUARD_OPERANDS.contains(&token.as_str())
+            || token.starts_with(vocabulary::STEP_REF)
             || token.starts_with('<')
             || token.starts_with('(');
         assert!(
@@ -420,7 +429,10 @@ code:
                 Row::Property { subject, .. } | Row::Measure { subject, .. } => {
                     vec![subject.as_str()]
                 }
-                Row::Reading { .. } => vec![],
+                // A step names no entity of its own, and a guard's operands are
+                // an ordinal, a literal or a Facet -- none of them the entity
+                // reference this check is about.
+                Row::Reading { .. } | Row::Step { .. } | Row::Guard { .. } => vec![],
             };
             for name in names {
                 assert!(

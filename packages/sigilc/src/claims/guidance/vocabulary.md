@@ -50,6 +50,66 @@ written as a string. `risk` is between zero and one.
 assert, or `unresolved` when a consequential choice is left open or the material
 you would need is unavailable. Return one for every Facet that yields no claim.
 
+## `step` — two columns
+
+```
+(step "<facet>" "<ordinal>")
+```
+
+Declares one step of a flow. `ordinal` is the step's position across the whole
+Logic section, counting from `1`, in the order the prose describes the steps —
+not its position within one paragraph. Two steps in a section never share an
+ordinal.
+
+The ordinal is how every other row refers to this step. You cannot name a step
+any other way: its identity is minted after your answer is read, so it does not
+exist yet when you write.
+
+## `guard` — four columns
+
+```
+(guard "<facet>" "<step ordinal>" "<operand>" "<value>")
+```
+
+`operand` is one of `state`, `input` or `constraint`, and `value` is what the
+guard compares against:
+
+- `state` — a Tag the design declares, which the step reads.
+- `input` — a literal value, written as text. It is never resolved as an entity,
+  so an argument name that the design never declares is fine here.
+- `constraint` — the **Facet** that authored the constraint, not the claim.
+  Claim identities do not exist yet when you write.
+
+## What a step does is an ordinary claim
+
+A step is an entity, so everything about it is a `claim`, not a row of its own:
+
+```
+(claim "<facet>" "step:2" "reads" "<tag>" "required" "true")
+(claim "<facet>" "step:2" "writes" "<tag>" "required" "true")
+(claim "<facet>" "step:2" "invokes" "<tag>" "required" "true")
+(claim "<facet>" "step:2" "to" "step:3" "required" "true")
+(claim "<facet>" "step:5" "to" "graph" "required" "true")
+```
+
+Write `step:<ordinal>` to name a step and `graph` to name the section's flow as
+a whole. A claim naming either is always `required` and `true`: a step either
+reads a state or it does not, and there is no permitted or assumed about it.
+
+An edge — the `to` relation — runs from a step to whatever the prose says
+consumes what that step produced: a later step, or the flow's result. What a
+step reads, writes and calls are claims about the step, not edge targets.
+
+**An edge to `graph` is what declares an end of the flow.** A flow with no such
+edge is refused. A branching flow declares one end per branch, so more than one
+edge to `graph` is normal.
+
+Two things that look like edges and are not. A paragraph saying "derive X, then
+construct Y" states an order, not a consumption: unless the prose says Y uses
+what X produced, there is no edge from X to Y. And a step that ends the flow by
+writing state or calling outward still needs its own edge to `graph` — ending is
+declared, never inferred from what a step does.
+
 ## Logic sections are presented whole
 
 Every other contract role is presented one Facet at a time. Logic is not.
