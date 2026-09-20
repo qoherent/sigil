@@ -38,6 +38,16 @@ const EXPORTED: &[(&str, usize)] = &[
     ("facet", 4),
     ("section-declared", 2),
     ("entity", 5),
+    ("flow-step", 3),
+    ("flow-guard", 4),
+    ("in-graph", 2),
+    ("flow-touches", 2),
+    // The lattice itself cannot cross this boundary: the saturation reader
+    // decodes only string and float cells, so `reaches-end` stays inside the
+    // program and the diagnostics rule writes this String-valued relation for
+    // findings to read.
+    ("unreached-step", 2),
+    ("suppressed-graph", 1),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -111,6 +121,44 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
         ));
     }
 
+    // One Graph entity per component whose Logic section declared a step. It
+    // has no returned row of its own -- a graph is what the section is, not
+    // something the interpretation declares -- so it is minted here from the
+    // steps that do exist, matching `identity.rs`.
+    let mut graphed: BTreeMap<&str, ()> = BTreeMap::new();
+    for fact in facts.iter().filter(|f| f.defects.is_empty()) {
+        if matches!(fact.body, Body::Step { .. }) {
+            graphed.entry(fact.component.as_str()).or_default();
+        }
+    }
+    // A defective row suppresses its whole graph rather than being dropped
+    // alone. The fact itself is excluded from saturation below, so the marker
+    // has to be emitted from the defect list before that happens.
+    for fact in facts.iter().filter(|f| !f.defects.is_empty()) {
+        if fact.section == "logic" {
+            row(format!(
+                "(set (graph-suppressed {}) 1)",
+                quote(&fact.component)
+            ));
+            graphed.entry(fact.component.as_str()).or_default();
+        }
+    }
+
+    for component in graphed.keys() {
+        let id = crate::sources::hash(
+            &serde_json::to_vec(&("sigil-flow-graph-v1", component, "logic"))
+                .expect("graph identity serialization"),
+        );
+        row(format!(
+            "(entity {} {} {} {} {})",
+            quote(&id),
+            quote("Graph"),
+            quote("flow"),
+            quote(component),
+            quote("")
+        ));
+    }
+
     for fact in facts {
         // A defect (degenerate subject/object, or an entity absent from this
         // Facet's grounding set) is reported directly from this list in
@@ -172,11 +220,39 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
                 quote(&fact.facet),
                 quote(outcome)
             )),
-            // U3 emits these: a step becomes a minted `entity` row of kind
-            // Step, and a guard becomes a relation the obligation law reads.
-            // Emitting nothing here is what keeps U1 and U2 landable on their
-            // own without a law reading a half-built table.
-            Body::Step { .. } | Body::Guard { .. } => {}
+            // A step is an entity this tool minted, so it is emitted as one.
+            // This is the single place where an `entity` row stops meaning
+            // "the design declares this" and starts meaning "the design
+            // declares this, or the tool derived it". The one law that joins
+            // `entity` filters on the literal kind "Tag", so nothing that
+            // already reads the table changes behaviour.
+            Body::Step { ordinal } => {
+                row(format!(
+                    "(entity {} {} {} {} {})",
+                    quote(&fact.id),
+                    quote("Step"),
+                    quote(&format!("step {ordinal}")),
+                    quote(&fact.component),
+                    quote(&fact.facet)
+                ));
+                row(format!(
+                    "(flow-step {} {} {})",
+                    quote(&fact.id),
+                    quote(&fact.component),
+                    quote(&fact.facet)
+                ));
+            }
+            Body::Guard {
+                step,
+                operand,
+                value,
+            } => row(format!(
+                "(flow-guard {} {} {} {})",
+                quote(&fact.id),
+                quote(&step.to_string()),
+                quote(operand),
+                quote(value)
+            )),
         }
     }
     out

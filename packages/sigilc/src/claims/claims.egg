@@ -32,7 +32,40 @@
 ; facet, outcome. Records a Facet the interpreter read but drew no commitment from.
 (relation reading (String String))
 
+; --- flow rows, re-emitted by the tool from admitted facts -------------------
+; A step, its owning component, and the Facet it was authored in. The step is
+; also an `entity` of kind Step, so the laws can read it either way; this
+; relation is the one that carries its authoring Facet.
+(relation flow-step (String String String))
+; A guard: its identity, the step ordinal it applies to, the operand kind
+; (state, input or constraint) and the operand itself.
+(relation flow-guard (String String String String))
+
 ; --- derived ----------------------------------------------------------------
+; A step and the graph of the Logic section it belongs to.
+(relation in-graph (String String))
+; A step and something it reads, writes or calls -- what the step laws join on.
+(relation flow-touches (String String))
+; Whether a step's edges reach one of its graph's declared ends.
+;
+; A lattice, not a negation. Written as "no path exists" the rule cannot fire at
+; all: absence is not derivable here. Instead every step is set to 0 when it is
+; declared and to 1 when a path is found, merged on max, and `diagnostics` reads
+; the zeros once the closure has stopped growing -- the same shape the existing
+; obligation check uses.
+(function reaches-end (String) i64 :merge (max old new))
+; A step with no path to any end, and the component whose section it is in.
+(relation unreached-step (String String))
+; Whether a graph carries a defective row, which suppresses its whole check.
+;
+; Per-row exclusion is safe for a claim, which only ever adds a derivation:
+; dropping it can lose a finding but never invent one. This check inverts that.
+; Dropping one edge severs a path and manufactures dead ends on well-formed
+; steps upstream, so the whole graph's check is suppressed instead.
+(function graph-suppressed (String) i64 :merge (max old new))
+; A graph whose check did not run, so a reader learns that rather than only
+; that a row was flagged.
+(relation suppressed-graph (String))
 (relation holds (String String String))
 ; subject, relation, object, law, witness: a claim id, or an intermediary entity.
 (relation because (String String String String String))
@@ -51,6 +84,46 @@
 ; and run clean but never actually step, silently deriving nothing.
 (ruleset closure)
 (ruleset diagnostics)
+
+; --- the flow graph ---------------------------------------------------------
+; A step belongs to the graph its own component's Logic section mints. Both are
+; entities, so this is an ordinary join rather than a shape of its own.
+(rule ((entity st "Step" l1 own s1) (entity g "Graph" l2 own s2))
+      ((in-graph st g)) :ruleset closure)
+
+; What a step does is already in `holds`: the claims are `step reads Tag`,
+; `step writes Tag`, `step invokes Tag`. No projection from bespoke rows is
+; needed, which is what removes the join every law would otherwise carry.
+(rule ((holds st rel obj) (entity st "Step" l own src))
+      ((flow-touches st obj)) :ruleset closure)
+
+; base: every declared step starts at zero, so the lattice has a value to read
+(rule ((entity st "Step" l own src)) ((set (reaches-end st) 0)) :ruleset closure)
+
+; an edge to the graph entity IS the declaration of an end. Nothing infers one:
+; a step that finishes the flow by writing state or calling outward declares
+; this edge like any other, which is what keeps a step that merely dangles
+; distinguishable from a step the prose says is finished.
+(rule ((holds st "to" g) (entity g "Graph" l own src))
+      ((set (reaches-end st) 1)
+       (because st "flow-end" g "flow-end-direct" g)) :ruleset closure)
+
+; reachability composes along edges between steps
+(rule ((holds a "to" b) (entity b "Step" l own src) (= (reaches-end b) 1))
+      ((set (reaches-end a) 1)
+       (because a "flow-end" b "flow-end-transitive" b)) :ruleset closure)
+
+; every graph starts unsuppressed; the host sets 1 where a row was defective
+(rule ((entity g "Graph" l own src)) ((set (graph-suppressed own) 0)) :ruleset closure)
+
+; read the zeros, once the closure has stabilized, and only for a graph whose
+; rows were all well formed
+(rule ((entity st "Step" l own src) (= (reaches-end st) 0) (= (graph-suppressed own) 0))
+      ((unreached-step st own)) :ruleset diagnostics)
+
+; the suppression is itself reported
+(rule ((entity g "Graph" l own src) (= (graph-suppressed own) 1))
+      ((suppressed-graph own)) :ruleset diagnostics)
 
 ; --- what a claim commits its design to -------------------------------------
 ; An authored commitment holds. An assumption does not: it is something the
