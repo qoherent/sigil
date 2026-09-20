@@ -48,6 +48,9 @@ const EXPORTED: &[(&str, usize)] = &[
     // findings to read.
     ("unreached-step", 2),
     ("suppressed-graph", 1),
+    ("constraint-governs", 2),
+    ("step-violation", 4),
+    ("unguarded-flow", 3),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
