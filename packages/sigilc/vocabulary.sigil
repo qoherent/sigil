@@ -1,0 +1,60 @@
+component SigilClaimsVocabulary {
+  goal {
+    Own the names an interpreted claim may use, and the discipline for accepting
+    returned text as data.
+  }
+
+  interface {
+    AcceptedVocabulary {
+      Publish the relation names a claim may use and the property names a
+      property or measure row may use, each with its range. The set is closed: a
+      claim, property or measure naming anything outside it is refused. A row
+      carrying no such name is governed by the admission rules of the component
+      that defines it. A generation records which accepted set a request was
+      prepared against. It is declared rather than derived, and is bumped
+      whenever the set changes so that an already-prepared request could no
+      longer satisfy it.
+    }
+
+    AtomDiscipline {
+      Returned text is accepted only as data-only egglog atoms: bytes bounded
+      before parsing and atom count before validation, every rule, command,
+      schedule and non-literal argument rejected, and the whole artifact refused
+      rather than its valid portion.
+    }
+  }
+
+  constraints {
+    AcceptedVocabulary {
+      The set is this component's own and is read from nothing while running. No
+      change elsewhere in the compiler widens what an interpretation may return,
+      and no component outside this one decides what the set contains. It always
+      carries every name the closure's laws read; a set missing one is refused
+      before any request is prepared, rather than leaving a law that never fires.
+    }
+
+    AtomDiscipline {
+      Returned text is data and is never executed as a program. No file outside
+      the compiled binary widens what is accepted.
+    }
+  }
+
+  decisions {
+    AcceptedVocabulary {
+      The set began as a copy of the compiler's ontology and deliberately does
+      not track it. Reading that ontology while running folded it into the
+      interpretation fingerprint, so an edit anywhere in the compiler invalidated
+      every prepared request; holding the two equal by test would have kept the
+      same coupling in a weaker form. Being able to diverge is the point of
+      owning the set, and it is what lets the compiler's own vocabulary be
+      replaced without touching what an interpretation may return.
+    }
+  }
+
+  cases {
+    AcceptedVocabulary {
+      A relation the compiler defines and this set omits is refused like any
+      other unknown name.
+    }
+  }
+}

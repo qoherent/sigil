@@ -46,6 +46,7 @@ fn request(roles: &[(&str, &str, &str)]) -> Request {
             facets: rows.iter().map(|r| r.facet.clone()).collect(),
         },
         rows,
+        flows: Vec::new(),
         entities: vec![
             entity(A, "Component", None),
             entity(B, "Component", None),

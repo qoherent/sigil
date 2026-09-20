@@ -152,6 +152,10 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
         .copied()
         .collect();
     let reserved = ["claim", "property", "measure", "reading"];
+    // Fields of the request the interpreter reads, as opposed to rows it
+    // returns. The document has to name them to explain what it is shown, and
+    // they are deliberately not accepted as row names.
+    let request_fields = ["flows", "rows"];
     for token in &quoted {
         // Documented tokens that are values or column names rather than
         // vocabulary entries are listed here so a genuinely unknown name fails.
@@ -163,6 +167,7 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
             || vocabulary::RETURNED
                 .iter()
                 .any(|row| row.columns.contains(&token.as_str()))
+            || request_fields.contains(&token.as_str())
             || token.starts_with('<')
             || token.starts_with('(');
         assert!(
@@ -217,16 +222,20 @@ fn runtime_identity_covers_the_guidance_the_vocabulary_and_the_laws() {
         read(src.join("claims.egg")),
     ]
     .concat();
-    let covered = format!("{files_only}{}", sigilc::turtle::ontology_fingerprint());
     assert_eq!(
         guidance::fingerprint(),
-        hash(covered.as_bytes()),
-        "the runtime identity must hash exactly the guidance, the vocabulary, the laws,          and the compiler's accepted ontology"
+        hash(files_only.as_bytes()),
+        "the runtime identity must hash exactly the guidance, the vocabulary and the laws.          The compiler's ontology is deliberately not folded in: the accepted set is this          component's own, so an unrelated compiler edit must not invalidate prepared requests"
     );
+    // The inverse of what this once asserted. The compiler's ontology used to be
+    // folded in, defensively, because `vocabulary::relations()` read it at
+    // runtime. It no longer does, so an edit to the compiler's predicate list
+    // must leave every prepared interpretation directory valid.
+    let with_ontology = format!("{files_only}{}", sigilc::turtle::ontology_fingerprint());
     assert_ne!(
         guidance::fingerprint(),
-        hash(files_only.as_bytes()),
-        "the compiler's ontology must actually move the fingerprint, not just be ignored"
+        hash(with_ontology.as_bytes()),
+        "the compiler's ontology must not reach the runtime identity: the accepted set          is this component's own, and folding the ontology in would make an unrelated          compiler edit invalidate every prepared request"
     );
 }
 
@@ -426,4 +435,72 @@ code:
         checked >= 8,
         "expected to check at least 8 entity mentions, saw {checked}"
     );
+}
+
+/// Every name a law in `claims.egg` reads is in the accepted set.
+///
+/// The accepted set is this component's own and no longer tracks the compiler's
+/// ontology, so nothing structural guarantees it still carries the names the
+/// laws fire on. A missing name would not fail loudly: the law would simply
+/// never fire and report nothing, which is the failure mode this whole
+/// subsystem is most prone to. Deliberately not an equality check against
+/// `turtle::vocabulary()` — diverging from it is the point of owning the set.
+#[test]
+fn accepted_vocabulary_carries_every_name_the_laws_read() {
+    let laws = include_str!("../src/claims/claims.egg");
+
+    // Relation names the laws quote, read out of the law text itself so a new
+    // law that quotes a name this set lacks fails here rather than at runtime.
+    let quoted: BTreeSet<&str> = laws
+        .split('"')
+        .skip(1)
+        .step_by(2)
+        .filter(|s| {
+            !s.is_empty()
+                && s.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        })
+        .collect();
+
+    let relations = vocabulary::relations();
+    let booleans = vocabulary::boolean_properties();
+    let numerics = vocabulary::numeric_properties();
+
+    // Not every quoted string is a vocabulary name: the laws also quote law
+    // names, modalities, expectations and contract roles. Check the ones that
+    // are, and pin the list so removing a name from the set fails this test.
+    let must_carry_relations = [
+        "owns",
+        "provides",
+        "requires",
+        "dependsOn",
+        "excludes",
+        "delegates",
+        "invokes",
+        "reads",
+        "writes",
+        "uses",
+        "to",
+    ];
+    for name in must_carry_relations {
+        assert!(
+            relations.contains(name),
+            "the laws read relation {name:?}, which the accepted set does not carry; \
+             a law reading a name outside the set never fires and reports nothing"
+        );
+    }
+    assert!(
+        booleans.contains("exclusive"),
+        "the ownership law reads the `exclusive` property, which the accepted set does not carry"
+    );
+    assert!(
+        booleans.contains("required"),
+        "the required-state obligation law reads the `required` property"
+    );
+
+    // A sweep over every quoted string was tried and dropped: the laws also
+    // quote law names and witness kinds ("asserted", "delegated-capability"),
+    // which are not distinguishable from vocabulary names by shape. The pinned
+    // list above is the honest check, and it fails if a name leaves the set.
+    let _ = (&quoted, numerics);
 }

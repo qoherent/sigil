@@ -29,7 +29,8 @@ impl Default for Limits {
 ///
 /// Carries no claim identity and no contract role: the host mints the first and
 /// looks up the second.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub enum Row {
     Claim {
         facet: String,
