@@ -788,3 +788,201 @@ fn a_flow_row_beside_a_rule_declaration_is_refused_whole() {
         dialect::parse("(step \"f1\" \"1\")\n(rule ((f)) ((g)))", Limits::default()).unwrap_err();
     assert!(!err.is_empty());
 }
+
+// ------------------------------------------ minting steps and graphs (U2)
+
+/// A one-source export whose component carries a Logic section.
+///
+/// Both failure modes this unit guards against end in silence rather than an
+/// error: a wrongly flagged row suppresses its whole graph's reachability
+/// check without saying so. These tests therefore assert on the *absence* of a
+/// defect, which is the thing that would go unnoticed.
+fn flow_input(paragraphs: &[&str]) -> DesignInput {
+    let path = "flow.sigil";
+    let mut text = String::from("component Flow {\n  logic {\n");
+    let mut spans = Vec::new();
+    for p in paragraphs {
+        let at = text.len() + 4;
+        text.push_str(&format!("    {p}\n"));
+        spans.push((at, at + p.len()));
+    }
+    text.push_str("  }\n}\n");
+    let id = format!("urn:sigil:component:{path}:Flow");
+    let units: Vec<Value> = spans
+        .iter()
+        .map(|(s, e)| {
+            json!({"id": format!("facet:{path}:{s}"), "source": path, "owner": id,
+                   "section": "logic", "range": {"start": s, "end": e},
+                   "proseRange": {"start": s, "end": e}, "grouping": null,
+                   "introductions": [], "references": [], "links": [],
+                   "payload": null, "valid": true, "complete": true})
+        })
+        .collect();
+    DesignInput::parse(
+        &serde_json::to_vec(&json!({
+            "schemaVersion": 2, "languageVersion": "0.8.0", "frontendVersion": "test",
+            "sources": [{"path": path, "text": text}],
+            "context": [
+                {"path": ".sigil/config.json", "text": "{\"sigilVersion\":\"0.8.0\"}"},
+                {"path": ".sigil/local.json", "text": null},
+                {"path": ".sigil/glossary.json", "text": null}
+            ],
+            "diagnostics": [], "entities": [json!({
+                "id": id, "type": "Component", "label": "Flow", "source": path, "owner": null,
+                "range": {"start": 0, "end": text.len()},
+                "nameRange": {"start": 10, "end": 14},
+                "identityResolved": true, "valid": true, "complete": true})],
+            "units": units, "imports": [], "groups": [], "introductions": [],
+            "references": [], "links": []
+        }))
+        .unwrap(),
+    )
+    .unwrap()
+}
+
+fn facets_of(input: &DesignInput) -> Vec<String> {
+    let mut ids: Vec<String> = input.units.iter().map(|u| u.id.clone()).collect();
+    ids.sort_by_key(|id| id.rsplit(':').next().unwrap().parse::<usize>().unwrap());
+    ids
+}
+
+#[test]
+fn a_self_edge_is_a_loop_and_not_a_degenerate_claim() {
+    // A step whose edge returns to itself is an ordinary shape in a looping
+    // flow. Flagged degenerate, it would suppress the whole graph's dead-end
+    // check -- silently, because a defect is reported and the check simply
+    // stops running.
+    let input = flow_input(&["first", "second"]);
+    let f = facets_of(&input);
+    let artifact = format!(
+        r#"(step "{0}" "1")
+           (claim "{0}" "step:1" "to" "step:1" "required" "true")"#,
+        f[0]
+    );
+    let facts = accept(&input, "flow.sigil", &artifact).unwrap();
+    let edge = facts
+        .iter()
+        .find(|x| matches!(x.body, Body::Claim { .. }))
+        .unwrap();
+    assert!(
+        edge.defects.is_empty(),
+        "a self-edge between steps is a loop, not a claim that says nothing: {:?}",
+        edge.defects
+    );
+}
+
+#[test]
+fn a_claim_about_a_minted_step_is_grounded_by_construction() {
+    // A minted step is in no Facet's resolved references, so checking it the
+    // ordinary way would flag every flow claim -- and suppress every graph's
+    // check without erroring.
+    let input = flow_input(&["first", "second"]);
+    let f = facets_of(&input);
+    let artifact = format!(
+        r#"(step "{0}" "1")
+           (step "{1}" "2")
+           (claim "{0}" "step:1" "to" "step:2" "required" "true")
+           (claim "{1}" "step:2" "to" "graph" "required" "true")"#,
+        f[0], f[1]
+    );
+    let facts = accept(&input, "flow.sigil", &artifact).unwrap();
+    assert_eq!(facts.len(), 4);
+    for fact in &facts {
+        assert!(
+            fact.defects.is_empty(),
+            "minted steps and graphs ground in their own section: {:?}",
+            fact.defects
+        );
+    }
+}
+
+#[test]
+fn an_ordinary_claim_is_still_checked_for_degeneracy_and_grounding() {
+    // The carve-outs narrow the checks; they must not disable them.
+    let input = shared_input();
+    let facts = accept(
+        &input,
+        BASE,
+        &format!(r#"(claim {BASE_INTERFACE:?} "Base" "requires" "Base" "required" "true")"#),
+    )
+    .unwrap();
+    assert!(
+        facts[0].defects.contains(&Defect::Degenerate),
+        "same subject and object between declared entities still asserts nothing"
+    );
+}
+
+#[test]
+fn two_steps_of_one_section_may_not_share_an_ordinal() {
+    // An ordinal is a step's position across the section, so it names exactly
+    // one step. Without this a bare ordinal does not resolve to one identity.
+    let input = flow_input(&["first", "second"]);
+    let f = facets_of(&input);
+    let artifact = format!(r#"(step "{0}" "1") (step "{1}" "1")"#, f[0], f[1]);
+    let err = accept(&input, "flow.sigil", &artifact).unwrap_err();
+    assert!(err.contains("ordinal 1"), "got: {err}");
+    assert!(
+        err.contains(&f[0]) && err.contains(&f[1]),
+        "names both: {err}"
+    );
+}
+
+#[test]
+fn a_row_naming_an_undeclared_step_is_refused() {
+    let input = flow_input(&["first"]);
+    let f = facets_of(&input);
+    let artifact = format!(
+        r#"(step "{0}" "1")
+           (claim "{0}" "step:1" "to" "step:9" "required" "true")"#,
+        f[0]
+    );
+    let err = accept(&input, "flow.sigil", &artifact).unwrap_err();
+    assert!(err.contains("never declares"), "got: {err}");
+}
+
+#[test]
+fn steps_at_different_ordinals_mint_different_identities() {
+    let input = flow_input(&["first", "second"]);
+    let f = facets_of(&input);
+    let artifact = format!(r#"(step "{0}" "1") (step "{1}" "2")"#, f[0], f[1]);
+    let facts = accept(&input, "flow.sigil", &artifact).unwrap();
+    assert_ne!(facts[0].id, facts[1].id);
+}
+
+#[test]
+fn a_guards_state_operand_grounds_and_its_input_operand_does_not() {
+    let input = flow_input(&["first"]);
+    let f = facets_of(&input);
+    // An input value is a literal. A design that never declares `requestId`
+    // must still accept a guard comparing against it.
+    let artifact = format!(
+        r#"(step "{0}" "1")
+           (guard "{0}" "1" "input" "requestId")"#,
+        f[0]
+    );
+    let facts = accept(&input, "flow.sigil", &artifact).unwrap();
+    let guard = facts
+        .iter()
+        .find(|x| matches!(x.body, Body::Guard { .. }))
+        .unwrap();
+    assert!(
+        guard.defects.is_empty(),
+        "an input value never resolves as an entity"
+    );
+}
+
+#[test]
+fn a_guard_naming_an_unpresented_constraint_facet_is_refused() {
+    let input = flow_input(&["first"]);
+    let f = facets_of(&input);
+    let artifact = format!(
+        r#"(step "{0}" "1")
+           (guard "{0}" "1" "constraint" "facet:elsewhere.sigil:1")"#,
+        f[0]
+    );
+    let err = accept(&input, "flow.sigil", &artifact).unwrap_err();
+    assert!(
+        err.contains("not a Facet this request presented"),
+        "got: {err}"
+    );
+}
