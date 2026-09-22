@@ -367,7 +367,8 @@ the authority on how they relate:
 
 - **Sigil language and `.sigil/config.json` schema** — currently 0.8.0, owned by
   the single literal in [`spec/language.sigil`](spec/language.sigil).
-- **Package artifacts** — currently 0.8.0, owned by each `packages/*/deno.json`.
+- **Package artifacts** — independently versioned, owned by each package manifest
+  (`core` 0.8.0, `cli` 0.9.0, and `lsp` 0.8.0).
 - **VS Code extension** — owned by its `package.json`.
 - **Agent skills** — each owns `VERSION` and `compatibility.json` in its
   `integrations/skills/<name>/` directory. New 0.8 design skills declare language

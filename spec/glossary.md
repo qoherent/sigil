@@ -257,11 +257,12 @@ does not change Tag recognition in unchanged introducing prose. An enclosing
 Concept Tag heading can group the Facet under a local Tag. The fenced content
 retains its meaning and contract role in its own notation.
 
-### Concept identifier
+### Tag identity
 
-The historical name for a Concept block's heading. In the Tag revision this
-role is a **Concept Tag**, with the existing bare heading syntax retained.
-The old parser's identifier fields are implementation migration details.
+A component-owned Tag identity introduced inline or by a grouping heading. The
+historical 0.7 name was a Concept identifier; current 0.8 contracts use the
+Tag identity and ownership model. A grouping heading is a **Concept Tag**, with
+the existing bare heading syntax retained.
 
 ### Tag
 

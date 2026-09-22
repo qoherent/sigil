@@ -26,9 +26,8 @@ optional sections, Tags, exhaustive edge cases, helper decomposition, and a
 mapping to each code declaration are not completion requirements.
 
 Do not run or claim 0.8 compiler validation through legacy 0.7 tooling. The
-configuration examples still describe the implemented 0.7 version; their
-workspace discovery rules apply without changing the current workspace version.
-Do not import legacy expansion, public namespace, or module-index rules into 0.8.
+configuration references describe the implemented 0.8 workspace contract. Do not
+import legacy expansion, public namespace, or module-index rules into 0.8.
 
 Return a concise explanation with evidence anchors and material limitations.
 Understanding does not modify the source, establish implementation conformance,

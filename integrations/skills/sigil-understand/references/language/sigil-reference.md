@@ -547,9 +547,8 @@ Attaching a payload must not change recognition in unchanged introductory prose.
 Sigil sources are selected by a strict JSON `.sigil/config.json` at the workspace
 root. The config selects language version and file discovery; its detailed
 contract is [workspace configuration](sigil-config.md), with the
-[configuration schema](sigil-config.schema.json). These configuration artifacts
-currently show the implemented 0.7 version; their discovery rules continue to
-apply, while a 0.8 source requires a tool that supports that version.
+[configuration schema](sigil-config.schema.json). These artifacts define the
+implemented 0.8 workspace version and its discovery rules.
 
 The workspace root is the directory containing `.sigil`, whose `config.json`
 controls it. A project is a coherent app, service, library, package, or system
@@ -951,4 +950,3 @@ and diagnostic conditions above. A syntax-only parser can claim syntax support,
 but not workspace resolution or semantic interpretation. It must label checks
 it does not perform. A reference example that requires external material is not
 fully interpreted merely because its source parses.
-

@@ -333,7 +333,7 @@ last-known local anchors
     ↓
 correspondence closure
     ↓
-Concepts + Facets
+Tags + Facets
     ↓
 Sigil contracts
     ↓
@@ -501,16 +501,17 @@ The expensive part, LLM semanticization, is incremental. The deterministic circu
 
 ---
 
-## Concepts and Facets
+## Tags and Facets
 
-A **Concept** is the semantic thing that persists across contracts and source languages.
+A **Tag** gives a semantic concern a reusable identity owned by its component.
 
-A **Facet** is one named contribution to that Concept.
+A **Facet** is one named contribution associated with that Tag, or an ungrouped
+contribution when no reusable identity is needed.
 
 For example:
 
 ```text
-Concept: Authentication
+Tag: Authentication
 
 ├── Interface Facet
 │   login interaction
@@ -542,7 +543,7 @@ while specifically:
 realize Authentication.Login
 ```
 
-Implementing the Concept does not magically realize every Facet.
+Referencing or implementing a Tag does not magically realize every Facet.
 
 Correspondence alone also proves no behavior.
 
@@ -811,7 +812,7 @@ The compact `SKILL.md` dispatches into progressive references. The
 reference defines root discovery, configuration-state handling, initialization,
 and compatibility validation. The
 [authoring conventions](integrations/skills/sigil/references/authoring-conventions.md)
-reference owns section discipline, concept identifiers, decision rationale, and
+reference owns section discipline, Tag identities, decision rationale, and
 colocation. The reference file at
 [integrations/skills/sigil/references/sigil-format.md](integrations/skills/sigil/references/sigil-format.md)
 is a concise agent-facing guide. The
