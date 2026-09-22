@@ -8,7 +8,7 @@ This note is language background for a claims interpreter. It does not replace t
 - This skill is binding for egglog/datalog language (what a fact, relation, rule, or schedule is).
 - `sigil-understand` is binding for the Sigil design being read.
 
-Do not restated column tables here. Copy row shapes from the request's `vocabulary.md`.
+Do not restate column tables here. Copy row shapes from the request's `vocabulary.md`.
 
 ## Data only
 
