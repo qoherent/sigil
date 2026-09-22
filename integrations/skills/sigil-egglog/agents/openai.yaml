@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Egglog"
+  short_description: "Egglog/datalog for claims rows and law programs"
+  default_prompt: "Use $sigil-egglog to teach egglog/datalog as this repository pins it: data-only claims rows for interpreters, and authoring or review of .egg law programs."

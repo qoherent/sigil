@@ -13,13 +13,15 @@ Current integrations:
   identities and evidence-backed diagnostics.
 - `skills/sigil-write`: compact authoring with independent evaluator delegation,
   supported autonomous corrections, and explicit unresolved decisions.
+- `skills/sigil-egglog`: egglog/datalog language instruction for claims interpreters
+  and law authors; no design-skill dependency.
 - `skills/sigil`: preserved legacy Sigil 0.7 native workflow (artifact 0.9.0).
   Its existing native compiler prerequisites apply to this entry point.
 
-All four valid skills ship with CLI releases. `sigil skill install` installs the
-complete catalog globally; `--project` installs locally. The three 0.8 skills
+All five valid skills ship with CLI releases. `sigil skill install` installs the
+complete catalog globally; `--project` installs locally. The three 0.8 design skills
 start at 0.1.0 and require their declared siblings to remain together. They need
-no compiler for design work. If a host cannot delegate review, the writer returns
+no compiler for design work. `sigil-egglog` is a language skill, not a design sibling. If a host cannot delegate review, the writer returns
 an independently unreviewed draft and a portable review handoff.
 
 Other integrations:
