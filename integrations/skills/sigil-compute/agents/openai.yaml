@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Compute"
+  short_description: "Computed claims evaluation for existing 0.8 designs"
+  default_prompt: "Use $sigil-compute to run the claims loop on an existing Sigil 0.8 design and hand back its ingest state and findings report."
