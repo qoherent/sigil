@@ -54,8 +54,11 @@ Use this fixture:
 
 - [Computed evaluation](computed-evaluation-fixture.md): routing, actual
   Coherent, flow-only Loose, and contradiction Disjoint deliveries, source
-  resolution, tool-owned closure, memo reuse against interruption, and a live
-  edit bound to the captured snapshot.
+  resolution, tool-owned closure, memo reuse against interruption, a live edit
+  bound to the captured snapshot, and the failure cases — refused artifacts
+  beside a valid Disjoint, missing prerequisites, non-conforming children
+  without repair or retry, input and payload mismatches, a post-report
+  operational failure, and per-run private-root isolation.
 
 ## Fault injection and limits
 

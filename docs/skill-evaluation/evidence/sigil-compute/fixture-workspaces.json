@@ -1,0 +1,33 @@
+{
+ "note": "Materialized fixture workspace design bytes, serialized verbatim (the temp evaluation tree is not part of the repository). The corrected 0.8 grammar (each Tag defined inline once, referenced plainly afterward) lives in the committed fixture.",
+ "workspaces": {
+  "base.sigil": {
+   "sha256": "8b726d5cd9fc0713aca6e597df594d5d64279cc953330f58e840560c48aada12",
+   "bytes": "component Base {\n  goal {\n    Own provider vocabulary.\n  }\n  interface {\n    A *value* and *result* exist.\n  }\n  constraints {\n    Preserve value and result.\n  }\n}\n"
+  },
+  "consumer.sigil": {
+   "sha256": "8007f0ab8edbd592cf66a3c98be0f005de67ac39cca1cdfb29bc755309e472e7",
+   "bytes": "@base.sigil from Base import { value, result }\ncomponent Consumer {\n  goal {\n    Serve the caller.\n  }\n  interface {\n    Use value and result.\n  }\n}\n"
+  },
+  "pipeline.sigil": {
+   "sha256": "2386b6204e8261a21afb9fab405d767203a03ffb755c532d470bca01936251a4",
+   "bytes": "component Pipeline {\n  goal {\n    Move a job from submission to a finished *report*.\n  }\n  interface {\n    Accept a job for processing.\n  }\n  logic {\n    Compute the *audit* digest and store it for later inspection.\n    Then return the finished report to the caller.\n  }\n  constraints {\n    Preserve every accepted audit digest.\n  }\n}\n"
+  },
+  "gate.sigil": {
+   "sha256": "ac4ff969d002234920d0aff8aa0eb3c95584b464c0da25d071352f78b5ef49bf",
+   "bytes": "component Gate {\n  goal {\n    Own the gate vocabulary.\n  }\n  interface {\n    Provide a *token* on every call.\n  }\n  constraints {\n    The gate does not provide a token.\n  }\n}\n"
+  },
+  "ws6-edited-base.sigil": {
+   "sha256": "eb2e074ff6abe7ff65a55c7d5bcbe01ef8cd65b23d38c6d1fe15ba0f269de95d",
+   "bytes": "component Base {\n  goal {\n    Own provider vocabulary.\n  }\n  interface {\n    A *value* and *result* exist.\n  }\n  constraints {\n    The base does not provide a value.\n  }\n}\n"
+  },
+  "1b-revised-export.sigil": {
+   "sha256": "c39786c1ff457e3f0c2c8ce9143b381d64db51ab8709fcd69114768a26797788",
+   "bytes": "component ExportArchive {\n  goal {\n    Keep completed exports available for later download.\n  }\n  interface {\n    Let an authorized user download a retained export.\n    Downloading preserves the retained export for later downloads.\n  }\n  constraints {\n    Only authorized users may download an export.\n  }\n}\n"
+  },
+  "2a-child-artifact": {
+   "sha256": "af69caeb7527f47659c1c71723b9ec3e1683d43df85fae22c62e27d9c31e2d17",
+   "bytes": "(reading \"facet:base.sigil:26\" \"no-commitment\")\n(claim \"facet:base.sigil:73\" \"Base\" \"provides\" \"value\" \"required\" \"true\")\n(claim \"facet:base.sigil:73\" \"Base\" \"provides\" \"result\" \"required\" \"true\")\n(claim \"facet:base.sigil:127\" \"Base\" \"owns\" \"value\" \"required\" \"true\")\n(claim \"facet:base.sigil:127\" \"Base\" \"owns\" \"result\" \"required\" \"true\")\n"
+  }
+ }
+}

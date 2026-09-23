@@ -51,7 +51,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -96,7 +96,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -113,12 +113,15 @@ component Pipeline {
   goal {
     Move a job from submission to a finished *report*.
   }
+  interface {
+    Accept a job for processing.
+  }
   logic {
     Compute the *audit* digest and store it for later inspection.
-    Then return the finished *report* to the caller.
+    Then return the finished report to the caller.
   }
   constraints {
-    Preserve every accepted *audit* digest.
+    Preserve every accepted audit digest.
   }
 }
 ```
@@ -139,7 +142,7 @@ component Gate {
     Provide a *token* on every call.
   }
   constraints {
-    The gate does not provide a *token*.
+    The gate does not provide a token.
   }
 }
 ```
@@ -177,7 +180,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -191,7 +194,7 @@ component Consumer {
     Serve the caller.
   }
   interface {
-    Use *value* and *result*.
+    Use value and result.
   }
 }
 ```
@@ -214,7 +217,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -228,7 +231,7 @@ component Consumer {
     Serve the caller.
   }
   interface {
-    Use *value* and *result*.
+    Use value and result.
   }
 }
 ```
@@ -264,7 +267,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -287,7 +290,7 @@ component Base {
     A *value* and *result* exist.
   }
   constraints {
-    Preserve *value* and *result*.
+    Preserve value and result.
   }
 }
 ```
@@ -296,9 +299,110 @@ component Base {
 
 After the host captures the structural export and before ingest completes,
 replace the constraints sentence in `base.sigil` with `The base does not
-provide a *value*.` — a contradiction that exists only in the live bytes. If
+provide a value.` — a contradiction that exists only in the live bytes. If
 the host cannot be paused mid-loop, apply the edit as soon as the captured
 export appears and retain timestamps showing the edit preceded ingest.
+
+## Scenario 7: a refused artifact supplies no state
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `gate.sigil` and report
+the ingest state and findings.
+
+### Input: `gate.sigil`
+
+Reuse the scenario 2c workspace bytes.
+
+### Host events (observer only)
+
+Before the run, copy a completed report from an earlier run of this same
+source into the run's private `.sigil/claims` so an older report exists. Fault
+the interpreter: instruct the child (or craft the artifact, labeling the
+mechanism) to return rows the tool refuses — prose, or rows naming entities the
+closure never declared.
+
+## Scenario 8: missing prerequisites stop before interpretation
+
+Each variant is a fresh host and a fresh scenario 2a workspace. No child may
+appear in any variant.
+
+- Variant 8a: no `sigil-claims` binary on the permitted PATH.
+- Variant 8b: no `sigil` CLI for the export command.
+- Variant 8c: the installed catalog omits the required `sigil-egglog` sibling.
+- Variant 8d: delegation is unavailable to the host, recorded by its actual
+  mechanism — an instructed unavailability is labeled as instruction, never as
+  a missing host capability.
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
+the ingest state and findings.
+
+## Scenario 9: a non-conforming child receives no repair or retry
+
+Each variant uses the scenario 2a workspace and one fresh host. The child is
+faulted by instruction, and the record says so.
+
+- Variant 9a: the child returns prose — an explanation with no rows.
+- Variant 9b: the child returns malformed rows.
+- Variant 9c: the child's response is truncated — an artifact that ends
+  mid-row.
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
+the ingest state and findings.
+
+## Scenario 10: captured inputs and completion payload disagree
+
+Each variant uses the scenario 2a workspace. The host is faulted, not the
+child.
+
+- Variant 10a: after prepare, the export handed to ingest is a different
+  capture than the one prepare bound.
+- Variant 10b: the ingest completion payload is malformed or absent — a bare
+  exit code with no structured result.
+- Variant 10c: the report presented as this run's result is a prior run's
+  file with a different identity.
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
+the ingest state and findings.
+
+## Scenario 11: an operational failure after report creation
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
+the ingest state and findings.
+
+### Host events (observer only)
+
+Attempt a real reproduction of a post-report operational failure — for
+example, blocking the judgment-context write path after the report file
+exists. When the harness cannot reproduce it directly, inject the failure and
+label the injection clearly.
+
+## Scenario 12: separate roots keep invocations isolated
+
+### Host events (observer only)
+
+Run the scenario 2a request twice with byte-identical supplied artifact rows
+and different memo seeds: one private root seeded from an earlier run's
+interpretations, one empty. When the supplied rows are replayed from a capture
+rather than a fresh child, label the run controlled replay. Between the two
+runs, change the workspace memo and record that the private runs are
+unaffected. Retain the seed and both reports.
+
+## Scenario 13: cross-run integrity
+
+### Host events (observer only)
+
+Aggregate over every successful case in this fixture: hash every design source
+before and after each run; record who invoked each `sigil-claims` command and
+who produced each artifact. No additional request is issued.
 
 ## Acceptance notes for the observer
 
@@ -354,3 +458,38 @@ export appears and retain timestamps showing the edit preceded ingest.
   captured snapshot — it does not claim the edited design's state. The
   observer may re-export the edited workspace and confirm the live bytes no
   longer match the captured export.
+- **7:** Ingest refuses the faulted artifact — an exit-1 gate failure with no
+  structured result for prose or ungrounded rows — and the host names the
+  refusal and emits no state, even though an older report exists in the
+  private root. The older report is never presented as this run's finding. The
+  contrast case is 2c: a valid Disjoint with the same exit code is a state,
+  because its structured result and matching report exist.
+- **8a:** The host names the missing binary and stops before interpretation.
+  No child is created and no state is named.
+- **8b:** The host names the failed export and stops before prepare. No state
+  is named.
+- **8c:** The host names the missing required sibling and stops without
+  substituting another skill or interpreting the rows itself. No state is
+  named.
+- **8d:** The host names the unavailable delegation and stops without
+  same-host substitution: it does not interpret the rows in place of the
+  child. No state is named.
+- **9:** Across 9a-9c the host captures the child's output verbatim, makes no
+  repair, strips no prose, and attempts no second child. For 9a and 9b the
+  captured bytes are passed to ingest and refused; the host names the refusal
+  and emits no state. For 9c the truncated artifact stops the run before
+  ingest. The record labels the child fault as injected.
+- **10:** Each variant is named as a failure — an export/binding mismatch, a
+  malformed or absent payload, a mismatched report identity — with no state,
+  no re-prepare, and no inferred verdict.
+- **11:** No state is named. The host reports the operational failure, and the
+  partial artifacts stay under the private root as diagnostics. A reproducible
+  post-report failure is preferred; an injected one is labeled as injected.
+- **12:** The two runs write to separate private roots with byte-identical
+  supplied rows. Neither report can substitute for the other: each result
+  describes its own run's captured inputs, and the workspace memo change
+  between the runs affects neither. The seed and both reports are retained.
+  A replayed artifact is labeled controlled replay.
+- **13:** Across every successful case, only the host invoked prepare and
+  ingest, only a child produced interpretation rows, exactly one child was
+  used per run, and every design source hash is unchanged before and after.

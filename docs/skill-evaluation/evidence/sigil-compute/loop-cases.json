@@ -1,0 +1,114 @@
+{
+  "note": "Live full-loop runs of the claims protocol. Host role per case is recorded; every interpreter child was fresh and received only the prepared handoff (installed skill entrypoints, preparation directory, task). Fixture scenarios 2a-2c, 3a, 3b, 4, 5a, 6. Workspace design bytes are serialized in fixture-workspaces.json.",
+  "sharedIdentity": {
+    "guidanceFingerprint": "29f869c70d6f855349bb8995ae9d493a6365c5bb044338d166a80f27f7a9a151",
+    "vocabularyGeneration": 2,
+    "reportVersion": 2,
+    "bindingDigestBaseSigil": "8f5e054cdd8826e27bad3f56d7319e2e3fb5b763a82c6f89a7b12d420955772a",
+    "exportDigestBaseSigil": "fa59eb1e5ad3148ad41ff831ed092bc6c6f1b2e8661731fa9b7a0de5adfb5c9c",
+    "blake3Unavailable": "no local b3sum/blake3 tool at orchestrator depth; artifact bytes are retained and the report's recorded interpretation digests are compared to the result identity; the first 8b host independently recomputed BLAKE3 from the local cargo cache and matched (see routing-cases.json)"
+  },
+  "cases": {
+    "2a-coherent": {
+      "fixtureScenario": "2a", "request": "Use $sigil-compute to run a computed claims check on base.sigil and report the ingest state and findings.",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f3102e7a6ffeH5nKCSMiBZ73qD",
+      "designSource": "base.sigil sha256 8b726d5cd9fc0713aca6e597df594d5d64279cc953330f58e840560c48aada12 (unchanged before/after)",
+      "steps": [
+        {"step": "seed", "observed": "workspace .sigil/claims/interpretations absent; private root starts empty; no writes to the workspace store"},
+        {"step": "export", "observed": "sigil export design . exit 0, zero diagnostics, one source base.sigil"},
+        {"step": "prepare", "observed": "exit 0; 3 facets, 0 reusedUnits; binding/request/guidance written (sections.md, vocabulary.md, examples.md, rejected.md)"},
+        {"step": "child", "observed": "one fresh child returned 5 data-only rows with explicit completion; host captured the fenced rows byte-verbatim as child-response.txt sha256 af69caeb7527f47659c1c71723b9ec3e1683d43df85fae22c62e27d9c31e2d17; the child's prose preamble is not part of the artifact and was not stripped from any row"},
+        {"step": "ingest", "observed": "exit 0; structured result state coherent, findings 0, source base.sigil, report written under the private root"},
+        {"step": "verify", "observed": "report identity matches the captured binding on source, state, version, exportDigest, guidanceFingerprint, vocabularyGeneration; identity.interpretations=[8e993046c082412e72e054a25b6ffdd6a042f3c49d68fe821c874830c08da859] (the tool's digest of the supplied artifact bytes); workspace store untouched; source hash unchanged"}
+      ],
+      "handback": "Coherent, no findings, selected source base.sigil, snapshot identity exportDigest fa59eb1e..., seeded store empty",
+      "acceptance": "met"
+    },
+    "2b-first-attempt": {
+      "fixtureScenario": "2b", "note": "recorded failed attempt, preserved per the fixture's rerun rule",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30f188b3ffeuf6LdfRLQzzun4",
+      "observed": "the child read both logic steps as reaching the flow's end (both steps asserted a 'to graph' edge); ingest exit 0 state coherent findings 0",
+      "acceptance": "unmet by this attempt: no flow finding appeared; the flow-only Loose expectation required a dead-end reading. Rerun below."
+    },
+    "2b-rerun-flow-loose": {
+      "fixtureScenario": "2b", "request": "same as 2a but on pipeline.sigil",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30d468a6ffe9aIhRdCtNYJ5kg (identical handoff, no steering beyond the binding guidance)",
+      "designSource": "pipeline.sigil sha256 2386b6204e8261a21afb9fab405d767203a03ffb755c532d470bca01936251a4",
+      "steps": [
+        {"step": "prepare", "observed": "4 facets, 0 reused"},
+        {"step": "child", "observed": "asserted steps 1 and 2 with only step 2 edging to the flow's declared end; step 1 (compute+store audit) leads nowhere"},
+        {"step": "ingest", "observed": "exit 0; state loose; findings 1: class flow, law unreached-step, section logic"}
+      ],
+      "handback": "Loose with a flow-class warning (a dead-end step), never Disjoint",
+      "acceptance": "met by the rerun; both attempts retained"
+    },
+    "2c-contradiction-disjoint": {
+      "fixtureScenario": "2c", "request": "same shape, on gate.sigil",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30f188b2ffe1NXSLEGgt5d8uZ",
+      "designSource": "gate.sigil sha256 ac4ff969d002234920d0aff8aa0eb3c95584b464c0da25d071352f78b5ef49bf",
+      "steps": [
+        {"step": "child", "observed": "asserted provides token required true (interface facet) and provides token required false (constraints facet)"},
+        {"step": "ingest", "observed": "exit 1 WITH a structured result: state disjoint, findings 3, report written under the private root"}
+      ],
+      "findings": "3 contradictions: two contradictory-claims (sections interface and constraints) and one negated-claim-holds (constraints); the findings cite both facets that authored the disagreeing commitments",
+      "handback": "Disjoint with the contradiction findings; the exit code alone is not the verdict — the structured result and matching report are",
+      "acceptance": "met"
+    },
+    "3a-and-4-explicit-source-and-closure": {
+      "fixtureScenario": "3a + 4 (one observed run serves both)", "request": "Use $sigil-compute to run a computed claims check on consumer.sigil.",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30f188abffe4B8AcOb8nCrjha",
+      "designSources": {"base.sigil": "8b726d5c...", "consumer.sigil": "8007f0ab8edbd592cf66a3c98be0f005de67ac39cca1cdfb29bc755309e472e7"},
+      "steps": [
+        {"step": "source-resolution", "observed": "explicit source consumer.sigil resolved to the exact sources[].path value; no source question asked"},
+        {"step": "prepare", "observed": "5 facets presented (the selected source plus its imported provider closure), 0 reused"},
+        {"step": "binding", "observed": "binding.closure = [base.sigil, consumer.sigil]; binding.source = consumer.sigil"},
+        {"step": "child", "observed": "the child's rows cover the provider's facets (facet:base.sigil:73 etc.) — it saw the closure as context"},
+        {"step": "ingest", "observed": "exit 0; state coherent; result source consumer.sigil"}
+      ],
+      "handback": "Coherent attributed to consumer.sigil alone; the provider base.sigil is closure context, never claimed as evaluated; no workspace-wide verdict",
+      "acceptance": "3a met; 4 met"
+    },
+    "3b-sole-source-fresh-host": {
+      "fixtureScenario": "3b", "request": "Use $sigil-compute to run a computed claims check on this design and report the ingest state and findings. (no source named; workspace ws-2a holds exactly one source)",
+      "host": "fresh subagent ses_f306c5e8effd7xLz0SOLxWZQ9o — resolved the sole source itself with no question, captured the export, prepared, delegated, ingested, and verified identity end to end",
+      "child": "fresh `opencode run` session (the host found the CLI delegation route on its own); the host's audit note records that the child also read sibling run records it found in the evaluation tree before finalizing rows — child provenance therefore contaminated; the input-to-report linkage is digest-verified regardless",
+      "observed": "no source question; prepare ran with --source base.sigil; ingest exit 0 state coherent findings 0; report identity verified against the binding (exportDigest fa59eb1e..., guidance fingerprint and vocabulary generation match)",
+      "acceptance": "met for the sole-source observable (host-side, before any child involvement); the state handback is corroborating evidence only, given the child-provenance label"
+    },
+    "5a-memo-reuse-empty-artifact": {
+      "fixtureScenario": "5a", "request": "computed check on base.sigil; workspace store pre-seeded from the 2a run's private interpretations",
+      "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30f188aaffeT9dgnSIat9m1n7",
+      "steps": [
+        {"step": "seed", "observed": "workspace .sigil/claims/interpretations populated from runs/2a private-root interpretations; run's private root seeded from it per KTD3; seed retained"},
+        {"step": "prepare", "observed": "0 facets presented, 3 units reused"},
+        {"step": "child", "observed": "exactly one fresh child; it confirmed the request presented zero rows and returned an explicitly-completed EMPTY artifact ('empty on purpose')"},
+        {"step": "ingest", "observed": "exit 0; state coherent, findings 0 — matching the seeding run's state"}
+      ],
+      "handback": "Coherent with snapshot identity including the seeded store",
+      "acceptance": "met (workspace-store byte-identity before/after is evidenced by the recorded pre-hash, the tool's root-scoped write path, and the scenario-12 isolation demonstration; the direct post-run byte check was superseded by the scenario-12 workspace mutation, recorded here honestly)"
+    },
+    "6-premature-attempt": {
+      "fixtureScenario": "6", "note": "runner sequencing error, preserved per the fixture's failed-attempt rule",
+      "observed": "the host ran ingest BEFORE applying the observer's live edit; a complete coherent run resulted, but the scenario's edit-before-ingest sequencing was violated. No evidence value for scenario 6; superseded by 6b."
+    },
+    "6b-live-edit-bound-to-snapshot": {
+      "fixtureScenario": "6 (primary evidence)", "request": "computed check on base.sigil",
+      "host": "evaluation orchestrator acting as host", "child": "the 6-run's fresh child ses_f30f188aaffdlj8XHiAeDQz4nh; its artifact was captured before the edit and reused against a fresh preparation of the same captured export",
+      "steps": [
+        {"step": "capture+prepare", "observed": "export captured (frontend.json), prepare into a fresh private root; then the OBSERVER edited ws-6/base.sigil ('Preserve value and result.' -> 'The base does not provide a value.'), hash eb2e074ff6abe7ff65a55c7d5bcbe01ef8cd65b23d38c6d1fe15ba0f269de95d, before ingest"},
+        {"step": "ingest", "observed": "exactly one ingest against the captured snapshot: exit 0, state coherent, findings 0"},
+        {"step": "verify", "observed": "the report's identity.exportDigest equals the captured binding's fa59eb1e...; a fresh prepare over a re-export of the EDITED workspace binds 5126d2e28a4198ce... — the live bytes provably differ from what the result describes; no re-export, no retry"}
+      ],
+      "handback": "Coherent describing the captured snapshot, explicitly not the edited design",
+      "acceptance": "met"
+    },
+    "8b-observed-fresh-host-full-loop": {
+      "fixtureScenario": "unexpected observation recorded (see routing-cases.json 8b for the variant record)",
+      "host": "fresh subagent ses_f30ab6f0bffe4f7zjYPQ8oB7Nw — told no sigil CLI existed; it found the ~/.deno/bin/sigil shim, verified it, and completed a full fresh-host loop",
+      "child": "fresh `opencode run` session (ses_f30a23a86ffetuzgYSLRp1qwJt per the host's session export); the host's client call timed out but it monitored the single child session to completion rather than respawning",
+      "observed": "export -> prepare (3 facets, 0 reused) -> one fresh child returning 5 rows with completion statement -> ingest exit 0 state coherent findings 0; the host verified every identity field AND independently recomputed the artifact's BLAKE3 from the local cargo cache (5dc383c0c35da30451f6bd3ac07e0e0eaf1f916a73a5d045581f07b990347dc3) matching identity.interpretations",
+      "independentlyVerifiedByOrchestrator": "report state/source match the result; exportDigest matches the binding; artifact bytes present (340 chars)",
+      "acceptance": "not a fixture scenario; recorded as the strongest fresh-host full-loop evidence and as an environment lesson (the export premise of variant 8b was false in this environment)"
+    }
+  }
+}

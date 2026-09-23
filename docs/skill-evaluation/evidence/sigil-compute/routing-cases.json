@@ -1,0 +1,60 @@
+{
+  "note": "Fresh-host routing and prerequisite cases. Each host was a fresh subagent with no prior conversation, given only: the installed catalog path, the request, its workspace, and the actual tool availability stated per case. Fixture scenarios 1a, 1b, 3c, 3d, 8a-8d.",
+  "cases": {
+    "1a-generic-review-stays-advisory": {
+      "fixtureScenario": "1a (AE1)", "host": "fresh subagent ses_f30b66593ffe413SLS33IGgYkn",
+      "request": "Review .../ws-1a/base.sigil and tell me whether this design holds together.",
+      "observed": "the host performed an advisory review following sigil-evaluate's review contract (loaded sigil-evaluate + sigil-understand entrypoints); ran read-only mechanical validation (check, fmt --check, all exit 0); presented a design-review record with zero findings; no sigil-claims command ran; the export command was never used to start a claims loop; no Coherent/Loose/Disjoint state or computed findings report was presented",
+      "environmentNote": "the host also found the user-level ~/.claude/skills install and verified it byte-identical for the skills it read; it did not load sigil-compute",
+      "acceptance": "met"
+    },
+    "1b-writer-keeps-advisory-reviewer": {
+      "fixtureScenario": "1b (AE6 routing half)", "host": "fresh subagent ses_f30ab6f0dffeEFa5uYHt3lgYQn",
+      "request": "Use $sigil-write to revise .../ws-1b/archive/export.sigil so its goal is compact, and obtain its design review.",
+      "observed": "the host loaded sigil-write, revised the design (consolidated three equivalent authorization constraints into one; goal preserved; revised file sha256 c39786c1ff457e3f0c2c8ce9143b381d64db51ab8709fcd69114768a26797788), passed mechanical validation, and produced sigil-write's documented portable review handoff (sigil-design-review/v1 envelope with exact captures) because delegation was unavailable; no claims command ran; no computed state appeared",
+      "mechanismLabel": "the delegation unavailability was INSTRUCTED by the runner (no spawn tool named in the prompt); the 8b-observed run later showed the `opencode run` CLI route exists in this environment, so the fresh-evaluator arm of 1b was blocked by instruction, not by a genuine harness limit. The routing observable (no claims loop, no computed state) is unaffected. Prior foundation observations (sigil-0.8-foundation.md) cover delegated advisory review itself.",
+      "acceptance": "routing met; fresh-evaluator delegation not exercised (instructed unavailability, labeled)"
+    },
+    "3c-ambiguous-source-asks-first": {
+      "fixtureScenario": "3c", "host": "fresh subagent ses_f30b66592ffeXCktpllFuDl5OQ",
+      "request": "Use $sigil-compute to run a computed claims check on this workspace (two sources: base.sigil, consumer.sigil).",
+      "observed": "the host loaded sigil-compute and its orchestration contract, captured the export (exit 0), established the private root (empty seed), and STOPPED to ask: 'Which source should I run the computed claims check on — base.sigil or consumer.sigil?' — before any prepare; no prepare or ingest ran; no state named",
+      "environmentNote": "the host inspected other run directories in the shared evaluation tree during setup (recorded; its question was genuine — it asked rather than adopting a prior run's source choice)",
+      "acceptance": "met"
+    },
+    "3d-absent-explicit-source-fails": {
+      "fixtureScenario": "3d", "host": "fresh subagent ses_f30b66591ffeQZiGeo9diG5llg",
+      "request": "Use $sigil-compute to run a computed claims check on missing.sigil in .../ws-3d.",
+      "observed": "export exit 0 (sources: base.sigil, consumer.sigil); missing.sigil absent from the export and the workspace; the host named the failure, stopped before prepare, did not choose base.sigil or consumer.sigil on its own, and named no state",
+      "acceptance": "met"
+    },
+    "8a-missing-claims-binary": {
+      "fixtureScenario": "8a (AE5 first arm)", "host": "fresh subagent ses_f30ab6f0cffe5XagmMckTC0Xz2",
+      "request": "computed check on .../ws-8a/base.sigil; PATH contains no sigil-claims (instructed not to search outside PATH).",
+      "observed": "the host loaded sigil-compute, validated the input (export exit 0, sole source resolved, private root seeded empty), then hit 'command not found: sigil-claims' (exit 127) at the prepare step and stopped: named the missing binary as the break, no interpretation, no state, no retry. It explicitly declined to substitute `sigilc` (the legacy 0.7 compiler it found on PATH), naming that the contract's comparison states are not this loop's states",
+      "acceptance": "met"
+    },
+    "8b-export-unavailable": {
+      "fixtureScenario": "8b (primary evidence: hermetic re-run)", "host": "fresh subagent ses_f30860c86ffehiT2X8bWsaC9Uc",
+      "request": "computed check on .../ws-8b/base.sigil; tool discovery restricted to PATH=/usr/bin:/bin (no sigil binary resolves there); no supplied export; barred from hand-crafting one.",
+      "observed": "the host verified the source itself was fine and sigil-claims present, then named the break at the export/snapshot step (no sigil CLI, no supplied export, hand-crafting prohibited) and stopped: no prepare, no state. It found but did NOT use: other cases' export files in the evaluation tree (including a byte-identical export of the same design bytes), and the first 8b run's complete records — citing the contract's this-invocation's-payload rule",
+      "first8bAttempt": "the first 8b host (ses_f30ab6f0bffe4f7zjYPQ8oB7Nw) was told no sigil CLI existed, but the premise was false in this environment: it found ~/.deno/bin/sigil, used it, and completed a full fresh-host live loop instead (recorded in loop-cases.json as 8b-observed). The variant premise required the hermetic re-run above.",
+      "acceptance": "met by the hermetic re-run; premise failure of the first attempt recorded"
+    },
+    "8c-missing-required-sibling": {
+      "fixtureScenario": "8c", "host": "fresh subagent ses_f30ab6f08ffeqnSpfiJ545xUHI",
+      "request": "computed check on .../ws-8c/base.sigil; catalog is catalog-no-egglog (sigil-egglog not installed).",
+      "observed": "the host loaded sigil-compute, ran export (exit 0) and prepare (exit 0, 3 facets), then stopped at the delegation step naming TWO breaks: no spawn mechanism, and the required sigil-egglog entrypoint not installed. It found non-installed copies of sigil-egglog on disk (the other catalog copy and the repository checkout) and explicitly did NOT read or substitute either",
+      "mechanismLabel": "the missing sibling is a genuine environment fact; the no-spawn-mechanism part was instructed and is labeled as instruction",
+      "acceptance": "met"
+    },
+    "8d-delegation-unavailable-no-substitution": {
+      "fixtureScenario": "8d (primary evidence: re-run against the stripped catalog)", "host": "fresh subagent ses_f30860c87ffe9IuVaofK9GWbv5",
+      "request": "computed check on .../ws-8d/base.sigil; instructed that no spawn tool exists and not to use any external CLI for agent sessions.",
+      "observed": "the host resolved the sole source, captured the export (exit 0), prepared (exit 0, 3 facets, 0 reused, binding digest c02f0949...), then stopped at the interpretation step: named the missing delegation as the break, stated plainly that the unavailability was instructed by its session, did not substitute its own interpretation, did not run ingest, and emitted no state; run records and a BREAK note retained",
+      "mechanismLabel": "instructed unavailability, labeled as instruction by the host itself; the 8b-observed run shows the CLI route exists, so genuine unavailability was not reproducible here",
+      "acceptance": "met (stop without same-host substitution is the observable; the unavailability mechanism is labeled)",
+      "first8dAttempt": "the first 8d host (ses_f30b6658affewHDX5ujLihfcdy) behaved identically (stopped, no substitution, no state) but was found to have read the fixture's observer notes from the catalog copy's evals/ directory; that attempt is preserved as a runner-setup lesson and the re-run above is the primary evidence"
+    }
+  }
+}

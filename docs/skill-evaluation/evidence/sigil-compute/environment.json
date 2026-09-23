@@ -1,0 +1,28 @@
+{
+  "observedOn": "2026-09-23",
+  "sourceCommit": "679880d (branch egglog-skill) plus the in-progress U3 fixture corrections that are part of this change set: the fixture's design inputs were corrected to valid 0.8 grammar and the seven failure scenarios were added, before the observed runs below",
+  "tooling": {
+    "sigilCLI": {"version": "0.9.0", "path": "build/sigil (deno compile output, rebuilt this session)", "sha256": "0150123f79bffd0c01da4471b31e369952f5c74c8cb9a71dd7479fed79e9a02f"},
+    "sigilClaims": {"version": "0.2.0", "path": "packages/sigilc/target/debug/sigil-claims (cargo build --locked; verified current: rebuild finished in 0.22s with no recompilation)", "sha256": "26034c7ee4d454de33f62b71a3e506f05389244516df07c397d626a1a324c2be"}
+  },
+  "hostHarness": {
+    "name": "OpenCode",
+    "orchestratorModel": "GLM-5.3 via nvidia provider (z-ai/glm-5.3); served identity not independently verified",
+    "subagentModel": "same session model inherited by every fresh subagent; served identity not independently verified",
+    "capabilities": {
+      "orchestratorSubagentTool": true,
+      "subagentNestedSubagentTool": false,
+      "cliAgentRoute": "the opencode CLI exists on PATH; `opencode run` starts a fresh agent session (discovered live by the first 8b host; also found and used spontaneously by the 3b host)"
+    },
+    "evalTreeLayout": "catalog + case workspaces + per-run directories under the harness temp root, outside repository discovery",
+    "environmentReality": {
+      "denoShim": "a sigil CLI shim exists at ~/.deno/bin/sigil on interactive PATH; unknown to the runner until the first 8b host found it",
+      "userLevelSkills": "a user-level skill install exists at ~/.claude/skills (predates sigil-compute); tested hosts were pointed at the evaluation catalog copy"
+    }
+  },
+  "runnerConventions": {
+    "hostRoles": "loop cases ran with the evaluation orchestrator acting as the sigil-compute host (recorded per case); routing and prerequisite cases used fresh subagent hosts; every interpreter child was a fresh subagent or fresh `opencode run` session receiving only the prepared handoff",
+    "observerNotes": "the fixture (with its acceptance notes) was removed from the tested catalog copy after the first 8d host was found to have read it; that first 8d attempt is preserved and the 8d re-run against the stripped catalog is the primary evidence",
+    "withheldFromTestedAgents": "fixture acceptance notes (after the strip), the plan document, and this evidence directory were never named to tested agents; the shared evaluation tree itself was readable by agents that went looking, and cases where an agent demonstrably read sibling run records are labeled per case"
+  }
+}
