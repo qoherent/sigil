@@ -82,6 +82,7 @@ try {
   const catalog = JSON.parse(await run(language, ["skill", "list"]));
   assertEquals(catalog.skills, [
     "sigil",
+    "sigil-compute",
     "sigil-egglog",
     "sigil-evaluate",
     "sigil-understand",

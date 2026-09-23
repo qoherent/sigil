@@ -17,6 +17,7 @@ no release is published by the 0.8 migration.
 | `sigil-evaluate` | 0.1.0 | Sigil 0.8.0; sibling `sigil-understand` |
 | `sigil-write` | 0.1.0 | Sigil 0.8.0; both sibling skills |
 | `sigil-egglog` | 0.1.0 | Sigil 0.8.0; no sibling skills; egglog 3.0.0 pin |
+| `sigil-compute` | 0.1.0 | Sigil 0.8.0; siblings `sigil-understand` and `sigil-egglog`; native `sigil-claims` for the loop |
 
 The language contract owns the supported language version. Manifests own artifact
 versions independently. Unsupported workspace versions are rejected; no automatic

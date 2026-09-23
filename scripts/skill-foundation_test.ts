@@ -65,6 +65,40 @@ Deno.test("foundation validates relocated catalog and rejects broken dependencie
     );
     await rejects(() => validateFoundation(catalog), /Required skills/);
     await Deno.writeTextFile(metadataPath, metadata);
+    const computeEntry = join(catalog, "sigil-compute/SKILL.md");
+    const computeOriginal = await Deno.readTextFile(computeEntry);
+    await Deno.writeTextFile(
+      computeEntry,
+      computeOriginal + "\n[Advisory](../sigil-evaluate/SKILL.md)\n",
+    );
+    await rejects(
+      () => validateFoundation(catalog),
+      /outside declared foundation dependencies/,
+    );
+    await Deno.writeTextFile(computeEntry, computeOriginal);
+    const computeMetadataPath = join(
+      catalog,
+      "sigil-compute/compatibility.json",
+    );
+    const computeMetadata = await Deno.readTextFile(computeMetadataPath);
+    await Deno.writeTextFile(
+      computeMetadataPath,
+      JSON.stringify({ sigilVersion: "0.8.0", requiredSkills: [] }),
+    );
+    await rejects(() => validateFoundation(catalog), /Required skills/);
+    await Deno.writeTextFile(computeMetadataPath, computeMetadata);
+    await Deno.rename(
+      join(catalog, "sigil-egglog"),
+      join(catalog, "unavailable-dialect"),
+    );
+    await rejects(
+      () => validateFoundation(catalog),
+      /Missing foundation skill/,
+    );
+    await Deno.rename(
+      join(catalog, "unavailable-dialect"),
+      join(catalog, "sigil-egglog"),
+    );
     await Deno.rename(
       join(catalog, "sigil-evaluate"),
       join(catalog, "unavailable-evaluator"),

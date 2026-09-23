@@ -12,6 +12,7 @@ export const FOUNDATION_SKILLS: Readonly<Record<string, readonly string[]>> = {
   "sigil-evaluate": ["sigil-understand"],
   "sigil-write": ["sigil-understand", "sigil-evaluate"],
   "sigil-egglog": [],
+  "sigil-compute": ["sigil-understand", "sigil-egglog"],
 };
 
 async function requiredFile(path: string, label: string): Promise<string> {
@@ -146,6 +147,6 @@ if (import.meta.main) {
     repoRoot: root,
   });
   console.log(
-    "Validated four foundation skills: metadata, dependencies, documentary links and reproducible language authority (offline; no compiler or model behavior claim).",
+    "Validated five foundation skills: metadata, dependencies, documentary links and reproducible language authority (offline; no compiler or model behavior claim).",
   );
 }

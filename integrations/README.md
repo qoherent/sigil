@@ -15,13 +15,19 @@ Current integrations:
   supported autonomous corrections, and explicit unresolved decisions.
 - `skills/sigil-egglog`: egglog/datalog language instruction for claims interpreters
   and law authors; no design-skill dependency.
+- `skills/sigil-compute`: computed claims evaluation on an existing 0.8 design:
+  routes only explicit claims or computed-check requests, runs the `sigil-claims`
+  loop, and hands back the ingest state (Coherent, Loose, or Disjoint) plus the
+  findings; generic review stays on `sigil-evaluate`. Needs the `sigil-claims`
+  binary and a host that can delegate a fresh child.
 - `skills/sigil`: preserved legacy Sigil 0.7 native workflow (artifact 0.9.0).
   Its existing native compiler prerequisites apply to this entry point.
 
-All five valid skills ship with CLI releases. `sigil skill install` installs the
-complete catalog globally; `--project` installs locally. The three 0.8 design skills
+All six valid skills ship with CLI releases. `sigil skill install` installs the
+complete catalog globally; `--project` installs locally. The four 0.8 design skills
 start at 0.1.0 and require their declared siblings to remain together. They need
-no compiler for design work. `sigil-egglog` is a language skill, not a design sibling. If a host cannot delegate review, the writer returns
+no compiler for design reading; `sigil-compute` needs the `sigil-claims` binary
+for its claims loop. `sigil-egglog` is a language skill, not a design sibling. If a host cannot delegate review, the writer returns
 an independently unreviewed draft and a portable review handoff.
 
 Other integrations:
