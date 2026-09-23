@@ -2,7 +2,7 @@
  "note": "Materialized fixture workspace design bytes, serialized verbatim (the temp evaluation tree is not part of the repository). The corrected 0.8 grammar (each Tag defined inline once, referenced plainly afterward) lives in the committed fixture.",
  "workspaces": {
   "base.sigil": {
-   "sha256": "8b726d5cd9fc0713aca6e597df594d5d64279cc953330f58e840560c48aada12",
+   "sha256": "8b726d5cd9fc0713aca6e597df594d5d64279cc959330f58e840560c48aada12",
    "bytes": "component Base {\n  goal {\n    Own provider vocabulary.\n  }\n  interface {\n    A *value* and *result* exist.\n  }\n  constraints {\n    Preserve value and result.\n  }\n}\n"
   },
   "consumer.sigil": {
@@ -10,7 +10,7 @@
    "bytes": "@base.sigil from Base import { value, result }\ncomponent Consumer {\n  goal {\n    Serve the caller.\n  }\n  interface {\n    Use value and result.\n  }\n}\n"
   },
   "pipeline.sigil": {
-   "sha256": "2386b6204e8261a21afb9fab405d767203a03ffb755c532d470bca01936251a4",
+   "sha256": "2386b6204e8261a21afb9fab405d767203a03ffb756c532d470bca01936251a4",
    "bytes": "component Pipeline {\n  goal {\n    Move a job from submission to a finished *report*.\n  }\n  interface {\n    Accept a job for processing.\n  }\n  logic {\n    Compute the *audit* digest and store it for later inspection.\n    Then return the finished report to the caller.\n  }\n  constraints {\n    Preserve every accepted audit digest.\n  }\n}\n"
   },
   "gate.sigil": {

@@ -133,6 +133,10 @@ A completed ingest is all of:
    artifact bytes supplied, in the order supplied. That digest is the tool's
    BLAKE3 over the captured artifact: retain the captured bytes, and when you
    can compute the same digest over them, require the match.
+4. The result's `report` and `judgmentContext` paths lie under this run's
+   private root. The tool defaults `--root` to the working directory, so a
+   dropped or mistyped flag still produces a fully consistent report written
+   somewhere else; this check is what catches it.
 
 Anything else — a bare exit code, an old report, a malformed payload, a
 mismatch, or an operational failure — supplies no design state. Retain the

@@ -2,72 +2,83 @@
   "note": "Controlled and fault-injected cases. Mechanism labels are recorded per case: 'crafted by observer' (artifact crafted, no child), 'fault-injected child' (child instructed to deviate), 'real reproduction' (environment reproduced the failure), 'instructed' (unavailability stated in the environment), 'controlled replay' (reused recorded inputs). Fixture scenarios 5b, 7, 9a-9c, 10a-10c, 11, 12, 13.",
   "cases": {
     "5b-interrupted-child": {
-      "fixtureScenario": "5b", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "5b",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "real interruption analog: the child (background session ses_f305c4acbffeOwIpefHshjuidn) was dispatched and its output channel severed before any artifact reached the host; the host wrote its BREAK record and closed the run before the child could deliver anything",
       "observed": "no captured artifact; the host named the missing/interrupted interpretation as the break; no ingest; no report under the run's private root; no state; no retry",
       "runnerNote": "this run's preparation directory was not materialized before dispatch (runner error, recorded); the host's stop is independent of what the child read or produced, and any late child completion is not this run's artifact",
       "acceptance": "met (interruption mechanism: channel severed, labeled)"
     },
     "7-refused-artifact-old-report-present": {
-      "fixtureScenario": "7 (AE4)", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "7 (AE4)",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "crafted by observer (prose artifact); old report seeded from the 2c run",
       "observed": "a completed 2c report (gate.sigil.json) was seeded into the run's private .sigil/claims; ingest of the crafted prose artifact ('The design is fine. Everything checks out.') was refused: exit 1 gate failure, parse error message, NO structured result; the old report remained byte-identical (e2c7df4fb6c889b1...) and was not presented as this run's finding; no state named",
       "contrast": "scenario 2c shows a valid Disjoint with the same exit code IS a state, because its structured result and matching report exist",
       "acceptance": "met"
     },
     "9a-prose-child": {
-      "fixtureScenario": "9a", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "9a",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "fault-injected child: fresh subagent ses_f30860c7dffebrL8N054G6HHjC instructed to respond with prose instead of rows (labeled in its own task)",
       "observed": "the child returned a prose explanation with no rows and no code block, plus a completion statement; the host captured the response verbatim, did not repair or strip anything, passed the exact bytes to ingest; ingest refused (exit 1, 'parse error: expected command'), no structured result, no state, no second child",
-      "runnerNote": "the 9a handoff pointed at a preparation directory the runner had not materialized; the child improvised its reading from evaluation-tree sources (recorded); the refusal observable is unaffected — the artifact was prose either way",
+      "runnerNote": "the 9a handoff pointed at a preparation directory the runner had not materialized; the child improvised its reading from evaluation-tree sources (recorded); the refusal observable is unaffected \u2014 the artifact was prose either way",
       "acceptance": "met (no repair, no retry, refused by ingest)"
     },
     "9b-malformed-rows-child": {
-      "fixtureScenario": "9b", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "9b",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "fault-injected child: fresh subagent ses_f30860c7cffeCpSrCrt3m6AYft instructed to emit malformed rows (wrong arity, unknown predicate, unpresented entity)",
       "observed": "the child reported the missing prep bundle itself, grounded row style in a sibling run's prep bundle it found in the shared tree (recorded), and emitted the three requested malformations; the host passed them verbatim to a freshly prepared binding; ingest refused (exit 1, '(claim ...) takes 6 columns ... got 4'), no structured result, no state, no repair, no retry",
       "runnerNote": "same prep-materialization runner error as 9a; the child's self-report of it is retained",
       "acceptance": "met"
     },
     "9c-truncated-artifact": {
-      "fixtureScenario": "9c", "host": "evaluation orchestrator acting as host",
-      "mechanism": "crafted by observer: a valid 2a-style artifact cut mid-row",
-      "observed": "ingest refused (exit 1, 'parse error: unexpected end of file'); the run stopped before a state; no repair attempted",
+      "fixtureScenario": "9c",
+      "host": "evaluation orchestrator acting as host",
+      "mechanism": "crafted by observer: a valid 2a-style artifact cut mid-row (no child dispatched; the runner supplied the truncation \u2014 the fixture's host-side variant, a truncated child response with no completion statement stopped before ingest, is counted unobserved by this run and is partially covered by the 5b interruption case)",
+      "observed": "ingest refused the truncated bytes (exit 1, 'parse error: unexpected end of file'); the host passed the artifact verbatim with no repair and named the refusal; no state",
       "acceptance": "met"
     },
     "10a-binding-export-mismatch": {
-      "fixtureScenario": "10a", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "10a",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "real reproduction: ingest handed the edited re-export while the binding was prepared against the captured snapshot",
-      "observed": "exit 2 (usage): 'binding does not match the supplied export: export digest (binding fa59eb1e..., current 5126d2e2...)' — the mismatch names the moved field; no state; no re-prepare; no inferred verdict",
+      "observed": "exit 2 (usage): 'binding does not match the supplied export: export digest (binding fa59eb1e..., current 5126d2e2...)' \u2014 the mismatch names the moved field; no state; no re-prepare; no inferred verdict",
       "acceptance": "met"
     },
     "10b-operational-no-payload": {
-      "fixtureScenario": "10b", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "10b",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "real reproduction: claims file missing at ingest",
       "observed": "exit 3 (operational): 'read ...: No such file or directory (os error 2)'; a bare exit code with an error message and no completion payload; no state",
       "acceptance": "met"
     },
     "10c-mismatched-report-identity": {
-      "fixtureScenario": "10c", "host": "evaluation orchestrator acting as host (verification demonstration)",
+      "fixtureScenario": "10c",
+      "host": "evaluation orchestrator acting as host (verification demonstration)",
       "mechanism": "controlled replay: a foreign report (the 2b-rerun pipeline.sigil report) presented as the result for a base.sigil run",
       "observed": "the completed-ingest identity checks fail: report.source (pipeline.sigil) != binding.source (base.sigil); identity.exportDigest mismatch; verdict: failure named, no state, no inferred verdict",
       "acceptance": "met (as a controlled demonstration of the host-side identity check)"
     },
     "11-operational-failure-after-report": {
-      "fixtureScenario": "11", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "11",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "real reproduction (not injection): a directory placed at the judgment-context write path (private-root/.sigil/claims/base.sigil.context.json) while the report path remained writable",
       "observed": "ingest wrote the findings report (base.sigil.json exists under the private root), then the judgment-context write failed: exit 3, 'Is a directory (os error 21)'; no structured result; the partial report is retained under the private root as a diagnostic; no state named",
       "acceptance": "met by real reproduction"
     },
     "12-separate-roots-identical-rows": {
-      "fixtureScenario": "12", "host": "evaluation orchestrator acting as host",
+      "fixtureScenario": "12",
+      "host": "evaluation orchestrator acting as host",
       "mechanism": "controlled replay: the recorded 2a artifact bytes (sha256 af69caeb...) supplied byte-identically to two runs with different memo seeds; labeled controlled replay, no child dispatch",
-      "observed": "run 12A: private root seeded from the 2a interpretations; run 12B: empty private root; both ingests exit 0, state coherent, 0 findings; the two reports are byte-identical (sha256 6fc475b1...) with identical identities (same export digest fa59eb1e..., same artifact digest 8e993046...) but live in SEPARATE roots — neither run's handback can substitute the other's report, and each result names its own root's path; after the runs, the workspace memo was mutated and both reports remain byte-identical to their post-run state; the seed is retained",
+      "observed": "run 12A: private root seeded from the 2a interpretations; run 12B: empty private root; both ingests exit 0, state coherent, 0 findings; the two reports are byte-identical (sha256 6fc475b1...) with identical identities (same export digest fa59eb1e..., same artifact digest 8e993046...) but live in SEPARATE roots \u2014 neither run's handback can substitute the other's report, and each result names its own root's path; after the runs, the workspace memo was mutated and both reports remain byte-identical to their post-run state; the seed is retained",
       "acceptance": "met"
     },
     "13-cross-run-integrity": {
-      "fixtureScenario": "13", "host": "evaluation orchestrator (aggregate over all successful cases)",
-      "observed": "design sources: every base.sigil copy hashes 8b726d5cd9fc0713aca6e597df594d5d64279cc953330f58e840560c48aada12 except ws-6 (eb2e074f..., the scenario-6 observer edit) and ws-1b's archive/export.sigil (c39786c1..., the 1b writer's own revision task); consumer/pipeline/gate hashes consistent across workspaces; workspace claims stores: only the runner-seeded ws-5a has one; every recorded run shows prepare and ingest invoked only by the host role; every artifact was produced by a fresh child (or, in labeled controlled-replay cases, by the observer from recorded bytes); exactly one child per loop run",
+      "fixtureScenario": "13",
+      "host": "evaluation orchestrator (aggregate over all successful cases)",
+      "observed": "design sources: every base.sigil copy hashes 8b726d5cd9fc0713aca6e597df594d5d64279cc959330f58e840560c48aada12 except ws-6 (eb2e074f..., the scenario-6 observer edit) and ws-1b's archive/export.sigil (c39786c1..., the 1b writer's own revision task); consumer/pipeline/gate hashes consistent across workspaces; workspace claims stores: only the runner-seeded ws-5a has one; every recorded run shows prepare and ingest invoked only by the host role; every artifact was produced by a fresh child (or, in labeled controlled-replay cases, by the observer from recorded bytes); exactly one child per loop run",
       "acceptance": "met"
     }
   }

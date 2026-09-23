@@ -459,7 +459,8 @@ who produced each artifact. No additional request is issued.
   observer may re-export the edited workspace and confirm the live bytes no
   longer match the captured export.
 - **7:** Ingest refuses the faulted artifact — an exit-1 gate failure with no
-  structured result for prose or ungrounded rows — and the host names the
+  structured result for prose or rows naming entities the closure never
+  declared — and the host names the
   refusal and emits no state, even though an older report exists in the
   private root. The older report is never presented as this run's finding. The
   contrast case is 2c: a valid Disjoint with the same exit code is a state,
@@ -477,8 +478,13 @@ who produced each artifact. No additional request is issued.
 - **9:** Across 9a-9c the host captures the child's output verbatim, makes no
   repair, strips no prose, and attempts no second child. For 9a and 9b the
   captured bytes are passed to ingest and refused; the host names the refusal
-  and emits no state. For 9c the truncated artifact stops the run before
-  ingest. The record labels the child fault as injected.
+  and emits no state. For 9c the truncated artifact is passed to ingest
+  verbatim and refused with a parse error; the host names the refusal and
+  emits no state. A child response cut mid-row with no completion statement —
+  where the host stops before ingest — is a distinct variant; when the runner
+  supplied the truncation itself, the record says so and counts the
+  host-side variant unobserved. The record labels the child fault as
+  injected.
 - **10:** Each variant is named as a failure — an export/binding mismatch, a
   malformed or absent payload, a mismatched report identity — with no state,
   no re-prepare, and no inferred verdict.

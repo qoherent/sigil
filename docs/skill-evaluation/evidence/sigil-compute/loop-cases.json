@@ -12,7 +12,7 @@
     "2a-coherent": {
       "fixtureScenario": "2a", "request": "Use $sigil-compute to run a computed claims check on base.sigil and report the ingest state and findings.",
       "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f3102e7a6ffeH5nKCSMiBZ73qD",
-      "designSource": "base.sigil sha256 8b726d5cd9fc0713aca6e597df594d5d64279cc953330f58e840560c48aada12 (unchanged before/after)",
+      "designSource": "base.sigil sha256 8b726d5cd9fc0713aca6e597df594d5d64279cc959330f58e840560c48aada12 (unchanged before/after)",
       "steps": [
         {"step": "seed", "observed": "workspace .sigil/claims/interpretations absent; private root starts empty; no writes to the workspace store"},
         {"step": "export", "observed": "sigil export design . exit 0, zero diagnostics, one source base.sigil"},
@@ -33,7 +33,7 @@
     "2b-rerun-flow-loose": {
       "fixtureScenario": "2b", "request": "same as 2a but on pipeline.sigil",
       "host": "evaluation orchestrator acting as host", "child": "fresh subagent ses_f30d468a6ffe9aIhRdCtNYJ5kg (identical handoff, no steering beyond the binding guidance)",
-      "designSource": "pipeline.sigil sha256 2386b6204e8261a21afb9fab405d767203a03ffb755c532d470bca01936251a4",
+      "designSource": "pipeline.sigil sha256 2386b6204e8261a21afb9fab405d767203a03ffb756c532d470bca01936251a4",
       "steps": [
         {"step": "prepare", "observed": "4 facets, 0 reused"},
         {"step": "child", "observed": "asserted steps 1 and 2 with only step 2 edging to the flow's declared end; step 1 (compute+store audit) leads nowhere"},
