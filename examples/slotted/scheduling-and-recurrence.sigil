@@ -1,0 +1,64 @@
+component SchedulingAndRecurrence {
+    goal {
+        Manage recurring booking patterns, their dated series, and exceptions so a
+        renter can request repeating room bookings without creating each occurrence
+        separately.
+    }
+
+    interface {
+        A *recurring booking pattern* describes a local start time, duration,
+        recurrence rule, and date range.
+
+        Scheduling and Recurrence expands a valid recurring booking pattern into a
+        *recurring booking series* of dated occurrences.
+
+        A user can add a *series exception* to skip or move one occurrence without
+        changing the other occurrences in that series.
+
+        Expanding a local-time pattern across clock changes requires
+        *regional time-zone rules*.
+    }
+
+    state {
+        Scheduling and Recurrence owns the recurring booking pattern, recurring
+        booking series, and series exception.
+
+        A recurring booking series links one pattern to its dated occurrences.
+
+        A series exception applies to one occurrence in its recurring booking series.
+    }
+
+    logic {
+        Scheduling and Recurrence validates a requested recurring booking pattern.
+        If the pattern is rejected, it returns a validation result and ends that path.
+
+        For an accepted pattern, Scheduling and Recurrence expands the pattern into
+        dated occurrences.
+
+        It applies each series exception to the matching dated occurrence to produce
+        the adjusted occurrence set.
+
+        It returns the recurring booking series containing the accepted pattern and
+        adjusted occurrence set.
+
+        Separately, it builds a *series-date preview* from the recurring booking
+        pattern for the booking form.
+    }
+
+    constraints {
+        Resource Management owns base room availability. Expanding a series does not
+        decide whether its occurrences are bookable for a room.
+
+        Identity and Access decides whether a user may create or change a series.
+        Scheduling and Recurrence does not own users, sessions, roles, or permission
+        policy.
+
+        Modules exchange contracts and do not read another module's private storage
+        or logic.
+    }
+
+    cases {
+        A renter requests a weekly room booking across four weeks and skips one date;
+        only that occurrence is omitted from the recurring booking series.
+    }
+}
