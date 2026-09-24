@@ -7,34 +7,20 @@ component UserProfile {
     }
 
     interface {
-        *UserProfile* has this public TypeScript shape:
-        ```typescript
-        type UserProfile = {
-            userId: UserId
-            displayName: string
-            profilePictureUrl?: string
-        }
-        ```
+        A *UserProfile* has a user identifier, display name, and optional
+        profile-picture URL.
 
-        UserProfileSummary selects these fields:
-        ```typescript
-        type UserProfileSummary = Pick<UserProfile, "userId" | "displayName" |
-        "profilePictureUrl">
-        ```
+        Its *public profile summary* contains the same fields.
 
-        Update UserProfile through this signature:
-        ```typescript
-        updateUserProfile(userId: UserId, input: Partial<Pick<UserProfile,
-        "displayName" | "profilePictureUrl">>) returns UserProfile
-        ```
+        A signed-in user can retrieve their profile and public profile summary by
+        user identifier.
 
-        getUserProfile(userId: UserId) returns UserProfile
+        The owning user can update the display name, profile-picture URL, or both.
+        An omitted field remains unchanged.
 
-        getUserProfileSummary(userId: UserId) returns UserProfileSummary
+        A successful update returns the updated UserProfile.
 
-        accepts profile updates from the owning user
-
-        exposes public profile summary to booking and room views
+        Booking and room views can request the public profile summary for display.
     }
 
     state {

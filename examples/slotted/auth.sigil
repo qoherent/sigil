@@ -2,22 +2,12 @@
 
 component User {
     goal {
-        Stores the authentication identity shared by renters and room owners.
+        Represents the authentication identity shared by renters and room owners.
     }
 
     interface {
-        User has this public TypeScript shape:
-        ```typescript
-        type User = {
-            id: UserId
-            email: string
-            isHomeOwner: boolean
-        }
-        ```
-
-        exposes user identity: User.id, User.email
-
-        exposes role signal: User.isHomeOwner
+        A *User* has an identifier, an email address, and a Boolean signal that
+        indicates whether the user is a room owner.
     }
 }
 
@@ -28,21 +18,10 @@ component Auth {
     }
 
     interface {
-        SignInCredentials has this public TypeScript shape:
-        ```typescript
-        type SignInCredentials = {
-            email: User.email
-            password: string
-        }
-        ```
+        Signing in accepts an email address and password and returns a JWT-backed
+        session.
 
-        signIn(credentials: SignInCredentials) returns JWT
-
-        exposes session: JWT
-
-        exposes permission check: can manage rooms
-
-        exposes permission check: can book rooms
+        Auth exposes permission checks for managing rooms and booking rooms.
     }
 
     state {
@@ -88,4 +67,3 @@ component Auth {
         An anonymous user cannot create bookings or manage rooms.
     }
 }
-
