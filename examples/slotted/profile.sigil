@@ -1,4 +1,4 @@
-component UserProfile {
+component Profile {
     goal {
         Stores editable profile information for a signed-in user.
 
@@ -42,11 +42,11 @@ component UserProfile {
     }
 
     constraints {
-        UserProfile owns non-authentication profile fields.
+        Profile owns non-authentication profile fields.
 
         Auth owns credentials, sessions, roles, and permission checks.
 
-        Other modules should use UserProfile for display information instead of reading
+        Other modules should use Profile for display information instead of reading
         Auth private user details.
     }
 

@@ -1,4 +1,4 @@
-@user-profile.sigil from UserProfile import { UserProfile }
+@profile.sigil from Profile import { UserProfile }
 
 component User {
     goal {
@@ -29,9 +29,6 @@ component Auth {
 
         logged-in user has an active session
 
-        room owner can manage rooms and accept bookings
-
-        renter can browse rooms and create bookings
     }
 
     logic {
@@ -46,6 +43,10 @@ component Auth {
 
     constraints {
         Renters and room owners share the same User entity.
+
+        Room owners can manage rooms and accept bookings.
+
+        Renters can browse rooms and create bookings.
 
         Auth uses UserProfile only through its public contract.
 

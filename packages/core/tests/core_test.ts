@@ -400,7 +400,7 @@ Deno.test("discovers the nearest excluded workspace config and resolves imports"
   assertNoErrors(resolved.diagnostics);
   assert(
     resolved.graph.importedTagEdges.some((edge) =>
-      edge.tagIdentity.owner.componentName === "UserProfile"
+      edge.tagIdentity.owner.componentName === "Profile"
     ),
   );
   assert(resolved.graph.componentNodes.some((node) => node.name === "Auth"));
@@ -712,7 +712,7 @@ function workspaceFs(): InMemorySigilFileSystem {
     }),
     "examples/slotted/_module.sigil": slottedModule,
     "examples/slotted/auth.sigil": authSigil,
-    "examples/slotted/user-profile.sigil": userProfileSigil,
+    "examples/slotted/profile.sigil": profileSigil,
   });
 }
 
@@ -801,6 +801,6 @@ const rootModule =
 const slottedModule =
   `component Slotted {\n  goal {\n    Room booking.\n  }\n\n  interface {\n    accepts bookings\n  }\n}\n`;
 const authSigil =
-  `@user-profile.sigil from UserProfile import { Profile }\n\ncomponent Auth {\n  goal {\n    Authenticate users.\n  }\n\n  interface {\n    signIn(Profile)\n  }\n}\n`;
-const userProfileSigil =
-  `component UserProfile {\n  goal {\n    Store profile information.\n  }\n\n  interface {\n    Get a *Profile*.\n  }\n}\n`;
+  `@profile.sigil from Profile import { UserProfile }\n\ncomponent Auth {\n  goal {\n    Authenticate users.\n  }\n\n  interface {\n    signIn(UserProfile)\n  }\n}\n`;
+const profileSigil =
+  `component Profile {\n  goal {\n    Store profile information.\n  }\n\n  interface {\n    A *UserProfile* can be retrieved.\n  }\n}\n`;

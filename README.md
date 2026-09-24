@@ -708,8 +708,10 @@ Its [.sigil/config.json](examples/promise/.sigil/config.json) makes it an
 independent workspace named `promise`.
 
 `Slotted` in [examples/slotted/_module.sigil](examples/slotted/_module.sigil) is
-an example room booking product used to test Sigil against product and module
-modeling.
+a room-booking design used to demonstrate computed claims evaluation across
+multiple modules. The [computed evaluation demo](docs/computed-evaluation-demo.md)
+explains its module map, commands, observed results, and the difference between
+computed findings and advisory review.
 
 Its [.sigil/config.json](examples/slotted/.sigil/config.json) makes it an
 independent workspace named `slotted`; imports beginning with `@` resolve from
@@ -718,17 +720,22 @@ that directory.
 `Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil)
 show a smaller module-level specification inside the Slotted example.
 
-`UserProfile` in
-[examples/slotted/user-profile.sigil](examples/slotted/user-profile.sigil) shows
-an imported component with a TypeScript-shaped public interface.
+`Profile` in
+[examples/slotted/profile.sigil](examples/slotted/profile.sigil) shows a
+component with a prose public interface and a `UserProfile` Tag, imported by
+Auth under the distinct component name `Profile`.
 
 `BookingCalendarView` in
 [examples/slotted/booking-calendar-view.sigil](examples/slotted/booking-calendar-view.sigil)
 shows a UI component whose interface combines natural language, an ASCII
 wireframe, and a repository image reference.
 
-`Slotted` is only an example project used to test the language. It is not the
-purpose of this repository.
+Slotted deliberately retains a contradiction, an ownership conflict, an unmet
+obligation, and a disconnected flow step as computed-evaluation fixture
+problems. They are intentional demo content, not unfinished design work; their
+observed findings and run-to-run variation are documented in the linked demo.
+Slotted is an example project for testing the language, not the purpose of this
+repository.
 
 ## Coding-Agent Skills
 

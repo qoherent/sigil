@@ -180,7 +180,7 @@ export async function run(): Promise<void> {
     assert.equal(report.version, 2);
     assert.equal(report.world.state, "Loose");
     assert.deepEqual(report.scope.design.roots, ["auth.sigil"]);
-    assert(report.scope.design.sources.includes("user-profile.sigil"));
+    assert(report.scope.design.sources.includes("profile.sigil"));
     assert(
       report.diagnostics.items.some((item) =>
         item.code === "DESIGN_UNRESOLVED"
