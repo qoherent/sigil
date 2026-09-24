@@ -1,0 +1,68 @@
+component ResourceManagement {
+    goal {
+        Manage rooms, room metadata, and base availability so room owners can
+        publish spaces and Booking can check whether a requested time range fits
+        those availability rules.
+    }
+
+    interface {
+        A *Room* has a room identifier, display name, location, capacity, and
+        optional amenities.
+
+        A room owner can create a Room, update its metadata, publish it for search,
+        or archive it.
+
+        A Room's *base availability rules* describe recurring open periods and
+        date-specific closures.
+
+        Given a Room and a requested time range, Resource Management
+        answers whether the entire range is permitted by that Room's applicable
+        base availability rules.
+
+        Room search returns available Rooms matching a supplied location and
+        minimum capacity.
+    }
+
+    state {
+        Resource Management owns Room, room metadata, and base availability rules.
+
+        A Room can be draft, available, unavailable, or archived.
+    }
+
+    logic {
+        A room owner publishes a draft Room with base availability rules to make it
+        available for search.
+
+        An available Room appears in search only when it matches every supplied
+        filter.
+
+        Resource Management reports a requested time range as available only when
+        the Room is available, the full range falls within open periods, and the
+        range does not overlap an applicable date-specific closure.
+
+        Resource Management reports the requested time range as unavailable when
+        the Room is not available, any part falls outside an open period, or the
+        range overlaps an applicable closure.
+    }
+
+    constraints {
+        Identity and Access supplies current-user and permission checks;
+        Resource Management does not own users, sessions, roles, or permission
+        policy.
+
+        Resource Management's availability answer covers base availability rules.
+        Booking owns conflicts with existing bookings and uses this answer when
+        deciding whether to confirm a booking.
+
+        Scheduling and Recurrence owns recurring booking patterns, series, and
+        exceptions; recurring open periods remain base availability rules owned by
+        Resource Management.
+    }
+
+    cases {
+        A room owner publishes a Room with open periods and a date-specific closure.
+
+        Booking asks whether a requested range fits an available Room's base
+        availability rules and receives an available or unavailable answer.
+    }
+}
