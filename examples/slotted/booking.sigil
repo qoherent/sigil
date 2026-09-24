@@ -1,34 +1,39 @@
+@auth.sigil from Auth import { identity and access, renter }
 @resource-management.sigil from ResourceManagement import {
     Room,
     base availability rules,
+    requested time range,
+    room availability answer,
 }
-@scheduling-and-recurrence.sigil from SchedulingAndRecurrence import { recurring booking series }
+@scheduling-and-recurrence.sigil from SchedulingAndRecurrence import {
+    recurring booking series,
+}
 
 component Booking {
     goal {
-        Create, confirm, and manage room bookings while preserving room availability,
-        recurrence, and access boundaries.
+        Creates and manages a *booking request* and *confirmed booking* while
+        preserving base availability rules, recurrence, and access boundaries.
     }
 
     interface {
         A renter starts a booking request for a Room and a requested time range.
 
-        Before confirmation, Booking sends the Room and full requested range to
-        Resource Management for an availability answer based on
+        Before confirmation, Booking sends the Room and full requested time range to
+        Resource Management for a room availability answer based on
         base availability rules.
 
-        Booking requires a recurring booking series to confirm each occurrence of
-        a repeated booking request.
+        Booking requires a recurring booking series to confirm each occurrence of a
+        repeated booking request.
 
         A confirmed booking records its Room, renter, requested time range, and
         confirmation status.
 
-        A renter can cancel a confirmed booking that they own, subject to the
-        cancellation rules.
+        A renter can cancel a confirmed booking that they own; Booking records a
+        *cancellation record* subject to the cancellation rules.
     }
 
     state {
-        Booking owns booking requests, confirmed bookings, and cancellation records.
+        Booking owns booking request, confirmed booking, and cancellation record.
 
         Booking exclusively owns the recurring booking series.
 
@@ -36,52 +41,52 @@ component Booking {
     }
 
     logic {
-        Booking checks the renter's permission through Identity and Access and asks
-        Resource Management for the full-range availability answer for the Room.
+        Booking checks a renter's permission through identity and access and asks
+        Resource Management for a full-range room availability answer for the Room.
 
-        If permission is denied, Booking rejects the request and returns a rejection
-        result that ends that path.
+        If identity and access denies permission for a booking request, Booking
+        rejects it and returns a rejection result that ends that path.
 
-        If the availability answer denies the full range or a confirmed booking
-        conflicts, Booking rejects the request and returns a rejection result that
-        ends that path.
-
-        For a single-time request, Booking confirms only when permission, availability,
-        and conflict checks pass, then returns the confirmed booking and ends that
+        If the room availability answer denies the full range or a *booking conflict*
+        exists with a confirmed booking, Booking rejects the request and ends that
         path.
 
-        For a repeated request, Booking uses the recurring booking series to identify
-        each occurrence. It confirms the request only when permission, availability,
+        For a single-time booking request, Booking confirms only when permission,
+        availability, and conflict checks pass, then returns the confirmed booking
+        and ends that path.
+
+        For a repeated booking request, Booking uses the recurring booking series
+        to identify each occurrence. It confirms only when permission, availability,
         and conflict checks pass for every occurrence, then returns the confirmed
         booking and ends that path.
 
-        When a renter cancels a confirmed booking, Booking records the cancellation,
-        preserves the booking history, returns the canceled booking, and ends that
+        When a renter cancels a confirmed booking, Booking creates a cancellation
+        record, preserves booking history, returns the canceled booking, and ends that
         path.
     }
 
     constraints {
-        Booking must not require a recurring booking series to confirm each
-        occurrence of a repeated booking request.
+        Booking must not require a recurring booking series to confirm each repeated
+        booking request.
 
-        Booking owns conflicts with existing bookings and does not read Resource
-        Management's private room data or availability logic.
+        Booking owns booking conflict checks and does not read Resource Management's
+        private Room data or availability logic.
 
-        Identity and Access supplies current-user and permission checks. Booking does
-        not own users, sessions, roles, or permission policy.
+        identity and access supplies current-user and permission checks. Booking
+        does not own users, sessions, roles, or permission policy.
 
-        Scheduling and Recurrence owns recurring booking patterns, series, and
-        exceptions; Booking uses its public series contract for repeated requests.
+        Scheduling and Recurrence owns the recurring booking series; Booking uses
+        its public contract for repeated requests.
     }
 
     cases {
-        A renter requests a room for a range that fits its availability and has no
-        conflicting booking; Booking confirms it when Identity and Access permits.
+        A renter requests a Room for a range that fits its base availability rules
+        and has no booking conflict; Booking confirms when identity and access permits.
 
         A renter requests a range that overlaps an existing confirmed booking;
-        Booking rejects the request.
+        Booking rejects the request due to the booking conflict.
 
-        A renter cancels their confirmed booking; Booking records the cancellation
-        and retains its history.
+        A renter cancels a confirmed booking; Booking retains its cancellation record
+        and booking history.
     }
 }

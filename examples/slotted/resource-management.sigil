@@ -1,25 +1,27 @@
+@auth.sigil from Auth import { identity and access, room owner }
+
 component ResourceManagement {
     goal {
-        Manage rooms, room metadata, and base availability so room owners can
-        publish spaces and Booking can check whether a requested time range fits
-        those availability rules.
+        Manages *Room* and *room metadata*, and defines *base availability rules*,
+        so room owners can publish spaces and Booking can check a
+        *requested time range* against those rules.
     }
 
     interface {
-        A *Room* has a room identifier, display name, location, capacity, and
-        optional amenities.
+        A Room has a *resource identifier*, room metadata including display name,
+        location, capacity, and optional amenities.
 
         A room owner can create a Room, update its metadata, publish it for search,
         or archive it.
 
-        A Room's *base availability rules* describe recurring open periods and
+        A Room's base availability rules describe recurring open periods and
         date-specific closures.
 
-        Given a Room and a requested time range, Resource Management
-        answers whether the entire range is permitted by that Room's applicable
-        base availability rules.
+        Given a Room and a requested period, Resource Management returns a
+        *room availability answer* stating whether the entire period fits its
+        applicable base availability rules.
 
-        Room search returns available Rooms matching a supplied location and
+        Room search returns available Room values matching a supplied location and
         minimum capacity.
     }
 
@@ -36,33 +38,31 @@ component ResourceManagement {
         An available Room appears in search only when it matches every supplied
         filter.
 
-        Resource Management reports a requested time range as available only when
-        the Room is available, the full range falls within open periods, and the
-        range does not overlap an applicable date-specific closure.
+        A room availability answer is available only when the Room is available,
+        the full requested time range falls within open periods, and it does not
+        overlap an applicable closure.
 
-        Resource Management reports the requested time range as unavailable when
-        the Room is not available, any part falls outside an open period, or the
-        range overlaps an applicable closure.
+        A room availability answer is unavailable when the Room is unavailable, any
+        part of the range falls outside an open period, or the range overlaps an
+        applicable closure.
     }
 
     constraints {
-        Identity and Access supplies current-user and permission checks;
-        Resource Management does not own users, sessions, roles, or permission
-        policy.
+        identity and access supplies current-user and permission checks;
+        Resource Management does not own users, sessions, roles, or permission policy.
 
-        Resource Management's availability answer covers base availability rules.
-        Booking owns conflicts with existing bookings and uses this answer when
-        deciding whether to confirm a booking.
+        Resource Management's base availability rules answer does not include
+        booking-conflict checks, which Booking owns.
 
-        Scheduling and Recurrence owns recurring booking patterns, series, and
-        exceptions; recurring open periods remain base availability rules owned by
-        Resource Management.
+        Recurring open periods in base availability rules remain owned by Resource
+        Management, while Scheduling and Recurrence owns recurring patterns, series,
+        and exceptions.
     }
 
     cases {
         A room owner publishes a Room with open periods and a date-specific closure.
 
-        Booking asks whether a requested range fits an available Room's base
-        availability rules and receives an available or unavailable answer.
+        Booking asks whether a requested range fits a Room's base availability rules
+        and receives an available or unavailable answer.
     }
 }

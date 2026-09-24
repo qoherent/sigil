@@ -1,0 +1,10 @@
+component User {
+    goal {
+        Represents the *user identity* shared by renters and room owners.
+    }
+
+    interface {
+        A user identity has a *user identifier*, an *email address*, and a
+        *room owner signal*.
+    }
+}

@@ -11,20 +11,28 @@ target, not a guarantee about fresh model interpretations.
 
 | Source | Responsibility | Imports |
 | --- | --- | --- |
-| `auth.sigil` | User identity, sign-in, sessions, and permissions | `UserProfile` from component `Profile` in `profile.sigil` |
-| `profile.sigil` | Editable profile fields and public profile summaries | — |
-| `booking-calendar-view.sigil` | Calendar view and its ASCII/SVG layout reference | — |
-| `resource-management.sigil` | Rooms, metadata, base availability rules, and availability answers | — |
-| `scheduling-and-recurrence.sigil` | Recurring patterns, dated series, exceptions, and date preview | — |
-| `booking.sigil` | Booking lifecycle, permission and availability checks, cancellation | Resource Management and Scheduling and Recurrence |
+| `user.sigil` | Canonical user identity, identifiers, email, and room-owner signal | — |
+| `auth.sigil` | Sign-in, sessions, renter/room-owner roles, and permissions | User Tags and `UserProfile` from `Profile` |
+| `profile.sigil` | Editable profile fields and public profile summaries | User identity and identifier Tags |
+| `resource-management.sigil` | Rooms, metadata, base availability rules, and availability answers | Auth's identity/access and room-owner Tags |
+| `scheduling-and-recurrence.sigil` | Recurring patterns, dated series, exceptions, and date preview | Auth Tags and Resource Management's base availability Tag |
+| `booking.sigil` | Booking lifecycle, permission and availability checks, cancellation | Auth, Resource Management, and Scheduling and Recurrence Tags |
+| `booking-calendar-view.sigil` | Calendar view and its ASCII/SVG layout reference | Auth, Resource Management, and Booking Tags |
 
 `_module.sigil` describes the workspace and is exported as context. It is not a
-selected source in the six-source gradient.
+selected source in the seven-source gradient.
 
-`auth.sigil` imports with the exact header
-`@profile.sigil from Profile import { UserProfile }`. `Profile` is the
-component; `UserProfile` is its Tag. This gives the import an unambiguous
-component entity while preserving the public Tag name.
+Each facet has at least one resolved Tag reference or introduces a Tag. A Tag
+has one owning component; other components reuse that exact concept through an
+explicit import instead of defining it again. The exported design contains 168
+facet units, 292 resolved references, and 19 import declarations; every unit
+has a Tag and every selected import resolves and is used.
+
+`auth.sigil` imports `UserProfile` from the `Profile` component in
+`profile.sigil`; it imports `user identity`, `email address`, and `room owner
+signal` from `User` in `user.sigil`. The component name and Tag name remain
+distinct, and importing a Tag reuses its owner rather than transferring
+ownership.
 
 ## Deliberate fixture problems
 
@@ -80,7 +88,7 @@ packages/sigilc/target/debug/sigil-claims prepare \
 ```
 
 Resolve the selected source from the export's `sources[].path`. For the full
-gradient the exact six values are `auth.sigil`, `profile.sigil`,
+gradient the exact seven values are `auth.sigil`, `user.sigil`, `profile.sigil`,
 `booking-calendar-view.sigil`, `resource-management.sigil`,
 `scheduling-and-recurrence.sigil`, and `booking.sigil`. Do not select
 `_module.sigil`.
@@ -103,7 +111,7 @@ packages/sigilc/target/debug/sigil-claims ingest \
 
 Repeat prepare, fresh-child interpretation, and ingest for each selected
 source, using the same captured `frontend.json` and a distinct run directory
-and private root each time. For a second gradient, repeat all six with new
+and private root each time. For a second gradient, repeat all seven with new
 roots and new children against the same captured export. Ingest exit `0` can
 mean Coherent or Loose; exit `1` can mean Disjoint only when ingest also
 returns the matching structured result and report. A bare exit code is not a
@@ -116,27 +124,32 @@ the exact captured artifact; and its report and judgment-context paths are
 under that run's private root. These checks catch stale reports and accidental
 use of the workspace store.
 
-As a U7 command check, this `profile.sigil` example was executed from a fresh
-private root with a separate fresh child. Prepare presented 21 facets with no
-reused units; the child returned 2 claims and 19 readings; ingest returned
-Coherent, exit `0`, and zero findings. The artifact digest and private-root
-report identities matched. This single-source rehearsal is separate from the
-two six-source passes below.
+As a U7 command check, `profile.sigil` was executed against the final export
+from a fresh private root with a separate fresh child. Prepare presented 23
+facets and reused zero units; ingest returned Coherent, exit `0`, and zero
+findings. The report's artifact digest, binding identities, and report paths
+under the private root matched. The raw frontend SHA-256 was
+`2d1294c82f6770f0737cae85b0848098d77c9333cd2c94f0f25f768461b2f862`; the
+semantic export digest was
+`0a3a6f4258a2ab7b5a9c292cfd7dc82e6ddf7bfd707ecbebe3527ba43b5096eb`. This
+single-source rehearsal is separate from the two seven-source passes below.
 
 ## Expected gradient and the two fresh runs
 
-The target map is four clean Coherent sources, Scheduling and Recurrence Loose
+The target map is five clean Coherent sources, Scheduling and Recurrence Loose
 with its unmet obligation and unreached-step warning, and Booking Disjoint
 with the contradiction and ownership-conflict findings. It is the intended
 demo shape, not stable model behavior.
 
 The two complete fresh passes used the same captured export
-(`815cf3e13bf95d24f895dad8fa668c068f22d2dfd71f4f1a6a3b5775e8d13d36`; raw
-frontend SHA-256 `32fa4b1c0113c76ac69579583e2bcc67f3b9c4e52ef741683e295273e2a32428`),
+(`0a3a6f4258a2ab7b5a9c292cfd7dc82e6ddf7bfd707ecbebe3527ba43b5096eb`; raw
+frontend SHA-256 `2d1294c82f6770f0737cae85b0848098d77c9333cd2c94f0f25f768461b2f862`),
 source-byte manifest SHA-256
-`eeec092cd614f550c3ee21d62f52abc454b3077421b453fb3718c654ee38b1c2`, separate
+`cb2f7d470172bb875a0a65cbaf4894b3746cd3d04951ddb1969dd490c9541571`, separate
 initially empty private roots, and a fresh child for every source. The workspace
-had no interpretation store to seed.
+had no interpretation store to seed. The export contains 168 facets, 292
+resolved references, and 19 import declarations; its eight source byte hashes
+matched the captured manifest before both passes.
 Every prepare reported zero reused units. The host limits were
 instruction-only: each child was told to read only its prepared request,
 binding, guidance, and required skill entrypoints, and write only its assigned
@@ -145,27 +158,30 @@ artifact. No OS-level read-only sandbox was enforced.
 | Selected source | Target state / exit; intended findings | Pass 1: state / exit; actual finding classes | Pass 2: state / exit; actual finding classes | Prepared facets, each pass / reused |
 | --- | --- | --- | --- | ---: |
 | `auth.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 43 / 0 |
-| `profile.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 21 / 0 |
-| `booking-calendar-view.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 27 / 0 |
-| `resource-management.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 17 / 0 |
-| `scheduling-and-recurrence.sigil` | Loose / 0; one unmet obligation and one unreached step | Loose / 0; 1 unmet-obligation, 2 interpretation, 1 flow (`suppressed-graph`) | Loose / 0; 1 unmet-obligation | 17 / 0 |
-| `booking.sigil` | Disjoint / 1; contradiction and ownership conflict | Disjoint / 1; 3 contradiction, 2 unmet-obligation, 4 interpretation | Coherent / 0; none | 56 / 0 |
+| `user.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 2 / 0 |
+| `profile.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 23 / 0 |
+| `booking-calendar-view.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 126 / 0 |
+| `resource-management.sigil` | Coherent / 0; none | Coherent / 0; none | Coherent / 0; none | 60 / 0 |
+| `scheduling-and-recurrence.sigil` | Loose / 0; one unmet obligation and one unreached step | Loose / 0; 1 unmet-obligation, 5 interpretation (`ungrounded-claim`), 1 flow (`suppressed-graph`) | Loose / 0; 1 unmet-obligation, 1 interpretation (`ungrounded-claim`) | 77 / 0 |
+| `booking.sigil` | Disjoint / 1; contradiction and ownership conflict | Disjoint / 1; 7 contradiction (5 `contradictory-claims`, 2 `negated-claim-holds`), 2 unmet-obligation | Coherent / 0; none | 99 / 0 |
 
 The renamed `Profile` component and the `UserProfile` Tag import were
 unambiguous: Auth completed as Coherent with zero findings in both passes.
-Booking's first report included the intended interface-versus-constraint
-contradiction, but it did not report the ownership conflict. Its second report
-was Coherent with no findings, so neither intended Booking problem appeared.
-The first Scheduling report emitted a `flow` / `suppressed-graph` finding
-because another row in that logic flow had a defect; it did not emit the
-intended `unreached-step`. The second reported only the unmet obligation. The
-extra interpretation findings in pass 1 are also part of the observed result;
-they were not silently removed from the counts.
+Booking's first report included contradiction findings for the interface and
+constraint, plus two unmet-obligation findings; it did not report the intended
+ownership conflict. Its second report was Coherent with no findings, so neither
+intended Booking problem appeared in that interpretation. Scheduling was Loose
+in both passes, but its findings changed: pass 1 reported the unmet obligation,
+five `ungrounded-claim` interpretation findings, and `suppressed-graph`; pass 2
+reported the unmet obligation and one `ungrounded-claim`. Neither pass reported
+the intended `unreached-step` finding. The extra interpretation findings are
+part of the observed outcomes, not silently removed from the counts.
 
 The complete run records, including the per-artifact BLAKE3 identities and
 matched reports, remain outside the repository under
-`/tmp/sigil-u5-slotted-profile-r2/`. The source manifest and ingest identity
-checks were verified for every counted result.
+`/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/slotted-u5-final.SARS1Y/`.
+The source manifest, prepared counts, exact child-artifact BLAKE3 identities,
+bindings, reports, and private-root paths were verified for all 14 results.
 
 ### Earlier attempts before the `Profile` rename
 
@@ -213,13 +229,15 @@ produce a computed state or gate. Use computed evaluation to check the claims
 the prepared rows express and to gate on findings; use advisory review to
 assess the design's meaning, consistency, ownership, and simplifications.
 
-The whole-design review was run after the final design edits against captured
-Sigil sources whose byte hashes matched the export's source manifest. It also
-included the Slotted workspace config, calendar SVG, implementation plan, and
-the user's final design direction as review context. The capture contained 11
-inputs; its seven Sigil-source hashes, config, and workspace membership matched
-the final files. `sigil check` and the six-source `sigil fmt --check` both
-passed without diagnostics, and all formatted files were unchanged.
+The whole-design review was run after the final design edits from a captured
+workspace snapshot. It assessed eight Sigil source files and included the
+Slotted workspace config, calendar SVG, README, implementation plan, and the
+user's final design direction as context: 13 captured inputs total. All capture
+hashes and reviewed excerpts matched, and source membership plus workspace
+hashes were unchanged before and after review. `sigil check` reported no
+diagnostics; the explicit eight-file `sigil fmt --check` passed with every file
+unchanged. The validated report is outside the repository at
+`/var/folders/xt/zq2r4zxd4xvdltd71g0qnf680000gn/T/slotted-u5-final.SARS1Y/review/agent-report.json`.
 
 The fresh advisory review returned four design-choice findings:
 
@@ -257,8 +275,11 @@ comparison.
 
 The current two complete passes diverged from the expected gradient and from
 each other: Booking changed from Disjoint to Coherent, while Scheduling kept a
-Loose state but changed its findings. Four clean sources agreed across both
-passes. The earlier pre-rename attempts diverged too, and their first attempt
-was incomplete. These results support describing the intended states as
-expected behavior only. Fresh model interpretations may change wording,
-findings, and states; no future run is guaranteed to reproduce this gradient.
+Loose state but changed its findings. The five clean sources agreed as
+Coherent. The intended ownership-conflict and unreached-step findings did not
+appear in either current pass; pass 1 emitted a suppressed-graph warning for
+Scheduling instead. The earlier pre-rename attempts diverged too, and their
+first attempt was incomplete. These results support describing the intended
+states as expected behavior only. Fresh model interpretations may change
+wording, findings, and states; no future run is guaranteed to reproduce this
+gradient.

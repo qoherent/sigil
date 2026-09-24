@@ -717,8 +717,10 @@ Its [.sigil/config.json](examples/slotted/.sigil/config.json) makes it an
 independent workspace named `slotted`; imports beginning with `@` resolve from
 that directory.
 
-`Auth` and `User` in [examples/slotted/auth.sigil](examples/slotted/auth.sigil)
-show a smaller module-level specification inside the Slotted example.
+`User` in [examples/slotted/user.sigil](examples/slotted/user.sigil) defines the
+shared user identity and identifiers. `Auth` in
+[examples/slotted/auth.sigil](examples/slotted/auth.sigil) reuses those Tags for
+sign-in, sessions, roles, and permissions.
 
 `Profile` in
 [examples/slotted/profile.sigil](examples/slotted/profile.sigil) shows a

@@ -1,22 +1,25 @@
+@user.sigil from User import { user identity, user identifier }
+
 component Profile {
     goal {
-        Stores editable profile information for a signed-in user.
+        Stores editable *UserProfile* information for a signed-in user identity.
 
-        Keeps profile presentation details separate from authentication identity and
-        session rules.
+        Keeps UserProfile presentation details separate from authentication identity
+        and session rules.
     }
 
     interface {
-        A *UserProfile* has a user identifier, display name, and optional
-        profile-picture URL.
+        A UserProfile has a user identifier, *display name*, and optional
+        *profile-picture URL*.
 
-        Its *public profile summary* contains the same fields.
+        Its *public profile summary* contains the same user identifier and
+        display name, plus the profile-picture URL when present.
 
-        A signed-in user can retrieve their profile and public profile summary by
-        user identifier.
+        The owner of a UserProfile can retrieve it by user identifier and request
+        its public profile summary.
 
-        The owning user can update the display name, profile-picture URL, or both.
-        An omitted field remains unchanged.
+        The owning user identity can update the display name, the
+        profile-picture URL, or both; an omitted field remains unchanged.
 
         A successful update returns the updated UserProfile.
 
@@ -24,37 +27,39 @@ component Profile {
     }
 
     state {
-        profile can be incomplete or complete
+        A UserProfile can be incomplete or complete.
 
-        profile belongs to exactly one UserId
+        A UserProfile belongs to exactly one user identifier.
 
-        profilePictureUrl can be absent or present
+        A profile-picture URL can be absent or present.
     }
 
     logic {
-        A new user starts with an incomplete profile.
+        A new UserProfile starts incomplete.
 
-        The owning user can update displayName and profilePictureUrl.
+        The owning user identity can update the display name and
+        profile-picture URL.
 
-        Booking and room views read profile summary for display only.
+        Booking and room views read the public profile summary for display only.
 
-        Authentication does not depend on profile completeness.
+        Authentication does not depend on UserProfile completeness.
     }
 
     constraints {
-        Profile owns non-authentication profile fields.
+        Profile owns the non-authentication fields in UserProfile.
 
-        Auth owns credentials, sessions, roles, and permission checks.
+        Auth owns the credentials, sessions, roles, and permission checks associated
+        with the user identity.
 
-        Other modules should use Profile for display information instead of reading
-        Auth private user details.
+        Other modules use the public profile summary for display instead of reading
+        Auth's private user details.
     }
 
     cases {
-        A renter updates their display name.
+        The owner of a UserProfile updates its display name.
 
-        A room owner sets a profilePictureUrl.
+        The owner of a UserProfile sets its profile-picture URL.
 
-        A signed-in user can book a room even when their profile is incomplete.
+        An incomplete UserProfile does not prevent its owner from booking a room.
     }
 }

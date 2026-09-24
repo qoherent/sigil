@@ -1,109 +1,156 @@
+@user.sigil from User import { user identifier }
+@auth.sigil from Auth import { identity and access, renter, room owner }
+@profile.sigil from Profile import {
+    UserProfile,
+    public profile summary,
+    display name,
+    profile-picture URL,
+}
+@resource-management.sigil from ResourceManagement import {
+    Room,
+    resource identifier,
+    room metadata,
+    base availability rules,
+    requested time range,
+    room availability answer,
+}
+@booking.sigil from Booking import {
+    booking request,
+    confirmed booking,
+    booking conflict,
+    cancellation record,
+}
+@scheduling-and-recurrence.sigil from SchedulingAndRecurrence import {
+    recurring booking pattern,
+    recurring booking series,
+    series exception,
+}
+@booking-calendar-view.sigil from BookingCalendarView import {
+    room calendar,
+    selected date range,
+}
+
 component Slotted {
     goal {
-        A room booking platform built as a testbed for a Sigil-driven development
-        workflow.
+        Slotted is a room-booking testbed that connects a room owner and a renter
+        in one authenticated app.
 
-        Slotted connects room owners and renters in one authenticated app.
+        Room owners create and manage Room and room metadata with
+        base availability rules.
 
-        Owners create and manage rooms and availability.
+        Renters create a booking request for a Room and requested time range,
+        subject to booking conflict checks.
 
-        Renters book rooms for specific time slots with conflict detection and
-        cancellation support.
+        The room calendar shows room availability and confirmed bookings for a
+        selected date range.
 
-        The product is intentionally small; the real goal is testing whether Sigil can
-        preserve rationale from schema design through implementation and tests.
+        The *Slotted product* is intentionally small; its purpose is to test whether
+        Sigil can preserve rationale from schema design through implementation and
+        tests.
     }
 
     interface {
-        accepts room information from room owners
+        Slotted accepts Room information and room metadata from room owners.
 
-        accepts availability rules from room owners
+        Slotted accepts base availability rules from room owners.
 
-        accepts booking requests from renters
+        Slotted accepts booking request from renters.
 
-        exposes room search and room details to renters
+        Slotted exposes Room search and room details to renters.
 
-        exposes confirmed bookings, canceled bookings, and booking conflicts
+        Room and booking views can request the public profile summary for display.
+
+        Slotted exposes confirmed booking, cancellation record, and
+        booking conflict information.
     }
 
     state {
-        room can be draft, available, unavailable, or archived
+        A Room can be draft, available, unavailable, or archived.
 
-        booking can be requested, confirmed, or canceled
+        A booking request can be requested, confirmed, or canceled.
 
-        recurring booking can be a series or a single edited instance
+        A recurring booking pattern can produce a recurring booking series or one
+        edited instance.
 
-        calendar view is derived from bookings, rooms, and availability
+        The room calendar is derived from confirmed bookings, Rooms, and
+        availability.
     }
 
     logic {
-        Owners publish rooms with availability rules.
+        A room owner publishes a Room with base availability rules.
 
-        Renters search available rooms and request a time slot.
+        A renter searches available Rooms and creates a booking request for a
+        requested time range.
 
-        Booking checks identity, room availability, scheduling rules, and conflicts
-        before confirming a booking.
+        Booking checks identity and access, a Room's room availability answer,
+        recurring booking pattern rules, and booking conflict before confirmation.
 
-        Cancellations update booking state without deleting the historical booking
-        record.
+        A cancellation changes a confirmed booking while preserving its
+        cancellation record.
 
-        Calendar view reads from module contracts and shapes the data for presentation.
+        The room calendar reads contracts from Booking and Resource Management and
+        shapes the data for presentation.
     }
 
     constraints {
-        Architecture style is a modular monolith with layered, domain-oriented modules.
+        The Slotted product is a modular monolith with layered, domain-oriented
+        modules.
 
-        The system ships as a single Next.js app.
+        The Slotted product ships as a single Next.js app.
 
-        Modules communicate through explicit contracts, not direct access to another
-        module's database tables or private logic.
+        The Slotted product uses explicit module contracts rather than direct access
+        to another module's database tables or private logic.
 
-        Each module separates Presentation, Application, Domain, Infrastructure, and
-        Contracts concerns where useful.
+        Each Slotted product module separates Presentation, Application, Domain,
+        Infrastructure, and Contracts concerns where useful.
 
-        Domain logic should be testable with zero mocks and zero I/O.
+        *Domain logic* should be testable with zero mocks and zero I/O.
 
-        Infrastructure is private to the module that owns it.
+        Infrastructure is private to its owning Slotted product module.
 
-        Shared identifiers such as UserId and ResourceId live in a shared contracts or
-        shared-kernel area.
+        Shared contracts carry user identifier and resource identifier values.
 
-        Identity and Access owns users, sessions, roles, and permission checks.
-
-        User Profile owns editable display profile information such as displayName and
-        profilePictureUrl.
-
-        Resource Management owns rooms, room metadata, and base availability rules.
-
-        Booking owns booking creation, conflict detection, lifecycle, and cancellation
-        rules.
-
-        Scheduling and Recurrence owns recurring booking patterns, series, and
-        exceptions.
-
-        Calendar Read Model composes bookings and resources for UI display.
-
-        Booking must call Resource Management to answer availability questions.
-
-        Other modules must call Identity and Access for current user and permission
+        identity and access owns user identities, sessions, roles, and permission
         checks.
 
-        Notification is out of scope for the first implementation but remains a known
-        module boundary.
+        UserProfile owns editable display fields such as display name and
+        profile-picture URL.
 
-        Stack is Next.js, Neon Postgres, and Drizzle ORM.
+        Resource Management owns Room, room metadata, and
+        base availability rules.
+
+        Booking owns booking request, booking conflict, booking lifecycle, and
+        cancellation record rules.
+
+        Scheduling and Recurrence owns recurring booking pattern,
+        recurring booking series, and series exception.
+
+        Calendar Read Model composes confirmed booking and Room data for the
+        room calendar.
+
+        Booking asks Resource Management for a room availability answer based on
+        base availability rules.
+
+        Other modules ask identity and access for the current user and permission
+        checks.
+
+        Notification is out of scope for the first implementation of the
+        Slotted product but remains a known module boundary.
+
+        The Slotted product uses Next.js, Neon Postgres, and Drizzle ORM.
     }
 
     cases {
-        A room owner creates a room and publishes availability.
+        A room owner creates a Room and publishes its base availability rules.
 
-        A renter books an available room for a specific time slot.
+        A renter creates a booking request for an available Room and time range.
 
-        A renter cannot book a room when the requested slot conflicts with an existing
-        confirmed booking.
+        A booking conflict prevents a renter from booking a time range that overlaps
+        an existing confirmed booking.
 
-        A renter cancels a confirmed booking.
+        A renter cancels a confirmed booking, and Slotted retains its
+        cancellation record.
 
-        A calendar view shows rooms and bookings for a selected date range.
+        The room calendar shows Rooms and confirmed bookings for a selected range.
     }
 }

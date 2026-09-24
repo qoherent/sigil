@@ -1,70 +1,68 @@
 @profile.sigil from Profile import { UserProfile }
-
-component User {
-    goal {
-        Represents the authentication identity shared by renters and room owners.
-    }
-
-    interface {
-        A *User* has an identifier, an email address, and a Boolean signal that
-        indicates whether the user is a room owner.
-    }
+@user.sigil from User import {
+    user identity,
+    email address,
+    room owner signal,
 }
 
 component Auth {
     goal {
-        Manages identity and access so a user can sign in as a renter or room owner and
-        use the correct parts of the app.
+        Manages *identity and access* so a user can sign in as a *renter* or
+        *room owner* and use the correct parts of the app.
     }
 
     interface {
-        Signing in accepts an email address and password and returns a JWT-backed
-        session.
+        Signing in accepts an email address and password and returns a
+        *JWT session* for the user identity.
 
-        Auth exposes permission checks for managing rooms and booking rooms.
+        Auth exposes permission checks for *room management permission* and
+        *booking permission*.
     }
 
     state {
-        anonymous user has no active session
+        An *anonymous user* has no active JWT session.
 
-        logged-in user has an active session
-
+        A *signed-in user* has an active JWT session.
     }
 
     logic {
-        signIn validates SignInCredentials.email and SignInCredentials.password.
+        signIn validates the supplied email address and password.
 
-        A successful sign-in creates a JWT-backed session.
+        A successful sign-in creates a JWT session for the user identity.
 
-        isHomeOwner grants access to room creation and booking acceptance.
+        isHomeOwner uses the room owner signal to grant room management permission
+        and booking permission for accepting bookings.
 
-        renter access grants room browsing and room booking.
+        A renter uses booking permission to browse rooms and create bookings.
     }
 
     constraints {
-        Renters and room owners share the same User entity.
+        A renter and a room owner use the same user identity.
 
-        Room owners can manage rooms and accept bookings.
+        A room owner has room management permission for managing rooms and accepting
+        bookings.
 
-        Renters can browse rooms and create bookings.
+        A renter has booking permission for browsing rooms and creating bookings.
 
         Auth uses UserProfile only through its public contract.
 
-        Next.js authentication is the intended auth foundation.
+        Next.js is the intended foundation for identity and access.
 
-        JWT is the session representation exposed to the app.
+        JWT is the representation of an active JWT session exposed to the app.
 
-        Other modules should ask Auth for current user and permissions instead of
-        reading Auth private details directly.
+        Other modules ask identity and access for the current user and permissions
+        instead of reading Auth's private details directly.
 
-        Password storage and verification details are private to Auth.
+        Auth keeps credential storage and verification private for each
+        user identity.
     }
 
     cases {
-        A renter signs in and can book a room.
+        A renter signs in and uses booking permission to book a room.
 
-        A room owner signs in and can add rooms.
+        A room owner signs in and uses room management permission to add rooms.
 
-        An anonymous user cannot create bookings or manage rooms.
+        An anonymous user cannot use booking permission or
+        room management permission to create bookings or manage rooms.
     }
 }
