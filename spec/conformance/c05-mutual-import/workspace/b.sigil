@@ -1,0 +1,11 @@
+@a.sigil from A import { alpha }
+
+component B {
+  goal {
+    Own beta.
+  }
+
+  interface {
+    A *beta* exists and uses alpha.
+  }
+}

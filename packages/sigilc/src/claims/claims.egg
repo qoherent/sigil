@@ -150,12 +150,24 @@
 ; None writes to `violation`. Each rests on a model's reading of prose, which is
 ; why the dead-end finding does not gate either.
 
-; 1. contradiction: a governed step does what a reaching constraint forbids
+; 1. contradiction: a governed step does what a reaching constraint forbids.
+; The ban binds its subject, so it reaches only the subject's own flows and
+; those of the components the subject depends on.
 (rule ((claim id f sec a "excludes" obj "required" "true") (commits sec)
-       (constraint-governs id g) (in-graph st g) (flow-touches st obj))
+       (constraint-governs id g) (entity g "Graph" l a gs)
+       (in-graph st g) (flow-touches st obj))
+      ((step-violation "step-excluded-action" st obj id)) :ruleset closure)
+(rule ((claim id f sec a "excludes" obj "required" "true") (commits sec)
+       (constraint-governs id g) (entity g "Graph" l own gs) (reachable a own)
+       (in-graph st g) (flow-touches st obj))
       ((step-violation "step-excluded-action" st obj id)) :ruleset closure)
 (rule ((claim id f sec a rel obj "required" "false") (commits sec)
-       (constraint-governs id g) (in-graph st g) (holds st rel obj))
+       (constraint-governs id g) (entity g "Graph" l a gs)
+       (in-graph st g) (holds st rel obj))
+      ((step-violation "step-negated-action" st obj id)) :ruleset closure)
+(rule ((claim id f sec a rel obj "required" "false") (commits sec)
+       (constraint-governs id g) (entity g "Graph" l own gs) (reachable a own)
+       (in-graph st g) (holds st rel obj))
       ((step-violation "step-negated-action" st obj id)) :ruleset closure)
 
 ; 2. ownership: a step writes state a claim marks exclusive that its component

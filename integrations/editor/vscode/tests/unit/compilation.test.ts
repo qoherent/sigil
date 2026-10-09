@@ -112,18 +112,13 @@ test("rejects legacy, malformed, mismatched and unsafe diagnostic reports", () =
 async function fixture(nativeScript?: string) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), "sigil editor tests "));
   await writeFile(
-    path.join(cwd, "export"),
-    'process.stdout.write(JSON.stringify({schemaVersion:2,languageVersion:"0.9.0", sources:[{path:"a.sigil",text:"exact"}]}));',
-  );
-  await writeFile(
     path.join(cwd, "compile"),
     nativeScript ?? `
 const fs=require("node:fs");
 const args=process.argv.slice(2);
 if(args.includes("--profile")||args.includes("--format")||args.includes("--position")) process.exit(2);
-const frontend=args[args.indexOf("--frontend")+1];
 const scope=args.includes("--scope")?JSON.parse(fs.readFileSync(args[args.indexOf("--scope")+1])):null;
-fs.writeFileSync("observed.json",JSON.stringify({args,frontend,bundle:JSON.parse(fs.readFileSync(frontend)),scope}));
+fs.writeFileSync("observed.json",JSON.stringify({args,scope}));
 console.log(JSON.stringify(args[0] === "implementation" ? ${
       JSON.stringify(implementation("Converged"))
     } : ${JSON.stringify(design("Loose"))}));`,
@@ -131,12 +126,11 @@ console.log(JSON.stringify(args[0] === "implementation" ? ${
   return cwd;
 }
 
-test("exports exact structural data then calls native file scope and cleans temporary inputs", async () => {
+test("calls sigilc alone against the workspace root with native file scope and cleans temporary inputs", async () => {
   const cwd = await fixture();
   try {
     const operation = runCompilationProcess({
       executable: process.execPath,
-      languageExecutable: process.execPath,
       cwd,
       focus: "design",
       file: "a.sigil",
@@ -152,8 +146,12 @@ test("exports exact structural data then calls native file scope and cleans temp
       design: { paths: ["a.sigil"] },
       implementation: { exclude: ["**"], allowEmpty: true },
     });
-    assert.equal(seen.bundle.sources[0].text, "exact");
-    await assert.rejects(readFile(seen.frontend), /ENOENT/);
+    assert.deepEqual(seen.args.slice(0, 3), ["design", "--root", cwd]);
+    assert.equal(seen.args.includes("--frontend"), false);
+    await assert.rejects(
+      readFile(seen.args[seen.args.indexOf("--scope") + 1]),
+      /ENOENT/,
+    );
   } finally {
     await rm(cwd, { recursive: true, force: true });
   }
@@ -162,7 +160,6 @@ test("exports exact structural data then calls native file scope and cleans temp
 test("requires explicit Implementation selection before launching any executable", async () => {
   const operation = runCompilationProcess({
     executable: "must-not-run",
-    languageExecutable: "must-not-run",
     cwd: process.cwd(),
     focus: "implementation",
     onLog: () => {},
@@ -182,7 +179,6 @@ test("passes the explicit native Implementation selection for workspace and file
     for (const file of [undefined, "a.sigil"]) {
       const result = await runCompilationProcess({
         executable: process.execPath,
-        languageExecutable: process.execPath,
         cwd,
         focus: "implementation",
         selection: "selection.json",
@@ -213,7 +209,6 @@ test("terminates a compiler that exceeds the stderr bound", async () => {
     await assert.rejects(
       runCompilationProcess({
         executable: process.execPath,
-        languageExecutable: process.execPath,
         cwd,
         focus: "design",
         onLog: () => {},
@@ -225,22 +220,18 @@ test("terminates a compiler that exceeds the stderr bound", async () => {
   }
 });
 
-test("cancellation stops an export and prevents the native gate from starting", async () => {
-  const cwd = await fixture();
+test("cancellation stops the compiler", async () => {
+  const cwd = await fixture(
+    'process.stderr.write("ready"); setInterval(()=>{},1000);',
+  );
   try {
-    await writeFile(
-      path.join(cwd, "export"),
-      'process.stderr.write("ready"); setInterval(()=>{},1000);',
-    );
     const operation = runCompilationProcess({
       executable: process.execPath,
-      languageExecutable: process.execPath,
       cwd,
       focus: "design",
       onLog: () => operation.cancel(),
     });
     await assert.rejects(operation.result, /cancelled/);
-    await assert.rejects(readFile(path.join(cwd, "observed.json")), /ENOENT/);
   } finally {
     await rm(cwd, { recursive: true, force: true });
   }
@@ -256,7 +247,6 @@ test("runtime failure cannot accept a valid-looking successful report", async ()
     await assert.rejects(
       runCompilationProcess({
         executable: process.execPath,
-        languageExecutable: process.execPath,
         cwd,
         focus: "design",
         onLog: () => {},
@@ -268,30 +258,21 @@ test("runtime failure cannot accept a valid-looking successful report", async ()
   }
 });
 
-test("obsolete or failing language exports never launch the native compiler", async () => {
-  for (
-    const script of [
-      'console.log(JSON.stringify({schemaVersion:1,languageVersion:"0.7.0"}));',
-      'console.log(JSON.stringify({schemaVersion:2,languageVersion:"0.8.0"}));',
-      'console.log(JSON.stringify({schemaVersion:2,languageVersion:"0.9.0",diagnostics:[{code:"INVALID"}]}));process.exitCode=1;',
-    ]
-  ) {
-    const cwd = await fixture();
-    try {
-      await writeFile(path.join(cwd, "export"), script);
-      await assert.rejects(
-        runCompilationProcess({
-          executable: process.execPath,
-          languageExecutable: process.execPath,
-          cwd,
-          focus: "design",
-          onLog: () => {},
-        }).result,
-        /Incompatible language export|Language export failed/,
-      );
-      await assert.rejects(readFile(path.join(cwd, "observed.json")), /ENOENT/);
-    } finally {
-      await rm(cwd, { recursive: true, force: true });
-    }
+test("an obsolete native report is rejected", async () => {
+  const cwd = await fixture(
+    'console.log(JSON.stringify({version:1,world:{state:"Loose"},diagnostics:{items:[],omitted:0}}));',
+  );
+  try {
+    await assert.rejects(
+      runCompilationProcess({
+        executable: process.execPath,
+        cwd,
+        focus: "design",
+        onLog: () => {},
+      }).result,
+      /Incompatible design report/,
+    );
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
   }
 });

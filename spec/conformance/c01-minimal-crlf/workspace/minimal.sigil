@@ -1,0 +1,9 @@
+﻿component Minimal {
+  goal {
+    State one responsibility.
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

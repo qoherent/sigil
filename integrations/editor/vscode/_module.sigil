@@ -1,6 +1,5 @@
 @packages/sigilc/scope.sigil from SigilComparisonScope import { ScopeInput, DesignMembership }
 @packages/sigilc/report.sigil from SigilGateDiagnostics import { ReportSchema, NativeFindings }
-@packages/cli/_module.sigil from SigilCli import { DesignExport }
 @packages/lsp/_module.sigil from SigilLsp import { LspPackage, LanguageFeatures, DocumentRendering, OwnershipSourceWatching, client, file URIs, server, Markdown }
 @packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { diagnostics }
 
@@ -67,7 +66,6 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Export the complete file-backed workspace to a temporary frontend bundle.
       Design Workspace invokes compile design. Implementation Workspace invokes
       compile implementation with the *configured native selection*. File commands
       supply a native scope with that ordered Design root and the Implementation
@@ -94,14 +92,14 @@ component SigilVsCodeExtension {
       selections, all seven contracts, local grouping and inline Tags, links, and
       inert payloads without legacy expand or directory-import fallback.
 
-      Consume ReportSchema native report schema 2 independently of frontend schema 2.
+      Consume ReportSchema native report schema 2.
       Convert every Sigil byte range, including related and destination locations, to
       UTF-16 using the exact captured source snapshot. If only disk text is
       available, verify its captured digest first. Never publish stale-source
       locations; clear obsolete findings through the existing cancellation and
       freshness lifecycle.
 
-      Compilation exports current Design structure and runs *native compile* against
+      Compilation runs *native compile* on the workspace root against
       stored projections. External producers own prepare and ingest; the editor
       neither reconstructs missing projections nor interprets eqval tables.
     ArtifactVersionOwnership assigns the extension artifact version to
@@ -232,8 +230,8 @@ component SigilVsCodeExtension {
       closure. Scope output exposes included dependency files and explicit root
       order. All six state/exit pairings display their native name and correct color;
       unavailable comparison remains unset. Reject malformed or mismatched results.
-      The extension-host test exercises current structural export and native
-      diagnostic projection, with separate fixed-report fixtures for gate states.
+      The extension-host test exercises native diagnostic projection, with
+      separate fixed-report fixtures for gate states.
       Language navigation and ordinary Markdown preview still work. Removed workflow
       commands and the obsolete Compile Component alias are absent. Dirty documents
       prevent capture; edits and settings changes invalidate the displayed result.
@@ -288,11 +286,11 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Use DesignExport for structural export, ScopeInput and DesignMembership for
-      native file membership, and NativeFindings for compiler-owned presentation.
+      Use ScopeInput and DesignMembership for native file membership, and
+      NativeFindings for compiler-owned presentation.
       Contribute Compile File and Compile Workspace with Design or Implementation
-      focus. Export current structure through sigil export design, then invoke native
-      sigilc directly and display its named state and native diagnostics. File focus
+      focus. Invoke native sigilc directly on the workspace root and display its
+      named state and native diagnostics. File focus
       uses the active physical Sigil file as an ordered native Design root; native
       scope adds imports and structural owners. Show the effective scope honestly,
       including wider dependencies, rather than claiming a cursor-selected component
@@ -384,10 +382,10 @@ component SigilVsCodeExtension {
     }
 
     ExternalCompilerIntegration {
-      Decision: Use language CLI structural export and direct native sigilc final
+      Decision: Run native sigilc directly on the workspace root and use its final
       reports. The editor consumes native states and findings, not old events.
-      Consequences: Both executables are configured independently; ordinary language
-      support still needs neither. Remove compiler package dependencies.
+      Consequences: Only sigilc is configured; ordinary language support needs no
+      executable. Remove compiler package dependencies.
     }
 
     LocationBasedCompilation {

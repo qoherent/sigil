@@ -107,27 +107,6 @@ fn run() -> Result<(), String> {
         ));
     }
     let target_text = path_string(&target);
-    let exported = run_cli(
-        &cli,
-        &["export", "design", &target_text, "--root", &target_text],
-        &unrelated,
-        &environment,
-    )?;
-    if !exported.status.success() {
-        return Err(format!(
-            "structural Design export failed: {}",
-            output_text(&exported)
-        ));
-    }
-    let structural = compact(&stdout_text(&exported));
-    if !structural.contains("\"schemaVersion\":2")
-        || !structural.contains("\"languageVersion\":\"0.9.0\"")
-    {
-        return Err("expected Sigil 0.9 schema-2 structural export".into());
-    }
-    let frontend = unrelated.join("frontend.json");
-    fs::write(&frontend, &exported.stdout).map_err(io_error)?;
-    let frontend_text = path_string(&frontend);
     let design = run_cli(
         &compiler,
         &[
@@ -135,8 +114,6 @@ fn run() -> Result<(), String> {
             "design",
             "--root",
             &target_text,
-            "--frontend",
-            &frontend_text,
         ],
         &unrelated,
         &environment,
@@ -156,8 +133,6 @@ fn run() -> Result<(), String> {
             "compare",
             "--root",
             &target_text,
-            "--frontend",
-            &frontend_text,
             "--selection",
             &selection_text,
         ],

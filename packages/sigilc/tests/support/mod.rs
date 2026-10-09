@@ -1,14 +1,27 @@
 #![allow(dead_code)]
-use serde_json::{Value, json};
-use sigilc::frontend::DesignInput;
+//! Workspaces on disk. Every fixture is a real `.sigil` workspace in a
+//! tempdir: the tests read it the way the commands do, through the trees.
+use serde_json::Value;
+use sigilc::{
+    inputs::{DesignBasis, DesignSnapshot},
+    structure::DesignInput,
+    tree::design_input::{load_design, load_design_input},
+};
 use std::{
     fs,
     path::PathBuf,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        OnceLock,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
+
+pub const CONFIG: &str =
+    r#"{"sigilVersion":"0.9.0","workspace":{"name":"test"},"files":{"include":["**/*.sigil"]}}"#;
 
 pub struct Workspace(pub PathBuf);
 impl Workspace {
+    /// An empty workspace that selects every `.sigil` file beneath it.
     pub fn new() -> Self {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
@@ -17,21 +30,39 @@ impl Workspace {
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir(&path).unwrap();
-        Self(path.canonicalize().unwrap())
+        let root = Self(path.canonicalize().unwrap());
+        root.write(".sigil/config.json", CONFIG.as_bytes());
+        root
     }
     pub fn write(&self, path: &str, bytes: &[u8]) {
         let path = self.0.join(path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, bytes).unwrap();
     }
-    pub fn input(&self, paths: &[&str], imports: Value) -> DesignInput {
-        DesignInput::parse(&serde_json::to_vec(&json!({
-            "schemaVersion": 2, "languageVersion":"0.9.0", "frontendVersion":"test",
-            "sources": paths.iter().map(|p| json!({"path":p,"text":fs::read_to_string(self.0.join(p)).unwrap()})).collect::<Vec<_>>(),
-            "context": ([".sigil/config.json",".sigil/local.json",".sigil/glossary.json"].iter().map(|p| json!({"path":p,"text":fs::read_to_string(self.0.join(p)).ok()})).collect::<Vec<_>>()),
-            "diagnostics":[], "entities":[], "units":[], "imports":imports,
-            "groups":[], "introductions":[], "references":[], "links":[],
-        })).unwrap()).unwrap()
+    /// Write every file a design fixture carries: its sources and its context.
+    pub fn write_fixture(&self, fixture: &Value) {
+        for item in fixture["sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .chain(fixture["context"].as_array().unwrap())
+        {
+            if let Some(text) = item["text"].as_str() {
+                self.write(item["path"].as_str().unwrap(), text.as_bytes());
+            }
+        }
+    }
+    /// The binding snapshot of this workspace as it is on disk now.
+    pub fn snapshot(&self) -> DesignSnapshot {
+        DesignSnapshot::load(&self.0, &self.0.join(".sigil")).unwrap()
+    }
+    /// The structural input and binding basis, before any scope narrows them.
+    pub fn load(&self) -> (DesignInput, DesignBasis) {
+        load_design(&self.0, &self.0.join(".sigil")).unwrap()
+    }
+    /// The structural input of this workspace as it is on disk now.
+    pub fn design_input(&self) -> DesignInput {
+        load_design_input(&self.0, &self.0.join(".sigil")).unwrap()
     }
 }
 impl Drop for Workspace {
@@ -40,147 +71,148 @@ impl Drop for Workspace {
     }
 }
 
-pub fn component(path: &str, name: &str, text: &str) -> Value {
-    let start = text.find(&format!("component {name} {{")).unwrap();
-    let name_start = start + "component ".len();
-    let mut depth = 0;
-    let end = text[start..]
-        .char_indices()
-        .find_map(|(i, c)| {
-            if c == '{' {
-                depth += 1;
-            }
-            if c == '}' {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(start + i + 1);
-                }
-            }
-            None
-        })
-        .unwrap();
-    json!({"id":format!("urn:sigil:component:{path}:{name}"),"type":"Component","label":name,
-        "source":path,"owner":null,"range":{"start":start,"end":end},
-        "nameRange":{"start":name_start,"end":name_start+name.len()},
-        "identityResolved":true,"valid":true,"complete":true})
+/// The claims request for `source`, with the tree identities read from the
+/// sources `input` carries. For tests that adjust a derived `DesignInput` by
+/// hand and still need the binding basis a workspace would give.
+pub fn project(
+    input: &DesignInput,
+    source: &str,
+) -> Result<sigilc::claims::prepare::Request, String> {
+    let root = Workspace::new();
+    for item in &input.sources {
+        root.write(&item.path, item.text.as_bytes());
+    }
+    let (_, basis) = root.load();
+    sigilc::claims::prepare::project(input, &basis, source)
 }
-pub fn unit(path: &str, name: &str, text: &str, prose: &str) -> Value {
-    let start = text.find(prose).unwrap();
-    let end = start + prose.len();
-    json!({"id":format!("facet:{path}:{start}"),"source":path,"owner":format!("urn:sigil:component:{path}:{name}"),
-        "section":"goal","range":{"start":start,"end":end},"proseRange":{"start":start,"end":end},
-        "grouping":null,"introductions":[],"references":[],"links":[],"payload":null,"valid":true,"complete":true})
+
+/// The rows of `artifact` in the form admission reads: read, then resolved
+/// against `request` the way ingest does it. Any row that does not resolve is
+/// a bug in the test, so it panics with the reason.
+pub fn resolved(
+    request: &sigilc::claims::prepare::Request,
+    artifact: &str,
+) -> Vec<sigilc::claims::dialect::Row> {
+    let parsed =
+        sigilc::claims::dialect::read(artifact, sigilc::claims::dialect::Limits::default())
+            .unwrap();
+    assert!(parsed.errors.is_empty(), "{:?}", parsed.errors);
+    let resolved = sigilc::claims::canon::resolve(request, parsed);
+    assert!(resolved.issues.is_empty(), "{:?}", resolved.issues);
+    resolved.rows
+}
+
+/// The id of the one Facet `source` holds in `section`.
+pub fn facet_in(input: &DesignInput, source: &str, section: &str) -> String {
+    let mut found = input
+        .units
+        .iter()
+        .filter(|u| u.source == source && serde_json::to_value(u.section).unwrap() == section);
+    let unit = found
+        .next()
+        .unwrap_or_else(|| panic!("no {section} Facet in {source}"));
+    assert!(
+        found.next().is_none(),
+        "more than one {section} Facet in {source}"
+    );
+    unit.id.clone()
+}
+
+/// The id of the Facet in `source` whose prose contains `needle`.
+pub fn facet_with(input: &DesignInput, source: &str, needle: &str) -> String {
+    let text = &input
+        .sources
+        .iter()
+        .find(|s| s.path == source)
+        .unwrap()
+        .text;
+    let mut found = input.units.iter().filter(|u| {
+        u.source == source && text[u.prose_range.start..u.prose_range.end].contains(needle)
+    });
+    let unit = found
+        .next()
+        .unwrap_or_else(|| panic!("no Facet with `{needle}` in {source}"));
+    assert!(
+        found.next().is_none(),
+        "more than one Facet with `{needle}`"
+    );
+    unit.id.clone()
+}
+
+fn fixture(text: &str) -> Value {
+    serde_json::from_str(text).unwrap()
 }
 pub fn shared_value() -> Value {
-    serde_json::from_str(include_str!(
+    fixture(include_str!(
         "../../../core/tests/fixtures/design-input-080.json"
     ))
-    .unwrap()
 }
 pub fn shared_workspace() -> Workspace {
     let root = Workspace::new();
-    let value = shared_value();
-    for item in value["sources"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .chain(value["context"].as_array().unwrap())
-    {
-        if let Some(text) = item["text"].as_str() {
-            root.write(item["path"].as_str().unwrap(), text.as_bytes());
-        }
-    }
+    root.write_fixture(&shared_value());
     root
 }
 
-/// The shared 0.9 design fixture, parsed. Facet identities below are baked from
-/// byte offsets in that fixture, so they live here rather than in each test.
+/// The shared 0.9 design fixture, derived from its workspace on disk.
 pub fn shared_input() -> DesignInput {
-    DesignInput::parse(&serde_json::to_vec(&shared_value()).unwrap()).unwrap()
+    shared_workspace().design_input()
 }
 pub const BASE: &str = "base.sigil";
 pub const CONSUMER: &str = "consumer.sigil";
-pub const BASE_GOAL: &str = "facet:base.sigil:29";
-pub const BASE_INTERFACE: &str = "facet:base.sigil:129";
-pub const BASE_CONSTRAINTS: &str = "facet:base.sigil:82";
-pub const CONSUMER_GOAL: &str = "facet:consumer.sigil:75";
-pub const CONSUMER_INTERFACE: &str = "facet:consumer.sigil:107";
+
+/// Facet ids are content ids, so they are looked up from the derived input
+/// once rather than written down.
+fn shared_id(cell: &'static OnceLock<String>, source: &str, section: &str) -> &'static str {
+    cell.get_or_init(|| facet_in(&shared_input(), source, section))
+}
+pub fn base_goal() -> &'static str {
+    static CELL: OnceLock<String> = OnceLock::new();
+    shared_id(&CELL, BASE, "goal")
+}
+pub fn base_interface() -> &'static str {
+    static CELL: OnceLock<String> = OnceLock::new();
+    shared_id(&CELL, BASE, "interface")
+}
+pub fn base_constraints() -> &'static str {
+    static CELL: OnceLock<String> = OnceLock::new();
+    shared_id(&CELL, BASE, "constraints")
+}
+pub fn consumer_goal() -> &'static str {
+    static CELL: OnceLock<String> = OnceLock::new();
+    shared_id(&CELL, CONSUMER, "goal")
+}
+pub fn consumer_interface() -> &'static str {
+    static CELL: OnceLock<String> = OnceLock::new();
+    shared_id(&CELL, CONSUMER, "interface")
+}
 
 pub fn cycle_value() -> Value {
-    serde_json::from_str(include_str!(
+    fixture(include_str!(
         "../../../core/tests/fixtures/design-cycle-080.json"
     ))
-    .unwrap()
 }
 pub fn cycle_workspace() -> Workspace {
     let root = Workspace::new();
-    let value = cycle_value();
-    for item in value["sources"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .chain(value["context"].as_array().unwrap())
-    {
-        if let Some(text) = item["text"].as_str() {
-            root.write(item["path"].as_str().unwrap(), text.as_bytes());
-        }
-    }
+    root.write_fixture(&cycle_value());
     root
 }
 pub fn cycle_input(root: &Workspace) -> DesignInput {
-    let mut value = cycle_value();
-    for item in value["sources"].as_array_mut().unwrap() {
-        item["text"] =
-            json!(fs::read_to_string(root.0.join(item["path"].as_str().unwrap())).unwrap());
-    }
-    for item in value["context"].as_array_mut().unwrap() {
-        item["text"] = json!(fs::read_to_string(root.0.join(item["path"].as_str().unwrap())).ok());
-    }
-    DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap()
+    root.design_input()
 }
-pub fn missing_cycle_provider() -> Value {
-    let mut value = cycle_value();
-    value["sources"]
-        .as_array_mut()
-        .unwrap()
-        .retain(|s| s["path"] != "b.sigil");
-    for field in [
-        "entities",
-        "units",
-        "imports",
-        "groups",
-        "introductions",
-        "references",
-        "links",
-    ] {
-        value[field]
-            .as_array_mut()
-            .unwrap()
-            .retain(|r| r["source"] != "b.sigil");
-    }
-    let import = value["imports"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|i| i["source"] == "a.sigil")
-        .unwrap();
-    import["target"] = Value::Null;
-    import["providerId"] = Value::Null;
-    import["status"] = json!("unresolved-path");
-    for n in import["names"].as_array_mut().unwrap() {
-        n["entity"] = Value::Null;
-        n["status"] = json!("unresolved");
-        n["uses"] = json!([]);
-    }
-    for r in value["references"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .filter(|r| r["source"] == "a.sigil")
-    {
-        r["tag"] = Value::Null;
-        r["status"] = json!("ambiguous");
-    }
-    value["diagnostics"] = json!([{"code":"SIGIL_UNRESOLVED_IMPORT_PATH","stage":"resolution","severity":"error","message":"Missing b.sigil","filePath":"a.sigil","related":[]}]);
-    value
+/// The cycle workspace after `b.sigil`, which `a.sigil` imports, is deleted.
+pub fn missing_cycle_provider_workspace() -> Workspace {
+    let root = cycle_workspace();
+    fs::remove_file(root.0.join("b.sigil")).unwrap();
+    root
+}
+
+pub fn scope_value() -> Value {
+    fixture(include_str!(
+        "../../../core/tests/fixtures/design-scope-080.json"
+    ))
+}
+pub fn scope_workspace() -> Workspace {
+    let root = Workspace::new();
+    root.write_fixture(&scope_value());
+    root
 }

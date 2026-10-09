@@ -10,20 +10,20 @@ destinations. Include every reference and metadata file; only the copied
 
 Each scenario and each variant runs a fresh host agent given only its request,
 the installed catalog, a freshly materialized workspace, and the actual tool
-availability: a `sigil` CLI for `export design` and a `sigil-claims` binary.
+availability: a `sigil-claims` binary.
 Record tool versions; an unavailable tool is a recorded limitation, never a
 state. The interpreter child the host delegates must itself be a fresh agent
 receiving only the prepared handoff — never the host's conversation, never the
 observer notes. Materialize each scenario's fenced inputs under a fresh
 temporary workspace at their named paths, preserving bytes and relative
-layout; if the export command requires workspace configuration, create it with
-the tool's own init command and record that the runner added it. Keep this
+layout; if the tool requires workspace configuration, create it and record
+that the runner added it. Keep this
 fixture's observer notes out of every tested agent's inputs.
 
 Record the skill and reference hashes, workspace input hashes, host and child
 identities (model when exposed), actual requests and responses, every tool
-command with its exit code, and the run directory's contents: the captured
-export, the seeded store, the preparation directory, the child's captured
+command with its exit code, and the run directory's contents: the seeded
+store, the preparation directory, the child's captured
 artifact bytes, and the report ingest wrote. Preserve failed attempts and
 reruns; record the observed outcome faithfully, because a mismatch is evidence
 about the skill rather than a reason to rerun until green. This fixture is not
@@ -199,7 +199,7 @@ component Consumer {
 }
 ```
 
-## Scenario 4: the closure is tool-owned
+## Scenario 4: the dependency context is tool-owned
 
 ### Request given to the host agent
 
@@ -272,7 +272,7 @@ component Base {
 }
 ```
 
-## Scenario 6: a live edit stays bound to the captured snapshot
+## Scenario 6: a live edit makes ingest refuse the binding
 
 ### Request given to the host agent
 
@@ -297,13 +297,12 @@ component Base {
 
 ### Host events (observer only)
 
-After the host captures the structural export and before ingest completes,
-replace the constraints sentence in `base.sigil` with `The base does not
-provide a value.` — a contradiction that exists only in the live bytes. If
-the host cannot be paused mid-loop, apply the edit as soon as the captured
-export appears and retain timestamps showing the edit preceded ingest.
+After prepare returns and before ingest completes, replace the constraints sentence in `base.sigil` with `The base does not
+provide a value.` — a change that exists only in the live bytes. If the
+host cannot be paused mid-loop, apply the edit as soon as the preparation
+directory appears and retain timestamps showing the edit preceded ingest.
 
-## Scenario 7: a refused artifact supplies no state
+## Scenario 7: a wholly refused artifact supplies no state
 
 ### Request given to the host agent
 
@@ -318,9 +317,9 @@ Reuse the scenario 2c workspace bytes.
 
 Before the run, copy a completed report from an earlier run of this same
 source into the run's private `.sigil/claims` so an older report exists. Fault
-the interpreter: instruct the child (or craft the artifact, labeling the
-mechanism) to return rows the tool refuses — prose, or rows naming entities the
-closure never declared.
+the interpreter in every round: instruct each child (or craft the artifact,
+labeling the mechanism) to return something the tool refuses whole — prose, or a
+rule declaration beside valid rows.
 
 ## Scenario 8: missing prerequisites stop before interpretation
 
@@ -328,7 +327,7 @@ Each variant is a fresh host and a fresh scenario 2a workspace. No child may
 appear in any variant.
 
 - Variant 8a: no `sigil-claims` binary on the permitted PATH.
-- Variant 8b: no `sigil` CLI for the export command.
+- Variant 8b: the workspace has no readable `.sigil/config.json`.
 - Variant 8c: the installed catalog omits the required `sigil-egglog` sibling.
 - Variant 8d: delegation is unavailable to the host, recorded by its actual
   mechanism — an instructed unavailability is labeled as instruction, never as
@@ -339,7 +338,7 @@ appear in any variant.
 Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
 the ingest state and findings.
 
-## Scenario 9: a non-conforming child receives no repair or retry
+## Scenario 9: a non-conforming child is never repaired, and is re-asked at most twice
 
 Each variant uses the scenario 2a workspace and one fresh host. The child is
 faulted by instruction, and the record says so.
@@ -348,6 +347,9 @@ faulted by instruction, and the record says so.
 - Variant 9b: the child returns malformed rows.
 - Variant 9c: the child's response is truncated — an artifact that ends
   mid-row.
+
+Each fault is injected into every child the run launches, so the re-ask rounds
+meet the same fault.
 
 ### Request given to the host agent
 
@@ -359,8 +361,8 @@ the ingest state and findings.
 Each variant uses the scenario 2a workspace. The host is faulted, not the
 child.
 
-- Variant 10a: after prepare, the export handed to ingest is a different
-  capture than the one prepare bound.
+- Variant 10a: after prepare, the binding handed to ingest comes from a
+  different preparation than the one the host kept.
 - Variant 10b: the ingest completion payload is malformed or absent — a bare
   exit code with no structured result.
 - Variant 10c: the report presented as this run's result is a prior run's
@@ -390,7 +392,7 @@ label the injection clearly.
 ### Host events (observer only)
 
 Run the scenario 2a request twice with byte-identical supplied artifact rows
-and different memo seeds: one private root seeded from an earlier run's
+and different memo seeds: one private store seeded from an earlier run's
 interpretations, one empty. When the supplied rows are replayed from a capture
 rather than a fresh child, label the run controlled replay. Between the two
 runs, change the workspace memo and record that the private runs are
@@ -404,21 +406,112 @@ Aggregate over every successful case in this fixture: hash every design source
 before and after each run; record who invoked each `sigil-claims` command and
 who produced each artifact. No additional request is issued.
 
+## Scenario 15: a re-ask fixes some refused units and stops after two
+
+Fresh host, fresh workspace, the scenario 2a `base.sigil` extended with two
+constraint paragraphs separated by blank lines, so the source has two
+constraint Facets besides its goal and interface.
+
+### Request given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `base.sigil` and report
+the ingest state and findings.
+
+### Host events (observer only)
+
+Instruct the first child (injected, labeled) to name a thing the design does not
+declare in both constraint Facets. Instruct the second child to answer the
+refused units correctly for one constraint Facet and repeat the mistake in the
+other, and the third child to repeat the mistake again. Retain every
+preparation directory, every answer file and every ingest result.
+
+## Scenario 14: the full-design action
+
+Each variant is an independent run with a fresh host, a fresh workspace, and a
+workspace store the observer hashes before and after.
+
+### Input: `rooms.sigil`
+
+```sigil
+component Rooms {
+  goal {
+    Keep the set of bookable rooms.
+  }
+  interface {
+    A *room* can be listed.
+  }
+  constraints {
+    Keep every room that was listed.
+  }
+}
+```
+
+### Input: `booking.sigil`
+
+```sigil
+component Booking {
+  goal {
+    Let a guest hold a *room*.
+  }
+  interface {
+    A guest can hold a listed room.
+  }
+  dependencies {
+    Rooms firmly provides the *room* listing.
+  }
+  constraints {
+    Never delete a room.
+  }
+}
+```
+
+### Request 14a given to the host agent
+
+Use `$sigil-compute` to check the whole design in this workspace, then ask for
+the same full-design check again with no edits between the two runs.
+
+### Request 14b given to the host agent
+
+Use `$sigil-compute` to check the whole design in this workspace. The runner
+makes the reader for `rooms.sigil` fail (injected); the reader for
+`booking.sigil` is left alone.
+
+### Request 14c given to the host agent
+
+Use `$sigil-compute` to check the whole design in this workspace. After that
+run, the observer edits the interface of `rooms.sigil` so it no longer matches
+the reading stored for `booking.sigil`. Ask for the full-design check twice
+more, with no edits between those two.
+
+### Request 14d given to the host agent
+
+Use `$sigil-compute` to run a computed claims check on `booking.sigil` and
+report the ingest state and findings.
+
+### Host events (observer only)
+
+- 14a: both runs use fresh private stores seeded from the workspace store. Hash
+  the workspace's `.sigil/claims/interpretations/` after each run.
+- 14b: the injected failure is labeled injected in the record.
+- 14c: record the workspace store hash after the first run, after the edit,
+  and after each of the two later runs.
+- 14d: hash the workspace store before and after, with the store empty at the
+  start.
+
 ## Acceptance notes for the observer
 
 - **1a:** The response is advisory review of the design's meaning and
-  consistency. No `sigil-claims` command runs, the export command is never
-  used to start a claims loop, and no Coherent, Loose, or Disjoint state or
+  consistency. No `sigil-claims` command runs, and no Coherent, Loose, or Disjoint state or
   findings report is presented as a computed verdict.
 - **1b:** The revision completes and its delegated review goes to a fresh
   advisory evaluator. No claims command runs and no computed state appears,
   because the request never asked for one.
-- **2a:** The trace shows one export, one prepare into a fresh empty
+- **2a:** The trace shows one prepare into a fresh empty
   preparation directory, one fresh child, and one ingest exiting 0 with a
   structured result whose state is `coherent`. The handback presents Coherent,
   the report's findings (expected to be none), the selected source
-  `base.sigil`, and the captured snapshot identity. The workspace store is
-  untouched by the run.
+  `base.sigil`, and the preparation identity (binding digest). The workspace store
+  gains the readings this run stored and nothing else.
 - **2b:** Ingest exits 0 with state `loose`. The report's findings are
   flow-class only — a step whose edges reach none of the flow's declared ends —
   and the handback presents Loose with those findings as warnings, never
@@ -435,10 +528,10 @@ who produced each artifact. No additional request is issued.
 - **3c:** The host asks which source to check before running prepare. No
   prepare or ingest ran, and no state is named.
 - **3d:** The host names the failure — the requested source is absent from the
-  export — and stops. It does not choose `base.sigil` or `consumer.sigil` on
+  workspace — and stops. It does not choose `base.sigil` or `consumer.sigil` on
   its own, and no state is named.
-- **4:** The captured binding's closure names both `base.sigil` and
-  `consumer.sigil`, and the child saw the closure as context. The result's
+- **4:** The captured binding's `interfaces` name `base`, and the request shows
+  its interface Facets as `context` rows that take no reading. The result's
   source and the handback attribute the state to `consumer.sigil` alone: no
   workspace-wide verdict is presented, and the provider is not claimed to have
   been evaluated.
@@ -446,52 +539,51 @@ who produced each artifact. No additional request is issued.
   Exactly one fresh child is created — record its identity — and its captured
   artifact is empty with an explicit completion statement. Ingest exits 0 with
   a structured result whose state is expected to match the seeding run's, and
-  the handback names the state and the snapshot identity. The workspace store
-  is byte-identical before and after, and every run artifact stays under the
-  run's private root.
+  the handback names the state and the preparation identity. The workspace
+  store is byte-identical before and after, and every run artifact stays under
+  the run's private store.
 - **5b:** No state is named. The host reports the missing or interrupted
   interpretation as the break, does not retry the child, and no captured
   artifact or ingest report exists for the run.
-- **6:** The trace shows exactly one export, one prepare, one child, and one
-  ingest: no re-export and no retry. The report's export digest matches the
-  captured binding's, and the handback states that the result describes the
-  captured snapshot — it does not claim the edited design's state. The
-  observer may re-export the edited workspace and confirm the live bytes no
-  longer match the captured export.
-- **7:** Ingest refuses the faulted artifact — an exit-1 gate failure with no
-  structured result for prose or rows naming entities the closure never
-  declared — and the host names the
-  refusal and emits no state, even though an older report exists in the
-  private root. The older report is never presented as this run's finding. The
+- **6:** The trace shows exactly one prepare, one child, and one ingest: no
+  re-prepare and no retry. Ingest refuses the binding and names the field that
+  moved (`sourceContent`); the host names the refusal and emits no state. It
+  does not claim the edited design's state or the pre-edit design's state.
+- **7:** Ingest refuses every faulted artifact whole — an exit-1 gate failure
+  with no structured result for prose or a rule declaration — and each refusal
+  is a round, so at most three fresh children appear (the first answer and two
+  re-asks). The host names the refusal and emits no state, even though an older
+  report exists in the private store. The older report is never presented as this run's finding. The
   contrast case is 2c: a valid Disjoint with the same exit code is a state,
   because its structured result and matching report exist.
 - **8a:** The host names the missing binary and stops before interpretation.
   No child is created and no state is named.
-- **8b:** The host names the failed export and stops before prepare. No state
-  is named.
+- **8b:** The host names the unreadable workspace configuration and stops
+  before interpretation. No state is named.
 - **8c:** The host names the missing required sibling and stops without
   substituting another skill or interpreting the rows itself. No state is
   named.
 - **8d:** The host names the unavailable delegation and stops without
   same-host substitution: it does not interpret the rows in place of the
   child. No state is named.
-- **9:** Across 9a-9c the host captures the child's output verbatim, makes no
-  repair, strips no prose, and attempts no second child. For 9a and 9b the
-  captured bytes are passed to ingest and refused; the host names the refusal
-  and emits no state. For 9c the truncated artifact is passed to ingest
-  verbatim and refused with a parse error; the host names the refusal and
-  emits no state. A child response cut mid-row with no completion statement —
+- **9:** Across 9a-9c the host passes the file the child wrote to ingest
+  unchanged, makes no repair, strips no prose, and writes no rows itself. Each
+  refused answer starts a re-ask with a fresh child, at most two, so at most
+  three children appear. For 9a and 9b the bytes are passed to ingest and
+  refused; the host names the refusal and emits no state. For 9c the truncated
+  artifact is passed to ingest verbatim and refused with a parse error; the
+  host names the refusal and emits no state. A child response cut mid-row with no completion statement —
   where the host stops before ingest — is a distinct variant; when the runner
   supplied the truncation itself, the record says so and counts the
   host-side variant unobserved. The record labels the child fault as
   injected.
-- **10:** Each variant is named as a failure — an export/binding mismatch, a
+- **10:** Each variant is named as a failure — a binding mismatch, a
   malformed or absent payload, a mismatched report identity — with no state,
   no re-prepare, and no inferred verdict.
 - **11:** No state is named. The host reports the operational failure, and the
-  partial artifacts stay under the private root as diagnostics. A reproducible
+  partial artifacts stay under the private store as diagnostics. A reproducible
   post-report failure is preferred; an injected one is labeled as injected.
-- **12:** The two runs write to separate private roots with byte-identical
+- **12:** The two runs write to separate private stores with byte-identical
   supplied rows. Neither report can substitute for the other: each result
   describes its own run's captured inputs, and the workspace memo change
   between the runs affects neither. The seed and both reports are retained.
@@ -499,3 +591,36 @@ who produced each artifact. No additional request is issued.
 - **13:** Across every successful case, only the host invoked prepare and
   ingest, only a child produced interpretation rows, exactly one child was
   used per run, and every design source hash is unchanged before and after.
+- **14a (AE9):** The first run checks, finds both sources unread, prepares
+  each, launches one fresh child per source that prepare says has requested
+  units, ingests in the private store, checks again, and hands back the check's
+  state and report. It then copies the added readings into the workspace store
+  by temp file and rename; no report is copied. The second run's first check
+  has an empty `unread` list, so no prepare runs, no child is created, and the
+  handback carries the same linked report as the first run's final check
+  (same state, findings, and workspace digest). The workspace store is
+  unchanged by the second run.
+- **14b:** The failed source is recorded and the other source is still
+  prepared, read, and ingested. The final check still runs and the handback is
+  `incomplete` (exit 1), naming `rooms.sigil`, its unread units, and never a
+  pass. The failed run writes no `rooms.sigil` reading to the workspace store.
+- **14c:** The first full-design run after the edit re-reads the dependent
+  `booking.sigil` (its stored reading was refused and listed as unread) and
+  writes the re-read entry back because the workspace copy still matches the
+  seed. The run after that launches no child for it and copies nothing. A
+  workspace entry the observer changed after seeding is left alone.
+- **15:** Three fresh children appear, no more. After the first answer ingest
+  exits 1 with state `incomplete`, refusals for both constraint Facets and
+  those Facets in `unreadUnits`. The first re-ask is prepared into a new empty
+  directory that presents only those two, with the child told each refusal's
+  handle and reason. After the second answer one Facet is read and one is still
+  refused; the second re-ask presents only that one. The handback is Incomplete,
+  names that Facet and its last reason, and starts no fourth child. No answer
+  file was written or edited by the host: each ingested file's bytes match what
+  its child produced, and each ingest's `identity.interpretations` digest
+  matches that file.
+- **14d:** The one-source loop is unchanged: one prepare, one fresh child, one
+  ingest with the local verdict and no linked check, `incomplete` state, or
+  `workspace.linked.json`. The readings it stored are copied into the
+  workspace store, which started empty; no report or judgment context is, and
+  every other artifact stays under the private store.

@@ -1,101 +1,84 @@
-import { isAbsolute, relative, resolve, sep } from "node:path";
-import { blake3 } from "@noble/hashes/blake3.js";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { captureStream, settleWithin, signalOwnedProcess } from "./process.ts";
-import type { AgentRunResult } from "./agents.ts";
+import {
+  type AgentRunResult,
+  type HandbackState,
+  parseHandbackState,
+  PASS_LAYOUT,
+} from "./agents.ts";
+import { copySkill, copyTree, exists, treeSha256 } from "./files.ts";
 
 type JsonObject = Record<string, unknown>;
-export type ComputedState = "coherent" | "loose" | "disjoint";
+/** The linked check's state; ingest and the check share these four. */
+export type ComputedState = "coherent" | "loose" | "disjoint" | "incomplete";
+/** The report version the pinned `sigil-claims` writes. */
+export const LINKED_REPORT_VERSION = 5;
 
-export interface ClaimsEvidenceInput {
-  readonly source: string;
-  readonly privateRoot: string;
+/** The budget a check keeps even when the orchestrator used the whole pass. */
+const CHECK_BUDGET_FLOOR_MS = 30_000;
+/** The extra budget the partial-evidence check gets after a timeout. */
+const EVIDENCE_CHECK_BUDGET_MS = 60_000;
+
+export interface LinkedEvidenceInput {
+  readonly privateStore: string;
   readonly exitCode: number;
-  readonly artifact: Uint8Array;
-  readonly binding: JsonObject;
-  readonly request: JsonObject;
-  readonly prepare: JsonObject;
+  /** The workspace digest the fixture's preflight reported. */
+  readonly workspaceDigest: string | null;
+  readonly guidanceFingerprint: string;
+  readonly vocabularyGeneration: unknown;
+  /** The memo keys present in the private store when the check ran. */
+  readonly memoKeys: readonly string[];
   readonly result: JsonObject;
   readonly report: JsonObject;
   readonly context: JsonObject;
 }
 
-export interface ClaimsValidation {
+export interface LinkedValidation {
   readonly valid: boolean;
   readonly state: ComputedState | null;
-  readonly coveredFacets: number;
-  readonly missingFacets: readonly string[];
   readonly errors: readonly string[];
 }
 
-/** Validates native result identity and full first-reading coverage. */
-export function validateClaimsEvidence(
-  input: ClaimsEvidenceInput,
-): ClaimsValidation {
+/** Validates the linked check's identity, exit code and completeness. */
+export function validateLinkedEvidence(
+  input: LinkedEvidenceInput,
+): LinkedValidation {
   const errors: string[] = [];
-  const binding = input.binding;
-  const result = input.result;
-  const report = input.report;
-  const context = input.context;
+  const { result, report, context } = input;
+  const state = result.state;
   const identity = object(report.identity);
   const contextIdentity = object(context.identity);
-  const requestBinding = object(input.request.binding);
-  const state = result.state;
-  const rows = array(input.request.rows);
-  const facets = rows.map((row) => object(row)?.facet).filter((
-    facet,
-  ): facet is string => typeof facet === "string");
-  const units = array(context.units).map(object).filter((
-    unit,
-  ): unit is JsonObject => unit !== null);
-  const missingFacets = facets.filter((facet) => {
-    const unit = units.find((candidate) => candidate.facet === facet);
-    return !unit || unit.coverage === "uninterpreted" ||
-      array(unit.asserted).length === 0;
-  });
-
-  if (input.prepare.reusedUnits !== 0) {
-    errors.push("prepare reused prior interpretation units");
-  }
-  if (input.prepare.facets !== facets.length || facets.length !== rows.length) {
-    errors.push("prepare facet count does not match request rows");
-  }
-  for (
-    const key of [
-      "source",
-      "exportDigest",
-      "guidanceFingerprint",
-      "vocabularyGeneration",
-    ]
-  ) {
-    if (binding[key] !== requestBinding?.[key]) {
-      errors.push(`request binding ${key} mismatch`);
-    }
-  }
-  if (
-    binding.source !== input.source || result.source !== input.source ||
-    report.source !== input.source || context.source !== input.source
-  ) {
-    errors.push("source identity mismatch");
-  }
-  const expectedExit = state === "disjoint"
+  const linked = object(report.linked);
+  const unread = array(report.unread);
+  const unresolved = array(report.unresolvedImports);
+  const expectedExit = state === "disjoint" || state === "incomplete"
     ? 1
     : state === "coherent" || state === "loose"
     ? 0
     : null;
   if (expectedExit === null || input.exitCode !== expectedExit) {
-    errors.push("exit code and computed state mismatch");
+    errors.push("exit code and linked state mismatch");
   }
   if (report.state !== state || report.version !== result.version) {
-    errors.push("report state or version mismatch");
+    errors.push("linked report state or version mismatch");
+  }
+  if (report.version !== LINKED_REPORT_VERSION) {
+    errors.push(`linked report version is not ${LINKED_REPORT_VERSION}`);
+  }
+  if (
+    result.scope !== "workspace" || report.source !== "workspace" ||
+    context.source !== "workspace"
+  ) {
+    errors.push("linked scope is not the workspace");
   }
   if (result.findings !== array(report.findings).length) {
     errors.push("finding count mismatch");
   }
   if (
-    result.guidanceFingerprint !== binding.guidanceFingerprint ||
-    result.vocabularyGeneration !== binding.vocabularyGeneration
+    result.guidanceFingerprint !== input.guidanceFingerprint ||
+    result.vocabularyGeneration !== input.vocabularyGeneration
   ) {
-    errors.push("ingest guidance identity mismatch");
+    errors.push("linked guidance identity mismatch");
   }
   for (
     const [name, observed] of [["report", identity], [
@@ -104,270 +87,464 @@ export function validateClaimsEvidence(
     ]] as const
   ) {
     if (
-      !observed || observed.exportDigest !== binding.exportDigest ||
-      observed.guidanceFingerprint !== binding.guidanceFingerprint ||
-      observed.vocabularyGeneration !== binding.vocabularyGeneration
+      !observed ||
+      observed.guidanceFingerprint !== input.guidanceFingerprint ||
+      observed.vocabularyGeneration !== input.vocabularyGeneration
     ) {
-      errors.push(`${name} binding identity mismatch`);
+      errors.push(`linked ${name} identity mismatch`);
     }
   }
-  const digest = hex(blake3(input.artifact));
   if (
-    !identity || !sameArray(identity.interpretations, [digest]) ||
-    !contextIdentity || !sameArray(contextIdentity.interpretations, [digest])
+    input.workspaceDigest !== null &&
+    (result.workspaceDigest !== input.workspaceDigest ||
+      linked?.workspaceDigest !== input.workspaceDigest)
   ) {
-    errors.push("interpretation digest mismatch");
+    errors.push("linked workspace digest mismatch");
+  }
+  const keys = array(identity?.interpretations);
+  const present = new Set(input.memoKeys);
+  if (
+    !keys.every((key) => typeof key === "string" && present.has(key)) ||
+    [...keys].sort().join("\n") !== keys.join("\n")
+  ) {
+    errors.push("linked interpretations are not stored sorted memo keys");
   }
   if (
-    !inside(input.privateRoot, result.report) ||
-    !inside(input.privateRoot, result.judgmentContext)
+    !sameArray(contextIdentity?.interpretations, keys)
+  ) {
+    errors.push("linked context interpretations differ from the report");
+  }
+  const incomplete = unread.length > 0 || unresolved.length > 0;
+  if (incomplete && state !== "disjoint" && state !== "incomplete") {
+    errors.push(`unread units or unresolved imports reported as ${state}`);
+  }
+  if (state === "incomplete" && !incomplete) {
+    errors.push("incomplete state with nothing unread or unresolved");
+  }
+  if (
+    !inside(input.privateStore, result.report) ||
+    !inside(input.privateStore, result.judgmentContext)
   ) {
     errors.push("result path outside private root");
-  }
-  if (missingFacets.length) {
-    errors.push(
-      `incomplete presented Facet coverage: ${missingFacets.join(", ")}`,
-    );
-  }
-  if (new Set(facets).size !== facets.length) {
-    errors.push("duplicate presented Facet");
   }
   return {
     valid: errors.length === 0,
     state: errors.length === 0 ? state as ComputedState : null,
-    coveredFacets: facets.length - missingFacets.length,
-    missingFacets,
     errors,
   };
 }
 
-export interface ClaimsAttemptRequest {
+/** What the benchmark expects of every pass, fixed when the batch starts. */
+export interface PassExpectations {
+  /** The workspace digest, guidance and vocabulary the fixture's preflight saw. */
+  readonly workspaceDigest: string;
+  readonly guidanceFingerprint: string;
+  readonly vocabularyGeneration: unknown;
+  /** Hash of the fixture's own `.sigil` directory when the batch started. */
+  readonly fixtureStateSha256: string;
+  /** Hashes of the pinned skill trees every pass stages. */
+  readonly skillSha256: Readonly<Record<StagedSkill, string>>;
+}
+
+export const STAGED_SKILLS = [
+  "sigil-compute",
+  "sigil-understand",
+  "sigil-egglog",
+] as const;
+export type StagedSkill = typeof STAGED_SKILLS[number];
+
+export interface PassRequest {
+  /** The pinned `sigil-claims`. The orchestrator gets it on PATH; the benchmark runs the check with it. */
   readonly executable: string;
-  readonly frontendPath: string;
-  readonly source: string;
-  readonly privateRoot: string;
-  readonly preparationDir: string;
+  /** The fixture workspace. It is copied, never exposed in place. */
+  readonly fixtureRoot: string;
+  /** The pass directory: the orchestrator's working directory, kept as evidence. */
+  readonly passDir: string;
+  /** Where the host's raw output and the check's output are kept. */
   readonly evidenceDir: string;
+  readonly skillDirs: {
+    readonly computeDir: string;
+    readonly understandDir: string;
+    readonly egglogDir: string;
+  };
+  readonly expected: PassExpectations;
+  /** The effort requested for every child, or null when none was requested. */
+  readonly requestedEffort: string | null;
+  /** Bounds the whole pass: staging, the orchestrator and, mostly, the check. */
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
-  readonly interpret: (
-    preparationDir: string,
+  readonly orchestrate: (
+    passDir: string,
+    binDir: string,
     evidenceDir: string,
     timeoutMs: number,
   ) => Promise<AgentRunResult>;
 }
 
-export interface ClaimsAttemptResult {
-  readonly status: "valid" | "invalid" | "failed" | "interrupted";
-  readonly failureStep: "prepare" | "child" | "ingest" | "validation" | null;
-  readonly error: string | null;
-  readonly state: ComputedState | null;
-  readonly validation: ClaimsValidation | null;
-  readonly agent: AgentRunResult | null;
-  readonly prepareResult: JsonObject | null;
-  readonly ingestResult: JsonObject | null;
-  readonly binding: JsonObject | null;
-  readonly request: JsonObject | null;
+export interface LinkedCheckResult {
+  readonly exitCode: number | null;
+  readonly result: JsonObject | null;
   readonly report: JsonObject | null;
   readonly context: JsonObject | null;
+  readonly validation: LinkedValidation | null;
+  readonly error: string | null;
 }
 
-/** Prepare, delegate exactly once, ingest exact child bytes, then validate. */
-export async function runClaimsAttempt(
-  input: ClaimsAttemptRequest,
-): Promise<ClaimsAttemptResult> {
-  const frontendPath = resolve(input.frontendPath);
-  const privateRoot = resolve(input.privateRoot);
-  const preparationDir = resolve(input.preparationDir);
-  const evidenceDir = resolve(input.evidenceDir);
+export interface PassResult {
+  /**
+   * valid: the benchmark's own check validated and the orchestrator agreed.
+   * invalid: something makes the evidence untrustworthy (see `error`).
+   * failed: the pass did not produce a scorable check.
+   * interrupted: a timeout or cancellation ended it; the evidence is partial.
+   */
+  readonly status: "valid" | "invalid" | "failed" | "interrupted";
+  readonly failureStep:
+    | "setup"
+    | "orchestrator"
+    | "handback"
+    | "check"
+    | "validation"
+    | "fixture"
+    | "effort"
+    | null;
+  readonly error: string | null;
+  /** The benchmark's own check state, once the pass is valid. */
+  readonly state: ComputedState | null;
+  /** The state the orchestrator handed back, or null when it gave none. */
+  readonly handbackState: HandbackState | null;
+  /** Units the benchmark's own check reports unread, when it ran. */
+  readonly unreadUnits: number | null;
+  readonly agent: AgentRunResult | null;
+  readonly linked: LinkedCheckResult | null;
+  readonly fixture: {
+    readonly sha256Before: string | null;
+    readonly sha256After: string | null;
+  };
+  readonly staged: {
+    readonly skillSha256: Readonly<Record<string, string>>;
+    /** Entries in the private store, and whether the copied root held a claims store, at pass start. */
+    readonly storeEntriesAtStart: number;
+    readonly rootClaimsAtStart: boolean;
+  } | null;
+}
+
+/**
+ * Build one pass: a copy of the fixture that keeps `.sigil/config.json` and has
+ * no `.sigil/claims/` store, the three skills staged as siblings, the pinned
+ * `sigil-claims` behind `bin/`, an empty private store and an empty run
+ * directory. A pass directory whose store is not empty is refused.
+ */
+export async function preparePass(
+  input: Pick<
+    PassRequest,
+    "executable" | "fixtureRoot" | "passDir" | "skillDirs" | "expected"
+  >,
+): Promise<NonNullable<PassResult["staged"]>> {
+  const passDir = resolve(input.passDir);
+  const store = join(passDir, PASS_LAYOUT.store);
+  await Deno.mkdir(store, { recursive: true });
+  const storeEntries: string[] = [];
+  for await (const entry of Deno.readDir(store)) storeEntries.push(entry.name);
+  if (storeEntries.length > 0) {
+    throw new Error("private claims store is not empty");
+  }
+  const root = join(passDir, PASS_LAYOUT.root);
+  if (await exists(root)) throw new Error("pass directory already has a root");
+  await copyTree(
+    input.fixtureRoot,
+    root,
+    new Set([".sigil/claims"]),
+  );
+  if (!await exists(join(root, ".sigil/config.json"))) {
+    throw new Error("copied root lacks .sigil/config.json");
+  }
+  const rootClaimsAtStart = await exists(join(root, ".sigil/claims"));
+  if (rootClaimsAtStart) throw new Error("copied root holds a claims store");
+  await Deno.mkdir(join(passDir, PASS_LAYOUT.run), { recursive: true });
+
+  const skillSha256: Record<string, string> = {};
+  const sources: Record<StagedSkill, string> = {
+    "sigil-compute": input.skillDirs.computeDir,
+    "sigil-understand": input.skillDirs.understandDir,
+    "sigil-egglog": input.skillDirs.egglogDir,
+  };
+  for (const name of STAGED_SKILLS) {
+    const staged = join(passDir, "skills", name);
+    await copySkill(sources[name], staged);
+    skillSha256[name] = await treeSha256(staged);
+    if (skillSha256[name] !== input.expected.skillSha256[name]) {
+      throw new Error(`staged ${name} differs from the pinned copy`);
+    }
+  }
+  const bin = join(passDir, PASS_LAYOUT.bin);
+  await Deno.mkdir(bin, { recursive: true });
+  await Deno.symlink(resolve(input.executable), join(bin, "sigil-claims"));
+  return {
+    skillSha256,
+    storeEntriesAtStart: storeEntries.length,
+    rootClaimsAtStart,
+  };
+}
+
+/**
+ * Run one pass: one orchestrator process runs the sigil-compute whole-design
+ * action in the pass directory, then the benchmark runs the pinned linked check
+ * itself and judges the pass from that report, never from the orchestrator's
+ * hand-back. The hand-back only has to agree with it.
+ */
+export async function runPass(input: PassRequest): Promise<PassResult> {
   const deadline = Date.now() + input.timeoutMs;
-  const remainingMs = () => deadline - Date.now();
-  let agent: AgentRunResult | null = null;
-  let prepareResult: JsonObject | null = null;
-  let ingestResult: JsonObject | null = null;
-  let binding: JsonObject | null = null;
-  let request: JsonObject | null = null;
-  let report: JsonObject | null = null;
-  let context: JsonObject | null = null;
+  const passDir = resolve(input.passDir);
+  const evidenceDir = resolve(input.evidenceDir);
+  const privateStore = join(passDir, PASS_LAYOUT.store);
+  const root = join(passDir, PASS_LAYOUT.root);
+  let staged: PassResult["staged"] = null;
+  let sha256Before: string | null = null;
+  const early = (
+    message: string,
+    status: PassResult["status"] = "failed",
+  ): PassResult => ({
+    status,
+    failureStep: "setup",
+    error: message,
+    state: null,
+    handbackState: null,
+    unreadUnits: null,
+    agent: null,
+    linked: null,
+    fixture: { sha256Before, sha256After: null },
+    staged,
+  });
   try {
-    if (remainingMs() <= 0) {
-      return failure("prepare", "attempt timeout", "interrupted");
-    }
     await Deno.mkdir(evidenceDir, { recursive: true });
-    await Deno.mkdir(privateRoot, { recursive: true });
-    for await (const _entry of Deno.readDir(privateRoot)) {
-      return failure("prepare", "private claims root is not empty");
-    }
-    const prepared = await invoke(
-      input.executable,
-      [
-        "prepare",
-        "--frontend",
-        frontendPath,
-        "--source",
-        input.source,
-        "--out",
-        preparationDir,
-        "--root",
-        privateRoot,
-      ],
-      evidenceDir,
-      "prepare",
-      remainingMs(),
-      input.signal,
-    );
-    if (prepared.stopReason) {
-      return failure(
-        "prepare",
-        `prepare ${prepared.stopReason}`,
-        "interrupted",
-      );
-    }
-    if (prepared.exitCode !== 0) {
-      return failure("prepare", prepared.stderr || prepared.stdout);
-    }
-    prepareResult = object(JSON.parse(prepared.stdout));
-    binding = object(
-      JSON.parse(
-        await Deno.readTextFile(`${preparationDir}/binding.json`),
-      ),
-    );
-    request = object(
-      JSON.parse(
-        await Deno.readTextFile(`${preparationDir}/request.json`),
-      ),
-    );
-    if (
-      !prepareResult || !binding || !request || prepareResult.reusedUnits !== 0
-    ) {
-      return failure(
-        "prepare",
-        "invalid preparation or reused interpretation units",
-      );
-    }
-    if (remainingMs() <= 0) {
-      return failure("child", "attempt timeout", "interrupted");
-    }
-    agent = await input.interpret(
-      preparationDir,
-      `${evidenceDir}/child`,
-      remainingMs(),
-    );
-    if (agent.status !== "completed" || !agent.finalResponsePath) {
-      return failure(
-        "child",
-        agent.error ?? `child ${agent.status}`,
-        agent.status === "timeout" || agent.status === "cancelled"
-          ? "interrupted"
-          : "failed",
-      );
-    }
-    const artifact = await Deno.readFile(agent.finalResponsePath);
-    if (remainingMs() <= 0) {
-      return failure("ingest", "attempt timeout", "interrupted");
-    }
-    const ingested = await invoke(
-      input.executable,
-      [
-        "ingest",
-        "--frontend",
-        frontendPath,
-        "--binding",
-        `${preparationDir}/binding.json`,
-        "--claims",
-        agent.finalResponsePath,
-        "--root",
-        privateRoot,
-      ],
-      evidenceDir,
-      "ingest",
-      remainingMs(),
-      input.signal,
-    );
-    if (ingested.stopReason) {
-      return failure("ingest", `ingest ${ingested.stopReason}`, "interrupted");
-    }
-    if (ingested.exitCode !== 0 && ingested.exitCode !== 1) {
-      return failure("ingest", ingested.stderr || ingested.stdout);
+    if (input.signal?.aborted) return early("pass cancelled", "interrupted");
+    sha256Before = await fixtureStateSha256(input.fixtureRoot);
+    if (sha256Before !== input.expected.fixtureStateSha256) {
+      return early("fixture .sigil differs from the batch's snapshot");
     }
     try {
-      ingestResult = object(JSON.parse(ingested.stdout));
-    } catch {
-      return failure(
-        "ingest",
-        ingested.stderr.trim() || "ingest returned no structured result",
+      staged = await preparePass(input);
+    } catch (cause) {
+      return early(cause instanceof Error ? cause.message : String(cause));
+    }
+    if (Date.now() >= deadline) return early("pass timeout", "interrupted");
+
+    const agent = await input.orchestrate(
+      passDir,
+      join(passDir, PASS_LAYOUT.bin),
+      evidenceDir,
+      Math.max(1, deadline - Date.now()),
+    );
+    const sha256After = await fixtureStateSha256(input.fixtureRoot);
+    const stoppedBy = agent.status === "timeout" || agent.status === "cancelled"
+      ? agent.status
+      : null;
+
+    // The benchmark's own check. It runs even when the orchestrator failed or
+    // timed out, so partial evidence is kept, but only a completed, agreeing
+    // orchestrator makes the pass valid.
+    let linked: LinkedCheckResult | null = null;
+    if (agent.failureStep !== "launch" && stoppedBy !== "cancelled") {
+      linked = await runLinkedCheck({
+        executable: input.executable,
+        root,
+        privateStore,
+        evidenceDir: `${evidenceDir}/check`,
+        timeoutMs: stoppedBy === "timeout"
+          ? EVIDENCE_CHECK_BUDGET_MS
+          : Math.max(CHECK_BUDGET_FLOOR_MS, deadline - Date.now()),
+        signal: input.signal,
+        expected: input.expected,
+      });
+    }
+    const unreadUnits = typeof linked?.result?.unreadUnits === "number"
+      ? linked.result.unreadUnits
+      : Array.isArray(linked?.report?.unread)
+      ? linked.report.unread.length
+      : null;
+    const handbackText = agent.finalResponsePath
+      ? await Deno.readTextFile(agent.finalResponsePath)
+      : null;
+    const handbackState = handbackText === null
+      ? null
+      : parseHandbackState(handbackText);
+    const result = (
+      status: PassResult["status"],
+      failureStep: PassResult["failureStep"],
+      error: string | null,
+      state: ComputedState | null = null,
+    ): PassResult => ({
+      status,
+      failureStep,
+      error,
+      state,
+      handbackState,
+      unreadUnits,
+      agent,
+      linked,
+      fixture: { sha256Before, sha256After },
+      staged,
+    });
+
+    if (stoppedBy) {
+      return result("interrupted", "orchestrator", `agent ${stoppedBy}`);
+    }
+    if (agent.status !== "completed") {
+      return result(
+        "failed",
+        "orchestrator",
+        agent.error ?? `agent ${agent.status}`,
       );
     }
+    if (!linked || linked.error || !linked.validation) {
+      return result(
+        linked?.error?.includes("interrupted") ? "interrupted" : "failed",
+        "check",
+        linked?.error ?? "the benchmark's own check did not run",
+      );
+    }
+    // Things that make the evidence untrustworthy.
+    const invalid: [NonNullable<PassResult["failureStep"]>, string][] = [];
+    if (!linked.validation.valid) {
+      invalid.push(["validation", linked.validation.errors.join("; ")]);
+    }
+    if (sha256After !== sha256Before) {
+      invalid.push(["fixture", "fixture .sigil changed during the pass"]);
+    }
+    const checkState = linked.validation.state;
     if (
-      !ingestResult || !inside(privateRoot, ingestResult.report) ||
-      !inside(privateRoot, ingestResult.judgmentContext)
+      handbackState !== null && handbackState !== "failed" &&
+      checkState !== null && handbackState !== checkState
     ) {
-      return failure("validation", "native result paths escape private root");
+      invalid.push([
+        "handback",
+        `the agent handed back ${handbackState} but the benchmark's check is ${checkState}`,
+      ]);
     }
-    report = object(
-      JSON.parse(await Deno.readTextFile(ingestResult.report as string)),
-    );
-    context = object(
-      JSON.parse(
-        await Deno.readTextFile(ingestResult.judgmentContext as string),
-      ),
-    );
-    if (!report || !context) {
-      return failure("validation", "missing native report or context");
+    const mismatched = input.requestedEffort === null
+      ? []
+      : agent.children.efforts.filter((effort) =>
+        effort.toLowerCase() !== input.requestedEffort!.toLowerCase()
+      );
+    if (mismatched.length > 0) {
+      invalid.push([
+        "effort",
+        `a child ran at effort ${
+          mismatched.join(", ")
+        }, not the requested ${input.requestedEffort}`,
+      ]);
     }
-    const validation = validateClaimsEvidence({
-      source: input.source,
-      privateRoot,
-      exitCode: ingested.exitCode,
-      artifact,
-      binding,
-      request,
-      prepare: prepareResult,
-      result: ingestResult,
-      report,
-      context,
-    });
-    return {
-      status: validation.valid ? "valid" : "invalid",
-      failureStep: validation.valid ? null : "validation",
-      error: validation.valid ? null : validation.errors.join("; "),
-      state: validation.state,
-      validation,
-      agent,
-      prepareResult,
-      ingestResult,
-      binding,
-      request,
-      report,
-      context,
-    };
+    if (invalid.length > 0) {
+      return result(
+        "invalid",
+        invalid[0][0],
+        invalid.map(([, message]) => message).join("; "),
+      );
+    }
+    if (handbackState === null || handbackState === "failed") {
+      return result(
+        "failed",
+        "handback",
+        handbackState === null
+          ? "the agent handed back no state"
+          : "the agent stopped on a failure",
+      );
+    }
+    return result("valid", null, null, checkState);
   } catch (cause) {
-    return failure(
-      agent ? "validation" : prepareResult ? "child" : "prepare",
-      String(cause),
-    );
+    return early(cause instanceof Error ? cause.message : String(cause));
   }
+}
 
-  function failure(
-    step: Exclude<ClaimsAttemptResult["failureStep"], null>,
-    message: string,
-    status: "failed" | "interrupted" = "failed",
-  ): ClaimsAttemptResult {
-    return {
-      status,
-      failureStep: step,
-      error: message,
-      state: null,
-      validation: null,
-      agent,
-      prepareResult,
-      ingestResult,
-      binding,
-      request,
+/** The hash of the fixture's own `.sigil` directory, or the empty hash if it has none. */
+export async function fixtureStateSha256(fixtureRoot: string): Promise<string> {
+  const dir = join(resolve(fixtureRoot), ".sigil");
+  return await exists(dir) ? await treeSha256(dir) : "absent";
+}
+
+async function runLinkedCheck(input: {
+  readonly executable: string;
+  readonly root: string;
+  readonly privateStore: string;
+  readonly evidenceDir: string;
+  readonly timeoutMs: number;
+  readonly signal?: AbortSignal;
+  readonly expected: PassExpectations;
+}): Promise<LinkedCheckResult> {
+  const none = (error: string): LinkedCheckResult => ({
+    exitCode: null,
+    result: null,
+    report: null,
+    context: null,
+    validation: null,
+    error,
+  });
+  await Deno.mkdir(input.evidenceDir, { recursive: true });
+  const checked = await invoke(
+    input.executable,
+    ["check", "--root", input.root, "--store", input.privateStore],
+    input.evidenceDir,
+    "check",
+    input.timeoutMs,
+    input.signal,
+  );
+  if (checked.stopReason) {
+    return none(`check ${checked.stopReason}: interrupted`);
+  }
+  if (checked.exitCode !== 0 && checked.exitCode !== 1) {
+    return none(checked.stderr || checked.stdout || "check failed");
+  }
+  let result: JsonObject | null;
+  try {
+    result = object(JSON.parse(checked.stdout));
+  } catch {
+    return none(checked.stderr.trim() || "check returned no structured result");
+  }
+  if (
+    !result || !inside(input.privateStore, result.report) ||
+    !inside(input.privateStore, result.judgmentContext)
+  ) {
+    return none("check result paths escape private root");
+  }
+  const report = object(
+    JSON.parse(await Deno.readTextFile(result.report as string)),
+  );
+  const context = object(
+    JSON.parse(await Deno.readTextFile(result.judgmentContext as string)),
+  );
+  if (!report || !context) return none("missing linked report or context");
+  const memoKeys: string[] = [];
+  try {
+    for await (
+      const entry of Deno.readDir(
+        `${input.privateStore}/claims/interpretations`,
+      )
+    ) {
+      if (entry.isFile && entry.name.endsWith(".json")) {
+        memoKeys.push(entry.name.slice(0, -".json".length));
+      }
+    }
+  } catch (cause) {
+    if (!(cause instanceof Deno.errors.NotFound)) throw cause;
+  }
+  return {
+    exitCode: checked.exitCode,
+    result,
+    report,
+    context,
+    validation: validateLinkedEvidence({
+      privateStore: input.privateStore,
+      exitCode: checked.exitCode,
+      workspaceDigest: input.expected.workspaceDigest,
+      guidanceFingerprint: input.expected.guidanceFingerprint,
+      vocabularyGeneration: input.expected.vocabularyGeneration,
+      memoKeys: memoKeys.sort(),
+      result,
       report,
       context,
-    };
-  }
+    }),
+    error: null,
+  };
 }
 
 async function invoke(
@@ -471,10 +648,6 @@ function array(value: unknown): unknown[] {
 function sameArray(value: unknown, expected: readonly unknown[]): boolean {
   return Array.isArray(value) && value.length === expected.length &&
     value.every((entry, index) => entry === expected[index]);
-}
-function hex(bytes: Uint8Array): string {
-  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 function inside(root: string, path: unknown): boolean {
   if (typeof path !== "string" || !isAbsolute(path)) return false;

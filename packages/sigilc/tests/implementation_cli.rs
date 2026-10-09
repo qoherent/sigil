@@ -5,24 +5,19 @@ use support::Workspace;
 
 fn workspace() -> Workspace {
     let root = Workspace::new();
-    root.write("a.sigil", b"component A {} component B {}");
+    root.write(
+        "a.sigil",
+        b"component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}\ncomponent B {\ngoal {\nDescribe B.\n}\ninterface {\nOffer B.\n}\n}\n",
+    );
     root.write("main.rs", b"\xff\0direct target bytes");
     root.write("neighbor.py", b"secret neighbor body");
-    let mut input = serde_json::to_value(root.input(&["a.sigil"], json!([]))).unwrap();
-    input["entities"] = json!(
-        ["A", "B"]
-            .iter()
-            .map(|name| support::component("a.sigil", name, "component A {} component B {}"))
-            .collect::<Vec<_>>()
-    );
-    root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
     root.write("selection.json", br#"{"paths":["main.rs"]}"#);
     root
 }
 fn run(root: &Workspace, args: &[&str], expected: i32) -> Value {
     let out = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
-        .args(["--root", ".", "--frontend", "frontend.json"])
+        .args(["--root", "."])
         .current_dir(&root.0)
         .output()
         .unwrap();
@@ -50,7 +45,17 @@ fn publish(root: &Workspace, side: &str, out: &str, body: &str) {
         &["prepare", side, "--source", source, "--out", out],
         0,
     );
-    root.write("facts.ttl",format!("@prefix s: <https://sigil.dev/ontology/1#> . @prefix : <urn:sigil:component:a.sigil:> . {body}").as_bytes());
+    // Fixed test interpretations account for every authored Facet explicitly.
+    let mut coverage = String::new();
+    if side == "design" {
+        let input = root.design_input();
+        for u in &input.units {
+            coverage.push_str(&format!("<{0}> s:uses <{0}> . <{1}> a s:Contract; s:from <{0}>; s:relation \"uses\"; s:target <{0}>; s:expected true .\n", u.owner.as_ref().unwrap(), u.id));
+        }
+    } else {
+        coverage.push_str(":A s:uses :A . :B s:uses :B .");
+    }
+    root.write("facts.ttl",format!("@prefix s: <https://sigil.dev/ontology/1#> . @prefix : <urn:sigil:component:a.sigil:> . {body} {coverage}").as_bytes());
     run(
         root,
         &[

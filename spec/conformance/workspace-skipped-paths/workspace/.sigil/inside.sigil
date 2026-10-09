@@ -1,0 +1,9 @@
+component Inside {
+  goal {
+    State one responsibility.
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

@@ -10,6 +10,23 @@ type Run = (
   args: string[],
   code?: number,
 ) => Promise<string>;
+/** Every Facet id under a Component's sections, in document order. */
+function facetIds(component: unknown): string[] {
+  const found: string[] = [];
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") {
+      const node = value as Record<string, unknown>;
+      if (node.kind === "facet" && typeof node.id === "string") {
+        found.push(node.id);
+      }
+      Object.values(node).forEach(walk);
+    }
+  };
+  walk((component as { sections: unknown }).sections);
+  return found;
+}
+
 /** Real fixed-Turtle protocol checks; no semantic reconstruction claim. */
 export async function validateNativeProtocol(
   { language, compiler, fixture, scratch, run }: {
@@ -20,23 +37,18 @@ export async function validateNativeProtocol(
     run: Run;
   },
 ) {
-  const frontendPath = join(scratch, "frontend.json");
-  const exportText = await run(language, [
-    "export",
-    "design",
-    fixture,
-    "--root",
-    fixture,
-  ]);
-  await Deno.writeTextFile(frontendPath, exportText);
-  const frontend = JSON.parse(exportText);
-  assertEquals(frontend.schemaVersion, 2);
-  assertEquals(frontend.languageVersion, SIGIL_VERSION);
-  assert(
-    frontend.introductions.length && frontend.references.length &&
-      frontend.links.length,
+  const store = join(scratch, "store");
+  const tree = JSON.parse(
+    await run(compiler, ["tree", "--root", fixture, "--store", store]),
   );
-  assert(frontend.entities.some((e: { type: string }) => e.type === "Tag"));
+  const units = tree.trees.flatMap((t: { parse: { components: unknown[] } }) =>
+    t.parse.components.flatMap(facetIds)
+  );
+  assert(units.length && units.every((id: string) => id.startsWith("facet:")));
+  const components = tree.trees.flatMap((
+    t: { parse: { components: { name: string; iri: string }[] } },
+  ) => t.parse.components);
+  assert(components.length);
   const scopePath = join(scratch, "scope.json");
   await Deno.writeTextFile(
     scopePath,
@@ -52,8 +64,8 @@ export async function validateNativeProtocol(
         ...args,
         "--root",
         fixture,
-        "--frontend",
-        frontendPath,
+        "--store",
+        store,
         "--scope",
         scopePath,
       ], code),
@@ -94,17 +106,15 @@ export async function validateNativeProtocol(
   };
   const prefix = "@prefix s: <https://sigil.dev/ontology/1#> .\n";
   const entity = `<${
-    frontend.entities.find((e: { label: string }) =>
-      e.label === "ReleaseFixture"
-    ).id
+    components.find((e: { name: string }) => e.name === "ReleaseFixture").iri
   }>`;
   // Fixed Turtle tests the shipped native protocol. This is not a model or a
   // claim about this repository's independent semantic reconstruction.
-  const negative = frontend.units.map((unit: { id: string }) =>
-    `<${unit.id}> s:from ${entity}; s:relation "uses"; s:target ${entity}; s:expected false .`
+  const negative = units.map((id: string) =>
+    `<${id}> s:from ${entity}; s:relation "uses"; s:target ${entity}; s:expected false .`
   ).join("\n");
-  const positive = frontend.units.map((unit: { id: string }) =>
-    `<${unit.id}> s:from ${entity}; s:relation "provides"; s:target ${entity}; s:expected true .`
+  const positive = units.map((id: string) =>
+    `<${id}> s:from ${entity}; s:relation "provides"; s:target ${entity}; s:expected true .`
   ).join("\n");
   await publish(
     "design",
@@ -174,8 +184,8 @@ export async function validateNativeProtocol(
     turtle,
     "--root",
     fixture,
-    "--frontend",
-    frontendPath,
+    "--store",
+    store,
     "--scope",
     scopePath,
   ], 3);
@@ -199,21 +209,20 @@ export async function validateNativeProtocol(
     "@provider.sigil from Provider import { café results }\ncomponent Consumer {\ngoal {\nUse vocabulary.\n}\ninterface {\nConsume café results and [notes](./notes.md).\n}\n}\n",
   );
   await run(language, ["check", tagRoot, "--format", "json"]);
-  const tagExport = JSON.parse(
-    await run(language, ["export", "design", tagRoot, "--root", tagRoot]),
+  const tagStore = join(scratch, "tag store");
+  const tagTrees = JSON.parse(
+    await run(compiler, ["tree", "--root", tagRoot, "--store", tagStore]),
+  ).trees;
+  const consumer = tagTrees.find((t: { parse: { path: string } }) =>
+    t.parse.path === "consumer.sigil"
   );
+  assertEquals(consumer.resolution.imports.length, 1);
+  assertEquals(consumer.resolution.references.length, 1);
   assertEquals(
-    tagExport.sources.find((source: { path: string }) =>
-      source.path === "provider.sigil"
-    ).text,
-    providerText,
+    consumer.parse.components[0].sections[1].children[0].links.length,
+    1,
   );
-  assertEquals(tagExport.imports.length, 1);
-  assertEquals(tagExport.references.length, 1);
-  assertEquals(tagExport.links.length, 1);
-  const tagFrontend = join(scratch, "tag-frontend.json"),
-    tagScope = join(scratch, "tag-scope.json");
-  await Deno.writeTextFile(tagFrontend, JSON.stringify(tagExport));
+  const tagScope = join(scratch, "tag-scope.json");
   await Deno.writeTextFile(
     tagScope,
     JSON.stringify({
@@ -227,8 +236,8 @@ export async function validateNativeProtocol(
       "scope",
       "--root",
       tagRoot,
-      "--frontend",
-      tagFrontend,
+      "--store",
+      tagStore,
       "--scope",
       tagScope,
     ]),
@@ -237,23 +246,6 @@ export async function validateNativeProtocol(
     "consumer.sigil",
     "provider.sigil",
   ]);
-  await Deno.writeTextFile(
-    tagFrontend,
-    JSON.stringify({ ...tagExport, schemaVersion: 1 }),
-  );
-  await run(
-    compiler,
-    [
-      "scope",
-      "--root",
-      tagRoot,
-      "--frontend",
-      tagFrontend,
-      "--scope",
-      tagScope,
-    ],
-    3,
-  );
   await Deno.writeTextFile(
     join(tagRoot, ".sigil/config.json"),
     JSON.stringify({ ...config, sigilVersion: "0.7.0" }),

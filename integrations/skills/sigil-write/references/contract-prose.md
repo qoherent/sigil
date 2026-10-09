@@ -94,8 +94,10 @@ when it means the same thing. So a new Tag is the last choice, not the first.
 List the Tags that already exist before you write any prose:
 
 ```sh
-sigil export design | jq -r '.entities[] | select(.type=="Tag")
-  | "\(.source)  \(.owner | split(":") | last)  \(.label)"'
+sigilc tree --root . | jq -r '.trees[].resolution.components[].tags[]
+  | select(.status == "resolved") | .iri
+  | capture("^urn:sigil:component:(?<file>.*):(?<component>[^:]+):tag:(?<tag>.*)$")
+  | "\(.file)  \(.component)  \(.tag | gsub("%20"; " "))"' | sort -u
 ```
 
 Each line shows the file, the owning Component, and the exact Tag name. If the

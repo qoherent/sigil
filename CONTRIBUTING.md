@@ -269,8 +269,8 @@ annotate `.sigil` files, and leave JSON untouched.
 ## The semantic workflow
 
 Author contracts directly within the requested scope and inspect them with
-`sigil check`. Export current structural input using `sigil export design .`. Call
-native `sigilc` directly for ordered scope, stale inspection, preparation,
+`sigil check`. Call
+native `sigilc` directly (it reads the workspace through `--root`) for ordered scope, stale inspection, preparation,
 ingestion, catalogs and Design/Implementation gates. The language CLI does not
 invoke the native compiler or a model on the caller's behalf.
 

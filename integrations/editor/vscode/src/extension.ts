@@ -217,7 +217,9 @@ export async function activate(
       relative.split("/").some((part) =>
         [".git", "node_modules", "target", "build"].includes(part)
       ) ||
-      (relative === ".sigil/worlds" || relative.startsWith(".sigil/worlds/"))
+      [".sigil/worlds", ".sigil/trees"].some((cache) =>
+        relative === cache || relative.startsWith(`${cache}/`)
+      )
     ) return;
     const key = folder.uri.toString();
     workspaceRevisions.set(key, (workspaceRevisions.get(key) ?? 0) + 1);
@@ -294,7 +296,6 @@ export async function deactivate(): Promise<void> {
 
 /**
  * @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::CompilationSurface interface,state,logic,constraints,cases
- * @sigil uses packages/cli/_module.sigil::SigilCli::DesignExport interface
  * @sigil uses packages/sigilc/report.sigil::SigilGateDiagnostics::NativeFindings interface,constraints
  */
 async function compileFromEditor(
@@ -333,13 +334,9 @@ async function compileFromEditor(
   );
   const label = compilationFocusLabel(focus);
   status.text = `$(sync~spin) Sigil ${label}…`;
-  status.tooltip = "Capturing language inputs and compiling with sigilc";
+  status.tooltip = "Compiling with sigilc";
   const operation = runCompilationProcess({
     executable: configuration.get<string>("executable", "sigilc"),
-    languageExecutable: configuration.get<string>(
-      "languageExecutable",
-      "sigil",
-    ),
     selection: configuration.get<string>("selection", ""),
     cwd: folder.uri.fsPath,
     focus,

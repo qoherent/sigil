@@ -56,17 +56,32 @@ pub enum Row {
         facet: String,
         outcome: String,
     },
-    /// Declares a step of its Facet's Logic section, at this ordinal.
+    /// Declares a step of its Facet's Logic section. The ordinal is the step's
+    /// number within its own Facet as written, and its position across the
+    /// section once [`super::canon`] has resolved it.
     Step {
         facet: String,
         ordinal: u32,
     },
-    /// A guard a step applies, comparing it against one operand.
+    /// A guard a step applies, comparing it against one operand. The step is a
+    /// step reference, `step:K` or `step:#N.K` as written and `step:N` once
+    /// resolved.
     Guard {
         facet: String,
-        step: u32,
+        step: String,
         operand: String,
         value: String,
+    },
+    /// The step that ends its Facet's flow, as written. Resolving turns it into
+    /// an edge from that step to the graph.
+    End {
+        facet: String,
+        ordinal: u32,
+    },
+    /// A name the Facet's prose relies on that its list does not carry.
+    Undeclared {
+        facet: String,
+        name: String,
     },
 }
 
@@ -78,8 +93,26 @@ impl Row {
             | Row::Measure { facet, .. }
             | Row::Reading { facet, .. }
             | Row::Step { facet, .. }
-            | Row::Guard { facet, .. } => facet,
+            | Row::Guard { facet, .. }
+            | Row::End { facet, .. }
+            | Row::Undeclared { facet, .. } => facet,
         }
+    }
+
+    /// The same row about another Facet.
+    pub fn with_facet(&self, facet: String) -> Row {
+        let mut row = self.clone();
+        match &mut row {
+            Row::Claim { facet: slot, .. }
+            | Row::Property { facet: slot, .. }
+            | Row::Measure { facet: slot, .. }
+            | Row::Reading { facet: slot, .. }
+            | Row::Step { facet: slot, .. }
+            | Row::Guard { facet: slot, .. }
+            | Row::End { facet: slot, .. }
+            | Row::Undeclared { facet: slot, .. } => *slot = facet,
+        }
+        row
     }
 
     pub fn relation_name(&self) -> &'static str {
@@ -90,17 +123,41 @@ impl Row {
             Row::Reading { .. } => "reading",
             Row::Step { .. } => "step",
             Row::Guard { .. } => "guard",
+            Row::End { .. } => "end",
+            Row::Undeclared { .. } => "undeclared",
         }
     }
 }
 
-/// Read an artifact into rows, refusing the whole document on any defect.
+/// A row the reader could not accept, with the Facet it was about.
 ///
-/// Partial acceptance is deliberately impossible: an artifact that supplies a
-/// law is not a partly usable interpretation, and keeping the valid rows beside
-/// a rejected one would make the refusal advisory.
+/// The Facet is the row's first argument as written, which may be a handle, a
+/// full id, or nothing at all. It is how a refusal finds the unit it belongs to.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RowError {
+    pub facet: String,
+    pub row: String,
+    pub reason: String,
+}
+
+/// What an artifact held: the rows that read cleanly and the rows that did not.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Parsed {
+    pub rows: Vec<Row>,
+    pub errors: Vec<RowError>,
+}
+
+/// Read an artifact, refusing the whole document when it holds anything that is
+/// not data, and setting aside a row that is data but wrong.
+///
+/// A rule, command, schedule, nested expression or unreadable text refuses the
+/// whole artifact: an artifact that supplies a law is not a partly usable
+/// interpretation, and keeping the valid rows beside it would make the refusal
+/// advisory. A row that is plain data but names the wrong thing is a mistake in
+/// one unit, so it is reported and the other rows are kept.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ReturnedClaims interface,constraints,cases
-pub fn parse(source: &str, limits: Limits) -> Result<Vec<Row>, String> {
+pub fn read(source: &str, limits: Limits) -> Result<Parsed, String> {
     if source.len() > limits.max_document_bytes {
         return Err(format!(
             "claims artifact exceeds byte limit: {} > {}",
@@ -108,13 +165,39 @@ pub fn parse(source: &str, limits: Limits) -> Result<Vec<Row>, String> {
             limits.max_document_bytes
         ));
     }
+    if matches!(source.trim_start().chars().next(), Some('[' | '{')) {
+        return Err(
+            "a claims artifact is plain egglog rows, one per line, and not JSON: \
+                    write each row as (claim \"#1\" ...) with nothing around it"
+                .into(),
+        );
+    }
     refuse_deep_nesting(source)?;
     let atoms = atoms(source, limits)?;
-    let mut rows = Vec::new();
+    let mut parsed = Parsed::default();
     for (name, values) in atoms {
-        rows.push(row(&name, &values)?);
+        match row(&name, &values) {
+            Ok(row) => parsed.rows.push(row),
+            Err(reason) => parsed.errors.push(RowError {
+                facet: values.first().map(Arg::text).unwrap_or_default(),
+                row: render(&name, &values),
+                reason,
+            }),
+        }
     }
-    Ok(rows)
+    Ok(parsed)
+}
+
+/// Read an artifact into rows, refusing it on any defect at all.
+///
+/// The strict form of [`read`], for a caller that has no way to set a row
+/// aside.
+pub fn parse(source: &str, limits: Limits) -> Result<Vec<Row>, String> {
+    let parsed = read(source, limits)?;
+    match parsed.errors.into_iter().next() {
+        Some(error) => Err(error.reason),
+        None => Ok(parsed.rows),
+    }
 }
 
 /// The nesting depth beyond which an artifact is refused before parsing.
@@ -161,11 +244,30 @@ fn refuse_deep_nesting(source: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Every call atom in the artifact, with its literal string arguments.
+/// One argument of a call atom: a quoted string, or a literal of another kind.
 ///
-/// Refuses anything that is not a call whose arguments are all string literals:
-/// a rule, a ruleset, a command, a schedule, a nested expression, or a number.
-fn atoms(source: &str, limits: Limits) -> Result<Vec<(String, Vec<String>)>, String> {
+/// A bare number is data in the wrong form, which is a mistake in one row. It
+/// is carried here so that row can be reported, while anything that is not a
+/// literal at all still refuses the artifact.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Arg {
+    Text(String),
+    Other(String),
+}
+
+impl Arg {
+    fn text(&self) -> String {
+        match self {
+            Arg::Text(value) | Arg::Other(value) => value.clone(),
+        }
+    }
+}
+
+/// Every call atom in the artifact, with its literal arguments.
+///
+/// Refuses anything that is not a call whose arguments are all literals: a
+/// rule, a ruleset, a command, a schedule or a nested expression.
+fn atoms(source: &str, limits: Limits) -> Result<Vec<(String, Vec<Arg>)>, String> {
     use egglog::{
         EGraph,
         ast::{Action, Command, Expr, Literal},
@@ -191,7 +293,8 @@ fn atoms(source: &str, limits: Limits) -> Result<Vec<(String, Vec<String>)>, Str
         let values = args
             .into_iter()
             .map(|arg| match arg {
-                Expr::Lit(_, Literal::String(value)) => Ok(value.to_string()),
+                Expr::Lit(_, Literal::String(value)) => Ok(Arg::Text(value.to_string())),
+                Expr::Lit(_, other) => Ok(Arg::Other(other.to_string())),
                 _ => Err(format!(
                     "every argument of ({name} ...) must be a quoted string literal"
                 )),
@@ -203,7 +306,9 @@ fn atoms(source: &str, limits: Limits) -> Result<Vec<(String, Vec<String>)>, Str
 }
 
 /// One atom checked against the published vocabulary.
-fn row(name: &str, values: &[String]) -> Result<Row, String> {
+fn row(name: &str, args: &[Arg]) -> Result<Row, String> {
+    let values: Vec<String> = args.iter().map(Arg::text).collect();
+    let values = values.as_slice();
     let shape = vocabulary::returned(name).ok_or_else(|| {
         format!(
             "unknown row ({name} ...); the vocabulary publishes {}",
@@ -214,6 +319,12 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
                 .join(", ")
         )
     })?;
+    if let Some(Arg::Other(value)) = args.iter().find(|a| matches!(a, Arg::Other(_))) {
+        return Err(format!(
+            "every argument of ({name} ...) must be a quoted string literal; {value} is not, in {}",
+            render(name, args)
+        ));
+    }
     if values.len() != shape.arity() {
         return Err(format!(
             "({name} ...) takes {} columns ({}), got {}: {}",
@@ -241,10 +352,19 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
             // fire on disagreeing expectations, while still populating `holds`
             // so the step laws can read them.
             let (subject, object) = (get(1), get(3));
+            for operand in [&subject, &object] {
+                if operand == vocabulary::GRAPH_REF {
+                    return Err(format!(
+                        "{operand:?} is not a name a claim may use; mark where a flow ends with \
+                         (end \"<facet>\" \"<step>\") in {}",
+                        atom(name, values)
+                    ));
+                }
+            }
             if vocabulary::is_flow_ref(&subject) || vocabulary::is_flow_ref(&object) {
                 if get(4) != "required" || get(5) != "true" {
                     return Err(format!(
-                        "a claim about a step or a graph is required and expected to hold; \
+                        "a claim about a step is required and expected to hold; \
                          got {:?}/{:?} in {}",
                         get(4),
                         get(5),
@@ -253,10 +373,11 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
                 }
                 for operand in [&subject, &object] {
                     if operand.starts_with(vocabulary::STEP_REF)
-                        && vocabulary::step_ordinal(operand).is_none()
+                        && vocabulary::local_step_ref(operand).is_none()
                     {
                         return Err(format!(
-                            "{operand:?} is not a step ordinal in {}",
+                            "{operand:?} is not a step reference (step:K, or step:#N.K for \
+                             another Facet) in {}",
                             atom(name, values)
                         ));
                     }
@@ -317,37 +438,28 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
                 outcome: get(1),
             })
         }
-        "step" => {
-            let ordinal = get(1)
-                .parse::<u32>()
-                .ok()
-                .filter(|n| *n > 0)
-                .ok_or_else(|| {
-                    format!(
-                        "a step's ordinal is its position across the section, counting from 1; \
-                     got {:?} in {}",
-                        get(1),
-                        atom(name, values)
-                    )
-                })?;
-            Ok(Row::Step {
-                facet: get(0),
-                ordinal,
-            })
-        }
+        "step" => Ok(Row::Step {
+            facet: get(0),
+            ordinal: local_ordinal(&get(1), "a step's ordinal", name, values)?,
+        }),
+        "end" => Ok(Row::End {
+            facet: get(0),
+            ordinal: local_ordinal(
+                &get(1),
+                "the ordinal of the step a flow ends at",
+                name,
+                values,
+            )?,
+        }),
         "guard" => {
             expect(&get(2), vocabulary::GUARD_OPERANDS, "operand", name, values)?;
-            let step = get(1)
-                .parse::<u32>()
-                .ok()
-                .filter(|n| *n > 0)
-                .ok_or_else(|| {
-                    format!(
-                        "a guard names its step by ordinal; got {:?} in {}",
-                        get(1),
-                        atom(name, values)
-                    )
-                })?;
+            let step = get(1);
+            if vocabulary::local_step_ref(&step).is_none() {
+                return Err(format!(
+                    "a guard names its step as step:K, or step:#N.K for another Facet; got {step:?} in {}",
+                    atom(name, values)
+                ));
+            }
             Ok(Row::Guard {
                 facet: get(0),
                 step,
@@ -355,8 +467,31 @@ fn row(name: &str, values: &[String]) -> Result<Row, String> {
                 value: get(3),
             })
         }
+        "undeclared" => {
+            let named = get(1);
+            if named.trim().is_empty() {
+                return Err(format!(
+                    "an undeclared row names the thing the prose relies on; got an empty name in {}",
+                    atom(name, values)
+                ));
+            }
+            Ok(Row::Undeclared {
+                facet: get(0),
+                name: named,
+            })
+        }
         _ => unreachable!("vocabulary::returned admitted an unhandled row"),
     }
+}
+
+/// A step's number within its Facet, counting from 1.
+fn local_ordinal(value: &str, what: &str, name: &str, values: &[String]) -> Result<u32, String> {
+    vocabulary::positive(value).ok_or_else(|| {
+        format!(
+            "{what} is its position within its own Facet, counting from 1; got {value:?} in {}",
+            atom(name, values)
+        )
+    })
 }
 
 /// Numbers follow the compiler's ontology bounds: finite, non-negative, within
@@ -401,4 +536,62 @@ fn expect(
 fn atom(name: &str, values: &[String]) -> String {
     let rendered: Vec<String> = values.iter().map(|v| format!("{v:?}")).collect();
     format!("({name} {})", rendered.join(" "))
+}
+
+/// The offending atom as it was written, a bare literal left unquoted.
+fn render(name: &str, args: &[Arg]) -> String {
+    let rendered: Vec<String> = args
+        .iter()
+        .map(|arg| match arg {
+            Arg::Text(value) => format!("{value:?}"),
+            Arg::Other(value) => value.clone(),
+        })
+        .collect();
+    format!("({name} {})", rendered.join(" "))
+}
+
+/// A row written back the way it is read, so a refusal can name it.
+pub fn render_row(row: &Row) -> String {
+    let quoted = |values: &[&str]| -> String {
+        values
+            .iter()
+            .map(|value| format!("{value:?}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let name = row.relation_name();
+    let columns = match row {
+        Row::Claim {
+            facet,
+            subject,
+            relation,
+            object,
+            modality,
+            expected,
+        } => quoted(&[facet, subject, relation, object, modality, expected]),
+        Row::Property {
+            facet,
+            subject,
+            property,
+            value,
+        } => quoted(&[facet, subject, property, value]),
+        Row::Measure {
+            facet,
+            subject,
+            property,
+            number,
+        } => quoted(&[facet, subject, property, number]),
+        Row::Reading { facet, outcome } => quoted(&[facet, outcome]),
+        Row::Step { facet, ordinal } | Row::End { facet, ordinal } => {
+            quoted(&[facet, &ordinal.to_string()])
+        }
+        Row::Guard {
+            facet,
+            step,
+            operand,
+            value,
+        } => quoted(&[facet, step, operand, value]),
+        Row::Undeclared { facet, name } => quoted(&[facet, name]),
+    };
+    format!("({name} {columns})")
 }

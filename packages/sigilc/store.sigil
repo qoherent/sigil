@@ -22,7 +22,7 @@ component SigilProjectionStore {
       Compile consumes current stored projections; *preparation*, ingestion, workers,
       and scheduling remain external to the editor compilation command. A missing
       compatible projection preserves the existing Loose/unavailable behavior, and
-      frontend language errors never produce a completed semantic verdict.
+      language errors never produce a completed semantic verdict.
     }
   }
 
@@ -63,7 +63,7 @@ component SigilProjectionStore {
 
     DesignCommands {
       Expose prepare, *ingest*, stale and compile for Design and entities for its
-      catalog. Accept an explicit frontend bundle and workspace root. Preparation
+      catalog. Read the workspace root and an optional store directory. Preparation
       writes only bound Design context, fixed ontology and a semantic binding into a
       new caller-selected directory; refuse to overwrite existing directories.
       Ingestion checks the binding source and current inputs before publication.
@@ -76,10 +76,10 @@ component SigilProjectionStore {
     }
 
     CurrentDesign {
-      Assemble fresh source projections against a recaptured frontend snapshot. Add
+      Assemble fresh source projections against a recaptured source snapshot. Add
       only structural type and label facts plus required unit inventory from the
-      frontend. Missing projections leave Design Loose unless fresh facts already
-      establish Disjoint. Frontend errors produce no completed verdict. Validate the
+      source trees. Missing projections leave Design Loose unless fresh facts already
+      establish Disjoint. Language errors produce no completed verdict. Validate the
       complete identity set before freezing a current catalog through FrozenIdentity.
       Reports identify
       captured inputs, projection contents and compiled eqval. Prepare Design context

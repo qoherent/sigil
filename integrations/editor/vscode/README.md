@@ -28,15 +28,13 @@ Configure these settings on the extension host:
 | Setting                            | Meaning                                                                                                              |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `sigil.compile.executable`         | Native `sigilc` executable; default `sigilc`.                                                                        |
-| `sigil.compile.languageExecutable` | Language CLI supporting `export design`; default `sigil`.                                                            |
 | `sigil.compile.focus`              | `ask`, `design`, or `implementation`.                                                                                |
 | `sigil.compile.selection`          | Native Implementation selection JSON path, relative to the workspace or absolute; required for Implementation focus. |
 
 The workspace folder must contain its `.sigil/config.json`. Multi-root windows
 use the active document's containing folder or prompt for a folder. The
-extension captures structural Design in a temporary directory, invokes `sigilc`
-directly, and cleans the capture after the process exits. Scope and source
-selection are resolved by the native compiler. Design-only file runs explicitly
+extension invokes `sigilc` directly against the workspace folder and reads its
+sources itself. Scope and source selection are resolved by the native compiler. Design-only file runs explicitly
 select no Implementation sources and make no Implementation claim.
 
 The status bar displays Coherent/Loose/Disjoint or Closed/Converged/Drift as
@@ -46,8 +44,7 @@ Implementation state. The editor validates those pairings and displays native
 findings and truncation counts. It does not interpret eqval tables or infer
 color from absent diagnostics. File-only locations do not invent code ranges.
 
-Native compilation requires language 0.9 Design export schema 2 and native
-report version 2. Old reports are rejected. Ranged findings carry a source
+Native compilation requires native report version 2. Old reports are rejected. Ranged findings carry a source
 digest and an explicit coordinate convention; the editor verifies disk bytes and
 maps them to visible UTF-16 text, including hidden BOMs and normalized line
 endings. A stale source cannot publish a successful state or misleading range.
@@ -90,7 +87,7 @@ npm run package
 
 The extension-host test copies the slotted example into an isolated temporary
 workspace by default. Set `SIGIL_TEST_WORKSPACE` to test an existing workspace.
-It uses the current built tools for real export, native file scope, ranged
+It uses the current built tools for real native file scope, ranged
 findings and unavailable comparison. Build the language CLI with
 `deno compile --allow-read --output /tmp/sigil packages/cli/src/main.ts` from
 the repository root. `deno task build:cli` produces the default language test

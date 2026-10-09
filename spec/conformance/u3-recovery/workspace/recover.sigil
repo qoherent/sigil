@@ -1,0 +1,52 @@
+stray text
+}
+component One {
+  goal {
+    First goal.
+  }
+  goal {
+    Second goal.
+  }
+  interface {
+    Needs { braces } here.
+    Ok *tag* defined.
+    bad name, {
+      Under a bad group.
+    }
+    outer {
+      inner {
+        Nested.
+      }
+    }
+    empty {
+    }
+    ```js
+    detached before prose
+    ```
+    Intro text.
+
+    ```ts extra
+    detached after blank
+    ```
+    Another intro.
+    ````
+    four ``` inside
+    ```
+    ````
+    Final intro.
+    ```bad type!
+    body
+    ```
+  }
+  state {
+    Late section.
+  }
+}
+component One {
+  goal {
+    Duplicate component.
+  }
+  interface {
+    Unclosed *incomplete.
+    ```
+    never closed

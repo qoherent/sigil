@@ -89,17 +89,9 @@ Commands:
   exclusion frontier, aggregated context, and a content fingerprint; add
   `--format markdown` for a readable context pack;
 - `sigil render ...` returns Markdown;
-- `sigil export design [path] [--root workspace] [--pretty]` emits the complete
-  workspace's raw structural JSON bundle for native compilation.
-
-Export preserves captured source, configuration, glossary and diagnostics. It
-supports JSON only and rejects `--quiet`. The path locates a workspace; select
-focused Design roots with native `--scope`, after export. Exit 0 means no
-language errors, 1 means language errors remain in the bundle, 2 means invalid
-usage, and 3 means an operational failure. Invalid UTF-8 cannot produce a
-faithful bundle: stdout stays empty and stderr carries encoding diagnostics with
-exit 1. A representable language-invalid source retains its captured text and
-diagnostics in schema-2 JSON. These exits do not describe semantic gate states.
+Exit 0 means no language errors, 1 means language errors remain, 2 means
+invalid usage, and 3 means an operational failure. These exits do not describe
+semantic gate states. Native `sigilc` reads the workspace root directly.
 
 Language ranges are half-open original UTF-8 byte offsets. Text diagnostic
 locations use scalar columns derived from the captured source. Implementation
@@ -116,21 +108,13 @@ designs.
 Use the native compiler directly:
 
 ```sh
-sigil export design . > frontend.json
-sigilc stale design --frontend frontend.json
-sigilc compile design --frontend frontend.json
+sigilc stale design --root .
+sigilc compile design --root .
 ```
 
 See the [native command guide](../sigilc/README.md) for ordered scope, external
 reconstruction, preparation/ingestion, catalogs and Implementation comparison.
-The model or operator invokes `sigilc` directly. The language CLI exports
-structure; it does not launch semanticizers or forward compiler commands.
+The model or operator invokes `sigilc` directly. The language CLI does not
+launch semanticizers or forward compiler commands.
 
-For a checkout whose installed CLI predates export:
-
-```sh
-deno run --allow-read packages/cli/src/main.ts export design . > frontend.json
-```
-
-Run this command from the repository root. Run package tests from `packages/cli`
-with `deno task test`.
+Run package tests from `packages/cli` with `deno task test`.

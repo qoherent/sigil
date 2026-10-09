@@ -1,0 +1,17 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  logic {
+    First logic paragraph.
+  }
+
+  logic {
+    Second logic paragraph.
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

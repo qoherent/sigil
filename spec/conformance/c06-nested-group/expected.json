@@ -1,0 +1,159 @@
+{
+  "exported": true,
+  "sources": [
+    "nested.sigil"
+  ],
+  "components": [
+    {
+      "source": "nested.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        188
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "name": "outer",
+      "identityResolved": true
+    }
+  ],
+  "groups": [
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "name": "outer",
+      "tag": "Case::outer",
+      "section": "constraints",
+      "range": [
+        70,
+        136
+      ],
+      "headerRange": [
+        70,
+        82
+      ],
+      "bodyRange": [
+        82,
+        130
+      ],
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "name": "inner",
+      "tag": null,
+      "section": "constraints",
+      "range": [
+        82,
+        130
+      ],
+      "headerRange": [
+        82,
+        96
+      ],
+      "bodyRange": [
+        96,
+        122
+      ],
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "section": "constraints",
+      "group": "inner",
+      "range": [
+        96,
+        122
+      ],
+      "proseRange": [
+        96,
+        122
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "nested.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        155,
+        182
+      ],
+      "proseRange": [
+        155,
+        182
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_NESTED_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "nested.sigil",
+      "range": [
+        82,
+        96
+      ],
+      "related": [
+        {
+          "file": "nested.sigil",
+          "range": [
+            70,
+            82
+          ]
+        }
+      ]
+    }
+  ]
+}

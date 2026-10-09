@@ -27,8 +27,7 @@ component SigilDesignCompilationReview {
 expand SigilDesignCompilationReview {
   logic {
     DesignCompilationReview {
-      Write authorized scoped Design changes, export current structural input and
-      inspect native freshness.
+      Write authorized scoped Design changes and inspect native freshness.
 
       Obtain independent reconstructions before claiming current semantic
       verification.

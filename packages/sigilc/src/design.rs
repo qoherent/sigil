@@ -2,10 +2,10 @@
 use crate::{
     catalog::{self, DesignIdentities, FrozenCatalog},
     eqval::{self, DesignState, DesignWorld, Limits},
-    frontend::{EntityType, Severity},
     inputs::DesignSnapshot,
     sources::hash,
     store::{Freshness, LockedStore},
+    structure::{EntityType, Severity},
     turtle::{Assertion, ONTOLOGY, Object, RDF_TYPE, XSD},
 };
 use serde::Serialize;
@@ -43,7 +43,11 @@ pub fn inspect(
         .map(|source| {
             Ok(SourceStatus {
                 source: source.path.clone(),
-                status: store.inspect(&snapshot.binding(&source.path)?)?.status,
+                status: if snapshot.invalid(&source.path).is_some() {
+                    Freshness::Invalid
+                } else {
+                    store.inspect(&snapshot.binding(&source.path)?)?.status
+                },
             })
         })
         .collect::<Result<Vec<_>, String>>()?;
@@ -73,7 +77,7 @@ pub fn compile(
     limits: Limits,
     allow_empty: bool,
 ) -> Result<DesignReport, String> {
-    valid_frontend(snapshot)?;
+    valid_structure(snapshot)?;
     let input = snapshot.input();
     if input.sources.is_empty() && !allow_empty {
         return Err("empty Design selection requires explicit allow-empty".into());
@@ -192,40 +196,17 @@ pub fn compile(
     })
 }
 
-pub fn valid_frontend(snapshot: &DesignSnapshot) -> Result<(), String> {
+pub fn valid_structure(snapshot: &DesignSnapshot) -> Result<(), String> {
     if let Some(error) = snapshot
         .input()
         .diagnostics
         .iter()
         .find(|d| matches!(d.severity, Severity::Error))
     {
-        return Err(format!("frontend error {}: {}", error.code, error.message));
+        return Err(format!("design error {}: {}", error.code, error.message));
     }
-    let input = snapshot.input();
-    if input
-        .entities
-        .iter()
-        .any(|e| !e.valid || !e.complete || !e.identity_resolved)
-        || input
-            .units
-            .iter()
-            .any(|u| !u.valid || !u.complete || u.owner.is_none())
-        || input.groups.iter().any(|g| !g.valid || !g.complete)
-        || input
-            .introductions
-            .iter()
-            .any(|i| !i.valid || !i.complete || i.tag.is_none())
-        || input.references.iter().any(|r| r.tag.is_none())
-        || input.imports.iter().any(|i| {
-            !i.valid
-                || !i.complete
-                || i.status != crate::frontend::ImportStatus::Resolved
-                || i.names
-                    .iter()
-                    .any(|n| n.status != crate::frontend::SelectionStatus::Resolved)
-        })
-    {
-        return Err("frontend contains unresolved or incomplete language structure".into());
+    if crate::inputs::structural_flaw(snapshot.input(), None) {
+        return Err("design contains unresolved or incomplete language structure".into());
     }
     Ok(())
 }

@@ -3,8 +3,9 @@
 
 component SigilDesignInput {
   goal {
-    Preserve *resolved authored language structure* at the TypeScript to sigilc
-    boundary without precomputing semantic meaning.
+    Preserve *resolved authored language structure* as the TypeScript transport
+    used by the shared conformance corpus, without precomputing semantic meaning.
+    sigilc reads sources itself and does not consume it.
   }
 
   constraints {
@@ -45,11 +46,10 @@ component SigilDesignInput {
   interface {
     ResolvedDesignInput {
       Load the workspace through WorkspaceLoading and apply RelationshipResolution.
-      Return frontend schema 2
-      with explicit languageVersion 0.9.0 separate from the frontend artifact
-      version, exact source/context buffers, diagnostics, components, Facets, Tag
-      introductions and grouping occurrences, explicit import selections, bare
-      references, and Inline Links.
+      Return schema 2 with explicit languageVersion 0.9.0 separate from the
+      artifact version, exact source/context buffers, diagnostics, components,
+      Facets, Tag introductions and grouping occurrences, explicit import
+      selections, bare references, and Inline Links.
 
       Record config and glossary buffers used during *loading*, including absent
       optional inputs. Rust validates current bytes and owns their fingerprints. Keep

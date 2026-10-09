@@ -1,0 +1,358 @@
+{
+  "exported": true,
+  "sources": [
+    "links.sigil"
+  ],
+  "components": [
+    {
+      "source": "links.sigil",
+      "name": "Links",
+      "range": [
+        0,
+        436
+      ],
+      "nameRange": [
+        10,
+        15
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "tags": [
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "name": "[b](v \"x",
+      "identityResolved": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "name": "docs",
+      "identityResolved": true
+    }
+  ],
+  "groups": [
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "name": "[b](v \"x",
+      "tag": "Links::[b](v \"x",
+      "section": "interface",
+      "range": [
+        299,
+        436
+      ],
+      "headerRange": [
+        299,
+        314
+      ],
+      "bodyRange": [
+        314,
+        434
+      ],
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "name": "y\") also",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        314,
+        434
+      ],
+      "headerRange": [
+        314,
+        329
+      ],
+      "bodyRange": [
+        329,
+        430
+      ],
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "name": "wide",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        329,
+        359
+      ],
+      "headerRange": [
+        329,
+        340
+      ],
+      "bodyRange": [
+        340,
+        353
+      ],
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "section": "goal",
+      "group": null,
+      "range": [
+        27,
+        46
+      ],
+      "proseRange": [
+        27,
+        46
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "section": "interface",
+      "group": null,
+      "range": [
+        65,
+        240
+      ],
+      "proseRange": [
+        65,
+        240
+      ],
+      "introductions": [
+        {
+          "name": "docs",
+          "kind": "inline",
+          "tag": "Links::docs",
+          "range": [
+            71,
+            77
+          ],
+          "nameRange": [
+            72,
+            76
+          ]
+        }
+      ],
+      "references": [],
+      "links": [
+        {
+          "destination": "https://x.test/a&b#c&bogus;d&e�f€g",
+          "image": false,
+          "range": [
+            83,
+            154
+          ]
+        },
+        {
+          "destination": "./a b.md",
+          "image": false,
+          "range": [
+            163,
+            184
+          ]
+        },
+        {
+          "destination": "a.png",
+          "image": true,
+          "range": [
+            189,
+            206
+          ]
+        }
+      ],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "section": "interface",
+      "group": null,
+      "range": [
+        241,
+        299
+      ],
+      "proseRange": [
+        241,
+        299
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [
+        {
+          "destination": "u",
+          "image": false,
+          "range": [
+            251,
+            282
+          ]
+        }
+      ],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "section": "interface",
+      "group": "wide",
+      "range": [
+        340,
+        353
+      ],
+      "proseRange": [
+        340,
+        353
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "links.sigil",
+      "component": "Links",
+      "section": "interface",
+      "group": "y\") also",
+      "range": [
+        360,
+        430
+      ],
+      "proseRange": [
+        360,
+        430
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "docs",
+          "status": "resolved",
+          "tag": "Links::docs",
+          "range": [
+            372,
+            376
+          ]
+        }
+      ],
+      "links": [
+        {
+          "destination": "z",
+          "image": false,
+          "range": [
+            382,
+            394
+          ]
+        },
+        {
+          "destination": "i",
+          "image": false,
+          "range": [
+            408,
+            418
+          ]
+        }
+      ],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNCLOSED_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "links.sigil",
+      "range": [
+        0,
+        18
+      ],
+      "related": [
+        {
+          "file": "links.sigil",
+          "range": [
+            436,
+            436
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_NESTED_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "links.sigil",
+      "range": [
+        314,
+        329
+      ],
+      "related": [
+        {
+          "file": "links.sigil",
+          "range": [
+            299,
+            314
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_NESTED_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "links.sigil",
+      "range": [
+        329,
+        340
+      ],
+      "related": [
+        {
+          "file": "links.sigil",
+          "range": [
+            314,
+            329
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_UNCLOSED_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "links.sigil",
+      "range": [
+        51,
+        65
+      ],
+      "related": [
+        {
+          "file": "links.sigil",
+          "range": [
+            436,
+            436
+          ]
+        }
+      ]
+    }
+  ]
+}

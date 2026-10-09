@@ -59,8 +59,8 @@ test("manifest contributes the Sigil language, grammar, and preview command", as
   );
   assert.equal(
     manifest.contributes.configuration
-      .properties["sigil.compile.languageExecutable"].default,
-    "sigil",
+      .properties["sigil.compile.languageExecutable"],
+    undefined,
   );
   assert.deepEqual(
     manifest.contributes.configuration.properties[

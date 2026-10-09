@@ -1,0 +1,21 @@
+component Unknown {
+  goal {
+    Skip unknown bodies.
+  }
+
+  notes {
+    Nested {
+      deep text
+    }
+    ```text
+    }
+    ```
+    more text
+  }
+
+  interface {
+    The *skipped* section is gone.
+  }
+
+  extras {
+    never closed

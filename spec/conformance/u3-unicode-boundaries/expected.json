@@ -1,0 +1,261 @@
+{
+  "exported": true,
+  "sources": [
+    "words.sigil"
+  ],
+  "components": [
+    {
+      "source": "words.sigil",
+      "name": "Words",
+      "range": [
+        0,
+        328
+      ],
+      "nameRange": [
+        10,
+        15
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "name": "a.b",
+      "identityResolved": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "name": "café",
+      "identityResolved": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "name": "naïve",
+      "identityResolved": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "name": "y𝒳",
+      "identityResolved": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "name": "日本",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "section": "goal",
+      "group": null,
+      "range": [
+        27,
+        54
+      ],
+      "proseRange": [
+        27,
+        54
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "section": "interface",
+      "group": null,
+      "range": [
+        73,
+        140
+      ],
+      "proseRange": [
+        73,
+        140
+      ],
+      "introductions": [
+        {
+          "name": "a.b",
+          "kind": "inline",
+          "tag": "Words::a.b",
+          "range": [
+            133,
+            138
+          ],
+          "nameRange": [
+            134,
+            137
+          ]
+        },
+        {
+          "name": "café",
+          "kind": "inline",
+          "tag": "Words::café",
+          "range": [
+            83,
+            90
+          ],
+          "nameRange": [
+            84,
+            89
+          ]
+        },
+        {
+          "name": "naïve",
+          "kind": "inline",
+          "tag": "Words::naïve",
+          "range": [
+            95,
+            103
+          ],
+          "nameRange": [
+            96,
+            102
+          ]
+        },
+        {
+          "name": "y𝒳",
+          "kind": "inline",
+          "tag": "Words::y𝒳",
+          "range": [
+            121,
+            128
+          ],
+          "nameRange": [
+            122,
+            127
+          ]
+        },
+        {
+          "name": "日本",
+          "kind": "inline",
+          "tag": "Words::日本",
+          "range": [
+            108,
+            116
+          ],
+          "nameRange": [
+            109,
+            115
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "section": "interface",
+      "group": null,
+      "range": [
+        141,
+        242
+      ],
+      "proseRange": [
+        141,
+        242
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "café",
+          "status": "resolved",
+          "tag": "Words::café",
+          "range": [
+            145,
+            150
+          ]
+        },
+        {
+          "name": "café",
+          "status": "resolved",
+          "tag": "Words::café",
+          "range": [
+            167,
+            172
+          ]
+        },
+        {
+          "name": "naïve",
+          "status": "resolved",
+          "tag": "Words::naïve",
+          "range": [
+            179,
+            185
+          ]
+        },
+        {
+          "name": "日本",
+          "status": "resolved",
+          "tag": "Words::日本",
+          "range": [
+            205,
+            211
+          ]
+        },
+        {
+          "name": "y𝒳",
+          "status": "resolved",
+          "tag": "Words::y𝒳",
+          "range": [
+            212,
+            217
+          ]
+        },
+        {
+          "name": "a.b",
+          "status": "resolved",
+          "tag": "Words::a.b",
+          "range": [
+            232,
+            235
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "words.sigil",
+      "component": "Words",
+      "section": "interface",
+      "group": null,
+      "range": [
+        243,
+        322
+      ],
+      "proseRange": [
+        243,
+        322
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

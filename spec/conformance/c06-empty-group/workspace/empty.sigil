@@ -1,0 +1,14 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  constraints {
+    nothing {
+    }
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

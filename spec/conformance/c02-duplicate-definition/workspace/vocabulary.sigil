@@ -1,0 +1,19 @@
+component Vocabulary {
+  goal {
+    Demonstrate local identity.
+  }
+
+  logic {
+    query {
+      Reject an empty query.
+    }
+  }
+
+  interface {
+    A *query* contains search text.
+
+    query {
+      Accept a *query* too.
+    }
+  }
+}

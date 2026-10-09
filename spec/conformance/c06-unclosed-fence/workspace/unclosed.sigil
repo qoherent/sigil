@@ -1,0 +1,12 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  interface {
+    Introduce the payload.
+    ```text
+    component Fake {
+
+  }
+}

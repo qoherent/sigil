@@ -1,0 +1,23 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  interface {
+    Introduce the payload.
+    ```json
+    {"a": 1}
+    ```
+    Prose right after the fence.
+
+    Another introduction.
+
+    ```text
+    detached
+    ```
+
+    ```text
+    no introduction
+    ```
+  }
+}

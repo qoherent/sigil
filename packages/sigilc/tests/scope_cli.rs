@@ -4,51 +4,11 @@ use std::process::Command;
 use support::Workspace;
 
 fn workspace() -> Workspace {
-    let root = Workspace::new();
-    let fixture = fixture();
-    for item in fixture["sources"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .chain(fixture["context"].as_array().unwrap())
-    {
-        if let Some(text) = item["text"].as_str() {
-            root.write(item["path"].as_str().unwrap(), text.as_bytes());
-        }
-    }
+    let root = support::scope_workspace();
     root.write("main.any", b"implementation target");
     root.write("neighbor.any", b"private neighbor");
-    frontend(&root, &["a.sigil", "b.sigil", "c.sigil"]);
     scope(&root, &["a.sigil"]);
     root
-}
-fn fixture() -> Value {
-    serde_json::from_str(include_str!(
-        "../../core/tests/fixtures/design-scope-080.json"
-    ))
-    .unwrap()
-}
-fn frontend(root: &Workspace, paths: &[&str]) {
-    let mut input = fixture();
-    input["sources"]
-        .as_array_mut()
-        .unwrap()
-        .retain(|s| paths.contains(&s["path"].as_str().unwrap()));
-    for field in [
-        "entities",
-        "units",
-        "imports",
-        "groups",
-        "introductions",
-        "references",
-        "links",
-    ] {
-        input[field]
-            .as_array_mut()
-            .unwrap()
-            .retain(|r| paths.contains(&r["source"].as_str().unwrap()));
-    }
-    root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
 }
 fn scope(root: &Workspace, paths: &[&str]) {
     root.write(
@@ -62,7 +22,7 @@ fn scope(root: &Workspace, paths: &[&str]) {
 fn run(root: &Workspace, args: &[&str], code: i32) -> Value {
     let out = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
-        .args(["--root", ".", "--frontend", "frontend.json"])
+        .args(["--root", "."])
         .current_dir(&root.0)
         .output()
         .unwrap();
@@ -94,14 +54,9 @@ fn publish(root: &Workspace, side: &str, source: &str, out: &str, body: &str, us
     // These statements are supplied by this fixture, never inferred from imports.
     let mut coverage = String::new();
     if side == "design" {
-        for u in fixture()["units"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter(|u| u["source"] == source)
-        {
-            let id = u["id"].as_str().unwrap();
-            let owner = u["owner"].as_str().unwrap();
+        let input = root.design_input();
+        for u in input.units.iter().filter(|u| u.source == source) {
+            let (id, owner) = (&u.id, u.owner.as_ref().unwrap());
             coverage.push_str(&format!("<{owner}> s:uses <{owner}> . <{id}> a s:Contract; s:from <{owner}>; s:relation \"uses\"; s:target <{owner}>; s:expected true .\n"));
         }
     } else {
@@ -219,7 +174,6 @@ fn scoped_pipeline_excludes_unrelated_contradictions_and_reuses_objects_across_r
     scope(&root, &["a.sigil"]);
     scoped(&root, &["stale", "implementation"], 0);
     std::fs::remove_file(root.0.join("c.sigil")).unwrap();
-    frontend(&root, &["a.sigil", "b.sigil"]);
     scoped(&root, &["stale", "design"], 0);
     let full = run(&root, &["stale", "design"], 1);
     assert!(
@@ -301,8 +255,11 @@ fn scope_inspection_rejects_conflicts_empty_and_stale_inputs_without_semantic_su
     scope(&root, &["a.sigil", "a.sigil"]);
     scoped(&root, &["scope"], 3);
     scope(&root, &["a.sigil"]);
+    // The sources are read when the command runs, so an edit is simply the new
+    // workspace: the unparsable text is reported, not mistaken for a stale capture.
     root.write("a.sigil", b"edited");
-    scoped(&root, &["scope"], 3);
+    let edited = scoped(&root, &["scope"], 0);
+    assert!(!edited["diagnostics"].as_array().unwrap().is_empty());
     root.write("scope.json",br#"{"version":1,"design":{"paths":[],"allowEmpty":true},"implementation":{"include":["no.files"],"allowEmpty":true}}"#);
     let empty = scoped(&root, &["compare"], 0);
     assert!(

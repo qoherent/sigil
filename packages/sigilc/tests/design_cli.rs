@@ -7,16 +7,19 @@ fn workspace() -> Workspace {
     let root = Workspace::new();
     let source = "component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}";
     root.write("a.sigil", source.as_bytes());
-    let mut input = serde_json::to_value(root.input(&["a.sigil"], json!([]))).unwrap();
-    input["entities"] = json!([support::component("a.sigil", "A", source)]);
-    input["units"] = json!([support::unit("a.sigil", "A", source, "Describe A.")]);
-    root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
     root
+}
+fn interface_unit() -> String {
+    support::facet_in(&workspace().design_input(), "a.sigil", "interface")
+}
+/// The content id of A's goal Facet.
+fn unit() -> String {
+    support::facet_in(&workspace().design_input(), "a.sigil", "goal")
 }
 fn run(root: &Workspace, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
-        .args(["--root", ".", "--frontend", "frontend.json"])
+        .args(["--root", "."])
         .current_dir(&root.0)
         .output()
         .unwrap()
@@ -70,7 +73,7 @@ fn design_cli_distinguishes_missing_empty_interpreted_and_disjoint_worlds() {
         .unwrap();
     assert_eq!(unresolved["severity"], "warning");
     assert_eq!(unresolved["locations"][0]["source"], "a.sigil");
-    assert_eq!(unresolved["locations"][0]["range"]["end"], 32);
+    assert_eq!(unresolved["locations"][0]["range"]["end"], 33);
     assert_eq!(
         unresolved["locations"][0]["coordinate_system"],
         "utf8-bytes"
@@ -88,7 +91,7 @@ fn design_cli_distinguishes_missing_empty_interpreted_and_disjoint_worlds() {
             .as_array()
             .unwrap()
             .len(),
-        1
+        2
     );
     assert_eq!(unresolved["witness"]["table"], "design-unresolved");
     assert!(missing["catalog"].is_null());
@@ -108,7 +111,9 @@ fn design_cli_distinguishes_missing_empty_interpreted_and_disjoint_worlds() {
         &root,
         "second",
         &format!(
-            "{PREFIX}<facet:a.sigil:21> s:from a:A; s:relation \"uses\"; s:target a:A; s:expected false ."
+            "{PREFIX}<{0}> s:from a:A; s:relation \"uses\"; s:target a:A; s:expected false . <{1}> s:from a:A; s:relation \"uses\"; s:target a:A; s:expected false .",
+            unit(),
+            interface_unit()
         ),
     );
     let interpreted = result(&root, &["compile", "design"], 0);
@@ -181,7 +186,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        format!("{PREFIX}<facet:a.sigil:21> a s:Case .").as_bytes(),
+        format!("{PREFIX}<{}> a s:Case .", unit()).as_bytes(),
     );
     let reserved = run(
         &root,
@@ -204,7 +209,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        format!("{PREFIX}<facet:a.sigil:21> s:owner a:A .").as_bytes(),
+        format!("{PREFIX}<{}> s:owner a:A .", unit()).as_bytes(),
     );
     let owner = run(
         &root,
@@ -246,7 +251,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        b"@prefix s: <https://sigil.dev/ontology/1#> . <facet:a.sigil:21> s:from <urn:sigil:component:a.sigil:A> ;",
+        format!("@prefix s: <https://sigil.dev/ontology/1#> . <{}> s:from <urn:sigil:component:a.sigil:A> ;", unit()).as_bytes(),
     );
     let malformed = run(
         &root,
@@ -271,7 +276,7 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
 
     root.write(
         "facts.ttl",
-        b"@prefix s: <https://sigil.dev/ontology/1#> . <facet:a.sigil:21> s:from <urn:sigil:component:a.sigil:A B> .",
+        format!("@prefix s: <https://sigil.dev/ontology/1#> . <{}> s:from <urn:sigil:component:a.sigil:A B> .", unit()).as_bytes(),
     );
     let invalid_iri = run(
         &root,
@@ -358,7 +363,10 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
         String::from_utf8_lossy(&unknown.stderr)
             .contains("hint: reference only the exact prepared")
     );
-    root.write("a.sigil", b"edited after preparation");
+    root.write(
+        "a.sigil",
+        b"component A {\ngoal {\nDescribe A differently.\n}\ninterface {\nOffer A.\n}\n}",
+    );
     let stale = run(
         &root,
         &[
@@ -374,21 +382,16 @@ fn design_cli_rejects_stale_bindings_and_unbound_or_foreign_identity() {
     );
     assert_eq!(stale.status.code(), Some(3));
     let stale_stderr = String::from_utf8_lossy(&stale.stderr);
-    assert!(stale_stderr.contains("frontend source changed"));
-    assert!(stale_stderr.contains("recapture the structural Design export"));
+    assert!(stale_stderr.contains("no longer match"), "{stale_stderr}");
 }
 
 #[test]
 fn preparation_omits_unbound_design_files_and_never_overwrites_a_directory() {
     let root = workspace();
-    root.write("unrelated.sigil", b"secret unrelated meaning");
-    let mut input: Value =
-        serde_json::from_slice(&std::fs::read(root.0.join("frontend.json")).unwrap()).unwrap();
-    input["sources"]
-        .as_array_mut()
-        .unwrap()
-        .push(json!({"path":"unrelated.sigil","text":"secret unrelated meaning"}));
-    root.write("frontend.json", &serde_json::to_vec(&input).unwrap());
+    root.write(
+        "unrelated.sigil",
+        b"component U {\ngoal {\nsecret unrelated meaning.\n}\ninterface {\nOffer U.\n}\n}",
+    );
     result(
         &root,
         &[
@@ -424,10 +427,6 @@ fn preparation_omits_unbound_design_files_and_never_overwrites_a_directory() {
 #[test]
 fn empty_scope_and_runtime_limits_never_fabricate_success() {
     let root = Workspace::new();
-    root.write(
-        "frontend.json",
-        &serde_json::to_vec(&root.input(&[], json!([]))).unwrap(),
-    );
     assert_eq!(run(&root, &["compile", "design"]).status.code(), Some(3));
     let empty = result(&root, &["compile", "design", "--allow-empty"], 0);
     assert_eq!(empty["intentional_empty"], true);
@@ -443,10 +442,6 @@ fn deleted_index_entries_are_reported_and_never_assembled() {
     let root = workspace();
     publish(&root, "binding", "");
     std::fs::remove_file(root.0.join("a.sigil")).unwrap();
-    root.write(
-        "frontend.json",
-        &serde_json::to_vec(&root.input(&[], json!([]))).unwrap(),
-    );
     let stale = result(&root, &["stale", "design"], 1);
     assert_eq!(stale["sources"][0]["status"], "deleted");
     let empty = result(&root, &["compile", "design", "--allow-empty"], 0);

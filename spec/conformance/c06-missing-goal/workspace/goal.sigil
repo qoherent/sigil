@@ -1,0 +1,8 @@
+component Goalless {
+  goal {
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

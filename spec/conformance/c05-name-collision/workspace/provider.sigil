@@ -1,0 +1,9 @@
+component Provider {
+  goal {
+    Own search vocabulary.
+  }
+
+  interface {
+    A *query* and a *filter* and a *submit* action exist.
+  }
+}

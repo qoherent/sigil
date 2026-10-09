@@ -1,0 +1,219 @@
+{
+  "exported": true,
+  "sources": [
+    "consumer.sigil",
+    "provider.sigil"
+  ],
+  "components": [
+    {
+      "source": "consumer.sigil",
+      "name": "Consumer",
+      "range": [
+        35,
+        134
+      ],
+      "nameRange": [
+        45,
+        53
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "name": "Provider",
+      "range": [
+        0,
+        140
+      ],
+      "nameRange": [
+        10,
+        18
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "filter",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "query",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "submit",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "goal",
+      "group": null,
+      "range": [
+        65,
+        94
+      ],
+      "proseRange": [
+        65,
+        94
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "interface",
+      "group": null,
+      "range": [
+        113,
+        128
+      ],
+      "proseRange": [
+        113,
+        128
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "goal",
+      "group": null,
+      "range": [
+        30,
+        57
+      ],
+      "proseRange": [
+        30,
+        57
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "interface",
+      "group": null,
+      "range": [
+        76,
+        134
+      ],
+      "proseRange": [
+        76,
+        134
+      ],
+      "introductions": [
+        {
+          "name": "filter",
+          "kind": "inline",
+          "tag": "Provider::filter",
+          "range": [
+            96,
+            104
+          ],
+          "nameRange": [
+            97,
+            103
+          ]
+        },
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Provider::query",
+          "range": [
+            82,
+            89
+          ],
+          "nameRange": [
+            83,
+            88
+          ]
+        },
+        {
+          "name": "submit",
+          "kind": "inline",
+          "tag": "Provider::submit",
+          "range": [
+            111,
+            119
+          ],
+          "nameRange": [
+            112,
+            118
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "consumer.sigil",
+      "target": null,
+      "path": ".",
+      "provider": "Provider",
+      "range": [
+        0,
+        34
+      ],
+      "status": "unresolved-path",
+      "names": [
+        {
+          "name": "query",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            26,
+            31
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORT_PATH",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "consumer.sigil",
+      "range": [
+        1,
+        2
+      ],
+      "related": []
+    }
+  ]
+}

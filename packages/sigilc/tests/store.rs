@@ -247,6 +247,7 @@ fn symlinked_store_and_artifact_paths_are_rejected() {
     use std::os::unix::fs::symlink;
     let root = Workspace::new();
     let outside = Workspace::new();
+    std::fs::remove_dir_all(root.0.join(".sigil")).unwrap();
     symlink(&outside.0, root.0.join(".sigil")).unwrap();
     assert!(LockedStore::open(&root.0, StoreLimits::default()).is_err());
     std::fs::remove_file(root.0.join(".sigil")).unwrap();

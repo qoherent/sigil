@@ -1,0 +1,19 @@
+{
+  "exported": true,
+  "sources": [],
+  "components": [],
+  "tags": [],
+  "groups": [],
+  "facets": [],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_CONFIG_PARSE",
+      "stage": "workspace",
+      "severity": "error",
+      "file": ".sigil/config.json",
+      "range": null,
+      "related": []
+    }
+  ]
+}

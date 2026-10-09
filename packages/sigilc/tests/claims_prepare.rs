@@ -2,7 +2,7 @@ use sigilc::claims::{guidance, prepare, vocabulary};
 use std::fs;
 
 mod support;
-use support::{BASE, BASE_CONSTRAINTS, CONSUMER, Workspace, shared_input};
+use support::{BASE, CONSUMER, Workspace, shared_input, shared_workspace};
 
 fn out_dir(name: &str) -> std::path::PathBuf {
     let path = std::env::temp_dir().join(format!(
@@ -16,7 +16,7 @@ fn out_dir(name: &str) -> std::path::PathBuf {
 #[test]
 fn every_valid_facet_of_the_selected_source_gets_exactly_one_row() {
     let input = shared_input();
-    let request = prepare::project(&input, BASE).unwrap();
+    let request = support::project(&input, BASE).unwrap();
     let expected: Vec<&str> = input
         .units
         .iter()
@@ -42,7 +42,7 @@ fn every_valid_facet_of_the_selected_source_gets_exactly_one_row() {
 #[test]
 fn facet_prose_is_the_exact_source_slice_for_its_range() {
     let input = shared_input();
-    let request = prepare::project(&input, BASE).unwrap();
+    let request = support::project(&input, BASE).unwrap();
     let text = &input.sources.iter().find(|s| s.path == BASE).unwrap().text;
     for row in &request.rows {
         let unit = input.units.iter().find(|u| u.id == row.facet).unwrap();
@@ -59,7 +59,7 @@ fn facet_prose_is_the_exact_source_slice_for_its_range() {
 #[test]
 fn the_interpreter_is_told_each_facets_role_but_returns_no_role_column() {
     // R4: the role travels with the prose, because only the export knows it.
-    let request = prepare::project(&shared_input(), BASE).unwrap();
+    let request = support::project(&shared_input(), BASE).unwrap();
     for row in &request.rows {
         assert!(
             !row.section.is_empty(),
@@ -84,7 +84,7 @@ fn the_interpreter_is_told_each_facets_role_but_returns_no_role_column() {
 #[test]
 fn declared_roles_cover_only_roles_that_actually_hold_a_facet() {
     let input = shared_input();
-    let request = prepare::project(&input, BASE).unwrap();
+    let request = support::project(&input, BASE).unwrap();
     for (component, section) in &request.declared {
         assert!(
             request
@@ -103,14 +103,26 @@ fn declared_roles_cover_only_roles_that_actually_hold_a_facet() {
 }
 
 #[test]
-fn an_imported_tags_owning_source_enters_the_recorded_closure() {
-    let request = prepare::project(&shared_input(), CONSUMER).unwrap();
+fn an_imported_components_interface_enters_the_request_as_context() {
+    let request = support::project(&shared_input(), CONSUMER).unwrap();
+    let context: Vec<_> = request.rows.iter().filter(|r| r.context).collect();
     assert!(
-        request.binding.closure.contains(&BASE.to_string()),
-        "consumer imports from base, so base is in the closure: {:?}",
-        request.binding.closure
+        !context.is_empty() && context.iter().all(|r| r.source == BASE),
+        "consumer imports from base, so base's interface is context: {context:?}"
     );
-    assert!(request.binding.closure.contains(&CONSUMER.to_string()));
+    assert!(
+        context.iter().all(|r| r.section == "interface"),
+        "only interface Facets cross a component boundary"
+    );
+    assert!(
+        request
+            .binding
+            .interfaces
+            .iter()
+            .any(|i| i.path == BASE && i.component == "Base" && !i.hash.is_empty()),
+        "the binding records base's interface hash: {:?}",
+        request.binding.interfaces
+    );
 
     let ids: Vec<&str> = request.entities.iter().map(|e| e.id.as_str()).collect();
     assert!(
@@ -121,7 +133,7 @@ fn an_imported_tags_owning_source_enters_the_recorded_closure() {
 
 #[test]
 fn the_request_lists_what_each_source_imports_and_only_that() {
-    let request = prepare::project(&shared_input(), CONSUMER).unwrap();
+    let request = support::project(&shared_input(), CONSUMER).unwrap();
 
     let consumer = request
         .imports
@@ -153,7 +165,7 @@ fn the_request_lists_what_each_source_imports_and_only_that() {
         request.imports
     );
 
-    let alone = prepare::project(&shared_input(), BASE).unwrap();
+    let alone = support::project(&shared_input(), BASE).unwrap();
     assert!(
         alone.imports.is_empty(),
         "a closure of one source that imports nothing has no imports: {:?}",
@@ -163,7 +175,7 @@ fn the_request_lists_what_each_source_imports_and_only_that() {
 
 #[test]
 fn preparing_an_unexported_source_is_refused_by_name() {
-    let error = prepare::project(&shared_input(), "absent.sigil").unwrap_err();
+    let error = support::project(&shared_input(), "absent.sigil").unwrap_err();
     assert!(error.contains("absent.sigil"), "got: {error}");
 }
 
@@ -172,8 +184,8 @@ fn preparing_the_same_export_twice_writes_identical_bytes() {
     let input = shared_input();
     let first = out_dir("twice-a");
     let second = out_dir("twice-b");
-    prepare::write(&prepare::project(&input, BASE).unwrap(), &first).unwrap();
-    prepare::write(&prepare::project(&input, BASE).unwrap(), &second).unwrap();
+    prepare::write(&support::project(&input, BASE).unwrap(), &first).unwrap();
+    prepare::write(&support::project(&input, BASE).unwrap(), &second).unwrap();
     for name in ["binding.json", "request.json"] {
         assert_eq!(
             fs::read(first.join(name)).unwrap(),
@@ -186,13 +198,13 @@ fn preparing_the_same_export_twice_writes_identical_bytes() {
 }
 
 #[test]
-fn the_binding_pins_the_export_the_guidance_and_the_vocabulary() {
+fn the_binding_pins_the_content_the_guidance_and_the_vocabulary() {
     let input = shared_input();
-    let request = prepare::project(&input, BASE).unwrap();
-    assert_eq!(request.binding.source, BASE);
-    assert_eq!(
-        request.binding.export_digest,
-        prepare::export_digest(&input)
+    let request = support::project(&input, CONSUMER).unwrap();
+    assert_eq!(request.binding.source, CONSUMER);
+    assert!(
+        !request.binding.source_content.is_empty(),
+        "the binding carries the selected source's content file id"
     );
     assert_eq!(
         request.binding.guidance_fingerprint,
@@ -204,16 +216,62 @@ fn the_binding_pins_the_export_the_guidance_and_the_vocabulary() {
     );
     assert_eq!(request.binding.format, prepare::REQUEST_FORMAT);
 
-    // A different export digest is a different binding.
+    // Each field is part of the binding's identity.
     let mut other = request.binding.clone();
-    other.export_digest.push('x');
+    other.source_content.push('x');
     assert_ne!(request.binding.digest(), other.digest());
+    let mut other = request.binding.clone();
+    other.interfaces[0].hash.push('x');
+    assert_ne!(request.binding.digest(), other.digest());
+}
+
+#[test]
+fn the_binding_ignores_the_resolved_tree_id_and_every_position() {
+    // Reformatting the selected source and editing an unrelated one leave the
+    // binding alone; editing a dependency's private section does too.
+    let root = shared_workspace();
+    let before = {
+        let (input, basis) = root.load();
+        prepare::project(&input, &basis, CONSUMER).unwrap()
+    };
+    let consumer = std::fs::read_to_string(root.0.join(CONSUMER)).unwrap();
+    root.write(
+        CONSUMER,
+        format!(
+            "\n\n{}\n",
+            consumer
+                .replace("Serve the caller.", "Serve\n    the   caller.")
+                .replace(
+                    "Use value and result with",
+                    "Use value\n   and result    with"
+                )
+        )
+        .as_bytes(),
+    );
+    root.write(
+        "unrelated.sigil",
+        b"component Other { goal { Elsewhere. } }",
+    );
+    let base = std::fs::read_to_string(root.0.join(BASE)).unwrap();
+    root.write(
+        BASE,
+        base.replace(
+            "Preserve value and result.",
+            "Preserve value, result and more.",
+        )
+        .as_bytes(),
+    );
+    let after = {
+        let (input, basis) = root.load();
+        prepare::project(&input, &basis, CONSUMER).unwrap()
+    };
+    assert_eq!(before.binding, after.binding);
 }
 
 #[test]
 fn the_prepared_directory_carries_the_guidance_the_interpreter_needs() {
     let out = out_dir("guidance");
-    let written = prepare::write(&prepare::project(&shared_input(), BASE).unwrap(), &out).unwrap();
+    let written = prepare::write(&support::project(&shared_input(), BASE).unwrap(), &out).unwrap();
     for doc in guidance::BUNDLE {
         assert_eq!(
             fs::read_to_string(out.join(doc.name)).unwrap(),
@@ -231,7 +289,7 @@ fn preparing_into_a_non_empty_directory_is_refused_rather_than_merged() {
     let out = out_dir("occupied");
     fs::create_dir_all(&out).unwrap();
     fs::write(out.join("binding.json"), b"{\"stale\":true}").unwrap();
-    let request = prepare::project(&shared_input(), BASE).unwrap();
+    let request = support::project(&shared_input(), BASE).unwrap();
     let error = prepare::write(&request, &out).unwrap_err();
     assert!(error.contains(&out.display().to_string()), "got: {error}");
     assert_eq!(
@@ -247,77 +305,34 @@ fn preparation_reads_no_sigil_file_from_the_workspace() {
     // The export carries every source's text, so a projection produced with no
     // workspace present at all must be identical to one produced beside it.
     let input = shared_input();
-    let without = prepare::project(&input, BASE).unwrap();
+    let without = support::project(&input, BASE).unwrap();
     let workspace = Workspace::new();
     workspace.write(BASE, b"component Tampered { goal { Different. } }");
-    let with = prepare::project(&input, BASE).unwrap();
+    let with = support::project(&input, BASE).unwrap();
     assert_eq!(without, with);
 }
 
 // ------------------------------------------------- grouping a Logic section
 
-/// Build an export whose components carry Logic Facets in a known order.
+/// Build a workspace whose components carry Logic Facets in a known order.
 ///
-/// The shared 0.8 fixture has no Logic section, and the grouping is entirely
-/// about Logic, so these tests need a source of their own. Facet identities are
-/// derived from byte offsets the same way the real frontend derives them, so
-/// source order and identity order genuinely disagree where the offsets cross a
-/// power of ten — which is the ordering bug this grouping has to avoid.
-fn logic_input(bodies: &[(&str, &[&str])]) -> sigilc::frontend::DesignInput {
-    use serde_json::json;
-    let path = "flows.sigil";
+/// The shared fixture has no Logic section, and the grouping is entirely about
+/// Logic, so these tests need a source of their own. Facet identities are
+/// content ids, so source order is read from each Facet's position, never from
+/// its id.
+fn logic_input(bodies: &[(&str, &[&str])]) -> sigilc::structure::DesignInput {
     let mut text = String::new();
-    let mut units = Vec::new();
-    let mut entities = Vec::new();
     for (name, proses) in bodies {
-        let start = text.len();
         text.push_str(&format!("component {name} {{\n  logic {{\n"));
-        let mut spans = Vec::new();
         for prose in *proses {
-            // Pad so one section's Facets straddle offset 1000: sorting the
-            // identities as text would then put "1000" before "999".
-            text.push_str(&"    // pad\n".repeat(40));
-            let at = text.len();
-            text.push_str(&format!("    {prose}\n"));
-            spans.push((at, at + prose.len() + 4));
+            // A blank line keeps each paragraph its own Facet.
+            text.push_str(&format!("    {prose}\n\n"));
         }
         text.push_str("  }\n}\n");
-        let end = text.len();
-        let id = format!("urn:sigil:component:{path}:{name}");
-        entities.push(json!({
-            "id": id, "type": "Component", "label": name, "source": path, "owner": null,
-            "range": {"start": start, "end": end},
-            "nameRange": {"start": start + 10, "end": start + 10 + name.len()},
-            "identityResolved": true, "valid": true, "complete": true
-        }));
-        for (s, e) in spans {
-            units.push(json!({
-                "id": format!("facet:{path}:{s}"), "source": path, "owner": id,
-                "section": "logic", "range": {"start": s, "end": e},
-                "proseRange": {"start": s, "end": e},
-                "grouping": null, "introductions": [], "references": [], "links": [],
-                "payload": null, "valid": true, "complete": true
-            }));
-        }
     }
-    // The frontend hands units in whatever order it walked them; shuffle so the
-    // grouping cannot pass by accident.
-    units.reverse();
-    sigilc::frontend::DesignInput::parse(
-        &serde_json::to_vec(&json!({
-            "schemaVersion": 2, "languageVersion": "0.9.0", "frontendVersion": "test",
-            "sources": [{"path": path, "text": text}],
-            "context": [
-                {"path": ".sigil/config.json", "text": "{\"sigilVersion\":\"0.9.0\"}"},
-                {"path": ".sigil/local.json", "text": null},
-                {"path": ".sigil/glossary.json", "text": null}
-            ],
-            "diagnostics": [], "entities": entities, "units": units,
-            "imports": [], "groups": [], "introductions": [], "references": [], "links": []
-        }))
-        .unwrap(),
-    )
-    .unwrap()
+    let root = Workspace::new();
+    root.write("flows.sigil", text.as_bytes());
+    root.design_input()
 }
 
 #[test]
@@ -332,31 +347,25 @@ fn a_components_logic_facets_are_grouped_in_source_order() {
             "fifth step",
         ],
     )]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
 
     assert_eq!(request.flows.len(), 1, "one component, one Logic section");
     let flow = &request.flows[0];
     assert_eq!(flow.component_label, "Pipeline");
     assert_eq!(flow.facets.len(), 5, "all five Facets, none dropped");
 
-    // Source order, which is offset order -- not identity order.
-    let offsets: Vec<usize> = flow
-        .facets
+    // Source order: the grouped Facets run by position, whatever their ids sort as.
+    let mut by_position: Vec<_> = input
+        .units
         .iter()
-        .map(|f| f.rsplit(':').next().unwrap().parse().unwrap())
+        .filter(|u| flow.facets.contains(&u.id))
         .collect();
-    let mut sorted = offsets.clone();
-    sorted.sort_unstable();
-    assert_eq!(offsets, sorted, "grouped Facets run in source order");
-
-    // The ordering actually crosses a power of ten here, so a text sort of the
-    // identities would disagree. Pin that, or this test proves nothing.
-    let mut as_text: Vec<&String> = flow.facets.iter().collect();
-    as_text.sort();
-    let in_order: Vec<&String> = flow.facets.iter().collect();
-    assert_ne!(
-        as_text, in_order,
-        "fixture must straddle a power of ten, or it cannot catch a text sort"
+    by_position.sort_by_key(|u| u.prose_range.start);
+    let in_source_order: Vec<&String> = by_position.iter().map(|u| &u.id).collect();
+    let grouped: Vec<&String> = flow.facets.iter().collect();
+    assert_eq!(
+        grouped, in_source_order,
+        "grouped Facets run in source order"
     );
 
     // Each grouped Facet still has its own row, identity and prose.
@@ -374,7 +383,7 @@ fn a_components_logic_facets_are_grouped_in_source_order() {
 #[test]
 fn two_components_logic_sections_group_separately() {
     let input = logic_input(&[("Alpha", &["a one", "a two"]), ("Beta", &["b one"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
 
     assert_eq!(request.flows.len(), 2);
     let alpha = request
@@ -400,7 +409,7 @@ fn two_components_logic_sections_group_separately() {
 #[test]
 fn a_single_logic_facet_still_groups() {
     let input = logic_input(&[("Solo", &["the only step"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
     assert_eq!(
         request.flows.len(),
         1,
@@ -412,7 +421,7 @@ fn a_single_logic_facet_still_groups() {
 #[test]
 fn a_component_with_no_logic_section_produces_no_group() {
     let input = shared_input();
-    let request = prepare::project(&input, BASE).unwrap();
+    let request = support::project(&input, BASE).unwrap();
     assert!(
         request.flows.is_empty(),
         "base.sigil declares goal, interface and constraints and no Logic, \
@@ -424,7 +433,7 @@ fn a_component_with_no_logic_section_produces_no_group() {
 #[test]
 fn grouping_leaves_every_other_role_byte_identical() {
     let input = shared_input();
-    let request = prepare::project(&input, CONSUMER).unwrap();
+    let request = support::project(&input, CONSUMER).unwrap();
     // Nothing in the shared fixture is Logic, so every row here predates the
     // grouping. If the grouping ever reshapes a non-Logic row, this fails.
     assert!(request.flows.is_empty());
@@ -440,32 +449,87 @@ fn grouping_leaves_every_other_role_byte_identical() {
     );
 }
 
-// --------------------------------------------- projecting the whole closure
+// ------------------------------------------------- the black box over imports
+
+/// A provider with a private section of every role and a consumer that
+/// imports one Tag of it.
+fn black_box_workspace() -> Workspace {
+    let root = Workspace::new();
+    root.write(
+        "a.sigil",
+        b"component A {
+  goal {
+    Provide the shared thing.
+  }
+  interface {
+    The *shared thing* is exposed.
+  }
+  state {
+    The *private ledger* is kept.
+  }
+  logic {
+    Read the private ledger.
+
+    Write the private ledger.
+  }
+  constraints {
+    The private ledger never leaves A.
+  }
+}
+",
+    );
+    root.write(
+        "b.sigil",
+        b"@a.sigil from A import { shared thing }
+component B {
+  goal {
+    Use the shared thing.
+  }
+}
+",
+    );
+    root
+}
 
 #[test]
-fn the_request_presents_every_facet_in_the_closure() {
-    let input = shared_input();
-    let request = prepare::project(&input, CONSUMER).unwrap();
+fn a_dependents_request_holds_no_private_facet_and_no_private_entity() {
+    let root = black_box_workspace();
+    let (input, basis) = root.load();
+    let request = prepare::project(&input, &basis, "b.sigil").unwrap();
 
-    let sources: std::collections::BTreeSet<&str> =
-        request.rows.iter().map(|r| r.source.as_str()).collect();
+    let own: Vec<_> = request.own_rows().collect();
+    assert_eq!(own.len(), 1, "B declares one Facet");
+    let context: Vec<_> = request.rows.iter().filter(|r| r.context).collect();
+    assert_eq!(context.len(), 1, "A's one interface Facet: {context:?}");
+    assert_eq!(context[0].section, "interface");
     assert!(
-        sources.contains(BASE),
-        "a dependency's Facets must be presented too, or a claim in one component \
-         has no flow graph in a component it depends on to reach; got {sources:?}"
+        request.rows.iter().all(|r| !matches!(
+            r.section.as_str(),
+            "state" | "logic" | "constraints" | "goal"
+        ) || r.source == "b.sigil"),
+        "no dependency Facet outside its interface"
     );
-    assert!(sources.contains(CONSUMER));
-    assert_eq!(
-        request.binding.facets.len(),
-        request.rows.len(),
-        "the binding bounds exactly what was presented, closure included"
+    assert!(
+        request.flows.is_empty(),
+        "a dependency's flow is not presented"
     );
+
+    let labels: Vec<&str> = request.entities.iter().map(|e| e.label.as_str()).collect();
+    assert!(labels.contains(&"shared thing"), "{labels:?}");
+    assert!(labels.contains(&"A") && labels.contains(&"B"));
+    assert!(
+        !labels.contains(&"private ledger"),
+        "an entity introduced only in A's private state is not visible: {labels:?}"
+    );
+    // The request a dependent is handed names nothing private, in any field.
+    let text = serde_json::to_string(&request).unwrap();
+    assert!(!text.contains("private ledger"), "{text}");
 }
 
 #[test]
 fn coverage_stays_scoped_to_the_selected_source() {
     let input = shared_input();
-    let request = prepare::project(&input, CONSUMER).unwrap();
+    let request = support::project(&input, CONSUMER).unwrap();
 
     // Facets from the dependency are presented...
     assert!(request.rows.iter().any(|r| r.source == BASE));
@@ -473,8 +537,7 @@ fn coverage_stays_scoped_to_the_selected_source() {
     // interpretation ignores must not become a gap in this source's report.
     for (component, _) in &request.declared {
         let from_selected = request
-            .rows
-            .iter()
+            .own_rows()
             .any(|r| &r.component == component && r.source == CONSUMER);
         assert!(
             from_selected,
@@ -484,29 +547,153 @@ fn coverage_stays_scoped_to_the_selected_source() {
 }
 
 #[test]
-fn a_dependencys_logic_section_groups_under_its_own_source() {
+fn a_logic_section_groups_under_its_own_source() {
     let input = logic_input(&[("Alpha", &["a one", "a two"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
     assert_eq!(request.flows[0].source, "flows.sigil");
 }
 
 #[test]
-fn the_request_format_moves_when_presentation_widens() {
-    // A directory prepared before the widening carries a narrower Facet set.
-    // Pairing it with a widened binding would silently under-report, so the
-    // format is the signal that says re-prepare.
+fn the_request_format_moves_when_presentation_narrows() {
+    // A directory prepared under format 4 presented a whole closure and bound
+    // the whole input; one prepared under 5 carried no handles or names.
+    // Pairing it with this binding must fail loudly.
     let input = shared_input();
-    let request = prepare::project(&input, CONSUMER).unwrap();
+    let request = support::project(&input, CONSUMER).unwrap();
     assert_eq!(request.binding.format, prepare::REQUEST_FORMAT);
+    assert_eq!(prepare::REQUEST_FORMAT, 6);
 
-    // A binding from before the widening must not pair with this request. The
-    // Facet set it was prepared against was narrower, so accepting it would
-    // silently under-report rather than ask for a fresh directory.
     let mut stale = request.binding.clone();
-    stale.format = 2;
+    stale.format = 4;
     assert_ne!(
         request.binding, stale,
         "an older request format must not compare equal to the current one"
+    );
+}
+
+// ------------------------------------------ handles and each Facet's names
+
+#[test]
+fn own_facets_get_handles_in_facet_id_order() {
+    let request = support::project(&shared_input(), BASE).unwrap();
+    let handles: Vec<&str> = request.rows.iter().map(|r| r.handle.as_str()).collect();
+    assert_eq!(handles, ["#1", "#2", "#3"], "rows are sorted by Facet id");
+    let ids: Vec<&str> = request.rows.iter().map(|r| r.facet.as_str()).collect();
+    let mut sorted = ids.clone();
+    sorted.sort_unstable();
+    assert_eq!(ids, sorted);
+}
+
+#[test]
+fn handles_do_not_move_when_a_presentation_narrows() {
+    let input = shared_input();
+    let request = support::project(&input, BASE).unwrap();
+    let units = memo::units(&request);
+    let one = units
+        .iter()
+        .find(|u| u.facets == [request.rows[2].facet.clone()])
+        .unwrap();
+    let asked = prepare::presenting(&request, std::slice::from_ref(one));
+    let own: Vec<_> = asked.own_rows().collect();
+    assert_eq!(own.len(), 1);
+    assert_eq!(own[0].handle, "#3", "numbered over the whole source");
+}
+
+#[test]
+fn a_facet_lists_its_component_its_providers_and_the_tags_it_references() {
+    let input = shared_input();
+    let request = support::project(&input, BASE).unwrap();
+    let constraints = request
+        .rows
+        .iter()
+        .find(|r| r.section == "constraints")
+        .unwrap();
+    assert_eq!(constraints.names, ["Base", "result", "value"]);
+    let goal = request.rows.iter().find(|r| r.section == "goal").unwrap();
+    assert_eq!(
+        goal.names,
+        ["Base"],
+        "a goal that references no Tag lists none"
+    );
+
+    let consumer = support::project(&input, CONSUMER).unwrap();
+    let goal = consumer
+        .rows
+        .iter()
+        .find(|r| !r.context && r.section == "goal")
+        .unwrap();
+    assert_eq!(
+        goal.names,
+        ["Base", "Consumer"],
+        "an imported component is on every Facet's list, its Tags are not"
+    );
+}
+
+#[test]
+fn imported_context_rows_carry_no_handle_and_no_names() {
+    let request = support::project(&shared_input(), CONSUMER).unwrap();
+    let context: Vec<_> = request.rows.iter().filter(|r| r.context).collect();
+    assert!(!context.is_empty());
+    for row in context {
+        assert!(row.handle.is_empty() && row.names.is_empty(), "{row:?}");
+    }
+}
+
+#[test]
+fn an_unresolved_import_does_not_put_its_provider_on_a_list() {
+    let root = Workspace::new();
+    root.write(
+        "c.sigil",
+        b"@gone.sigil from Gone import { thing }\ncomponent C {\n  goal {\n    Use thing.\n  }\n}\n",
+    );
+    let (input, basis) = root.load();
+    let request = prepare::project(&input, &basis, "c.sigil").unwrap();
+    let goal = request.rows.iter().find(|r| r.section == "goal").unwrap();
+    assert_eq!(goal.names, ["C"], "{:?}", goal.names);
+}
+
+#[test]
+fn a_logic_section_lists_the_handles_of_its_facets_in_order() {
+    let input = logic_input(&[("Alpha", &["a one", "a two"])]);
+    let request = support::project(&input, "flows.sigil").unwrap();
+    let flow = &request.flows[0];
+    assert_eq!(flow.facets.len(), flow.handles.len());
+    for (facet, handle) in flow.facets.iter().zip(&flow.handles) {
+        let row = request.rows.iter().find(|r| &r.facet == facet).unwrap();
+        assert_eq!(&row.handle, handle);
+    }
+}
+
+#[test]
+fn asking_a_logic_section_again_shows_its_constraints_as_read_only_context() {
+    let root = Workspace::new();
+    root.write(
+        "f.sigil",
+        b"component F {\n  logic {\n    one\n\n    two\n  }\n  constraints {\n    must not do x\n  }\n  goal {\n    a goal\n  }\n}\n",
+    );
+    let (input, basis) = root.load();
+    let request = prepare::project(&input, &basis, "f.sigil").unwrap();
+    let logic = memo::units(&request)
+        .into_iter()
+        .find(|u| u.section == "logic")
+        .unwrap();
+    let asked = prepare::presenting(&request, std::slice::from_ref(&logic));
+
+    let constraint = asked
+        .rows
+        .iter()
+        .find(|r| r.section == "constraints")
+        .expect("the constraint a guard would name is shown");
+    assert!(constraint.context, "shown for its prose, never answered");
+    assert!(!constraint.handle.is_empty(), "so a guard can name it");
+    assert!(
+        !asked.rows.iter().any(|r| r.section == "goal"),
+        "only what a flow can be guarded on is added"
+    );
+    assert_eq!(
+        asked.own_rows().count(),
+        2,
+        "the two Logic Facets are asked"
     );
 }
 
@@ -521,17 +708,67 @@ fn memo_root(name: &str) -> std::path::PathBuf {
     p
 }
 
+fn reading(facet: &str) -> sigilc::claims::dialect::Row {
+    sigilc::claims::dialect::Row::Reading {
+        facet: facet.into(),
+        outcome: "saved reading".into(),
+    }
+}
+
+fn save_all(root: &std::path::Path, request: &prepare::Request, units: &[memo::Unit]) {
+    for unit in units {
+        let rows: Vec<_> = unit.facets.iter().map(|f| reading(f)).collect();
+        memo::save(root, request, unit, &rows, Default::default()).unwrap();
+    }
+}
+
+#[test]
+fn a_non_logic_unit_key_is_its_facet_content_id_alone() {
+    // Swapping two constraints, re-wrapping prose or editing elsewhere in the
+    // file leaves every key unchanged; no position or discriminator is in it.
+    let make = |text: &str| {
+        let root = Workspace::new();
+        root.write("c.sigil", text.as_bytes());
+        let (input, basis) = root.load();
+        let request = prepare::project(&input, &basis, "c.sigil").unwrap();
+        let mut keys: Vec<_> = memo::units(&request).into_iter().map(|u| u.key).collect();
+        keys.sort();
+        keys
+    };
+    let original = "component C {\n  constraints {\n    First rule.\n\n    Second rule.\n\n    Third rule.\n  }\n}\n";
+    let swapped = "component C {\n  constraints {\n    Third rule.\n\n    First rule.\n\n    Second rule.\n  }\n}\n";
+    let rewrapped = "component C {\n\n\n      constraints {\n    First\n   rule.\n\n    Second   rule.\n\n\n    Third rule.\n  }\n}\n";
+    let edited = "component C {\n  constraints {\n    First rule.\n\n    Second rule!\n\n    Third rule.\n  }\n}\n";
+    assert_eq!(make(original), make(swapped));
+    assert_eq!(make(original), make(rewrapped));
+    assert_ne!(make(original), make(edited));
+}
+
+#[test]
+fn identical_facets_of_one_section_are_still_separate_units() {
+    let root = Workspace::new();
+    root.write(
+        "d.sigil",
+        b"component D {\n  constraints {\n    Same rule.\n\n    Same rule.\n  }\n}\n",
+    );
+    let (input, basis) = root.load();
+    let request = prepare::project(&input, &basis, "d.sigil").unwrap();
+    let units = memo::units(&request);
+    assert_eq!(units.len(), 2);
+    assert_ne!(units[0].key, units[1].key, "an ordinal tells them apart");
+}
+
 #[test]
 fn a_logic_unit_is_the_whole_section_and_every_other_role_is_one_facet() {
     let input = logic_input(&[("Pipeline", &["one", "two", "three"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
     let units = memo::units(&request);
 
     assert_eq!(units.len(), 1, "three Logic Facets are one unit, not three");
     assert_eq!(units[0].section, "logic");
     assert_eq!(units[0].facets.len(), 3);
 
-    let other = prepare::project(&shared_input(), BASE).unwrap();
+    let other = support::project(&shared_input(), BASE).unwrap();
     let units = memo::units(&other);
     assert_eq!(
         units.len(),
@@ -541,19 +778,9 @@ fn a_logic_unit_is_the_whole_section_and_every_other_role_is_one_facet() {
 }
 
 #[test]
-fn editing_one_logic_paragraph_restales_its_section_and_no_other() {
-    let before = prepare::project(
-        &logic_input(&[("Alpha", &["a one", "a two"]), ("Beta", &["b one"])]),
-        "flows.sigil",
-    )
-    .unwrap();
-    let after = prepare::project(
-        &logic_input(&[("Alpha", &["a one", "b two"]), ("Beta", &["b one"])]),
-        "flows.sigil",
-    )
-    .unwrap();
-
-    let key = |r: &prepare::Request, label: &str| {
+fn editing_or_swapping_logic_paragraphs_restales_the_section_and_no_other() {
+    let key = |bodies: &[(&str, &[&str])], label: &str| {
+        let r = support::project(&logic_input(bodies), "flows.sigil").unwrap();
         let component = r
             .flows
             .iter()
@@ -561,323 +788,60 @@ fn editing_one_logic_paragraph_restales_its_section_and_no_other() {
             .unwrap()
             .component
             .clone();
-        memo::units(r)
+        memo::units(&r)
             .into_iter()
             .find(|u| u.component == component)
             .unwrap()
             .key
     };
-    assert_ne!(
-        key(&before, "Alpha"),
-        key(&after, "Alpha"),
-        "editing a Logic paragraph must restale its whole section: the flow \
-         through it may have changed, and a flow spans the section"
-    );
-    assert_eq!(
-        key(&before, "Beta"),
-        key(&after, "Beta"),
-        "and must restale no other component's section"
-    );
-}
-
-#[test]
-fn moving_a_logic_facet_with_unchanged_prose_remaps_its_saved_reading() {
-    use sigilc::claims::dialect::Row;
-
-    let root = memo_root("moved-logic-facet");
-    let mut request = prepare::project(
-        &logic_input(&[("Pipeline", &["first step", "second step"])]),
-        "flows.sigil",
-    )
-    .unwrap();
-    let previous = memo::units(&request).remove(0);
-    let previous_facet = previous.facets[0].clone();
-    memo::save(
-        &root,
-        &request,
-        &previous,
-        &[Row::Reading {
-            facet: previous_facet.clone(),
-            outcome: "saved reading".into(),
-        }],
-    )
-    .unwrap();
-
-    let moved_facet = format!("{previous_facet}-moved");
-    request.flows[0].facets[0] = moved_facet.clone();
-    request
-        .rows
-        .iter_mut()
-        .find(|row| row.facet == previous_facet)
-        .unwrap()
-        .facet = moved_facet.clone();
-
-    let (stale, reused) = memo::split(&request, &root);
-    assert!(stale.is_empty(), "unchanged prose keeps the unit reusable");
-    assert_eq!(reused.len(), 1);
-    assert_eq!(reused[0].1[0].facet(), moved_facet);
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn moving_a_non_logic_facet_with_unchanged_prose_remaps_its_saved_reading() {
-    use sigilc::claims::dialect::Row;
-
-    let root = memo_root("moved-non-logic-facet");
-    let mut request = prepare::project(&shared_input(), BASE).unwrap();
-    let previous = memo::units(&request).remove(0);
-    let previous_facet = previous.facets[0].clone();
-    memo::save(
-        &root,
-        &request,
-        &previous,
-        &[Row::Reading {
-            facet: previous_facet.clone(),
-            outcome: "saved reading".into(),
-        }],
-    )
-    .unwrap();
-    let moved_facet = format!("{previous_facet}-moved");
-    request
-        .rows
-        .iter_mut()
-        .find(|row| row.facet == previous_facet)
-        .unwrap()
-        .facet = moved_facet.clone();
-
-    let (stale, reused) = memo::split(&request, &root);
-    assert_eq!(stale.len(), request.rows.len() - 1);
-    assert_eq!(reused.len(), 1);
-    assert_eq!(reused[0].1[0].facet(), moved_facet);
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn inserting_an_identical_facet_stales_its_ambiguous_duplicate_group() {
-    use sigilc::claims::dialect::Row;
-
-    let root = memo_root("duplicate-cardinality");
-    let mut request = prepare::project(&shared_input(), BASE).unwrap();
-    let mut first = request.rows[0].clone();
-    first.facet = "facet:duplicate:A".into();
-    first.source = "duplicates.sigil".into();
-    first.component = "urn:sigil:component:duplicates:Example".into();
-    first.section = "constraints".into();
-    first.prose = "the same constraint".into();
-    let mut second = first.clone();
-    second.facet = "facet:duplicate:B".into();
-    request.rows = vec![first.clone(), second.clone()];
-
-    for (row, outcome) in [(&first, "reading A"), (&second, "reading B")] {
-        let unit = memo::units(&request)
-            .into_iter()
-            .find(|unit| unit.facets == [row.facet.clone()])
-            .unwrap();
-        memo::save(
-            &root,
-            &request,
-            &unit,
-            &[Row::Reading {
-                facet: row.facet.clone(),
-                outcome: outcome.into(),
-            }],
-        )
-        .unwrap();
+    let before = [("Alpha", &["a one", "a two"][..]), ("Beta", &["b one"][..])];
+    let edited = [("Alpha", &["a one", "b two"][..]), ("Beta", &["b one"][..])];
+    let swapped = [("Alpha", &["a two", "a one"][..]), ("Beta", &["b one"][..])];
+    for after in [&edited, &swapped] {
+        assert_ne!(
+            key(&before, "Alpha"),
+            key(after, "Alpha"),
+            "a Logic edit or reorder must restale its whole section: step order is part of a flow"
+        );
+        assert_eq!(
+            key(&before, "Beta"),
+            key(after, "Beta"),
+            "and must restale no other component's section"
+        );
     }
-
-    let mut inserted = first.clone();
-    inserted.facet = "facet:duplicate:X".into();
-    request.rows = vec![inserted, first, second];
-    let (stale, reused) = memo::split(&request, &root);
-
-    assert_eq!(
-        stale.len(),
-        3,
-        "all rows in the changed duplicate group are ambiguous"
-    );
-    assert!(
-        reused.is_empty(),
-        "no old reading may move to another duplicate Facet"
-    );
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn shifting_many_facet_ids_reuses_and_remaps_every_unchanged_unit() {
-    use sigilc::claims::dialect::Row;
-
-    let root = memo_root("shift-many-facets");
-    let mut request = prepare::project(&shared_input(), BASE).unwrap();
-    let units = memo::units(&request);
-    for unit in &units {
-        let rows: Vec<_> = unit
-            .facets
-            .iter()
-            .map(|facet| Row::Reading {
-                facet: facet.clone(),
-                outcome: "saved reading".into(),
-            })
-            .collect();
-        memo::save(&root, &request, unit, &rows).unwrap();
-    }
-    let shifted: std::collections::BTreeMap<_, _> = units
-        .iter()
-        .flat_map(|unit| unit.facets.iter())
-        .map(|facet| (facet.clone(), format!("{facet}-shifted")))
-        .collect();
-    for row in &mut request.rows {
-        row.facet = shifted[&row.facet].clone();
-    }
-    for flow in &mut request.flows {
-        for facet in &mut flow.facets {
-            *facet = shifted[facet].clone();
-        }
-    }
-
-    let (stale, reused) = memo::split(&request, &root);
-    assert!(
-        stale.is_empty(),
-        "offset-only identity changes keep units reusable"
-    );
-    assert_eq!(reused.len(), units.len());
-    for (unit, rows) in reused {
-        assert_eq!(rows.len(), unit.facets.len());
-        for row in rows {
-            assert!(unit.facets.iter().any(|facet| facet == row.facet()));
-        }
-    }
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn a_reused_guard_remaps_its_constraint_facet_reference() {
-    use sigilc::claims::{dialect::Row, prepare::LogicSection};
-
-    let root = memo_root("guard-constraint-reference");
-    let mut request = prepare::project(&shared_input(), BASE).unwrap();
-    let logic_component = "urn:sigil:component:flows.sigil:Pipeline".to_owned();
-    let logic_facet = "facet:flows.sigil:1200".to_owned();
-    request.rows.push(prepare::FacetRow {
-        facet: logic_facet.clone(),
-        component: logic_component.clone(),
-        component_label: "Pipeline".into(),
-        section: "logic".into(),
-        source: "flows.sigil".into(),
-        prose: "guard the step with the base constraint".into(),
-    });
-    request.flows.push(LogicSection {
-        component: logic_component,
-        component_label: "Pipeline".into(),
-        source: "flows.sigil".into(),
-        facets: vec![logic_facet.clone()],
-    });
-
-    let logic_unit = memo::units(&request)
-        .into_iter()
-        .find(|unit| unit.facets.contains(&logic_facet))
-        .unwrap();
-    // The rowless constraint unit remains stale, but its identity is available
-    // from the request when the saved Guard is loaded.
-    memo::save(
-        &root,
-        &request,
-        &logic_unit,
-        &[Row::Guard {
-            facet: logic_facet.clone(),
-            step: 1,
-            operand: "constraint".into(),
-            value: BASE_CONSTRAINTS.into(),
-        }],
-    )
-    .unwrap();
-
-    let shifted: std::collections::BTreeMap<_, _> = request
-        .rows
-        .iter()
-        .map(|row| (row.facet.clone(), format!("{}-shifted", row.facet)))
-        .collect();
-    for row in &mut request.rows {
-        row.facet = shifted[&row.facet].clone();
-    }
-    for flow in &mut request.flows {
-        for facet in &mut flow.facets {
-            *facet = shifted[facet].clone();
-        }
-    }
-
-    let (stale, reused) = memo::split(&request, &root);
-    assert_eq!(reused.len(), 1);
-    let guard_unit = reused
-        .iter()
-        .find(|(unit, _)| unit.facets.contains(&shifted[&logic_facet]))
-        .unwrap();
-    assert!(matches!(
-        &guard_unit.1[0],
-        Row::Guard { facet, value, .. }
-            if facet == &shifted[&logic_facet] && value == &shifted[BASE_CONSTRAINTS]
-    ));
-    assert!(
-        stale
-            .iter()
-            .any(|unit| unit.facets == [shifted[BASE_CONSTRAINTS].clone()])
-    );
-    assert!(
-        !stale
-            .iter()
-            .any(|unit| unit.facets == [shifted[&logic_facet].clone()])
-    );
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn two_facets_with_identical_prose_do_not_share_a_stored_interpretation() {
-    // Grounding is checked against each Facet's own component and references,
-    // so reusing one interpretation for the other could judge a row grounded
-    // against a Facet that never named the entity.
-    let input = logic_input(&[("Alpha", &["same words"]), ("Beta", &["same words"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
-    let units = memo::units(&request);
-    assert_eq!(units.len(), 2);
-    assert_ne!(
-        units[0].key, units[1].key,
-        "prose alone does not identify a unit; the owning component is part of the key"
-    );
 }
 
 #[test]
 fn a_stored_unit_is_reused_and_a_stale_one_is_asked_for() {
-    use sigilc::claims::dialect::Row;
-
     let root = memo_root("reuse");
     let input = logic_input(&[("Alpha", &["a one"]), ("Beta", &["b one"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
+    let request = support::project(&input, "flows.sigil").unwrap();
 
-    let (stale, reused) = memo::split(&request, &root);
-    assert_eq!(stale.len(), 2, "an empty store makes everything stale");
-    assert!(reused.is_empty());
+    let split = memo::split(&request, &input, &root);
+    assert_eq!(
+        split.stale.len(),
+        2,
+        "an empty store makes everything stale"
+    );
+    assert!(split.reused.is_empty());
 
-    memo::save(
-        &root,
-        &request,
-        &stale[0],
-        &[Row::Reading {
-            facet: stale[0].facets[0].clone(),
-            outcome: "saved reading".into(),
-        }],
-    )
-    .unwrap();
-    let (stale_now, reused_now) = memo::split(&request, &root);
-    assert_eq!(stale_now.len(), 1, "the stored unit is no longer asked for");
-    assert_eq!(reused_now.len(), 1);
+    save_all(&root, &request, &split.stale[..1]);
+    let now = memo::split(&request, &input, &root);
+    assert_eq!(now.stale.len(), 1, "the stored unit is no longer asked for");
+    assert_eq!(now.reused.len(), 1);
+    assert!(
+        now.refreshed.is_empty(),
+        "the recorded grounding context still matches, so nothing is re-checked"
+    );
 
     // And the narrowed request presents only what is still stale.
-    let asked = prepare::presenting(&request, &stale_now);
+    let asked = prepare::presenting(&request, &now.stale);
     assert_eq!(asked.flows.len(), 1);
     assert!(
         asked
             .rows
             .iter()
-            .all(|r| stale_now[0].facets.contains(&r.facet))
+            .all(|r| now.stale[0].facets.contains(&r.facet))
     );
     // The binding is left whole: ingest recomputes and compares it.
     assert_eq!(asked.binding, request.binding);
@@ -885,9 +849,33 @@ fn a_stored_unit_is_reused_and_a_stale_one_is_asked_for() {
 }
 
 #[test]
+fn a_reading_follows_its_facet_id_and_nothing_else() {
+    // The same stored reading serves a request whose Facet moved: its key and
+    // its rows name the content id, so there is nothing to remap.
+    let root = memo_root("follows-id");
+    let before = logic_input(&[("Alpha", &["a one"])]);
+    let request = support::project(&before, "flows.sigil").unwrap();
+    save_all(&root, &request, &memo::units(&request));
+
+    let shifted = {
+        let workspace = Workspace::new();
+        workspace.write(
+            "flows.sigil",
+            b"\n\n\ncomponent Alpha {\n\n       logic {\n   a   one\n\n  }\n}\n",
+        );
+        workspace.design_input()
+    };
+    let moved = support::project(&shifted, "flows.sigil").unwrap();
+    let split = memo::split(&moved, &shifted, &root);
+    assert!(split.stale.is_empty());
+    assert_eq!(split.reused.len(), 1);
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
 fn moving_the_guidance_fingerprint_restales_everything() {
     let input = logic_input(&[("Alpha", &["a one"])]);
-    let mut request = prepare::project(&input, "flows.sigil").unwrap();
+    let mut request = support::project(&input, "flows.sigil").unwrap();
     let before = memo::units(&request)[0].key.clone();
     request.binding.guidance_fingerprint = "moved".into();
     assert_ne!(
@@ -899,28 +887,15 @@ fn moving_the_guidance_fingerprint_restales_everything() {
 
 #[test]
 fn a_request_with_nothing_stale_is_valid_and_asks_for_nothing() {
-    use sigilc::claims::dialect::Row;
-
     let root = memo_root("empty");
     let input = logic_input(&[("Alpha", &["a one"])]);
-    let request = prepare::project(&input, "flows.sigil").unwrap();
-    for unit in memo::units(&request) {
-        memo::save(
-            &root,
-            &request,
-            &unit,
-            &[Row::Reading {
-                facet: unit.facets[0].clone(),
-                outcome: "saved reading".into(),
-            }],
-        )
-        .unwrap();
-    }
-    let (stale, reused) = memo::split(&request, &root);
-    assert!(stale.is_empty());
-    assert_eq!(reused.len(), 1);
+    let request = support::project(&input, "flows.sigil").unwrap();
+    save_all(&root, &request, &memo::units(&request));
+    let split = memo::split(&request, &input, &root);
+    assert!(split.stale.is_empty());
+    assert_eq!(split.reused.len(), 1);
 
-    let asked = prepare::presenting(&request, &stale);
+    let asked = prepare::presenting(&request, &split.stale);
     assert!(asked.rows.is_empty(), "nothing stale, nothing asked");
     assert!(asked.flows.is_empty());
     assert_eq!(
@@ -933,12 +908,158 @@ fn a_request_with_nothing_stale_is_valid_and_asks_for_nothing() {
 #[test]
 fn a_rowless_unit_remains_stale_and_cannot_be_memoized() {
     let root = memo_root("rowless-stale");
-    let request = prepare::project(&logic_input(&[("Alpha", &["a one"])]), "flows.sigil").unwrap();
+    let input = logic_input(&[("Alpha", &["a one"])]);
+    let request = support::project(&input, "flows.sigil").unwrap();
     let unit = memo::units(&request).remove(0);
 
-    assert!(memo::save(&root, &request, &unit, &[]).is_err());
-    let (stale, reused) = memo::split(&request, &root);
-    assert_eq!(stale, vec![unit]);
-    assert!(reused.is_empty());
+    assert!(memo::save(&root, &request, &unit, &[], Default::default()).is_err());
+    let split = memo::split(&request, &input, &root);
+    assert_eq!(split.stale, vec![unit]);
+    assert!(split.reused.is_empty());
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn an_entry_of_another_memo_version_reads_as_absent_and_is_pruned() {
+    let root = memo_root("older-version");
+    let input = logic_input(&[("Alpha", &["a one"])]);
+    let request = support::project(&input, "flows.sigil").unwrap();
+    let unit = memo::units(&request).remove(0);
+
+    // A v4 entry: no version field, offset-era Facet ids and a `constraintTargets` map.
+    let dir = root.join("claims/interpretations");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join(format!("{}.json", unit.key)),
+        br#"{"facets":["facet:flows.sigil:1"],"rows":[],"constraintTargets":{}}"#,
+    )
+    .unwrap();
+    fs::write(dir.join("0000.json"), b"not json").unwrap();
+    let split = memo::split(&request, &input, &root);
+    assert_eq!(
+        split.stale.len(),
+        1,
+        "an older entry never serves a request"
+    );
+    assert_eq!(memo::older_entries(&root), 2);
+
+    save_all(&root, &request, &[unit]);
+    assert_eq!(
+        memo::prune_older(&root).unwrap(),
+        1,
+        "the unreadable one goes"
+    );
+    assert_eq!(memo::older_entries(&root), 0);
+    assert!(memo::split(&request, &input, &root).stale.is_empty());
+    fs::remove_dir_all(&root).unwrap();
+}
+
+// ------------------------------------------- re-grounding a stored reading
+
+/// B's one goal Facet references `alpha`; `beta` is visible through A's
+/// interface but unreferenced there.
+fn grounding_workspace() -> Workspace {
+    let root = Workspace::new();
+    root.write(
+        "a.sigil",
+        b"component A {\n  interface {\n    The *alpha* and *beta* exist.\n  }\n}\n",
+    );
+    root.write(
+        "b.sigil",
+        b"@a.sigil from A import { alpha, beta }\ncomponent B {\n  goal {\n    Use alpha.\n  }\n}\n",
+    );
+    root
+}
+
+fn claim_on(facet: &str, object: &str) -> sigilc::claims::dialect::Row {
+    sigilc::claims::dialect::Row::Claim {
+        facet: facet.into(),
+        subject: "B".into(),
+        relation: "uses".into(),
+        object: object.into(),
+        modality: "required".into(),
+        expected: "true".into(),
+    }
+}
+
+/// A reading of B's goal stored as if admitted under another source content.
+fn stored_under_an_older_context(
+    name: &str,
+    object: &str,
+    defects: std::collections::BTreeSet<sigilc::claims::identity::Defect>,
+) -> (std::path::PathBuf, memo::Split) {
+    let workspace = grounding_workspace();
+    let (input, basis) = workspace.load();
+    let request = prepare::project(&input, &basis, "b.sigil").unwrap();
+    let unit = memo::units(&request)
+        .into_iter()
+        .find(|u| !u.context)
+        .unwrap();
+    let mut older = request.clone();
+    older.binding.source_content = "an-older-content-id".into();
+    let root = memo_root(name);
+    memo::save(
+        &root,
+        &older,
+        &unit,
+        &[claim_on(&unit.facets[0], object)],
+        defects,
+    )
+    .unwrap();
+    let split = memo::split(&request, &input, &root);
+    (root, split)
+}
+
+#[test]
+fn a_moved_context_that_still_admits_cleanly_reuses_and_refreshes() {
+    let (root, split) = stored_under_an_older_context("regrounds", "alpha", Default::default());
+    assert!(split.stale.is_empty());
+    assert_eq!(split.reused.len(), 1);
+    assert_eq!(split.refreshed.len(), 1);
+    memo::refresh(&root, &split).unwrap();
+
+    // The recorded context now matches, so the next split re-checks nothing.
+    let workspace = grounding_workspace();
+    let (input, basis) = workspace.load();
+    let request = prepare::project(&input, &basis, "b.sigil").unwrap();
+    let again = memo::split(&request, &input, &root);
+    assert_eq!(again.reused.len(), 1);
+    assert!(again.refreshed.is_empty());
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn a_reading_naming_a_visible_but_unreferenced_entity_goes_stale_when_context_moves() {
+    // `beta` is visible but this Facet never references it, so it is not on the
+    // Facet's list and admission now refuses the stored reading.
+    let (root, split) = stored_under_an_older_context("new-defect", "beta", Default::default());
+    assert_eq!(split.stale.len(), 1);
+    assert!(split.reused.is_empty());
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn a_new_defect_makes_a_moved_context_stale() {
+    // B uses B asserts nothing. The reading was stored without that defect
+    // recorded, so admission now finds one the reading lacked.
+    let (root, split) = stored_under_an_older_context("degenerate", "B", Default::default());
+    assert_eq!(split.stale.len(), 1);
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn a_defect_the_reading_already_carried_does_not_make_it_stale() {
+    use sigilc::claims::identity::Defect;
+    let (root, split) =
+        stored_under_an_older_context("old-defect", "B", [Defect::Degenerate].into());
+    assert!(split.stale.is_empty());
+    assert_eq!(split.refreshed.len(), 1);
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn a_reading_naming_an_entity_that_left_the_request_is_stale() {
+    let (root, split) = stored_under_an_older_context("gone", "gamma", Default::default());
+    assert_eq!(split.stale.len(), 1, "admission refuses an unknown entity");
     fs::remove_dir_all(&root).unwrap();
 }

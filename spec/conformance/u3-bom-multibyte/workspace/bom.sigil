@@ -1,0 +1,12 @@
+﻿component Bom {
+  goal {
+    Héllo wörld 日本 *tág* and tág.
+  }
+
+  interface {
+    Ünïcode [lïnk](./é.md) tág
+    ```ö
+    body é
+    ```
+  }
+}

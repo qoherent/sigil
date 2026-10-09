@@ -1,0 +1,81 @@
+{
+  "exported": true,
+  "sources": [
+    "unknown.sigil"
+  ],
+  "components": [
+    {
+      "source": "unknown.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        135
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "unknown.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "unknown.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        102,
+        129
+      ],
+      "proseRange": [
+        102,
+        129
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNKNOWN_SECTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unknown.sigil",
+      "range": [
+        56,
+        61
+      ],
+      "related": []
+    }
+  ]
+}

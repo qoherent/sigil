@@ -40,17 +40,6 @@ export async function runCommand(
   options: CommandHandlerOptions = {},
 ): Promise<CommandResult> {
   const core = options.core ?? new CoreAdapter();
-  if (request.command === "export-design") {
-    const { bundle, diagnostics } = await core.exportDesign(
-      request.path,
-      request.root,
-    );
-    return {
-      command: "export-design",
-      bundle,
-      diagnostics,
-    };
-  }
   if (request.command === "skill-list") {
     const result = await listInstalledSkills(options.install?.sourceDirectory);
     return {

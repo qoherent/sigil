@@ -1,0 +1,11 @@
+@. from Provider import { query }
+
+component Consumer {
+  goal {
+    Use provider vocabulary.
+  }
+
+  interface {
+    Use query.
+  }
+}

@@ -25,6 +25,7 @@
       "repos/**",
       "**/target/**",
       "examples/**",
+      "spec/conformance/**",
       "integrations/skills/sigil/**"
     ]
   },

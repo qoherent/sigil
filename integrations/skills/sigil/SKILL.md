@@ -14,7 +14,7 @@ This skill targets the implemented Sigil 0.7 language and native workflow.
 For 0.8 designs, select `sigil-understand`, `sigil-write`, or `sigil-evaluate`.
 Their source-based design workflows do not require the bootstrap below.
 
-`sigil` owns language inspection and structural Design export. Use `sigilc`
+`sigil` owns language inspection. Use `sigilc`
 directly for scope, freshness, preparation, ingestion, catalogs, and semantic
 gates. The native compiler never starts models or owns the coding loop.
 
@@ -64,9 +64,8 @@ prove behavior. Use the selection examples in
 ## Use the native flow
 
 Read [compilation execution](references/compilation-execution.md) for the exact
-semantic protocol, per-source inputs, and command exits. Capture current
-authored input with `sigil export design .`; use that JSON with native
-`--frontend`, and refresh it after authored, configuration, or glossary changes.
+semantic protocol, per-source inputs, and command exits. Native commands read
+the workspace through `--root` (default `.`); there is no export to refresh.
 
 1. Inspect `sigilc scope` and `sigilc stale` with the intended selection.
    Preserve every fresh projection and prepare only rows reported stale,

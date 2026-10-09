@@ -1,4 +1,16 @@
-import { join } from "node:path";
+import { delimiter, join, resolve } from "node:path";
+import {
+  analyzeHostStream,
+  asRecord,
+  buildHostLaunch,
+  DEFAULT_CHILD_PROMPT,
+  defaultCodexAuthPath,
+  defaultPiSubagentsEntry,
+  type HostName,
+  parseJsonLines,
+  prepareCodexHome,
+  removeCodexAuth,
+} from "./hosts.ts";
 import {
   type CapturedStream,
   captureStream,
@@ -6,7 +18,7 @@ import {
   signalOwnedProcess,
 } from "./process.ts";
 
-export type AgentName = "claude" | "codex" | "pi";
+export type AgentName = HostName;
 export type AgentStatus = "completed" | "failed" | "timeout" | "cancelled";
 export type ModelVerification = "observed" | "unverified" | "mixed";
 
@@ -14,67 +26,178 @@ const OUTPUT_DRAIN_GRACE_MS = 500;
 const TERMINATION_GRACE_MS = 2_000;
 const PROBE_TIMEOUT_MS = 5_000;
 
+/** Shell programs the orchestrator may run on Claude Code; what the skill needs. */
+export const ORCHESTRATOR_SHELL = [
+  "sigil-claims",
+  "mkdir",
+  "cp",
+  "mv",
+  "ls",
+  "cat",
+  "test",
+] as const;
+
+/** Where each part of a pass lives, relative to the pass directory. */
+export const PASS_LAYOUT = {
+  skill: "skills/sigil-compute/SKILL.md",
+  root: "root",
+  store: "store",
+  run: "run",
+  bin: "bin",
+} as const;
+
 export interface AgentRunRequest {
   readonly agent: AgentName;
   readonly requestedModel: string;
-  /** Fresh native prepare directory. It is copied, never exposed in place. */
-  readonly preparationDir: string;
-  /** Attempt-specific retained directory under the batch. */
+  /**
+   * Reasoning effort for the orchestrator and every child (codex: low..xhigh).
+   * Absent: each host's own default applies and no child effort is checked.
+   */
+  readonly reasoning?: string;
+  /** The prepared pass directory. It is the orchestrator's working directory. */
+  readonly passDir: string;
+  /** The directory the pinned `sigil-claims` is put on PATH from. */
+  readonly binDir: string;
+  /** Attempt-specific retained directory outside the pass directory. */
   readonly evidenceDir: string;
-  readonly skillDirs: {
-    readonly understandDir: string;
-    readonly egglogDir: string;
-  };
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
   /** Overrides PATH lookup, useful for a pinned executable or a fake host. */
   readonly executable?: string;
+  /** Codex: the auth file copied into the scratch CODEX_HOME for the run. */
+  readonly codexAuthPath?: string;
+  /** Pi: the pi-subagents extension entry loaded with `-e`. */
+  readonly piSubagentsEntry?: string;
+}
+
+export type EffortVerification = "observed" | "unverified" | "mixed";
+
+/** What the host showed about the children the orchestrator started. */
+export interface ChildObservation {
+  /** Child sessions seen, or null when the host does not show them. */
+  readonly count: number | null;
+  readonly models: readonly string[];
+  readonly efforts: readonly string[];
+  /** `unverified` when the host exposes no child effort. */
+  readonly effortVerification: EffortVerification;
+  /** Evidence about whether each child began without the parent's context. */
+  readonly freshEvidence: readonly string[];
+  readonly observedFrom: string | null;
 }
 
 export interface AgentRunResult {
   readonly status: AgentStatus;
-  readonly failureStep: "launch" | "child" | "artifact" | null;
+  readonly failureStep: "launch" | "orchestrator" | "artifact" | null;
   readonly error: string | null;
   readonly exitCode: number | null;
   readonly agent: AgentName;
   readonly requestedModel: string;
+  /** The reasoning effort requested for orchestrator and children, if any. */
+  readonly requestedEffort: string | null;
   readonly observedModels: readonly string[];
   readonly modelVerification: ModelVerification;
+  readonly children: ChildObservation;
   readonly hostVersion: string | null;
   readonly executable: string;
   /** Effective CLI flags, excluding the prompt (retained separately). */
   readonly settings: readonly string[];
   readonly isolationLimits: readonly string[];
-  readonly stagedWorkspace: string;
+  readonly passDir: string;
   readonly promptPath: string;
   readonly stdoutPath: string;
   readonly stderrPath: string;
-  /** Exact final message bytes. Null when the child never completed a message. */
+  /** Exact final message bytes. Null when the orchestrator never completed one. */
   readonly finalResponsePath: string | null;
 }
 
-export const INTERPRETATION_PROMPT =
-  `Interpret the Sigil claims preparation in this workspace. This is one fresh interpretation task.\n\nRead preparation/request.json, preparation/binding.json, and every guidance file in preparation/. Read skills/sigil-understand/SKILL.md, skills/sigil-understand/references/understanding.md, skills/sigil-egglog/SKILL.md, and skills/sigil-egglog/references/dialect.md. Read other skill references only when a presented Facet needs a specific rule. The prepared guidance controls the accepted row format and names.\n\nReturn only the complete data rows for every presented Facet, including contextual Facets. An explicit reading row is appropriate when a Facet asserts no claim. Preserve whole Logic groupings. Do not run sigil-claims or inspect any repository or prior attempt. No explanation, markdown fence, or repaired summary. Your final message must be the exact claims artifact.\n`;
+export interface OrchestratorPromptInput {
+  /** How the host starts a child; from the host's launch settings. */
+  readonly spawnInstruction: string;
+  readonly model: string;
+  readonly effort: string | null;
+}
 
-/** Launches one isolated interpretation process and retains its raw evidence. */
-export async function runInterpretationAgent(
+/** The states an orchestrator may hand back; `failed` means it stopped on a failure. */
+export const HANDBACK_STATES = [
+  "coherent",
+  "loose",
+  "disjoint",
+  "incomplete",
+  "failed",
+] as const;
+export type HandbackState = typeof HANDBACK_STATES[number];
+
+/**
+ * The orchestrator prompt. The child instructions (return nothing for context
+ * rows, write the answer to a file) live in the sigil-compute skill's handoff,
+ * not here: this names the staged skill, where everything is, and what the
+ * benchmark requires.
+ */
+export function orchestratorPrompt(input: OrchestratorPromptInput): string {
+  const effort = input.effort
+    ? `reasoning effort ${input.effort}`
+    : "the host's default reasoning effort";
+  const { skill, root, store, run } = PASS_LAYOUT;
+  return [
+    "Run the sigil-compute skill's full-design action on the Sigil design in this directory, end to end.",
+    "",
+    `Read ${skill} first, then the orchestration contract it names, skills/sigil-compute/references/computed-evaluation.md. Use only these staged copies: skills/sigil-compute, skills/sigil-understand and skills/sigil-egglog sit beside each other here, and the reading children load the last two from there. Do not use a copy of any of these skills installed elsewhere on this machine.`,
+    "",
+    `- The workspace root is \`${root}\`. Pass \`--root ${root}\` to every sigil-claims command. The workspace has no stored readings, so the seed the skill takes from its store is empty.`,
+    `- The private store is \`${store}\`, not a directory inside \`${run}\`: this replaces the contract's default location. It starts empty. Pass \`--store ${store}\` to every sigil-claims command, including the final check.`,
+    `- Keep the run directory, preparations, seeds and every answer file under \`${run}\`. A child writes its answer to a file under \`${run}\` named \`<source>-answer-<round>.egg\`, which is plain egglog text with one claim row per line — never JSON. The child writes each row from reading the prose and never drops rows in bulk. You pass that exact file to ingest and never set an answer aside yourself: ingest decides.`,
+    `- Run the tool as \`./bin/sigil-claims\` wherever the skill writes \`sigil-claims\`. A \`sigil-claims\` found elsewhere on this machine is a different version and must not be used. Never edit the design files.`,
+    "",
+    `Every reading, including each re-ask, comes from a fresh child that inherits none of your conversation. ${input.spawnInstruction} Children run with model ${input.model} at ${effort}; the host is already set to that, so do not pass a model or effort override when starting a child. Never write, edit or repair rows yourself.`,
+    "",
+    "Do not read anything outside this directory except the tool and the files it names. There is no answer key to look for. Finish the whole action, including the write-back and the final check, then stop.",
+    "",
+    `Your final message must report the final check's state, its unread units and the findings it lists, and must end with exactly one line of the form \`Hand-back state: STATE\`, where STATE is coherent, loose, disjoint or incomplete (the check's state), or failed if you stopped on a failure.`,
+    "",
+  ].join("\n");
+}
+
+/** Read the state an orchestrator handed back from its final message. */
+export function parseHandbackState(text: string): HandbackState | null {
+  let state: HandbackState | null = null;
+  for (
+    const match of text.matchAll(
+      /^[\s*_`>-]*Hand-back state:\s*[*_`]*\s*([A-Za-z]+)/gim,
+    )
+  ) {
+    const word = match[1].toLowerCase();
+    state = (HANDBACK_STATES as readonly string[]).includes(word)
+      ? word as HandbackState
+      : null;
+  }
+  return state;
+}
+
+/**
+ * Launches one orchestrator process in its pass directory and retains its raw
+ * evidence. The process runs the whole sigil-compute action; this function does
+ * not read or judge what it produced.
+ */
+export async function runOrchestrator(
   request: AgentRunRequest,
 ): Promise<AgentRunResult> {
   const deadline = Date.now() + request.timeoutMs;
-  await Deno.mkdir(request.evidenceDir, { recursive: true });
-  const promptPath = join(request.evidenceDir, "prompt.txt");
-  const stdoutPath = join(request.evidenceDir, "stdout.jsonl");
-  const stderrPath = join(request.evidenceDir, "stderr.txt");
-  const finalPath = join(request.evidenceDir, "final-response.txt");
-  await Deno.writeTextFile(promptPath, INTERPRETATION_PROMPT);
+  const passDir = resolve(request.passDir);
+  const evidenceDir = resolve(request.evidenceDir);
+  await Deno.mkdir(evidenceDir, { recursive: true });
+  const promptPath = join(evidenceDir, "prompt.txt");
+  const stdoutPath = join(evidenceDir, "stdout.jsonl");
+  const stderrPath = join(evidenceDir, "stderr.txt");
+  const finalPath = join(evidenceDir, "final-response.txt");
+  const codexHome = join(evidenceDir, "codex-home");
+  const lastMessagePath = join(evidenceDir, "codex-last-message.txt");
   await Deno.writeFile(stdoutPath, new Uint8Array());
   await Deno.writeFile(stderrPath, new Uint8Array());
 
-  const stagedWorkspace = await Deno.makeTempDir({
-    prefix: "sigil-slotted-child-",
-  });
   const executable = request.executable ?? request.agent;
+  const requestedEffort = request.reasoning ?? null;
   let settings: string[] = [];
+  let isolationLimits: readonly string[] = [];
   let hostVersion: string | null = null;
   let status: AgentStatus = "failed";
   let failureStep: AgentRunResult["failureStep"] = null;
@@ -82,20 +205,50 @@ export async function runInterpretationAgent(
   let exitCode: number | null = null;
   let finalResponsePath: string | null = null;
   try {
-    await copyTree(
-      request.preparationDir,
-      join(stagedWorkspace, "preparation"),
-    );
-    await stageSkill(
-      request.skillDirs.understandDir,
-      join(stagedWorkspace, "skills/sigil-understand"),
-    );
-    await stageSkill(
-      request.skillDirs.egglogDir,
-      join(stagedWorkspace, "skills/sigil-egglog"),
-    );
-    const outputFile = join(stagedWorkspace, "codex-final-response.txt");
-    settings = commandArgs(request.agent, request.requestedModel, outputFile);
+    let launch;
+    try {
+      if (request.agent === "codex") {
+        await prepareCodexHome(
+          codexHome,
+          request.codexAuthPath ?? defaultCodexAuthPath(),
+        );
+      }
+      launch = await buildHostLaunch({
+        host: request.agent,
+        model: request.requestedModel,
+        effort: request.reasoning,
+        childModel: request.requestedModel,
+        childEffort: request.reasoning,
+        passDir,
+        codexHome: request.agent === "codex" ? codexHome : undefined,
+        lastMessagePath: request.agent === "codex"
+          ? lastMessagePath
+          : undefined,
+        allowedShell: ORCHESTRATOR_SHELL,
+        childPrompt: DEFAULT_CHILD_PROMPT,
+        piSubagentsEntry: request.piSubagentsEntry ??
+          defaultPiSubagentsEntry(),
+      });
+    } catch (cause) {
+      failureStep = "launch";
+      error = String(cause);
+      await Deno.writeTextFile(promptPath, "");
+      return await buildResult();
+    }
+    settings = launch.args.filter((arg) => arg !== "--");
+    isolationLimits = launch.isolationLimits;
+    const prompt = orchestratorPrompt({
+      spawnInstruction: launch.spawnInstruction,
+      model: request.requestedModel,
+      effort: requestedEffort,
+    });
+    await Deno.writeTextFile(promptPath, prompt);
+    const env = {
+      ...launch.env,
+      PATH: [resolve(request.binDir), Deno.env.get("PATH") ?? ""].join(
+        delimiter,
+      ),
+    };
     if (request.signal?.aborted) {
       status = "cancelled";
     } else if (Date.now() >= deadline) {
@@ -114,8 +267,9 @@ export async function runInterpretationAgent(
         let child: Deno.ChildProcess;
         try {
           child = new Deno.Command(executable, {
-            args: [...settings, INTERPRETATION_PROMPT],
-            cwd: stagedWorkspace,
+            args: [...launch.args, prompt],
+            cwd: passDir,
+            env,
             stdin: "null",
             stdout: "piped",
             stderr: "piped",
@@ -127,7 +281,7 @@ export async function runInterpretationAgent(
         } catch (cause) {
           failureStep = "launch";
           error = String(cause);
-          return buildResult();
+          return await buildResult();
         }
         const stdoutDrain = startDrain(child.stdout, stdoutPath);
         const stderrDrain = startDrain(child.stderr, stderrPath);
@@ -161,13 +315,13 @@ export async function runInterpretationAgent(
           status = stopped;
         } else if (exitCode !== 0) {
           status = "failed";
-          failureStep = "child";
+          failureStep = "orchestrator";
           error = `Agent exited ${exitCode}`;
         } else {
           const final = await extractFinalResponse(
             request.agent,
             stdoutPath,
-            outputFile,
+            lastMessagePath,
           );
           if (final === null) {
             status = "failed";
@@ -182,12 +336,18 @@ export async function runInterpretationAgent(
       }
     }
   } finally {
-    await Deno.remove(stagedWorkspace, { recursive: true });
+    // Credentials never stay in retained evidence, whatever way the run ended.
+    if (request.agent === "codex") await removeCodexAuth(codexHome);
   }
-  return buildResult();
+  return await buildResult();
 
   async function buildResult(): Promise<AgentRunResult> {
-    const observedModels = await servedModels(request.agent, stdoutPath);
+    const analysis = await analyzeHostStream(
+      request.agent,
+      parseJsonLines(await Deno.readTextFile(stdoutPath)),
+      request.agent === "codex" ? codexHome : undefined,
+    );
+    const effortCount = analysis.childEfforts.length;
     return {
       status,
       failureStep,
@@ -195,98 +355,35 @@ export async function runInterpretationAgent(
       exitCode,
       agent: request.agent,
       requestedModel: request.requestedModel,
-      observedModels,
-      modelVerification: observedModels.length === 0
+      requestedEffort,
+      observedModels: analysis.models,
+      modelVerification: analysis.models.length === 0
         ? "unverified"
-        : observedModels.length === 1
+        : analysis.models.length === 1
         ? "observed"
         : "mixed",
+      children: {
+        count: analysis.childCount,
+        models: analysis.childModels,
+        efforts: analysis.childEfforts,
+        effortVerification: effortCount === 0
+          ? "unverified"
+          : effortCount === 1
+          ? "observed"
+          : "mixed",
+        freshEvidence: analysis.freshEvidence,
+        observedFrom: analysis.observedFrom,
+      },
       hostVersion,
       executable,
       settings,
-      isolationLimits: isolationLimits(request.agent),
-      stagedWorkspace,
+      isolationLimits,
+      passDir,
       promptPath,
       stdoutPath,
       stderrPath,
       finalResponsePath,
     };
-  }
-}
-
-function commandArgs(
-  agent: AgentName,
-  model: string,
-  outputFile: string,
-): string[] {
-  switch (agent) {
-    case "claude":
-      return [
-        "--print",
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--model",
-        model,
-        "--no-session-persistence",
-        "--restricted",
-        "--safe-mode",
-        "--strict-mcp-config",
-        "--permission-mode",
-        "dontAsk",
-        "--tools",
-        "Read,Glob,Grep",
-        "--",
-      ];
-    case "codex":
-      return [
-        "exec",
-        "--json",
-        "--ephemeral",
-        "--ignore-user-config",
-        "--ignore-rules",
-        "--sandbox",
-        "read-only",
-        "-C",
-        "./",
-        "--skip-git-repo-check",
-        "--model",
-        model,
-        "--output-last-message",
-        outputFile,
-      ];
-    case "pi":
-      return [
-        "--print",
-        "--mode",
-        "json",
-        "--model",
-        model,
-        "--no-session",
-        "--no-context-files",
-        "--no-extensions",
-        "--no-skills",
-        "--no-prompt-templates",
-        "--no-themes",
-        "--tools",
-        "read,grep,find,ls",
-        "--",
-      ];
-  }
-}
-
-function isolationLimits(agent: AgentName): string[] {
-  switch (agent) {
-    case "claude":
-      return [
-        "Managed settings may still apply; CLI restrictions are not an OS sandbox.",
-      ];
-    case "codex":
-      return ["Read-only sandbox may still read outside the staged workspace."];
-    case "pi":
-      return [
-        "Read-only tool allowlist limits available tools, not OS-level file access.",
-      ];
   }
 }
 
@@ -360,30 +457,6 @@ async function probeVersion(
       } catch { /* Best effort cleanup after a failed probe. */ }
     }
     return null;
-  }
-}
-
-async function stageSkill(source: string, destination: string): Promise<void> {
-  await Deno.mkdir(destination, { recursive: true });
-  for (const name of ["SKILL.md", "VERSION"]) {
-    try {
-      await Deno.copyFile(join(source, name), join(destination, name));
-    } catch (cause) {
-      if (cause instanceof Deno.errors.NotFound && name === "VERSION") continue;
-      throw cause;
-    }
-  }
-  await copyTree(join(source, "references"), join(destination, "references"));
-}
-
-async function copyTree(source: string, destination: string): Promise<void> {
-  await Deno.mkdir(destination, { recursive: true });
-  for await (const entry of Deno.readDir(source)) {
-    const from = join(source, entry.name);
-    const to = join(destination, entry.name);
-    if (entry.isDirectory) await copyTree(from, to);
-    else if (entry.isFile) await Deno.copyFile(from, to);
-    else throw new Error(`Non-file staged input: ${from}`);
   }
 }
 
@@ -491,7 +564,7 @@ async function extractFinalResponse(
     }
   }
   let final: string | null = null;
-  for (const event of jsonEvents(await Deno.readTextFile(stdoutPath))) {
+  for (const event of parseJsonLines(await Deno.readTextFile(stdoutPath))) {
     if (
       agent === "claude" && event.type === "result" &&
       typeof event.result === "string"
@@ -499,12 +572,12 @@ async function extractFinalResponse(
       final = event.result;
     }
     if (agent === "pi" && event.type === "message_end") {
-      const message = record(event.message);
+      const message = asRecord(event.message);
       if (message?.role !== "assistant" || !Array.isArray(message.content)) {
         continue;
       }
       final = message.content.map((part) => {
-        const block = record(part);
+        const block = asRecord(part);
         return block?.type === "text" && typeof block.text === "string"
           ? block.text
           : "";
@@ -512,56 +585,4 @@ async function extractFinalResponse(
     }
   }
   return final === null ? null : new TextEncoder().encode(final);
-}
-
-async function servedModels(
-  agent: AgentName,
-  stdoutPath: string,
-): Promise<string[]> {
-  const models = new Set<string>();
-  for (const event of jsonEvents(await Deno.readTextFile(stdoutPath))) {
-    if (
-      agent === "claude" && event.type === "assistant" &&
-      event.is_api_error_message !== true
-    ) {
-      const model = record(event.message)?.model;
-      if (
-        typeof model === "string" && model.length && !model.startsWith("<")
-      ) {
-        models.add(model);
-      }
-    }
-    if (agent === "pi" && event.type === "message_end") {
-      const message = record(event.message);
-      if (message?.role !== "assistant") continue;
-      const model = message.model;
-      if (typeof model === "string" && model.length) {
-        const provider = message.provider;
-        models.add(
-          typeof provider === "string" && provider.length
-            ? `${provider}/${model}`
-            : model,
-        );
-      }
-    }
-  }
-  return [...models];
-}
-
-function* jsonEvents(text: string): Generator<Record<string, unknown>> {
-  for (const line of text.split("\n")) {
-    if (!line) continue;
-    try {
-      const event = record(JSON.parse(line));
-      if (event) yield event;
-    } catch {
-      // Raw bytes stay in stdout.jsonl; malformed events provide no metadata.
-    }
-  }
-}
-
-function record(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
 }

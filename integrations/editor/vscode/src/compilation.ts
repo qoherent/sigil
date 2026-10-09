@@ -55,7 +55,6 @@ export interface CompilationProcess {
 }
 export interface CompilationOptions {
   readonly executable: string;
-  readonly languageExecutable: string;
   readonly cwd: string;
   readonly focus: CompilationFocus;
   readonly file?: string;
@@ -77,42 +76,11 @@ export function runCompilationProcess(
     }
     const directory = await mkdtemp(path.join(os.tmpdir(), "sigil-editor-"));
     try {
-      const exported = await runJson(
-        options.languageExecutable,
-        ["export", "design", ".", "--root", options.cwd],
-        options.cwd,
-        signal,
-        options.onLog,
-      );
-      const frontend = path.join(directory, "frontend.json");
-      if (exported.code !== 0) {
-        options.onLog(
-          JSON.stringify(
-            object(exported.value)
-              ? exported.value.diagnostics
-              : exported.value,
-          ),
-        );
-        throw new Error(
-          `Language export failed (exit ${exported.code}); see language diagnostics in Sigil output.`,
-        );
-      }
-      if (
-        !object(exported.value) || exported.value.schemaVersion !== 2 ||
-        exported.value.languageVersion !== "0.9.0"
-      ) {
-        throw new Error(
-          "Incompatible language export; Sigil 0.9 schema 2 is required.",
-        );
-      }
-      await writeFile(frontend, JSON.stringify(exported.value));
       const args = [
         "compile",
         options.focus,
         "--root",
         options.cwd,
-        "--frontend",
-        frontend,
       ];
       if (options.file) {
         const implementation = options.focus === "implementation"

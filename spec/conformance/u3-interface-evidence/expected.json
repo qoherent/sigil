@@ -1,0 +1,314 @@
+{
+  "exported": true,
+  "sources": [
+    "consumer.sigil",
+    "provider.sigil"
+  ],
+  "components": [
+    {
+      "source": "consumer.sigil",
+      "name": "Consumer",
+      "range": [
+        66,
+        175
+      ],
+      "nameRange": [
+        76,
+        84
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "name": "Provider",
+      "range": [
+        0,
+        213
+      ],
+      "nameRange": [
+        10,
+        18
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "exported",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "hidden",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "shown",
+      "identityResolved": true
+    }
+  ],
+  "groups": [
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "exported",
+      "tag": "Provider::exported",
+      "section": "interface",
+      "range": [
+        165,
+        207
+      ],
+      "headerRange": [
+        165,
+        180
+      ],
+      "bodyRange": [
+        180,
+        201
+      ],
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "goal",
+      "group": null,
+      "range": [
+        96,
+        124
+      ],
+      "proseRange": [
+        96,
+        124
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "shown",
+          "status": "resolved",
+          "tag": "Provider::shown",
+          "range": [
+            104,
+            109
+          ]
+        },
+        {
+          "name": "exported",
+          "status": "resolved",
+          "tag": "Provider::exported",
+          "range": [
+            114,
+            122
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "interface",
+      "group": null,
+      "range": [
+        143,
+        169
+      ],
+      "proseRange": [
+        143,
+        169
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "goal",
+      "group": null,
+      "range": [
+        30,
+        50
+      ],
+      "proseRange": [
+        30,
+        50
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "logic",
+      "group": null,
+      "range": [
+        65,
+        108
+      ],
+      "proseRange": [
+        65,
+        108
+      ],
+      "introductions": [
+        {
+          "name": "hidden",
+          "kind": "inline",
+          "tag": "Provider::hidden",
+          "range": [
+            73,
+            81
+          ],
+          "nameRange": [
+            74,
+            80
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "interface",
+      "group": null,
+      "range": [
+        127,
+        164
+      ],
+      "proseRange": [
+        127,
+        164
+      ],
+      "introductions": [
+        {
+          "name": "shown",
+          "kind": "inline",
+          "tag": "Provider::shown",
+          "range": [
+            138,
+            145
+          ],
+          "nameRange": [
+            139,
+            144
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "interface",
+      "group": "exported",
+      "range": [
+        180,
+        201
+      ],
+      "proseRange": [
+        180,
+        201
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "consumer.sigil",
+      "target": "provider.sigil",
+      "path": "provider.sigil",
+      "provider": "Provider",
+      "range": [
+        0,
+        65
+      ],
+      "status": "resolved",
+      "names": [
+        {
+          "name": "hidden",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            39,
+            45
+          ]
+        },
+        {
+          "name": "shown",
+          "status": "resolved",
+          "entity": "Provider::shown",
+          "range": [
+            47,
+            52
+          ]
+        },
+        {
+          "name": "exported",
+          "status": "resolved",
+          "entity": "Provider::exported",
+          "range": [
+            54,
+            62
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORTED_TAG",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "consumer.sigil",
+      "range": [
+        39,
+        45
+      ],
+      "related": [
+        {
+          "file": "provider.sigil",
+          "range": [
+            73,
+            81
+          ]
+        }
+      ]
+    }
+  ]
+}

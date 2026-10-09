@@ -20,7 +20,7 @@ Current integrations:
   and law authors; no design-skill dependency.
 - `skills/sigil-compute`: computed claims evaluation on an existing 0.9 design:
   routes only explicit claims or computed-check requests, runs the `sigil-claims`
-  loop, and hands back the ingest state (Coherent, Loose, or Disjoint) plus the
+  loop, and hands back the ingest state (Coherent, Loose, Disjoint, or Incomplete) plus the
   findings; generic review stays on `sigil-evaluate`. Needs the `sigil-claims`
   binary and a host that can delegate a fresh child.
 - `skills/sigil`: preserved legacy Sigil 0.7 native workflow (artifact 0.10.0).

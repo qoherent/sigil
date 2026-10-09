@@ -1,0 +1,83 @@
+{
+  "exported": true,
+  "sources": [
+    "fence.sigil"
+  ],
+  "components": [
+    {
+      "source": "fence.sigil",
+      "name": "Fence",
+      "range": [
+        0,
+        136
+      ],
+      "nameRange": [
+        10,
+        15
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "fence.sigil",
+      "component": "Fence",
+      "section": "goal",
+      "group": null,
+      "range": [
+        27,
+        50
+      ],
+      "proseRange": [
+        27,
+        50
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_MISSING_INTERFACE",
+      "stage": "structure",
+      "severity": "error",
+      "file": "fence.sigil",
+      "range": [
+        55,
+        69
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_LITERAL_WITHOUT_INTRODUCTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "fence.sigil",
+      "range": [
+        69,
+        81
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_LITERAL_WITHOUT_INTRODUCTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "fence.sigil",
+      "range": [
+        99,
+        111
+      ],
+      "related": []
+    }
+  ]
+}

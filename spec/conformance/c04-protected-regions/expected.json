@@ -1,0 +1,307 @@
+{
+  "exported": true,
+  "sources": [
+    "regions.sigil"
+  ],
+  "components": [
+    {
+      "source": "regions.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        408
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "name": "query",
+      "identityResolved": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "name": "third",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        97
+      ],
+      "proseRange": [
+        68,
+        97
+      ],
+      "introductions": [
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Case::query",
+          "range": [
+            74,
+            81
+          ],
+          "nameRange": [
+            75,
+            80
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        98,
+        129
+      ],
+      "proseRange": [
+        98,
+        129
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        130,
+        145
+      ],
+      "proseRange": [
+        130,
+        145
+      ],
+      "introductions": [
+        {
+          "name": "third",
+          "kind": "inline",
+          "tag": "Case::third",
+          "range": [
+            136,
+            143
+          ],
+          "nameRange": [
+            137,
+            142
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        146,
+        161
+      ],
+      "proseRange": [
+        146,
+        161
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        162,
+        186
+      ],
+      "proseRange": [
+        162,
+        186
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        187,
+        223
+      ],
+      "proseRange": [
+        187,
+        223
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        224,
+        308
+      ],
+      "proseRange": [
+        224,
+        308
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "tag": "Case::query",
+          "range": [
+            284,
+            289
+          ]
+        }
+      ],
+      "links": [
+        {
+          "destination": "./api.md",
+          "image": false,
+          "range": [
+            232,
+            251
+          ]
+        },
+        {
+          "destination": "./layout.svg",
+          "image": true,
+          "range": [
+            256,
+            278
+          ]
+        }
+      ],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "regions.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        309,
+        402
+      ],
+      "proseRange": [
+        309,
+        358
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "tag": "Case::query",
+          "range": [
+            341,
+            346
+          ]
+        }
+      ],
+      "links": [],
+      "payload": {
+        "type": "text",
+        "range": [
+          358,
+          402
+        ],
+        "bodyRange": [
+          370,
+          394
+        ],
+        "openingRange": [
+          358,
+          370
+        ],
+        "closingRange": [
+          394,
+          402
+        ],
+        "fenceLength": 3,
+        "rawBody": "    query stays payload\n"
+      },
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

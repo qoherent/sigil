@@ -67,8 +67,8 @@ Design roots with language-neutral Implementation selection:
 }
 ```
 
-Store the scope and exported frontend JSON outside selected sources. Use
-`sigilc scope --frontend FILE --scope FILE` to inspect ordered focus and effective
+Store the scope outside selected sources. Use
+`sigilc scope --root . --scope FILE` to inspect ordered focus and effective
 import/owner closure. Carry the same scope through stale, prepare, ingest,
 entities and compile/compare. Empty path/directory lists do not mean empty scope;
 intentional emptiness must be explicit. Narrowing focus never proves a whole

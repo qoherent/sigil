@@ -1,0 +1,238 @@
+{
+  "exported": true,
+  "sources": [
+    "consumer.sigil",
+    "provider.sigil"
+  ],
+  "components": [
+    {
+      "source": "consumer.sigil",
+      "name": "Consumer",
+      "range": [
+        57,
+        156
+      ],
+      "nameRange": [
+        67,
+        75
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "name": "Provider",
+      "range": [
+        0,
+        140
+      ],
+      "nameRange": [
+        10,
+        18
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "filter",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "query",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "submit",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "goal",
+      "group": null,
+      "range": [
+        87,
+        116
+      ],
+      "proseRange": [
+        87,
+        116
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "interface",
+      "group": null,
+      "range": [
+        135,
+        150
+      ],
+      "proseRange": [
+        135,
+        150
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "tag": "Provider::query",
+          "range": [
+            143,
+            148
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "goal",
+      "group": null,
+      "range": [
+        30,
+        57
+      ],
+      "proseRange": [
+        30,
+        57
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "interface",
+      "group": null,
+      "range": [
+        76,
+        134
+      ],
+      "proseRange": [
+        76,
+        134
+      ],
+      "introductions": [
+        {
+          "name": "filter",
+          "kind": "inline",
+          "tag": "Provider::filter",
+          "range": [
+            96,
+            104
+          ],
+          "nameRange": [
+            97,
+            103
+          ]
+        },
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Provider::query",
+          "range": [
+            82,
+            89
+          ],
+          "nameRange": [
+            83,
+            88
+          ]
+        },
+        {
+          "name": "submit",
+          "kind": "inline",
+          "tag": "Provider::submit",
+          "range": [
+            111,
+            119
+          ],
+          "nameRange": [
+            112,
+            118
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "consumer.sigil",
+      "target": "provider.sigil",
+      "path": "provider.sigil",
+      "provider": "Provider",
+      "range": [
+        0,
+        56
+      ],
+      "status": "resolved",
+      "names": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "entity": "Provider::query",
+          "range": [
+            39,
+            44
+          ]
+        },
+        {
+          "name": "missing",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            46,
+            53
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORTED_TAG",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "consumer.sigil",
+      "range": [
+        46,
+        53
+      ],
+      "related": []
+    }
+  ]
+}

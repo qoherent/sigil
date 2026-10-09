@@ -24,7 +24,11 @@ Deno.test("removed semantic routes reject usage and are absent from CLI help", a
   }
   const help = await runCli(["--help"]);
   assert(!/^\s+semantic\s/m.test(help.stdout));
-  assert(/^\s+export\s/m.test(help.stdout));
+  assert(!/^\s+export\s/m.test(help.stdout));
+  const exported = await runCli(["export", "design"]);
+  assertEquals(exported.exitCode, 2);
+  assertEquals(exported.stdout, "");
+  assert(exported.stderr.includes('Unknown command "export"'));
 });
 
 Deno.test("legacy compilation/config/runtime commands and event flags are absent", async () => {

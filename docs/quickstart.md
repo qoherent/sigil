@@ -1,7 +1,7 @@
 # Quickstart
 
 Sigil keeps authored contracts and independently reconstructed implementation
-worlds separate. `sigil` parses and exports the language; `sigilc` derives native
+worlds separate. `sigil` parses the language; `sigilc` reads the workspace and derives native
 semantic states from externally supplied assertions. It does not start a model
 or own your coding loop.
 
@@ -62,19 +62,17 @@ semantic coherence or implementation delivery.
 
 ## 4. Use the native flow
 
-Capture current authored input into an external working directory:
+Compile the workspace directly. `sigilc` reads the `.sigil` files itself:
 
 ```sh
-mkdir -p /tmp/sigil-quickstart
-sigil export design . > /tmp/sigil-quickstart/frontend.json
-sigilc compile design --frontend /tmp/sigil-quickstart/frontend.json
+sigilc compile design --root .
 ```
 
 Without independent source reconstructions, this can report Loose with missing
 projection warnings. That is not evidence that implementation is complete.
 Follow the skill's [native compilation protocol](../integrations/skills/sigil/references/compilation-execution.md)
 for scope, freshness, preparation, external interpreter inputs, ingestion,
-catalog export and comparison. Refresh captured inputs after changes.
+catalog export and comparison.
 
 Design gates return Coherent or Loose with exit 0 and Disjoint with exit 1.
 Implementation gates return Closed or Converged with exit 0 and Drift with exit 1.

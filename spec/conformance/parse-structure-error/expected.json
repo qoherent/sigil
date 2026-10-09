@@ -1,0 +1,81 @@
+{
+  "exported": true,
+  "sources": [
+    "stray.sigil"
+  ],
+  "components": [
+    {
+      "source": "stray.sigil",
+      "name": "Minimal",
+      "range": [
+        12,
+        123
+      ],
+      "nameRange": [
+        22,
+        29
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "stray.sigil",
+      "component": "Minimal",
+      "section": "goal",
+      "group": null,
+      "range": [
+        41,
+        71
+      ],
+      "proseRange": [
+        41,
+        71
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "stray.sigil",
+      "component": "Minimal",
+      "section": "interface",
+      "group": null,
+      "range": [
+        90,
+        117
+      ],
+      "proseRange": [
+        90,
+        117
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "stray.sigil",
+      "range": [
+        0,
+        11
+      ],
+      "related": []
+    }
+  ]
+}

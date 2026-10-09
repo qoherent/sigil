@@ -1,0 +1,171 @@
+{
+  "exported": true,
+  "sources": [
+    "wide.sigil"
+  ],
+  "components": [
+    {
+      "source": "wide.sigil",
+      "name": "Wide",
+      "range": [
+        0,
+        974
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "wide.sigil",
+      "component": "Wide",
+      "name": "tag",
+      "identityResolved": true
+    },
+    {
+      "source": "wide.sigil",
+      "component": "Wide",
+      "name": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "wide.sigil",
+      "component": "Wide",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        43
+      ],
+      "proseRange": [
+        26,
+        43
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "wide.sigil",
+      "component": "Wide",
+      "section": "interface",
+      "group": null,
+      "range": [
+        62,
+        968
+      ],
+      "proseRange": [
+        62,
+        968
+      ],
+      "introductions": [
+        {
+          "name": "tag",
+          "kind": "inline",
+          "tag": "Wide::tag",
+          "range": [
+            152,
+            157
+          ],
+          "nameRange": [
+            153,
+            156
+          ]
+        },
+        {
+          "name": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+          "kind": "inline",
+          "tag": "Wide::ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+          "range": [
+            872,
+            959
+          ],
+          "nameRange": [
+            873,
+            958
+          ]
+        }
+      ],
+      "references": [],
+      "links": [
+        {
+          "destination": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+          "image": false,
+          "range": [
+            280,
+            380
+          ]
+        },
+        {
+          "destination": "https://example.test/pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "image": false,
+          "range": [
+            396,
+            494
+          ]
+        }
+      ],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_LINE_TOO_LONG",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "wide.sigil",
+      "range": [
+        164,
+        271
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNFORMATTABLE_LINE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "wide.sigil",
+      "range": [
+        62,
+        163
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNFORMATTABLE_LINE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "wide.sigil",
+      "range": [
+        703,
+        867
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNFORMATTABLE_LINE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "wide.sigil",
+      "range": [
+        868,
+        967
+      ],
+      "related": []
+    }
+  ]
+}

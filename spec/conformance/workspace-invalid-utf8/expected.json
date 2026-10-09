@@ -1,0 +1,22 @@
+{
+  "exported": false,
+  "sources": [],
+  "components": [],
+  "tags": [],
+  "groups": [],
+  "facets": [],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_INVALID_ENCODING",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "binary.sigil",
+      "range": [
+        1,
+        2
+      ],
+      "related": []
+    }
+  ]
+}

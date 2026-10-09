@@ -1,0 +1,151 @@
+{
+  "exported": true,
+  "sources": [
+    "bom.sigil"
+  ],
+  "components": [
+    {
+      "source": "bom.sigil",
+      "name": "Bom",
+      "range": [
+        0,
+        171
+      ],
+      "nameRange": [
+        13,
+        16
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "bom.sigil",
+      "component": "Bom",
+      "name": "tág",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "bom.sigil",
+      "component": "Bom",
+      "section": "goal",
+      "group": null,
+      "range": [
+        30,
+        73
+      ],
+      "proseRange": [
+        30,
+        73
+      ],
+      "introductions": [
+        {
+          "name": "tág",
+          "kind": "inline",
+          "tag": "Bom::tág",
+          "range": [
+            55,
+            61
+          ],
+          "nameRange": [
+            56,
+            60
+          ]
+        }
+      ],
+      "references": [
+        {
+          "name": "tág",
+          "status": "resolved",
+          "tag": "Bom::tág",
+          "range": [
+            66,
+            70
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "bom.sigil",
+      "component": "Bom",
+      "section": "interface",
+      "group": null,
+      "range": [
+        95,
+        165
+      ],
+      "proseRange": [
+        95,
+        132
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "tág",
+          "status": "resolved",
+          "tag": "Bom::tág",
+          "range": [
+            126,
+            130
+          ]
+        }
+      ],
+      "links": [
+        {
+          "destination": "./é.md",
+          "image": false,
+          "range": [
+            109,
+            125
+          ]
+        }
+      ],
+      "payload": {
+        "type": "ö",
+        "range": [
+          132,
+          165
+        ],
+        "bodyRange": [
+          143,
+          156
+        ],
+        "openingRange": [
+          132,
+          143
+        ],
+        "closingRange": [
+          156,
+          165
+        ],
+        "fenceLength": 3,
+        "rawBody": "    body é\r\n"
+      },
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_INVALID_LITERAL_TYPE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "bom.sigil",
+      "range": [
+        139,
+        141
+      ],
+      "related": []
+    }
+  ]
+}

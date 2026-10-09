@@ -123,6 +123,9 @@ pub struct Context {
 /// findings.rs owns its own report suffix.
 pub const SUFFIX: &str = ".context.json";
 
+/// The linked check's judgment context, beside its report.
+pub const LINKED_SUFFIX: &str = ".linked.context.json";
+
 /// Build the judgment context for one interpretation of one design source.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::JudgmentContext interface
 pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Identity) -> Context {

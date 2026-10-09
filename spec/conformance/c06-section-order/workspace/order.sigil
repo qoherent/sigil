@@ -1,0 +1,13 @@
+component Order {
+  goal {
+    Misorder the sections.
+  }
+
+  interface {
+    Offer one interaction.
+  }
+
+  state {
+    Hold one value.
+  }
+}

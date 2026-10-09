@@ -1,4 +1,3 @@
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 @packages/sigilc/eqval.sigil from SigilWorldClosure import { DesignObligations }
 
 component SigilEntityCatalog {
@@ -21,7 +20,7 @@ component SigilEntityCatalog {
 
   interface {
     SourceOwnership {
-      Reserve ResolvedDesignInput Component, Tag and physical authored unit
+      Reserve source-tree Component, Tag and physical authored unit
       identities. A Design source may repeat its own unchanged declarations. Other
       sources reference those identities without redeclaring them. New domain
       entities use urn:sigil:entity followed by the encoded physical source path and

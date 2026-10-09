@@ -114,9 +114,9 @@ component SigilCore {
       ResolvedDesignInput. Their operations and data remain owned by the selected
       provider components; package exports do not re-export Sigil Tag identities.
 
-      Export structural Design transport through the core package. Parsing and
-      resolution remain language operations; the export never invokes sigilc,
-      reconstructs semantic assertions or presents compiler verdicts.
+      Keep ResolvedDesignInput in the core package as the TypeScript
+      side of the shared conformance corpus; sigilc reads sources itself. It never
+      invokes sigilc, reconstructs semantic assertions or presents verdicts.
 
       hosts consume those *cohesive contracts* without reimplementing source
       interpretation, workspace rules, relationship resolution, or projections

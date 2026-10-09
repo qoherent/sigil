@@ -9,12 +9,6 @@ export async function formatResult(
   request: CommandRequest,
 ): Promise<string> {
   if (request.quiet) return "";
-  // Captured source/config text is compiler input, never display text.
-  if (result.command === "export-design") {
-    return result.bundle
-      ? `${JSON.stringify(result.bundle, null, request.pretty ? 2 : 0)}\n`
-      : "";
-  }
   result = normalizeResultPaths(result, request);
   if (
     result.command === "render" &&

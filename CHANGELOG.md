@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+- The `sigil-compute` skill (0.4.0) writes back what a one-source run read,
+  under the same rules as the full-design action: only new or changed readings
+  are copied, never one the workspace changed during the run, and a failed run
+  writes nothing. The next run of either action asks only about what changed.
+- `sigil-claims` refuses a unit whose `requires`, `provides`, `owns`,
+  `dependsOn` or `excludes` row has a Tag as its subject, and asks for it
+  again. A step-level ban now binds only its subject's flows and those of the
+  components the subject depends on, so one ban no longer flags every step
+  that touches its object. The vocabulary generation is 4, so stored readings
+  are asked for again once.
+- `sigilc` and `sigil-claims` read `.sigil` sources directly through `--root`
+  (default `.`) and an optional `--store`, and keep one content-addressed tree
+  per source with an interface hash per component. A reformat or an edit that
+  leaves a component's interface alone re-requests nothing downstream.
+  `sigil export design`, the `--frontend` option and `frontend.json` are
+  removed; callers pass the workspace directory instead. Run `sigilc clean`
+  once after upgrading: stored projections, bindings and interpretations are
+  read as incompatible once. Dependents now see only the interfaces they
+  import when read, so a single source's findings can shift:
+  `exclusive-foreign-write` fires only when the owner states exclusivity in its
+  interface. `sigil-claims check` applies every law across components,
+  including `step-excluded-action`, `step-negated-action` and `unguarded-flow`,
+  over the stored readings.
+- `sigil-claims` interpretation is more forgiving of a model's mistakes. Each
+  Facet in a request carries a short handle (`#3`) and the list of names it may
+  use; a row names a Facet by handle or by id. A flow's steps are numbered within
+  their own Facet (`step:2`, or `step:#7.1` across Facets), and a flow ends with
+  an `end` row instead of an edge to the graph. An `undeclared` row says the
+  prose relies on something no Tag declares and is reported as a warning (the
+  new `gap` class) that never fails the design. Ingest refuses a whole artifact
+  only when it holds something that is not data. A data mistake refuses only its
+  unit, one Facet or one Logic section; every refusal is listed at once, the
+  other units are stored, and the refused unit stays unread, so `prepare` asks
+  for it again and the result is `incomplete` until it is read. A name outside a
+  Facet's list now refuses the unit instead of being kept and flagged
+  `ungrounded`, and that finding is gone. Request format 6, accepted profile 3,
+  stored readings 6 and reports 5: run `prepare` again after upgrading.
+- `sigil-claims check [--source PATH]` links every valid stored reading of the
+  workspace into one program, runs every claims law and writes
+  `workspace.linked.json` (or `<source>.linked.json`) with a matching
+  `.linked.context.json` under the store's `claims` directory. A check that
+  cannot read every unit reports the new `incomplete` state, listing `unread`
+  units and `unresolvedImports`, and exits 1, as does `disjoint`. The report
+  moves to version 4. Ingest is unchanged and local.
 - `sigil-claims` decomposes flow-shaped Logic prose into a checked graph. A
   component's Logic section is presented whole, a step and its section's flow
   are entities the tool mints, and what a step reads, writes, calls and leads to

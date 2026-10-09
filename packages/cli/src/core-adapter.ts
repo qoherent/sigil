@@ -9,7 +9,6 @@ import {
   type ComponentIdentity,
   DEFAULT_SIGIL_EXCLUDES,
   DEFAULT_SIGIL_INCLUDES,
-  type DesignInputResult,
   diagnostic,
   discoverSigilWorkspace,
   formatSigilDocument,
@@ -22,7 +21,6 @@ import {
   isExcludedPath,
   isSupportedImplementationSource,
   joinPath,
-  loadDesignInput,
   loadSigilWorkspace,
   normalizePath,
   orderDiagnostics,
@@ -146,18 +144,6 @@ export class CoreAdapter {
     explicitRoot?: string,
   ): Promise<SigilWorkspace> {
     return await loadSigilWorkspace(this.#fs, {
-      startPath: this.resolveTarget(path ?? this.#currentDirectory),
-      explicitRoot: explicitRoot ? this.resolveTarget(explicitRoot) : undefined,
-      currentDirectory: this.#currentDirectory,
-    });
-  }
-
-  // @sigil implements packages/cli/_module.sigil::SigilCli::DesignExport interface
-  async exportDesign(
-    path?: string,
-    explicitRoot?: string,
-  ): Promise<DesignInputResult> {
-    return await loadDesignInput(this.#fs, {
       startPath: this.resolveTarget(path ?? this.#currentDirectory),
       explicitRoot: explicitRoot ? this.resolveTarget(explicitRoot) : undefined,
       currentDirectory: this.#currentDirectory,

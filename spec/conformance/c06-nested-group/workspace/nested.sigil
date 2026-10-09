@@ -1,0 +1,17 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  constraints {
+    outer {
+      inner {
+        Nested paragraph.
+      }
+    }
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

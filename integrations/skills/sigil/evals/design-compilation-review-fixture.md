@@ -7,7 +7,7 @@ is missing. An older stored report says Coherent.
 
 Expected behavior:
 
-- Export current authored input using the language CLI; invoke sigilc directly.
+- Invoke sigilc directly against the workspace root with --root.
 - Read native focus_order, closure reasons and separate order/membership identities.
 - Preserve requested priority; do not recreate a target-ranking or priority table.
 - Read Loose with exit 0 as yellow; retain its warnings without a new approval gate.

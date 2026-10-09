@@ -1,0 +1,103 @@
+{
+  "exported": true,
+  "sources": [
+    "empty.sigil"
+  ],
+  "components": [
+    {
+      "source": "empty.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        142
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [
+    {
+      "source": "empty.sigil",
+      "component": "Case",
+      "name": "nothing",
+      "tag": null,
+      "section": "constraints",
+      "range": [
+        70,
+        90
+      ],
+      "headerRange": [
+        70,
+        84
+      ],
+      "bodyRange": [
+        84,
+        84
+      ],
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "empty.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "empty.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        109,
+        136
+      ],
+      "proseRange": [
+        109,
+        136
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_EMPTY_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "empty.sigil",
+      "range": [
+        70,
+        84
+      ],
+      "related": []
+    }
+  ]
+}

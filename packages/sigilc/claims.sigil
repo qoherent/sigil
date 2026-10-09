@@ -1,5 +1,4 @@
 @packages/sigilc/vocabulary.sigil from SigilClaimsVocabulary import { AcceptedVocabulary, AtomDiscipline }
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 
 @packages/core/src/parser.sigil from SigilParser import { source order }
 @spec/language.sigil from SigilLanguage import { Constraints, prohibitions }
@@ -52,7 +51,9 @@ component SigilComputedClaims {
       An artifact carrying one valid claim beside one rule declaration is refused
       whole. A claim relating a *local Facet* to a Tag imported from a source in the
       closure is accepted. A guard comparing an input value to a state read is
-      accepted. An edge naming an ordinal no step declares is refused.
+      accepted. An edge naming a step no Facet declares refuses its Logic section
+      and nothing else, and a claim naming a Tag its Facet's list does not carry
+      refuses that Facet and nothing else.
     }
   }
 
@@ -69,16 +70,18 @@ component SigilComputedClaims {
     }
 
     InterpretationRequest {
-      Project one design source and its resolved closure into an interpretation
+      Project one design source and the interfaces it imports into an interpretation
       directory. Carry each Facet's exact prose slice with the contract role its
-      unit belongs to, taken from ResolvedDesignInput rather than inferred, and
-      emit one pre-filled row per Facet identifying that Facet alone. Write an
-      immutable binding over the export digest, the selected source, the guidance
+      unit belongs to, taken from the source tree rather than inferred, and
+      emit one pre-filled row per Facet identifying that Facet alone by a short
+      handle, with the names that Facet may use. Write an
+      immutable binding over the source tree id, the imported interface
+      hashes, the selected source, the guidance
       fingerprint and the vocabulary generation. The caller keeps the directory
       and produces claims independently.
 
-      The *selected source closure* presents every Facet, not only the selected
-      source.
+      The *selected source closure* presents every Facet of the source and the
+      interface Facets of what it imports.
 
       A request asks only for *claim units* whose stored interpretation is stale. A
       stored interpretation is keyed on the unit's prose, its owning component,
@@ -103,7 +106,8 @@ component SigilComputedClaims {
       expected not to hold is a prohibition. A reading row records a Facet the
       interpreter read and found no commitment in, or whose intent is
       unresolved. The tool mints every identity and refuses any the
-      interpretation declares, and any entity outside the resolved closure.
+      interpretation declares, and any entity the source and its imported
+      interfaces do not expose.
 
       A component's Logic prose describing a *sequence* of steps is interpreted as
       one flow graph spanning that section's Facets.
@@ -113,16 +117,16 @@ component SigilComputedClaims {
       else is an ordinary claim about those entities — a state the step reads or
       writes, an operation it calls, an edge to a later step.
 
-      A returned row names a step by its ordinal and the graph by its component
-      and section, never by an identity. An ordinal is unique across the
-      presented section, and a row naming one that no step declaration carries
-      is refused.
+      A returned row names a step by its number within its own Facet, never by an
+      identity, and the tool places each step in its section. A row naming a step
+      no step declaration carries is refused.
 
       An edge runs from a *step* to whatever the prose describes as consuming what
       that step produced: a later step, or the flow's result. What a step reads,
       writes and calls are claims about that step rather than edge targets. An
-      edge may cross from one Facet of the section to another. An edge to the
-      graph is what declares an end, and a graph declaring no end is refused.
+      edge may cross from one Facet of the section to another. An end row is
+      what declares an end, and a step that reaches no declared end is reported as
+      unreached.
 
       A step row names the Facet it was authored in, and identity, grounding and
       the Facet's own *claim interpretation* all follow that naming. A Facet that
@@ -146,13 +150,18 @@ component SigilComputedClaims {
       interpretation remains the sole basis for findings, and the comparison
       gates no acceptance.
 
-      Refusing any row refuses the whole supplied interpretation, never its
-      valid portion.
+      A name the prose relies on that no Tag declares is returned as such and
+      reported as a warning about the design, which never fails it.
+
+      An artifact that holds anything other than data is refused whole. A row
+      that is data but wrong refuses its own unit, one Facet or one Logic
+      section, and the rest of the interpretation is kept. A refused unit is
+      stored as nothing and stays unread until it is interpreted again.
     }
 
     SectionAwareClosure {
       Fill each claim's contract role from the unit it derives from, as
-      ResolvedDesignInput attributes it, then derive holding relations,
+      the source tree attributes it, then derive holding relations,
       reachability, delegation, contradictions, ownership conflicts and
       obligations under finite tool-owned laws, inspecting absence only after
       the closure stabilizes. A claim whose role is Decisions is retained and
@@ -170,13 +179,14 @@ component SigilComputedClaims {
 
       Grounding asks whether the entity a *row names* could have come from the
       Facet that names it, and reads the kind of what it names: a Tag or
-      Component against that Facet's resolved references, its owning component
-      and its providers; a step against the Facet its declaration names; a graph
-      against the section it is minted from. It applies to every returned row,
-      including a guard's operands, at admission. A degenerate or ungrounded row
-      in a graph suppresses that graph's reachability check, and both the row
-      and the suppression are reported. An edge from a step to itself is a loop
-      rather than a claim that says nothing.
+      Component against that Facet's own list, which is its resolved references,
+      its owning component and its providers; a step against the Facet its
+      declaration names; a graph against the section it is minted from. It
+      applies to every returned row, including a guard's operands, at admission,
+      and a name off the list refuses that Facet's unit. A degenerate row in a
+      graph suppresses that graph's reachability check, and both the row and the
+      suppression are reported. An edge from a step to itself is a loop rather
+      than a claim that says nothing.
 
       A claim whose role is Constraints reaches the flow graphs its own
       component owns and those of every component it transitively depends on,
@@ -196,8 +206,9 @@ component SigilComputedClaims {
       Report contradictions, ownership conflicts and unmet obligations with the
       law that produced each one, with the claims it rests on where it rests on
       any, and with the *steps* and the graph where steps produced it. Report a
-      claim whose subject and object coincide as degenerate, and one that
-      grounding refuses as ungrounded; neither satisfies its unit. Name a Facet
+      claim whose subject and object coincide as degenerate; it does not satisfy
+      its unit. Report a name the prose relies on that its Facet's list lacks as
+      a warning about the design. Name a Facet
       of the selected source in a declared role that yielded nothing — no
       interpretation satisfying its unit and no reading row — and attribute that
       gap to the interpretation.
@@ -208,7 +219,8 @@ component SigilComputedClaims {
 
       A finding is reported by each run whose selected source authored a step it
       names or a Facet it names, so one spanning two sources reaches both
-      authors and one spanning none is reported nowhere.
+      authors and one spanning none is reported nowhere. The linked check
+      reports each finding to every source that authored part of it.
 
       An unchanged export, selected source, runtime identity, store and set of
       *supplied interpretations* produce an identical report.
@@ -225,14 +237,15 @@ component SigilComputedClaims {
     }
 
     ClaimsCommands {
-      Offer preparation, ingestion and guidance extraction as a separate
-      executable beside the compiler. Refuse a binding that does not match the
-      running *invocation* on any of its four parts. Exit zero for pass and
+      Offer preparation, ingestion, a linked check and guidance extraction as a
+      separate executable beside the compiler. Refuse a binding that does not
+      match the running *invocation* on any of its four parts. Exit zero for pass and
       warning, one for a gate failure, two for usage and a refused input, and
       three for operational failure. Only a contradiction or an ownership
       conflict the closure derives without reading a flow is a gate failure;
       every other finding, including one resting on the interpretation's reading
-      of a flow, is a warning.
+      of a flow, is a warning. A check or an ingest that cannot read every unit
+      is incomplete, and an incomplete result is a gate failure.
     }
   }
 
@@ -316,10 +329,10 @@ component SigilComputedClaims {
       single block. A component that names two Logic flows therefore yields one
       graph today, and that is the case to revisit if it appears.
 
-      The request widened to the *whole closure* because every design source
-      measured declares exactly one component, so a claim had no dependency
-      graph to reach. Storing interpretations is what keeps that widening from
-      re-reading every shared dependency once per dependent.
+      A dependent sees only the interfaces it imports when its source is read,
+      and the linked check applies every law across components over the stored
+      readings. Storing interpretations keeps each shared dependency from being
+      re-read once per dependent.
     }
   }
 }

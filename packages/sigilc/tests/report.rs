@@ -1,5 +1,4 @@
 mod support;
-use serde_json::json;
 use sigilc::{
     eqval::{self, DesignState, Limits},
     report,
@@ -12,8 +11,11 @@ use support::Workspace;
 #[test]
 fn findings_are_bounded_deterministic_and_preserve_contradictions_and_missing_locations() {
     let root = Workspace::new();
-    root.write("a.sigil", b"authored fixture");
-    let input = root.input(&["a.sigil"], json!([]));
+    root.write(
+        "a.sigil",
+        b"component A {\ngoal {\nAuthored fixture.\n}\ninterface {\nOffer A.\n}\n}",
+    );
+    let input = root.design_input();
     let facts = turtle::parse(
         format!("@prefix s: <{ONTOLOGY}> . <urn:a> s:excludes <urn:b>; s:uses <urn:b> .")
             .as_bytes(),

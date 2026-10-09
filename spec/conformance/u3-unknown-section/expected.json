@@ -1,0 +1,151 @@
+{
+  "exported": true,
+  "sources": [
+    "unknown.sigil"
+  ],
+  "components": [
+    {
+      "source": "unknown.sigil",
+      "name": "Unknown",
+      "range": [
+        0,
+        231
+      ],
+      "nameRange": [
+        10,
+        17
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "tags": [
+    {
+      "source": "unknown.sigil",
+      "component": "Unknown",
+      "name": "skipped",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "unknown.sigil",
+      "component": "Unknown",
+      "section": "goal",
+      "group": null,
+      "range": [
+        29,
+        54
+      ],
+      "proseRange": [
+        29,
+        54
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "unknown.sigil",
+      "component": "Unknown",
+      "section": "interface",
+      "group": null,
+      "range": [
+        163,
+        198
+      ],
+      "proseRange": [
+        163,
+        198
+      ],
+      "introductions": [
+        {
+          "name": "skipped",
+          "kind": "inline",
+          "tag": "Unknown::skipped",
+          "range": [
+            171,
+            180
+          ],
+          "nameRange": [
+            172,
+            179
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNCLOSED_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unknown.sigil",
+      "range": [
+        0,
+        20
+      ],
+      "related": [
+        {
+          "file": "unknown.sigil",
+          "range": [
+            231,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_UNCLOSED_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unknown.sigil",
+      "range": [
+        203,
+        214
+      ],
+      "related": [
+        {
+          "file": "unknown.sigil",
+          "range": [
+            231,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_UNKNOWN_SECTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unknown.sigil",
+      "range": [
+        205,
+        211
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNKNOWN_SECTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unknown.sigil",
+      "range": [
+        61,
+        66
+      ],
+      "related": []
+    }
+  ]
+}

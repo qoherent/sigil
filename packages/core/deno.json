@@ -20,7 +20,7 @@
     ]
   },
   "tasks": {
-    "test": "deno test --allow-read",
+    "test": "deno test --allow-read --allow-env=SIGIL_UPDATE_CONFORMANCE",
     "publish:dry-run": "deno publish --dry-run"
   },
   "compilerOptions": {

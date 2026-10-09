@@ -85,7 +85,7 @@ pub fn commits(section: &str) -> bool {
 /// Build the program this tool evaluates, as text.
 ///
 /// Exposed so a reader can see exactly what was run: the laws are fixed, and
-/// everything else is a row derived from the export or from an accepted fact.
+/// everything else is a row derived from the request or from an accepted fact.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::SectionAwareClosure interface,constraints,cases
 pub fn program(request: &Request, facts: &[Fact]) -> String {
     let mut out = String::from(include_str!("claims.egg"));
@@ -223,6 +223,10 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
                 quote(&fact.facet),
                 quote(outcome)
             )),
+            // A name the prose relies on is reported from the fact itself. It
+            // is a statement about the design's declarations, not a claim any
+            // law reads.
+            Body::Undeclared { .. } => {}
             // A step is an entity this tool minted, so it is emitted as one.
             // This is the single place where an `entity` row stops meaning
             // "the design declares this" and starts meaning "the design

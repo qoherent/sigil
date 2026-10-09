@@ -1,7 +1,7 @@
 //! Ordered focus and effective world membership, without external scheduling.
 use crate::{
-    frontend::{DesignInput, normalized_path},
     sources::{self, Selection, SourceManifest},
+    structure::{DesignInput, normalized_path},
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -38,7 +38,6 @@ pub struct DesignMembership {
     pub focus_order: Vec<String>,
     pub sources: BTreeSet<String>,
     pub dependencies: BTreeSet<Dependency>,
-    pub conservative_full_bundle: bool,
     pub intentional_empty: bool,
 }
 
@@ -64,7 +63,7 @@ impl Scope {
         if self.version != 1 {
             return Err("unsupported scope version".into());
         }
-        input.validate()?;
+        input.assert_consistent()?;
         let original_sources: BTreeSet<_> = input.sources.iter().map(|s| s.path.clone()).collect();
         let mut roots = BTreeSet::new();
         for path in &self.design.paths {
@@ -73,7 +72,9 @@ impl Scope {
                 return Err(format!("duplicate Design scope root: {path}"));
             }
             if !original_sources.contains(path) {
-                return Err(format!("Design scope root absent from frontend: {path}"));
+                return Err(format!(
+                    "Design scope root absent from the workspace: {path}"
+                ));
             }
         }
         if roots.is_empty() && !self.design.allow_empty {
@@ -119,7 +120,7 @@ impl Scope {
                 .as_ref()
                 .is_none_or(|p| !original_sources.contains(p) || design.sources.contains(p))
         });
-        input.validate()?;
+        input.assert_consistent()?;
         Ok(ResolvedScope {
             report: ScopeReport {
                 version: 1,
@@ -135,8 +136,9 @@ impl Scope {
     }
 }
 
-// Both callers operate on validated frontend structure. Share this closure with
-// per-source binding so changing focus cannot hide a semantic dependency.
+// Both callers operate on validated structure structure. An import that does not
+// resolve contributes nothing here: it makes its own source invalid, and never
+// widens another source's closure.
 /*
  * @sigil implements packages/sigilc/scope.sigil::SigilComparisonScope::DesignMembership interface
  * @sigil implements packages/sigilc/scope.sigil::SigilComparisonScope::FocusOrder interface
@@ -147,14 +149,6 @@ pub(crate) fn design_membership<'a>(
 ) -> DesignMembership {
     let roots: Vec<_> = roots.into_iter().map(str::to_owned).collect();
     let mut pending: Vec<_> = roots.iter().map(String::as_str).collect();
-    let conservative_full_bundle = !roots.is_empty()
-        && input
-            .imports
-            .iter()
-            .any(|i| i.target.is_none() || i.names.iter().any(|n| n.entity.is_none()));
-    if conservative_full_bundle {
-        pending.extend(input.sources.iter().map(|s| s.path.as_str()));
-    }
     let entities: BTreeMap<_, _> = input
         .entities
         .iter()
@@ -215,6 +209,5 @@ pub(crate) fn design_membership<'a>(
         intentional_empty: sources.is_empty(),
         sources,
         dependencies,
-        conservative_full_bundle,
     }
 }

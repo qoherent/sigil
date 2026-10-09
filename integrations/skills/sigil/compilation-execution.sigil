@@ -10,7 +10,7 @@ component SigilCompilationExecution {
 
   interface {
     CompilationExecution {
-      SigilCli exports the current structural Design bundle.
+      sigilc reads the workspace root itself; no export step is needed.
 
       Call sigilc directly for scope, stale, prepare, ingest, entities, compile,
       compare and clean.
@@ -31,7 +31,7 @@ component SigilCompilationExecution {
 expand SigilCompilationExecution {
   logic {
     CompilationExecution {
-      Refresh structural export after authored, configuration or glossary changes.
+      Rerun sigilc after authored, configuration or glossary changes.
 
       Inspect native membership and freshness before preparing stale sources.
 

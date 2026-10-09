@@ -11,14 +11,21 @@ const DEFAULT_OUTPUT = fileURLToPath(
 export const HELP = `Slotted interpretation benchmark
 
 Run a batch:
-  deno task slotted-benchmark run --agent claude:MODEL --agent codex:MODEL --passes 3 [--out DIR] [--timeout-ms N]
+  deno task slotted-benchmark run --agent claude:MODEL --agent codex:MODEL --passes 3 [--out DIR] [--timeout-ms N] [--reasoning LEVEL] [--codex-auth FILE] [--pi-subagents FILE]
 
 Rebuild a report without launching an agent:
   deno task slotted-benchmark report DIR
 
 Each --agent selects one coding agent and requested model. Repeat it for more combinations.
-The batch keeps raw events, rows, native reports, and the generated report under
-analyze-demo/slotted-runs/benchmarks/ by default.
+Each pass runs one orchestrator process that carries out sigil-compute's whole-design
+action in its own pass directory; the benchmark then runs the linked check itself and
+scores the planted problems from that report. --timeout-ms bounds one whole pass (default
+7200000). --reasoning sets the reasoning effort of the orchestrator and every child.
+--codex-auth names the Codex auth file copied into each pass's scratch CODEX_HOME
+(default ~/.codex/auth.json). --pi-subagents names the pi-subagents extension entry
+(default ~/.pi/agent/npm/node_modules/pi-subagents/index.js); Pi support is untested live.
+The batch keeps each pass directory, raw host events, the linked report, and the generated
+report under analyze-demo/slotted-runs/benchmarks/ by default.
 `;
 
 export interface CommandDependencies {
@@ -55,12 +62,24 @@ export async function executeCommand(
   const selections: { agent: string; model: string }[] = [];
   let passes: number | null = null;
   let outputDir: string | null = null;
-  let timeoutMs = 180_000;
+  let timeoutMs = 7_200_000;
+  let reasoning: string | undefined;
+  let codexAuthPath: string | undefined;
+  let piSubagentsEntry: string | undefined;
   for (let index = 0; index < tail.length; index += 2) {
     const flag = tail[index];
     const value = tail[index + 1];
     if (
-      !value || !["--agent", "--passes", "--out", "--timeout-ms"].includes(flag)
+      !value ||
+      ![
+        "--agent",
+        "--passes",
+        "--out",
+        "--timeout-ms",
+        "--reasoning",
+        "--codex-auth",
+        "--pi-subagents",
+      ].includes(flag)
     ) {
       throw new Error(
         `Unknown or incomplete option: ${flag ?? "(none)"}\n${HELP}`,
@@ -83,6 +102,12 @@ export async function executeCommand(
         throw new Error("Output directory supplied more than once");
       }
       outputDir = resolve(value);
+    } else if (flag === "--reasoning") {
+      reasoning = value;
+    } else if (flag === "--codex-auth") {
+      codexAuthPath = resolve(value);
+    } else if (flag === "--pi-subagents") {
+      piSubagentsEntry = resolve(value);
     } else {
       timeoutMs = Number(value);
     }
@@ -105,6 +130,9 @@ export async function executeCommand(
     passes,
     outputDir: destination,
     timeoutMs,
+    reasoning,
+    codexAuthPath,
+    piSubagentsEntry,
     agentExecutables: dependencies.agentExecutables,
     signal: dependencies.signal,
   });

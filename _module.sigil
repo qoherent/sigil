@@ -1,7 +1,7 @@
 @integrations/editor/vscode/_module.sigil from SigilVsCodeExtension import { ExtensionPackage }
 @packages/lsp/_module.sigil from SigilLsp import { LspPackage }
-@packages/sigilc/_module.sigil from SigilSemanticCompiler import { FrontendBoundary, language interpretation }
-@packages/cli/_module.sigil from SigilCli import { CliInvocation, DesignExport }
+@packages/sigilc/_module.sigil from SigilSemanticCompiler import { SourceTrees, language interpretation }
+@packages/cli/_module.sigil from SigilCli import { CliInvocation }
 @packages/core/_module.sigil from SigilCore import { CorePackage }
 @spec/language.sigil from SigilWorkspaceConfig import { WorkspaceBoundary, ConfigFile }
 @spec/language.sigil from SigilLanguage import { LanguageVersion, ComponentContract, TagIdentity, resolution }
@@ -43,11 +43,11 @@ component Sigil {
     }
 
     SemanticCompilation {
-      CorePackage parses and resolves authored Sigil. SigilSemanticCompiler validates
-      its structural bundle under FrontendBoundary and its source-local Turtle, then
-      saturates Design and Implementation separately under fixed laws. Design yields
-      obligations; comparison checks those obligations against Implementation
-      closure.
+      CorePackage parses and resolves authored Sigil for editors and the CLI.
+      SigilSemanticCompiler reads the workspace itself under SourceTrees and
+      validates its source-local Turtle, then saturates Design and
+      Implementation separately under fixed laws. Design yields obligations;
+      comparison checks those obligations against Implementation closure.
     }
   }
 
@@ -206,8 +206,8 @@ component Sigil {
     }
 
     SemanticCompilation {
-      Use CliInvocation for authored-language operations and DesignExport for
-      structural export. Invoke SigilSemanticCompiler through standalone sigilc for
+      Use CliInvocation for authored-language operations. Invoke
+      SigilSemanticCompiler through standalone sigilc for
       deterministic preparation, ingestion, freshness, catalog and semantic gates.
       External workers interpret captured source; models do not supply verdicts. Keep
       source editing and orchestration outside both compiler binaries.

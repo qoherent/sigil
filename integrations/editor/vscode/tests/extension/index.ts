@@ -115,10 +115,9 @@ export async function run(): Promise<void> {
   );
 
   const nativeCompiler = process.env.SIGIL_TEST_COMPILER;
-  const languageCli = process.env.SIGIL_TEST_LANGUAGE;
   assert(
-    nativeCompiler && languageCli,
-    "Current native compiler and language CLI are required",
+    nativeCompiler,
+    "Current native compiler is required",
   );
   const fixtureDirectory = await mkdtemp(
     path.join(os.tmpdir(), "sigil-vscode-native-"),
@@ -154,11 +153,6 @@ export async function run(): Promise<void> {
     await compileConfiguration.update(
       "executable",
       nativeCompiler,
-      vscode.ConfigurationTarget.Global,
-    );
-    await compileConfiguration.update(
-      "languageExecutable",
-      languageCli,
       vscode.ConfigurationTarget.Global,
     );
     await compileConfiguration.update(
@@ -276,7 +270,7 @@ export async function run(): Promise<void> {
     (vscode.window as unknown as { showErrorMessage: typeof originalError })
       .showErrorMessage = originalError;
     for (
-      const key of ["executable", "languageExecutable", "selection", "focus"]
+      const key of ["executable", "selection", "focus"]
     ) {
       await compileConfiguration.update(
         key,

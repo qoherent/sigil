@@ -1,7 +1,7 @@
 @integrations/editor/vscode/_module.sigil from SigilVsCodeExtension import { ExtensionPackage, installable VSIX, VSIX }
 @packages/cli/src/installer.sigil from SkillInstaller import { SkillCatalog, SkillCompatibility }
 @packages/sigilc/claims.sigil from SigilComputedClaims import { ClaimsCommands }
-@packages/sigilc/_module.sigil from SigilSemanticCompiler import { FrontendBoundary }
+@packages/sigilc/_module.sigil from SigilSemanticCompiler import { SourceTrees }
 @_module.sigil from Sigil import { ArtifactVersionOwnership }
 @packages/cli/_module.sigil from SigilCli import { CliInvocation }
 
@@ -60,13 +60,13 @@ component SigilReleaseDistribution {
       Separate static legacy-package validation and explicitly selected legacy-binary
       smoke from current 0.9 acceptance. Preserve the *old validator* and its fixture
       unchanged; add a current schema 2 native protocol fixture for current released
-      binaries. Language, frontend transport, and native report compatibility must
+      binaries. Language, source tree, and native report compatibility must
       agree before support is advertised.
     }
 
     DistributionInputs {
       Package the language executable under CliInvocation and
-      ArtifactVersionOwnership, the native compiler under FrontendBoundary, the
+      ArtifactVersionOwnership, the native compiler under SourceTrees, the
       claims command under ClaimsCommands, the SkillCatalog with its declared
       SkillCompatibility, and the VSIX under ExtensionPackage. Each input retains
       its provider component and manifest ownership.

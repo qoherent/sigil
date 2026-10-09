@@ -7,30 +7,38 @@ use std::{
 fn root_help() -> String {
     r#"sigilc — deterministic Semantic Worlds compiler
 
-Commands:
-  scope --frontend FILE --scope FILE
+Commands (every command that reads a workspace takes [--root DIR] [--store DIR]):
+  scope --scope FILE
   ontology [--format text|json]
-  prepare design --frontend FILE --source PATH --out NEW_DIR [--scope FILE]
-  ingest design --frontend FILE --source PATH --binding FILE --turtle FILE|- [--scope FILE]
-  stale design --frontend FILE [--scope FILE]
-  compile design --frontend FILE [--scope FILE] [--limits FILE] [--allow-empty]
-  entities --frontend FILE [--scope FILE] [--limits FILE] [--allow-empty]
-  prepare implementation --frontend FILE --source PATH --out NEW_DIR [--scope FILE]
-  ingest implementation --frontend FILE --source PATH --binding FILE --turtle FILE|- [--scope FILE]
-  stale implementation --frontend FILE (--selection FILE | --scope FILE)
-  compile implementation --frontend FILE (--selection FILE | --scope FILE)
-  compare --frontend FILE (--selection FILE | --scope FILE) [--limits FILE]
-  clean [--root DIR]
+  prepare design --source PATH --out NEW_DIR [--scope FILE]
+  ingest design --source PATH --binding FILE --turtle FILE|- [--scope FILE]
+  stale design [--scope FILE]
+  compile design [--scope FILE] [--limits FILE] [--allow-empty]
+  entities [--scope FILE] [--limits FILE] [--allow-empty]
+  prepare implementation --source PATH --out NEW_DIR [--scope FILE]
+  ingest implementation --source PATH --binding FILE --turtle FILE|- [--scope FILE]
+  stale implementation (--selection FILE | --scope FILE)
+  compile implementation (--selection FILE | --scope FILE)
+  compare (--selection FILE | --scope FILE) [--limits FILE]
+  tree [--source PATH] [--diff] [--root DIR] [--store DIR]
+  clean [--root DIR] [--store DIR]
+
+--root DIR is the workspace: sigilc reads its .sigil configuration, glossary and
+sources directly (default: the current directory). --store DIR holds the
+disposable projections and tree cache (default: ROOT/.sigil).
+
+`tree` prints the resolved Merkle trees as deterministic JSON, for one source or
+every source; --diff prints the Facets added, removed and changed since the
+previous tree recorded for each source.
 
 Scope and semantic compilation flow:
-  1. Export structural input: sigil export design . > frontend.json
-  2. Resolve ordered roots: sigilc scope --frontend frontend.json --scope scope.json
-  3. Inspect freshness: sigilc stale design --frontend frontend.json --scope scope.json
-  4. Prepare/ingest only stale, missing or dependency-invalid rows, then compile,
+  1. Resolve ordered roots: sigilc scope --root . --scope scope.json
+  2. Inspect freshness: sigilc stale design --root . --scope scope.json
+  3. Prepare/ingest only stale, missing or dependency-invalid rows, then compile,
      export entities and compare.
-  5. Compile Design and export entities.
-  6. Prepare and ingest Implementation sources.
-  7. Compile Implementation and compare semantic worlds.
+  4. Compile Design and export entities.
+  5. Prepare and ingest Implementation sources.
+  6. Compile Implementation and compare semantic worlds.
 
 Gate exits: 0 = Coherent/Loose (Design), Closed/Converged (Implementation).
 1 = Disjoint (Design), Drift (Implementation). Loose/Converged are warnings.

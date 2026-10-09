@@ -6,7 +6,7 @@ use std::{
 };
 
 mod support;
-use support::{BASE, BASE_CONSTRAINTS, BASE_GOAL, BASE_INTERFACE};
+use support::{BASE, base_constraints, base_goal, base_interface};
 
 struct Scratch(PathBuf);
 
@@ -23,10 +23,30 @@ impl Scratch {
         Self(path.canonicalize().unwrap())
     }
 
-    fn frontend_value(&self, value: serde_json::Value) -> PathBuf {
-        let path = self.0.join("frontend.json");
-        fs::write(&path, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
-        path
+    /// Write the shared design fixture, or a variant of its sources, as the workspace.
+    fn workspace(&self, edit: impl Fn(&str, String) -> String) {
+        let mut value = support::shared_value();
+        for item in value["sources"].as_array_mut().unwrap() {
+            let path = item["path"].as_str().unwrap().to_owned();
+            let text = edit(&path, item["text"].as_str().unwrap().to_owned());
+            item["text"] = serde_json::json!(text);
+        }
+        for item in value["sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .chain(value["context"].as_array().unwrap())
+        {
+            if let Some(text) = item["text"].as_str() {
+                let path = self.0.join(item["path"].as_str().unwrap());
+                fs::create_dir_all(path.parent().unwrap()).unwrap();
+                fs::write(path, text).unwrap();
+            }
+        }
+    }
+
+    fn design_input(&self) -> sigilc::structure::DesignInput {
+        sigilc::tree::design_input::load_design_input(&self.0, &self.0.join(".sigil")).unwrap()
     }
 }
 
@@ -53,64 +73,42 @@ fn json(text: &str) -> serde_json::Value {
 }
 
 fn clean_artifact() -> String {
+    let base_constraints = base_constraints();
+    let base_goal = base_goal();
+    let base_interface = base_interface();
     format!(
-        "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-         (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
-         (claim {BASE_CONSTRAINTS:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
+        "(reading {base_goal:?} \"no-commitment\")\n\
+         (claim {base_interface:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
+         (claim {base_constraints:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
     )
 }
 
-/// Prepare, then return the scratch root, the export path and the binding path.
-fn prepared(name: &str) -> (Scratch, PathBuf, PathBuf) {
-    prepared_with_value(name, support::shared_value())
-}
-
-/// The same export with Base's Constraints unit presented as a Logic section.
-/// Keeping the replacement the same byte length preserves the fixture's
-/// offset-derived identities while providing a cached Step for admission.
-fn prepared_with_cached_logic(name: &str) -> (Scratch, PathBuf, PathBuf) {
-    let mut value = support::shared_value();
-    let source = value["sources"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|source| source["path"] == BASE)
-        .unwrap();
-    let text = source["text"].as_str().unwrap();
-    assert!(text.contains("constraints {"));
-    source["text"] = serde_json::json!(text.replacen("constraints {", "logic       {", 1));
-    let unit = value["units"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|unit| unit["id"] == BASE_CONSTRAINTS)
-        .unwrap();
-    unit["section"] = serde_json::json!("logic");
-    let group = value["groups"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|group| group["id"] == "group:base.sigil:73")
-        .unwrap();
-    group["section"] = serde_json::json!("logic");
-    let introduction = value["introductions"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|introduction| introduction["id"] == "group:base.sigil:73")
-        .unwrap();
-    introduction["section"] = serde_json::json!("logic");
-    prepared_with_value(name, value)
-}
-
-fn prepared_with_value(name: &str, value: serde_json::Value) -> (Scratch, PathBuf, PathBuf) {
+/// Prepare the shared design, then return the scratch workspace and the binding path.
+fn prepared(name: &str) -> (Scratch, PathBuf) {
     let scratch = Scratch::new(name);
-    let frontend = scratch.frontend_value(value);
+    scratch.workspace(|_, text| text);
+    prepare_base(name, scratch)
+}
+
+/// The same design with Base's Constraints section written as a Logic section,
+/// which provides a cached Step for admission.
+fn prepared_with_cached_logic(name: &str) -> (Scratch, PathBuf) {
+    let scratch = Scratch::new(name);
+    scratch.workspace(|path, text| {
+        if path == BASE {
+            assert!(text.contains("constraints {"));
+            text.replacen("constraints {", "logic {", 1)
+        } else {
+            text
+        }
+    });
+    prepare_base(name, scratch)
+}
+
+fn prepare_base(_name: &str, scratch: Scratch) -> (Scratch, PathBuf) {
     let out = scratch.0.join("prep");
     let (code, stdout, stderr) = claims(&[
         "prepare",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--source",
         BASE,
         "--out",
@@ -121,7 +119,7 @@ fn prepared_with_value(name: &str, value: serde_json::Value) -> (Scratch, PathBu
     assert_eq!(code, 0, "{stdout}{stderr}");
     let binding = out.join("binding.json");
     assert!(binding.exists());
-    (scratch, frontend, binding)
+    (scratch, binding)
 }
 
 // ------------------------------------------------------------------ the flow
@@ -129,14 +127,12 @@ fn prepared_with_value(name: &str, value: serde_json::Value) -> (Scratch, PathBu
 #[test]
 fn a_full_pass_prepares_interprets_and_ingests() {
     // Covers F1.
-    let (scratch, frontend, binding) = prepared("flow");
+    let (scratch, binding) = prepared("flow");
     let artifact = scratch.0.join("result.egg");
     fs::write(&artifact, clean_artifact()).unwrap();
 
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -165,21 +161,22 @@ fn a_full_pass_prepares_interprets_and_ingests() {
 
 #[test]
 fn a_design_level_contradiction_exits_one_and_names_its_findings() {
-    let (scratch, frontend, binding) = prepared("gate");
+    let base_constraints = base_constraints();
+    let base_goal = base_goal();
+    let base_interface = base_interface();
+    let (scratch, binding) = prepared("gate");
     let artifact = scratch.0.join("result.egg");
     fs::write(
         &artifact,
         format!(
-            "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-             (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
-             (claim {BASE_CONSTRAINTS:?} \"Base\" \"provides\" \"value\" \"required\" \"false\")\n"
+            "(reading {base_goal:?} \"no-commitment\")\n\
+             (claim {base_interface:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
+             (claim {base_constraints:?} \"Base\" \"provides\" \"value\" \"required\" \"false\")\n"
         ),
     )
     .unwrap();
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -193,16 +190,19 @@ fn a_design_level_contradiction_exits_one_and_names_its_findings() {
 
 #[test]
 fn a_repeat_interpretation_is_reported_only_when_supplied() {
-    let (scratch, frontend, binding) = prepared("repeat");
+    let base_constraints = base_constraints();
+    let base_goal = base_goal();
+    let base_interface = base_interface();
+    let (scratch, binding) = prepared("repeat");
     let first = scratch.0.join("first.egg");
     let second = scratch.0.join("second.egg");
     fs::write(&first, clean_artifact()).unwrap();
     fs::write(
         &second,
         format!(
-            "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-             (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"result\" \"required\" \"true\")\n\
-             (claim {BASE_CONSTRAINTS:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
+            "(reading {base_goal:?} \"no-commitment\")\n\
+             (claim {base_interface:?} \"Base\" \"provides\" \"result\" \"required\" \"true\")\n\
+             (claim {base_constraints:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
         ),
     )
     .unwrap();
@@ -210,8 +210,6 @@ fn a_repeat_interpretation_is_reported_only_when_supplied() {
     let run = |extra: &[&str]| {
         let mut args = vec![
             "ingest",
-            "--frontend",
-            frontend.to_str().unwrap(),
             "--binding",
             binding.to_str().unwrap(),
             "--claims",
@@ -236,20 +234,21 @@ fn a_repeat_interpretation_is_reported_only_when_supplied() {
     let entries = with["disagreements"].as_array().unwrap();
     assert_eq!(entries.len(), 2, "{with}");
     for entry in entries {
-        assert_eq!(entry["facet"], BASE_INTERFACE);
+        assert_eq!(entry["facet"], base_interface);
         assert_eq!(entry["section"], "interface");
     }
 }
 
 #[test]
 fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
-    let (scratch, frontend, binding) = prepared("cached-repeat");
+    let base_constraints = base_constraints();
+    let base_goal = base_goal();
+    let base_interface = base_interface();
+    let (scratch, binding) = prepared("cached-repeat");
     let first = scratch.0.join("first.egg");
     fs::write(&first, clean_artifact()).unwrap();
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -262,8 +261,6 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
     let out = scratch.0.join("prep-again");
     let (code, stdout, stderr) = claims(&[
         "prepare",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--source",
         BASE,
         "--out",
@@ -278,17 +275,15 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
     fs::write(
         &second,
         format!(
-            "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-             (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"result\" \"required\" \"true\")\n\
-             (claim {BASE_CONSTRAINTS:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
+            "(reading {base_goal:?} \"no-commitment\")\n\
+             (claim {base_interface:?} \"Base\" \"provides\" \"result\" \"required\" \"true\")\n\
+             (claim {base_constraints:?} \"Base\" \"owns\" \"value\" \"required\" \"true\")\n"
         ),
     )
     .unwrap();
     let second_binding = out.join("binding.json");
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         second_binding.to_str().unwrap(),
         "--claims",
@@ -304,12 +299,12 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
     assert!(
         disagreements
             .iter()
-            .any(|entry| { entry["facet"] == BASE_INTERFACE && entry["onlyIn"] == "first" })
+            .any(|entry| { entry["facet"] == base_interface && entry["onlyIn"] == "first" })
     );
     assert!(
         disagreements
             .iter()
-            .any(|entry| { entry["facet"] == BASE_INTERFACE && entry["onlyIn"] == "repeat" })
+            .any(|entry| { entry["facet"] == base_interface && entry["onlyIn"] == "repeat" })
     );
 
     let context = json(&fs::read_to_string(result["judgmentContext"].as_str().unwrap()).unwrap());
@@ -317,7 +312,7 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|unit| unit["facet"] == BASE_INTERFACE)
+        .find(|unit| unit["facet"] == base_interface)
         .unwrap();
     assert!(
         interface["asserted"]
@@ -336,8 +331,6 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
     // the cached-unit second reading already carried by --claims.
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         second_binding.to_str().unwrap(),
         "--claims",
@@ -355,21 +348,23 @@ fn a_supplied_cached_unit_is_compared_without_replacing_its_saved_reading() {
 
 #[test]
 fn a_cached_logic_step_is_available_when_admitting_a_second_reading() {
-    let (scratch, frontend, binding) = prepared_with_cached_logic("cached-step-admission");
+    let (scratch, binding) = prepared_with_cached_logic("cached-step-admission");
+    let input = scratch.design_input();
+    let base_constraints = support::facet_in(&input, BASE, "logic");
+    let base_goal = support::facet_in(&input, BASE, "goal");
+    let base_interface = support::facet_in(&input, BASE, "interface");
     let first = scratch.0.join("first.egg");
     fs::write(
         &first,
         format!(
-            "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-             (claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
-             (step {BASE_CONSTRAINTS:?} \"1\")\n"
+            "(reading {base_goal:?} \"no-commitment\")\n\
+             (claim {base_interface:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
+             (step {base_constraints:?} \"1\")\n"
         ),
     )
     .unwrap();
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -382,8 +377,6 @@ fn a_cached_logic_step_is_available_when_admitting_a_second_reading() {
     let out = scratch.0.join("prep-again");
     let (code, stdout, stderr) = claims(&[
         "prepare",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--source",
         BASE,
         "--out",
@@ -398,15 +391,13 @@ fn a_cached_logic_step_is_available_when_admitting_a_second_reading() {
     fs::write(
         &second,
         format!(
-            "(reading {BASE_GOAL:?} \"no-commitment\")\n\
-             (claim {BASE_GOAL:?} \"step:1\" \"reads\" \"Base\" \"required\" \"true\")\n"
+            "(reading {base_goal:?} \"no-commitment\")\n\
+             (claim {base_goal:?} \"step:1\" \"reads\" \"Base\" \"required\" \"true\")\n"
         ),
     )
     .unwrap();
     let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         out.join("binding.json").to_str().unwrap(),
         "--claims",
@@ -421,8 +412,8 @@ fn a_cached_logic_step_is_available_when_admitting_a_second_reading() {
 }
 
 #[test]
-fn a_claim_for_a_facet_outside_the_request_is_refused() {
-    let (scratch, frontend, binding) = prepared("foreign-facet");
+fn a_claim_for_a_facet_outside_the_request_is_refused_on_its_own() {
+    let (scratch, binding) = prepared("foreign-facet");
     let artifact = scratch.0.join("result.egg");
     fs::write(
         &artifact,
@@ -433,10 +424,8 @@ fn a_claim_for_a_facet_outside_the_request_is_refused() {
     )
     .unwrap();
 
-    let (code, _, stderr) = claims(&[
+    let (code, stdout, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -444,27 +433,43 @@ fn a_claim_for_a_facet_outside_the_request_is_refused() {
         "--root",
         scratch.0.to_str().unwrap(),
     ]);
-    assert_eq!(code, 1, "{stderr}");
-    assert!(stderr.contains("facet:foreign.sigil:0"), "{stderr}");
-    assert!(stderr.contains("did not ask about"), "{stderr}");
+    // The row belongs to no unit, so it costs no unit: the clean rows beside it
+    // are still read.
+    assert_eq!(code, 0, "{stderr}");
+    let result: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(result["refusalCount"], 1, "{stdout}");
+    let refusal = &result["refusals"][0];
+    assert!(refusal["unit"].is_null(), "{stdout}");
+    assert!(
+        refusal["reason"]
+            .as_str()
+            .unwrap()
+            .contains("did not ask about"),
+        "{stdout}"
+    );
+    assert!(
+        refusal["row"]
+            .as_str()
+            .unwrap()
+            .contains("facet:foreign.sigil:0"),
+        "{stdout}"
+    );
 }
 
 // ----------------------------------------------------------- binding refusal
 
 #[test]
-fn a_binding_that_does_not_match_the_supplied_export_is_refused() {
-    let (scratch, frontend, binding) = prepared("stale-export");
+fn a_binding_that_does_not_match_the_current_source_is_refused() {
+    let (scratch, binding) = prepared("stale-export");
     let artifact = scratch.0.join("result.egg");
     fs::write(&artifact, clean_artifact()).unwrap();
 
     let mut tampered = json(&fs::read_to_string(&binding).unwrap());
-    tampered["exportDigest"] = serde_json::json!("a-different-export");
+    tampered["sourceContent"] = serde_json::json!("a-different-source");
     fs::write(&binding, serde_json::to_vec(&tampered).unwrap()).unwrap();
 
     let (code, _, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -473,13 +478,13 @@ fn a_binding_that_does_not_match_the_supplied_export_is_refused() {
         scratch.0.to_str().unwrap(),
     ]);
     assert_eq!(code, 2, "{stderr}");
-    assert!(stderr.contains("export digest"), "{stderr}");
+    assert!(stderr.contains("source content"), "{stderr}");
     assert!(stderr.contains("Prepare a new directory"), "{stderr}");
 }
 
 #[test]
 fn a_binding_from_a_different_guidance_build_is_refused() {
-    let (scratch, frontend, binding) = prepared("stale-guidance");
+    let (scratch, binding) = prepared("stale-guidance");
     let artifact = scratch.0.join("result.egg");
     fs::write(&artifact, clean_artifact()).unwrap();
 
@@ -489,8 +494,6 @@ fn a_binding_from_a_different_guidance_build_is_refused() {
 
     let (code, _, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",
@@ -499,7 +502,7 @@ fn a_binding_from_a_different_guidance_build_is_refused() {
         scratch.0.to_str().unwrap(),
     ]);
     assert_eq!(code, 2, "{stderr}");
-    assert!(stderr.contains("guidance fingerprint"), "{stderr}");
+    assert!(stderr.contains("guidance"), "{stderr}");
 }
 
 // ------------------------------------------------------------- exit contract
@@ -527,15 +530,27 @@ fn a_usage_error_exits_two_and_an_unreadable_input_exits_three() {
         vec!["prepare", "--frontend", "f.json"],
         vec!["ingest", "--unknown", "x"],
         vec!["prepare", "--frontend"],
+        vec![
+            "ingest",
+            "--frontend",
+            "f.json",
+            "--binding",
+            "b",
+            "--claims",
+            "c",
+        ],
     ] {
         let (code, _, stderr) = claims(&args);
         assert_eq!(code, 2, "{args:?} must be a usage error: {stderr}");
+        if args.contains(&"--frontend") {
+            assert!(stderr.contains("--root"), "{stderr}");
+        }
     }
 
     let (code, _, stderr) = claims(&[
         "prepare",
-        "--frontend",
-        "/nonexistent/frontend.json",
+        "--root",
+        "/nonexistent/workspace",
         "--source",
         BASE,
         "--out",
@@ -546,20 +561,19 @@ fn a_usage_error_exits_two_and_an_unreadable_input_exits_three() {
 
 #[test]
 fn an_artifact_carrying_a_rule_is_a_gate_failure_not_a_crash() {
-    let (scratch, frontend, binding) = prepared("rule");
+    let base_interface = base_interface();
+    let (scratch, binding) = prepared("rule");
     let artifact = scratch.0.join("result.egg");
     fs::write(
         &artifact,
         format!(
-            "(claim {BASE_INTERFACE:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
+            "(claim {base_interface:?} \"Base\" \"provides\" \"value\" \"required\" \"true\")\n\
              (rule ((holds a b c)) ((reachable a b)))\n"
         ),
     )
     .unwrap();
     let (code, _, stderr) = claims(&[
         "ingest",
-        "--frontend",
-        frontend.to_str().unwrap(),
         "--binding",
         binding.to_str().unwrap(),
         "--claims",

@@ -5,6 +5,7 @@
 //! that a reader can check it instead of trusting it.
 use super::{
     identity::{Body, Defect, Fact},
+    link::{Linked, SourceEvidence, Unread, UnresolvedImport, WORKSPACE},
     prepare::Request,
     program::{Saturated, text},
 };
@@ -17,11 +18,22 @@ use std::{
 /// Changes when the on-disk report's shape changes.
 ///
 /// 2 adds the flow finding classes. They are part of the report a consumer
-/// reads, so a reader pinned to 1 cannot be handed one.
-pub const REPORT_VERSION: u32 = 2;
+/// reads, so a reader pinned to 1 cannot be handed one. 3 replaces the
+/// identity's export digest with the digest of the tree-based binding and adds
+/// the `uninterpreted-context` finding. 4 adds the linked check's report: the
+/// `incomplete` state, the `unread` and `unresolvedImports` lists and the
+/// `linked` evidence. 5 reports an ingest that left units unread as
+/// `incomplete` with the same `unread` list, adds the `gap` class and drops the
+/// `ungrounded-claim` finding: a name outside a Facet's list now refuses the
+/// unit rather than being kept and flagged.
+pub const REPORT_VERSION: u32 = 5;
+
+/// The suffix of a linked report, so it never overwrites an ingest report.
+pub const LINKED_SUFFIX: &str = ".linked.json";
 
 /// The directory this component owns. Never the compiler's world cache.
-pub const STORE: &str = ".sigil/claims";
+/// Inside the store directory (`<root>/.sigil` by default).
+pub const STORE: &str = "claims";
 
 /// What kind of question a finding answers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -42,6 +54,14 @@ pub enum Class {
     /// weighting that the same as a derived contradiction would fail a build
     /// on a misreading. `state_of` below is what keeps it a warning.
     Flow,
+    /// Something the interpretation says the design leaves out: a name the
+    /// prose relies on that no Tag declares, or that the Facet never
+    /// references.
+    ///
+    /// A warning, like a flow finding: many such mentions are harmless context,
+    /// such as a constraint forbidding "framework code". `state_of` below is
+    /// what keeps it from failing a design.
+    Gap,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -63,7 +83,8 @@ pub struct Finding {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Identity {
-    pub export_digest: String,
+    /// Digest of the request binding the report was computed under.
+    pub binding_digest: String,
     /// Every interpretation artifact supplied, in the order supplied.
     pub interpretations: Vec<String>,
     pub guidance_fingerprint: String,
@@ -80,6 +101,10 @@ pub enum State {
     Loose,
     /// A contradiction or an ownership conflict was derived.
     Disjoint,
+    /// The linked check found no contradiction, but a unit has no valid
+    /// reading or an import did not resolve, so it can not say the design
+    /// holds together. Only the linked check reports it.
+    Incomplete,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -94,6 +119,23 @@ pub struct Report {
     /// Claims the runs disagreed on, when a second interpretation was supplied.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub disagreements: Option<Vec<Disagreement>>,
+    /// Units no valid stored reading covers, workspace-wide. Linked reports only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unread: Option<Vec<Unread>>,
+    /// Imports that did not resolve, workspace-wide. Linked reports only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unresolved_imports: Option<Vec<UnresolvedImport>>,
+    /// What each source was read against. Linked reports only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub linked: Option<LinkedEvidence>,
+}
+
+/// What a linked report was joined from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LinkedEvidence {
+    pub workspace_digest: String,
+    pub sources: Vec<SourceEvidence>,
 }
 
 /// One claim present in one interpretation of a Facet and absent from another.
@@ -120,14 +162,10 @@ fn violation_class(law: &str) -> Class {
     }
 }
 
-/// Build the report for one interpretation of one design source.
-// @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ComputedFindings interface
-pub fn report(
-    request: &Request,
-    facts: &[Fact],
-    world: &Saturated,
-    interpretations: &[String],
-) -> Report {
+/// Every finding the saturated tables and the admission record yield, before
+/// any run decides whose they are. Ingest and the linked check both start here,
+/// so one law cannot report differently in the two.
+fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> {
     let origin: BTreeMap<&str, &Fact> = facts.iter().map(|f| (f.id.as_str(), f)).collect();
     let where_of = |id: &str| {
         origin
@@ -199,20 +237,37 @@ pub fn report(
         });
     }
 
-    // A requirement a flow touches and no step guards on.
+    // A requirement a flow touches and no step guards on. A guard can name only
+    // a Facet its own source presented, so when the requirement is another
+    // component's the flow's component can never answer it; say so, because the
+    // fix is the guarantee in that component's interface.
+    let graph_owner: BTreeMap<String, String> = world
+        .table("entity")
+        .iter()
+        .filter(|row| text(row, 1) == "Graph")
+        .map(|row| (text(row, 0), text(row, 3)))
+        .collect();
     for row in world.table("unguarded-flow") {
-        let (claim, object) = (text(row, 0), text(row, 2));
+        let (claim, graph, object) = (text(row, 0), text(row, 1), text(row, 2));
         let (component, section) = where_of(&claim);
+        let foreign = graph_owner
+            .get(&graph)
+            .is_some_and(|owner| *owner != component);
         findings.push(Finding {
             class: Class::Flow,
             law: "unguarded-flow".into(),
-            subject: text(row, 1),
+            subject: graph,
             object,
             claims: vec![claim],
             component,
             section,
-            detail: "this flow acts on what a reaching claim requires, and no step guards on it"
-                .into(),
+            detail: if foreign {
+                "this flow acts on what a claim in another component requires, and its own component cannot guard on that requirement; the guarantee belongs in its interface"
+                    .into()
+            } else {
+                "this flow acts on what a reaching claim requires, and no step guards on it"
+                    .into()
+            },
         });
     }
 
@@ -253,32 +308,54 @@ pub fn report(
     // Defects in the interpretation, not the design.
     for fact in facts {
         for defect in &fact.defects {
-            let (law, object, detail) = match defect {
+            let (law, detail) = match defect {
                 Defect::Degenerate => (
                     "degenerate-claim",
-                    subject_of(&fact.body),
-                    "subject and object are the same entity, so the claim asserts nothing"
-                        .to_string(),
-                ),
-                Defect::Ungrounded(entity) => (
-                    "ungrounded-claim",
-                    entity.clone(),
-                    format!(
-                        "{entity} does not occur in this Facet's resolved references, its owning component, or a provider its source imports"
-                    ),
+                    "subject and object are the same entity, so the claim asserts nothing",
                 ),
             };
             findings.push(Finding {
                 class: Class::Interpretation,
                 law: law.into(),
                 subject: subject_of(&fact.body),
-                object,
+                object: subject_of(&fact.body),
                 claims: vec![fact.id.clone()],
                 component: fact.component.clone(),
                 section: fact.section.clone(),
-                detail,
+                detail: detail.to_string(),
             });
         }
+    }
+
+    // What a Facet's prose relies on that the design does not give it.
+    for fact in facts {
+        let Body::Undeclared { name, declared } = &fact.body else {
+            continue;
+        };
+        let (law, object, detail) = match declared {
+            Some(entity) => (
+                "unreferenced-name",
+                entity.clone(),
+                format!(
+                    "the prose relies on {name:?}, which the design declares, but this Facet never references it"
+                ),
+            ),
+            None => (
+                "undeclared-name",
+                name.clone(),
+                format!("the prose relies on {name:?}, which no Tag in the design declares"),
+            ),
+        };
+        findings.push(Finding {
+            class: Class::Gap,
+            law: law.into(),
+            subject: fact.component.clone(),
+            object,
+            claims: vec![fact.id.clone()],
+            component: fact.component.clone(),
+            section: fact.section.clone(),
+            detail,
+        });
     }
 
     // A declared role the interpretation left untouched. Attributed to the
@@ -300,19 +377,28 @@ pub fn report(
 
     findings.sort();
     findings.dedup();
+    findings
+}
+
+/// Build the report for one interpretation of one design source.
+// @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ComputedFindings interface
+pub fn report(
+    request: &Request,
+    facts: &[Fact],
+    world: &Saturated,
+    interpretations: &[String],
+) -> Report {
+    let mut findings = derive(request, facts, world);
+    let origin: BTreeMap<&str, &Fact> = facts.iter().map(|f| (f.id.as_str(), f)).collect();
 
     // A finding is reported by each run whose selected source authored a step
-    // or a Facet it names. The closure is presented whole, so without this a
-    // dependency's findings appear in every dependent's report as well as its
-    // own. A finding naming two sources reaches both authors deliberately:
+    // or a Facet it names. Imported interface readings join the program as
+    // context, so without this a dependency's findings appear in every
+    // dependent's report as well as its own. A finding naming two sources
+    // reaches both authors deliberately:
     // an ownership conflict names a step and the owning component by
     // construction, and neither author can fix it alone.
-    let mine: BTreeSet<&str> = request
-        .rows
-        .iter()
-        .filter(|r| r.source == request.binding.source)
-        .map(|r| r.facet.as_str())
-        .collect();
+    let mine: BTreeSet<&str> = request.own_rows().map(|r| r.facet.as_str()).collect();
     let owned = |id: &str| {
         origin
             .get(id)
@@ -321,17 +407,36 @@ pub fn report(
     findings.retain(|f| {
         f.claims.iter().any(|id| owned(id))
             || request
-                .rows
-                .iter()
+                .own_rows()
                 .any(|r| r.component == f.component && r.source == request.binding.source)
     });
+
+    // An imported interface Facet nothing has read yet. Added after the
+    // ownership filter above: it names a dependency's Facet on purpose, so its
+    // author can see why this source's check is looser than it looks. This
+    // run never requests it; its own source's run does.
+    for (component, facet) in super::identity::uninterpreted_context(request, facts) {
+        findings.push(Finding {
+            class: Class::Interpretation,
+            law: "uninterpreted-context".into(),
+            subject: component.clone(),
+            object: facet,
+            claims: Vec::new(),
+            component,
+            section: "interface".into(),
+            detail: "this imported interface Facet has no stored reading, so claims that depend on it could not be checked; prepare its own source to read it"
+                .into(),
+        });
+    }
+    findings.sort();
+    findings.dedup();
 
     let state = state_of(&findings);
     Report {
         version: REPORT_VERSION,
         source: request.binding.source.clone(),
         identity: Identity {
-            export_digest: request.binding.export_digest.clone(),
+            binding_digest: request.binding.digest(),
             interpretations: interpretations.to_vec(),
             guidance_fingerprint: world.guidance_fingerprint.clone(),
             vocabulary_generation: request.binding.vocabulary_generation,
@@ -340,6 +445,104 @@ pub fn report(
         iterations: world.iterations,
         findings,
         disagreements: None,
+        unread: None,
+        unresolved_imports: None,
+        linked: None,
+    }
+}
+
+/// Build the linked check's report: every law over the joined readings of the
+/// workspace, optionally narrowed to the findings one source authored part of.
+///
+/// Completeness is the workspace's, never the view's: what is unread or
+/// unresolved anywhere keeps the state from reading as a pass.
+// @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ComputedFindings interface
+pub fn linked_report(linked: &Linked, world: &Saturated, view: Option<&str>) -> Report {
+    let mut findings = derive(&linked.request, &linked.facts, world);
+    if let Some(source) = view {
+        let involved = Involvement::new(linked);
+        findings.retain(|f| involved.in_finding(f, source));
+    }
+    let incomplete = !linked.unread.is_empty() || !linked.unresolved_imports.is_empty();
+    let state = match state_of(&findings) {
+        State::Disjoint => State::Disjoint,
+        _ if incomplete => State::Incomplete,
+        state => state,
+    };
+    Report {
+        version: REPORT_VERSION,
+        source: view.unwrap_or(WORKSPACE).to_owned(),
+        identity: Identity {
+            binding_digest: linked.request.binding.digest(),
+            interpretations: linked.memo_keys.clone(),
+            guidance_fingerprint: world.guidance_fingerprint.clone(),
+            vocabulary_generation: linked.request.binding.vocabulary_generation,
+        },
+        state,
+        iterations: world.iterations,
+        findings,
+        disagreements: None,
+        unread: Some(linked.unread.clone()),
+        unresolved_imports: Some(linked.unresolved_imports.clone()),
+        linked: Some(LinkedEvidence {
+            workspace_digest: linked.workspace_digest.clone(),
+            sources: linked.sources.clone(),
+        }),
+    }
+}
+
+/// Record the units an ingest left unread, which keeps its state from reading
+/// as a pass: the design is not checked where nothing was read.
+pub fn mark_unread(report: &mut Report, unread: Vec<Unread>) {
+    if unread.is_empty() {
+        return;
+    }
+    report.unread = Some(unread);
+    if report.state != State::Disjoint {
+        report.state = State::Incomplete;
+    }
+}
+
+/// Which source authored each part a finding can name.
+struct Involvement<'a> {
+    /// Fact id to the source of the Facet it reads.
+    fact_source: BTreeMap<&'a str, &'a str>,
+    /// Entity id to the source that declares it.
+    entity_source: BTreeMap<&'a str, &'a str>,
+}
+
+impl<'a> Involvement<'a> {
+    fn new(linked: &'a Linked) -> Self {
+        let facet_source: BTreeMap<&str, &str> = linked
+            .request
+            .rows
+            .iter()
+            .map(|r| (r.facet.as_str(), r.source.as_str()))
+            .collect();
+        Self {
+            fact_source: linked
+                .facts
+                .iter()
+                .filter_map(|f| Some((f.id.as_str(), *facet_source.get(f.facet.as_str())?)))
+                .collect(),
+            entity_source: linked
+                .request
+                .entities
+                .iter()
+                .map(|e| (e.id.as_str(), e.source.as_str()))
+                .collect(),
+        }
+    }
+
+    /// Whether `source` authored a claim, a component or a Tag the finding names.
+    fn in_finding(&self, finding: &Finding, source: &str) -> bool {
+        finding
+            .claims
+            .iter()
+            .any(|id| self.fact_source.get(id.as_str()) == Some(&source))
+            || [&finding.component, &finding.subject, &finding.object]
+                .iter()
+                .any(|id| self.entity_source.get(id.as_str()) == Some(&source))
     }
 }
 
@@ -363,7 +566,9 @@ fn subject_of(body: &Body) -> String {
         | Body::Measure { subject, .. } => subject.clone(),
         // U2 mints the Step entity these resolve to; until then they have no
         // subject to report, and no finding is built from them.
-        Body::Reading { .. } | Body::Step { .. } | Body::Guard { .. } => String::new(),
+        Body::Reading { .. } | Body::Step { .. } | Body::Guard { .. } | Body::Undeclared { .. } => {
+            String::new()
+        }
     }
 }
 

@@ -1,0 +1,14 @@
+component Fence {
+  goal {
+    Exercise one rule.
+  }
+
+  interface {
+    ```text
+    first
+    ```
+    ```text
+    second
+    ```
+  }
+}

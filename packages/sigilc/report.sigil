@@ -1,18 +1,17 @@
 @packages/sigilc/eqval.sigil from SigilWorldClosure import { DesignObligations, IndependentComparison }
 @packages/sigilc/sources.sigil from SigilSourceIdentity import { SemanticInputs }
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 
 @packages/sigilc/claims.sigil from SigilComputedClaims import { obligation }
 component SigilGateDiagnostics {
   goal {
     Explain *native gate results* to terminal and editor consumers without making a
-    frontend interpret eqval tables or reimplement semantic decisions.
+    consumer interpret eqval tables or reimplement semantic decisions.
   }
 
   constraints {
     NativeFindings {
       Presentation adds no semantic rules, *obligation satisfaction*, worker inputs,
-      projection binding fields or diagnostic history. Frontends consume native named
+      projection binding fields or diagnostic history. Consumers read native named
       states and findings directly, without translating a legacy report.
     }
   }
@@ -43,8 +42,8 @@ component SigilGateDiagnostics {
   interface {
 
     ReportSchema {
-      Native reports use report schema 2, versioned independently from frontend
-      schema 2. Locations distinguish Sigil UTF-8 byte ranges from explicitly
+      Native reports use report schema 2, versioned independently from the structure
+      schema. Locations distinguish Sigil UTF-8 byte ranges from explicitly
       identified *Implementation coordinate units*. Preserve the captured source
       digest
       and available snapshot needed to check freshness.
@@ -61,8 +60,8 @@ component SigilGateDiagnostics {
       Implementation comparison from DesignObligations and IndependentComparison.
       Preserve named states, input identities and
       subcommand-specific exits. Findings describe existing eqval violations,
-      unresolved obligations, SemanticInputs freshness and ResolvedDesignInput
-      diagnostics.
+      unresolved obligations, SemanticInputs freshness and language
+      diagnostics from the source trees.
       Unavailable comparison keeps Implementation unset and explains the missing
       prerequisite; it is never rendered as Drift or a successful comparison.
     }
@@ -70,7 +69,7 @@ component SigilGateDiagnostics {
     Attribution {
       Preserve each finding's *side*, code, severity, message and finite eqval table
       witness. Comparison witnesses retain their exact Design obligation. Resolve
-      authored-unit identities to physical ranges from the frontend; resolve
+      authored-unit identities to physical ranges from the source trees; resolve
       assertion fingerprints to contributing captured source paths. Keep Design
       locations distinct from Implementation locations. Missing source ranges stay
       absent; do not invent code locations or model evidence. For a disagreement,

@@ -25,7 +25,7 @@ identity and glossary meaning are separate. Repeated usage or a model suggestion
 does not automatically become accepted authority.
 
 Make exact authorized JSON changes, preserve unrelated terms and nonoverlapping
-context scopes, then validate. Refresh structural Design export and affected
+context scopes, then validate. Rerun sigilc and refresh affected
 native projections after a glossary change. Existing user authorization persists;
 there is no additional glossary compiler stage or automatic approval gate.
 

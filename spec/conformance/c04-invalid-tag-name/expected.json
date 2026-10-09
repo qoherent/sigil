@@ -1,0 +1,95 @@
+{
+  "exported": true,
+  "sources": [
+    "invalid.sigil"
+  ],
+  "components": [
+    {
+      "source": "invalid.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        113
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "invalid.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "invalid.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        107
+      ],
+      "proseRange": [
+        68,
+        107
+      ],
+      "introductions": [
+        {
+          "name": "request, result",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            74,
+            91
+          ],
+          "nameRange": [
+            75,
+            90
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_INVALID_TAG_NAME",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "invalid.sigil",
+      "range": [
+        75,
+        90
+      ],
+      "related": []
+    }
+  ]
+}

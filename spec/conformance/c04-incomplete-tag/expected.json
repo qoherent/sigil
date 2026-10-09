@@ -1,0 +1,81 @@
+{
+  "exported": true,
+  "sources": [
+    "incomplete.sigil"
+  ],
+  "components": [
+    {
+      "source": "incomplete.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        107
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "incomplete.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "incomplete.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        101
+      ],
+      "proseRange": [
+        68,
+        101
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_INCOMPLETE_TAG",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "incomplete.sigil",
+      "range": [
+        74,
+        80
+      ],
+      "related": []
+    }
+  ]
+}

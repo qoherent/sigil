@@ -1,0 +1,129 @@
+{
+  "exported": true,
+  "sources": [
+    "duplicate.sigil"
+  ],
+  "components": [
+    {
+      "source": "duplicate.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        186
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "duplicate.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "duplicate.sigil",
+      "component": "Case",
+      "section": "logic",
+      "group": null,
+      "range": [
+        64,
+        91
+      ],
+      "proseRange": [
+        64,
+        91
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "duplicate.sigil",
+      "component": "Case",
+      "section": "logic",
+      "group": null,
+      "range": [
+        106,
+        134
+      ],
+      "proseRange": [
+        106,
+        134
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "duplicate.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        153,
+        180
+      ],
+      "proseRange": [
+        153,
+        180
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_DUPLICATE_SECTION",
+      "stage": "structure",
+      "severity": "error",
+      "file": "duplicate.sigil",
+      "range": [
+        56,
+        61
+      ],
+      "related": [
+        {
+          "file": "duplicate.sigil",
+          "range": [
+            98,
+            103
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,9 @@ fn request(roles: &[(&str, &str, &str)]) -> Request {
             section: (*section).to_string(),
             source: SRC.to_string(),
             prose: "prose".to_string(),
+            handle: String::new(),
+            names: Vec::new(),
+            context: false,
         })
         .collect();
     let mut declared: Vec<(String, String)> = rows
@@ -39,10 +42,10 @@ fn request(roles: &[(&str, &str, &str)]) -> Request {
         binding: Binding {
             format: 1,
             source: SRC.to_string(),
-            export_digest: "digest".into(),
+            source_content: "content".into(),
+            interfaces: Vec::new(),
             guidance_fingerprint: "guidance".into(),
             vocabulary_generation: 1,
-            closure: vec![SRC.to_string()],
             facets: rows.iter().map(|r| r.facet.clone()).collect(),
         },
         rows,
@@ -551,22 +554,20 @@ fn the_emitted_program_carries_the_laws_and_only_parsed_values() {
     assert!(text.contains(&format!("(facet \"f1\" {A:?}")));
 }
 
-// ------------------------------------------------- ungrounded claims (P0 fix)
+// ------------------------------------------------- defective claims (P0 fix)
 
 #[test]
-fn an_ungrounded_claim_cannot_manufacture_a_violation_against_an_unrelated_entity() {
-    // A claim naming an entity the Facet never grounds is flagged Ungrounded by
-    // identity::admit (tested in claims_dialect.rs), but must not be allowed to
-    // reach saturation and forge a contradiction, ownership conflict, or
-    // obligation the design never actually stated. Constructed directly with a
-    // defect, mirroring how admit() would have flagged it, since this test
-    // targets the saturation boundary rather than the grounding check itself.
+fn a_defective_claim_cannot_manufacture_a_violation_against_an_unrelated_entity() {
+    // A claim carrying a defect, such as one with the same subject and object,
+    // is flagged by identity::admit (tested in claims_dialect.rs), but must not
+    // be allowed to reach saturation and forge a contradiction, ownership
+    // conflict, or obligation the design never actually stated. Constructed
+    // directly with a defect, mirroring how admit() would have flagged it,
+    // since this test targets the saturation boundary rather than the check.
     let req = request(&[("f1", A, "interface"), ("f2", A, "constraints")]);
 
     let mut forged = claim("f1", "interface", A, "provides", CAP, "required", "true");
-    forged.defects = vec![sigilc::claims::identity::Defect::Ungrounded(
-        CAP.to_string(),
-    )];
+    forged.defects = vec![sigilc::claims::identity::Defect::Degenerate];
     let real = claim("f2", "constraints", A, "provides", CAP, "required", "false");
 
     let world = run(&req, &[forged.clone(), real.clone()]);
@@ -599,9 +600,7 @@ fn an_ungrounded_claim_cannot_manufacture_a_violation_against_an_unrelated_entit
 fn a_defect_carrying_property_or_measure_is_also_excluded_from_the_program() {
     let req = request(&[("f1", A, "state")]);
     let mut prop = property("f1", "state", CAP, "exclusive", "true");
-    prop.defects = vec![sigilc::claims::identity::Defect::Ungrounded(
-        CAP.to_string(),
-    )];
+    prop.defects = vec![sigilc::claims::identity::Defect::Degenerate];
     let text = program::program(&req, std::slice::from_ref(&prop));
     assert!(!text.contains(&prop.id));
 
@@ -1038,6 +1037,32 @@ fn a_governed_step_doing_what_a_constraint_forbids_contradicts_it() {
     assert_eq!(
         step_violations(&world),
         vec![("step-excluded-action".to_string(), CAP.to_string())]
+    );
+}
+
+#[test]
+fn a_ban_binds_its_subject_and_not_every_flow_its_constraint_reaches() {
+    // A's constraint governs A's graph, but the ban is about B, which neither
+    // owns that graph nor depends on its owner.
+    let request = request(&[("f1", A, "constraints"), ("f2", A, "logic")]);
+    let s = step("f2", 1);
+    let world = run(
+        &request,
+        &[
+            claim("f1", "constraints", B, "excludes", CAP, "required", "true"),
+            claim("f1", "constraints", B, "invokes", CAP, "required", "false"),
+            s.clone(),
+            claim("f2", "logic", &s.id, "invokes", CAP, "required", "true"),
+        ],
+    );
+    assert!(
+        !world.table("constraint-governs").is_empty(),
+        "the constraint still reaches A's graph"
+    );
+    assert!(
+        step_violations(&world).is_empty(),
+        "{:?}",
+        step_violations(&world)
     );
 }
 

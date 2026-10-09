@@ -1,0 +1,13 @@
+component Words {
+  goal {
+    Check word boundaries.
+  }
+
+  interface {
+    Tags: *café* and *naïve* and *日本* and *y𝒳* and *a.b*.
+
+    café cafés café-au café. cafe naïve naïvety 日本語 日本 y𝒳 xy𝒳 y𝒳z a.b a.bc.
+
+    A combining café́ mark and Ωcafé and café_ and café٣ and café‿x.
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "exported": true,
+  "sources": [
+    "consumer.sigil",
+    "provider.sigil"
+  ],
+  "components": [
+    {
+      "source": "consumer.sigil",
+      "name": "Consumer",
+      "range": [
+        55,
+        154
+      ],
+      "nameRange": [
+        65,
+        73
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "name": "Provider",
+      "range": [
+        0,
+        140
+      ],
+      "nameRange": [
+        10,
+        18
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "filter",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "query",
+      "identityResolved": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "name": "submit",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "goal",
+      "group": null,
+      "range": [
+        85,
+        114
+      ],
+      "proseRange": [
+        85,
+        114
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "consumer.sigil",
+      "component": "Consumer",
+      "section": "interface",
+      "group": null,
+      "range": [
+        133,
+        148
+      ],
+      "proseRange": [
+        133,
+        148
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "ambiguous",
+          "tag": null,
+          "range": [
+            141,
+            146
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "goal",
+      "group": null,
+      "range": [
+        30,
+        57
+      ],
+      "proseRange": [
+        30,
+        57
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "provider.sigil",
+      "component": "Provider",
+      "section": "interface",
+      "group": null,
+      "range": [
+        76,
+        134
+      ],
+      "proseRange": [
+        76,
+        134
+      ],
+      "introductions": [
+        {
+          "name": "filter",
+          "kind": "inline",
+          "tag": "Provider::filter",
+          "range": [
+            96,
+            104
+          ],
+          "nameRange": [
+            97,
+            103
+          ]
+        },
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Provider::query",
+          "range": [
+            82,
+            89
+          ],
+          "nameRange": [
+            83,
+            88
+          ]
+        },
+        {
+          "name": "submit",
+          "kind": "inline",
+          "tag": "Provider::submit",
+          "range": [
+            111,
+            119
+          ],
+          "nameRange": [
+            112,
+            118
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "consumer.sigil",
+      "target": "provider.sigil",
+      "path": "provider.sigil",
+      "provider": "Provider",
+      "range": [
+        0,
+        54
+      ],
+      "status": "resolved",
+      "names": [
+        {
+          "name": "query",
+          "status": "duplicate",
+          "entity": "Provider::query",
+          "range": [
+            39,
+            44
+          ]
+        },
+        {
+          "name": "query",
+          "status": "duplicate",
+          "entity": "Provider::query",
+          "range": [
+            46,
+            51
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SIGIL_DUPLICATE_TAG_IMPORT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "consumer.sigil",
+      "range": [
+        39,
+        44
+      ],
+      "related": [
+        {
+          "file": "consumer.sigil",
+          "range": [
+            46,
+            51
+          ]
+        }
+      ]
+    }
+  ]
+}

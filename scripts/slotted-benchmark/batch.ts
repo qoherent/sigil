@@ -1,16 +1,26 @@
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DesignInput } from "../../packages/core/src/design-input.ts";
 import {
   type AgentName,
-  INTERPRETATION_PROMPT,
-  runInterpretationAgent,
+  type EffortVerification,
+  type HandbackState,
+  type ModelVerification,
+  orchestratorPrompt,
+  runOrchestrator,
 } from "./agents.ts";
-import { runClaimsAttempt } from "./claims.ts";
 import {
+  type ComputedState,
+  fixtureStateSha256,
+  runPass,
+  type StagedSkill,
+} from "./claims.ts";
+import { copySkill, exists, sha256, treeSha256, writeJson } from "./files.ts";
+import {
+  designViewFromTrees,
   type FixturePreflight,
   preflightSlottedFixture,
   SLOTTED_FIXTURE,
+  type TreeOutput,
 } from "./fixture.ts";
 
 export interface BatchSelection {
@@ -18,12 +28,13 @@ export interface BatchSelection {
   readonly model: string;
 }
 
+/** One pass: one orchestrator runs sigil-compute's whole-design action, then the benchmark checks. */
 export interface ScheduledAttempt extends BatchSelection {
   readonly id: string;
   readonly pass: number;
-  readonly source: string;
 }
 
+/** A pass record. Its `state` is the benchmark's own linked check's. */
 export interface AttemptRecord extends ScheduledAttempt {
   readonly status:
     | "pending"
@@ -34,38 +45,53 @@ export interface AttemptRecord extends ScheduledAttempt {
     | "interrupted";
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
-  readonly state: "coherent" | "loose" | "disjoint" | null;
+  /** The benchmark's own check state; set only on a valid pass. */
+  readonly state: ComputedState | null;
+  /** What the orchestrator handed back, when it handed back a state. */
+  readonly handbackState: HandbackState | null;
   readonly failureStep: string | null;
   readonly error: string | null;
+  /** Units the benchmark's own check reports unread, when it ran. */
+  readonly unreadUnits: number | null;
   readonly observedModels: readonly string[];
-  readonly modelVerification: "observed" | "unverified" | "mixed";
-  readonly presentedFacets: number | null;
-  readonly coveredFacets: number | null;
+  readonly modelVerification: ModelVerification;
+  /** The reasoning effort requested for orchestrator and children. */
+  readonly requestedEffort: string | null;
+  readonly childCount: number | null;
+  readonly childModels: readonly string[];
+  readonly childEfforts: readonly string[];
+  readonly childEffortVerification: EffortVerification;
   readonly outcomePath: string | null;
 }
 
 export interface BatchManifest {
-  readonly version: 1;
+  readonly version: 2;
   readonly createdAt: string;
   readonly fixture: typeof SLOTTED_FIXTURE;
   readonly fixtureSha256: string;
   readonly preflight: FixturePreflight;
   readonly selections: readonly BatchSelection[];
   readonly passes: number;
+  /** Bounds each whole pass. */
   readonly timeoutMs: number;
+  readonly reasoning?: string;
   readonly schedule: readonly ScheduledAttempt[];
   readonly input: {
-    readonly frontendPath: "frontend.json";
-    readonly frontendSha256: string;
+    /** Hash of every resolved tree id, as reported by claims `prepare`. */
+    readonly workspaceDigest?: string;
     readonly sourceSha256: Readonly<Record<string, string>>;
     readonly workspaceMemoPresent: boolean;
+    /** Hash of the fixture's own `.sigil`, which no pass may change. */
+    readonly fixtureStateSha256: string;
   };
   readonly tools: {
     readonly claimsPath: string;
     readonly claimsSha256: string;
-    readonly sigilSha256: string;
+    readonly sigilcSha256?: string;
+    readonly computeSha256: string;
     readonly understandSha256: string;
     readonly egglogSha256: string;
+    /** The orchestrator prompt with its per-host parts left as placeholders. */
     readonly promptSha256: string;
     readonly guidanceFingerprint: string;
     readonly vocabularyGeneration: number;
@@ -76,15 +102,22 @@ export interface BatchOptions {
   readonly selections: readonly BatchSelection[];
   readonly passes: number;
   readonly outputDir: string;
+  /** Bounds each whole pass. */
   readonly timeoutMs: number;
+  readonly reasoning?: string;
   readonly workspaceDir?: string;
-  readonly sigilExecutable?: string;
+  readonly sigilcExecutable?: string;
   readonly claimsExecutable?: string;
   readonly skillDirs?: {
+    readonly computeDir: string;
     readonly understandDir: string;
     readonly egglogDir: string;
   };
   readonly agentExecutables?: Partial<Record<AgentName, string>>;
+  /** Codex: the auth file copied into each pass's scratch CODEX_HOME. */
+  readonly codexAuthPath?: string;
+  /** Pi: the pi-subagents extension entry (untested live). */
+  readonly piSubagentsEntry?: string;
   readonly signal?: AbortSignal;
 }
 
@@ -125,21 +158,50 @@ export function buildSchedule(
   const schedule: ScheduledAttempt[] = [];
   for (const selection of selections) {
     for (let pass = 1; pass <= passes; pass++) {
-      for (const source of SLOTTED_FIXTURE.sources) {
-        schedule.push({
-          id: String(schedule.length + 1).padStart(6, "0"),
-          agent: selection.agent,
-          model: selection.model,
-          pass,
-          source: source.path,
-        });
-      }
+      schedule.push({
+        id: String(schedule.length + 1).padStart(6, "0"),
+        agent: selection.agent,
+        model: selection.model,
+        pass,
+      });
     }
   }
   return schedule;
 }
 
-/** Run the frozen Slotted schedule sequentially, keeping every attempt. */
+/** What a pass record says before the pass has run. */
+export function pendingRecord(planned: ScheduledAttempt): AttemptRecord {
+  return {
+    ...planned,
+    status: "pending",
+    startedAt: null,
+    finishedAt: null,
+    state: null,
+    handbackState: null,
+    failureStep: null,
+    error: null,
+    unreadUnits: null,
+    observedModels: [],
+    modelVerification: "unverified",
+    requestedEffort: null,
+    childCount: null,
+    childModels: [],
+    childEfforts: [],
+    childEffortVerification: "unverified",
+    outcomePath: null,
+  };
+}
+
+/** The prompt with its per-host and per-model parts left as placeholders. */
+export function orchestratorPromptTemplate(): string {
+  return orchestratorPrompt({
+    spawnInstruction: "{spawn}",
+    model: "{model}",
+    effort: "{effort}",
+  });
+}
+
+/** Run the frozen Slotted schedule sequentially, keeping every pass. */
 export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
   const schedule = buildSchedule(options.selections, options.passes);
   const outputDir = resolve(options.outputDir);
@@ -152,44 +214,47 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
 
   const workspaceDir = options.workspaceDir ??
     join(repoRoot, "examples/slotted");
-  const sigil = options.sigilExecutable ?? join(repoRoot, "build/sigil");
+  const sigilc = options.sigilcExecutable ??
+    join(repoRoot, "packages/sigilc/target/debug/sigilc");
   const claims = options.claimsExecutable ??
     join(repoRoot, "packages/sigilc/target/debug/sigil-claims");
   const skills = options.skillDirs ?? {
+    computeDir: join(repoRoot, "integrations/skills/sigil-compute"),
     understandDir: join(repoRoot, "integrations/skills/sigil-understand"),
     egglogDir: join(repoRoot, "integrations/skills/sigil-egglog"),
   };
   await Deno.mkdir(dirname(outputDir), { recursive: true });
   await Deno.mkdir(outputDir);
-  const frontendPath = join(outputDir, "frontend.json");
-  const exportResult = await new Deno.Command(sigil, {
+  const treeResult = await new Deno.Command(sigilc, {
     args: [
-      "export",
-      "design",
-      workspaceDir,
+      "tree",
       "--root",
       workspaceDir,
-      "--format",
-      "json",
+      "--store",
+      join(outputDir, "tree-store"),
     ],
     stdout: "piped",
     stderr: "piped",
   }).output();
   await Promise.all([
-    Deno.writeFile(frontendPath, exportResult.stdout),
-    Deno.writeFile(
-      join(outputDir, "export.stderr.txt"),
-      exportResult.stderr,
-    ),
+    Deno.writeFile(join(outputDir, "tree.json"), treeResult.stdout),
+    Deno.writeFile(join(outputDir, "tree.stderr.txt"), treeResult.stderr),
   ]);
-  if (exportResult.code !== 0) {
+  if (treeResult.code !== 0) {
     throw new Error(
-      `Slotted export failed: ${new TextDecoder().decode(exportResult.stderr)}`,
+      `Slotted tree failed: ${new TextDecoder().decode(treeResult.stderr)}`,
     );
   }
-  const design = JSON.parse(
-    new TextDecoder().decode(exportResult.stdout),
-  ) as DesignInput;
+  const trees = JSON.parse(
+    new TextDecoder().decode(treeResult.stdout),
+  ) as TreeOutput;
+  const sourceTexts: Record<string, string> = {};
+  for (const tree of trees.trees) {
+    sourceTexts[tree.parse.path] = await Deno.readTextFile(
+      join(workspaceDir, tree.parse.path),
+    );
+  }
+  const design = designViewFromTrees(trees, sourceTexts);
 
   const pinned = join(outputDir, "pinned");
   await Deno.mkdir(pinned);
@@ -197,38 +262,47 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
   await Deno.copyFile(claims, pinnedClaims);
   await Deno.chmod(pinnedClaims, 0o755);
   const pinnedSkills = {
+    computeDir: join(pinned, "sigil-compute"),
     understandDir: join(pinned, "sigil-understand"),
     egglogDir: join(pinned, "sigil-egglog"),
   };
+  await copySkill(skills.computeDir, pinnedSkills.computeDir);
   await copySkill(skills.understandDir, pinnedSkills.understandDir);
   await copySkill(skills.egglogDir, pinnedSkills.egglogDir);
+  const skillSha256: Record<StagedSkill, string> = {
+    "sigil-compute": await treeSha256(pinnedSkills.computeDir),
+    "sigil-understand": await treeSha256(pinnedSkills.understandDir),
+    "sigil-egglog": await treeSha256(pinnedSkills.egglogDir),
+  };
 
-  const requests = [];
+  // Preflight: prepare every source once, on a throwaway store, to learn the
+  // workspace digest, guidance and vocabulary a pass's check must report.
   let guidanceFingerprint: string | null = null;
   let vocabularyGeneration: number | null = null;
+  let workspaceDigest: string | null = null;
   for (const source of SLOTTED_FIXTURE.sources) {
     const prepDir = join(
       outputDir,
       "preflight",
       basename(source.path, ".sigil"),
     );
-    const root = join(
+    const store = join(
       outputDir,
-      "preflight-roots",
+      "preflight-stores",
       basename(source.path, ".sigil"),
     );
     await Deno.mkdir(dirname(prepDir), { recursive: true });
     const prepared = await new Deno.Command(pinnedClaims, {
       args: [
         "prepare",
-        "--frontend",
-        frontendPath,
         "--source",
         source.path,
         "--out",
         prepDir,
         "--root",
-        root,
+        workspaceDir,
+        "--store",
+        store,
       ],
       stdout: "piped",
       stderr: "piped",
@@ -248,9 +322,13 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     if (preparedResult.reusedUnits !== 0) {
       throw new Error(`Fixture prepare reused units for ${source.path}`);
     }
-    const request = JSON.parse(
-      await Deno.readTextFile(join(prepDir, "request.json")),
-    );
+    if (
+      workspaceDigest !== null &&
+      workspaceDigest !== preparedResult.workspaceDigest
+    ) {
+      throw new Error("Workspace changed during preflight");
+    }
+    workspaceDigest = preparedResult.workspaceDigest;
     const binding = JSON.parse(
       await Deno.readTextFile(join(prepDir, "binding.json")),
     );
@@ -268,25 +346,23 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     }
     guidanceFingerprint = binding.guidanceFingerprint;
     vocabularyGeneration = binding.vocabularyGeneration;
-    requests.push(request);
   }
-  const preflight = preflightSlottedFixture(design, requests);
+  const preflight = preflightSlottedFixture(design);
   if (!preflight.canSchedule) {
     throw new Error(
       `Slotted source drift: ${preflight.sourceDrift.join("; ")}`,
     );
   }
   const sourceSha256: Record<string, string> = {};
-  for (const source of design.sources) {
-    sourceSha256[source.path] = await sha256(
-      new TextEncoder().encode(source.text),
-    );
+  for (const [path, text] of Object.entries(sourceTexts)) {
+    sourceSha256[path] = await sha256(new TextEncoder().encode(text));
   }
   const fixtureSha256 = await sha256(
     new TextEncoder().encode(JSON.stringify(SLOTTED_FIXTURE)),
   );
+  const fixtureState = await fixtureStateSha256(workspaceDir);
   const manifest: BatchManifest = {
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
     fixture: SLOTTED_FIXTURE,
     fixtureSha256,
@@ -294,23 +370,25 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     selections: options.selections,
     passes: options.passes,
     timeoutMs: options.timeoutMs,
+    ...(options.reasoning ? { reasoning: options.reasoning } : {}),
     schedule,
     input: {
-      frontendPath: "frontend.json",
-      frontendSha256: await sha256(exportResult.stdout),
+      workspaceDigest: workspaceDigest!,
       sourceSha256,
       workspaceMemoPresent: await exists(
         join(workspaceDir, ".sigil/claims/interpretations"),
       ),
+      fixtureStateSha256: fixtureState,
     },
     tools: {
       claimsPath: "pinned/sigil-claims",
       claimsSha256: await sha256(await Deno.readFile(pinnedClaims)),
-      sigilSha256: await sha256(await Deno.readFile(sigil)),
-      understandSha256: await treeSha256(pinnedSkills.understandDir),
-      egglogSha256: await treeSha256(pinnedSkills.egglogDir),
+      sigilcSha256: await sha256(await Deno.readFile(sigilc)),
+      computeSha256: skillSha256["sigil-compute"],
+      understandSha256: skillSha256["sigil-understand"],
+      egglogSha256: skillSha256["sigil-egglog"],
       promptSha256: await sha256(
-        new TextEncoder().encode(INTERPRETATION_PROMPT),
+        new TextEncoder().encode(orchestratorPromptTemplate()),
       ),
       guidanceFingerprint: guidanceFingerprint!,
       vocabularyGeneration: vocabularyGeneration!,
@@ -318,20 +396,7 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
   };
   await writeJson(join(outputDir, "manifest.json"), manifest);
   for (const planned of schedule) {
-    await writeRecord(outputDir, {
-      ...planned,
-      status: "pending",
-      startedAt: null,
-      finishedAt: null,
-      state: null,
-      failureStep: null,
-      error: null,
-      observedModels: [],
-      modelVerification: "unverified",
-      presentedFacets: null,
-      coveredFacets: null,
-      outcomePath: null,
-    });
+    await writeRecord(outputDir, pendingRecord(planned));
   }
 
   for (const planned of schedule) {
@@ -340,30 +405,41 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     const running: AttemptRecord = {
       ...JSON.parse(await Deno.readTextFile(recordPath)),
       status: "running",
+      requestedEffort: options.reasoning ?? null,
       startedAt: new Date().toISOString(),
     };
     await writeRecord(outputDir, running);
     const attemptDir = join(outputDir, "attempts", planned.id);
     try {
-      const outcome = await runClaimsAttempt({
+      const outcome = await runPass({
         executable: pinnedClaims,
-        frontendPath,
-        source: planned.source,
-        privateRoot: join(attemptDir, "private"),
-        preparationDir: join(attemptDir, "prepared"),
+        fixtureRoot: workspaceDir,
+        passDir: join(attemptDir, "pass"),
         evidenceDir: join(attemptDir, "evidence"),
+        skillDirs: pinnedSkills,
+        expected: {
+          workspaceDigest: workspaceDigest!,
+          guidanceFingerprint: guidanceFingerprint!,
+          vocabularyGeneration,
+          fixtureStateSha256: fixtureState,
+          skillSha256,
+        },
+        requestedEffort: options.reasoning ?? null,
         timeoutMs: options.timeoutMs,
         signal: options.signal,
-        interpret: (preparationDir, evidenceDir, timeoutMs) =>
-          runInterpretationAgent({
+        orchestrate: (passDir, binDir, evidenceDir, timeoutMs) =>
+          runOrchestrator({
             agent: planned.agent,
             requestedModel: planned.model,
-            preparationDir,
+            reasoning: options.reasoning,
+            passDir,
+            binDir,
             evidenceDir,
-            skillDirs: pinnedSkills,
             timeoutMs,
             signal: options.signal,
             executable: options.agentExecutables?.[planned.agent],
+            codexAuthPath: options.codexAuthPath,
+            piSubagentsEntry: options.piSubagentsEntry,
           }),
       });
       const outcomePath = join(attemptDir, "outcome.json");
@@ -373,14 +449,17 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
         status: outcome.status,
         finishedAt: new Date().toISOString(),
         state: outcome.state,
+        handbackState: outcome.handbackState,
         failureStep: outcome.failureStep,
         error: outcome.error,
+        unreadUnits: outcome.unreadUnits,
         observedModels: outcome.agent?.observedModels ?? [],
         modelVerification: outcome.agent?.modelVerification ?? "unverified",
-        presentedFacets: Array.isArray(outcome.request?.rows)
-          ? outcome.request.rows.length
-          : null,
-        coveredFacets: outcome.validation?.coveredFacets ?? null,
+        childCount: outcome.agent?.children.count ?? null,
+        childModels: outcome.agent?.children.models ?? [],
+        childEfforts: outcome.agent?.children.efforts ?? [],
+        childEffortVerification: outcome.agent?.children.effortVerification ??
+          "unverified",
         outcomePath: `attempts/${planned.id}/outcome.json`,
       });
     } catch (cause) {
@@ -402,6 +481,11 @@ export async function readBatch(
   const manifest = JSON.parse(
     await Deno.readTextFile(join(outputDir, "manifest.json")),
   ) as BatchManifest;
+  if (manifest.version !== 2) {
+    throw new Error(
+      `${outputDir} was written by an older benchmark (manifest version ${manifest.version}); this one reads version 2 batches`,
+    );
+  }
   const records: AttemptRecord[] = [];
   for (const planned of manifest.schedule) {
     try {
@@ -420,99 +504,9 @@ export async function readBatch(
   return { manifest, records };
 }
 
-function pendingRecord(planned: ScheduledAttempt): AttemptRecord {
-  return {
-    ...planned,
-    status: "pending",
-    startedAt: null,
-    finishedAt: null,
-    state: null,
-    failureStep: null,
-    error: null,
-    observedModels: [],
-    modelVerification: "unverified",
-    presentedFacets: null,
-    coveredFacets: null,
-    outcomePath: null,
-  };
-}
-
 async function writeRecord(
   outputDir: string,
   record: AttemptRecord,
 ): Promise<void> {
   await writeJson(join(outputDir, "records", `${record.id}.json`), record);
-}
-
-async function writeJson(path: string, value: unknown): Promise<void> {
-  await Deno.mkdir(dirname(path), { recursive: true });
-  const temp = `${path}.${crypto.randomUUID()}.tmp`;
-  await Deno.writeTextFile(temp, `${JSON.stringify(value, null, 2)}\n`);
-  await Deno.rename(temp, path);
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await Deno.stat(path);
-    return true;
-  } catch (cause) {
-    if (cause instanceof Deno.errors.NotFound) return false;
-    throw cause;
-  }
-}
-
-async function sha256(bytes: Uint8Array): Promise<string> {
-  const stable = new Uint8Array(bytes.length);
-  stable.set(bytes);
-  const digest = new Uint8Array(
-    await crypto.subtle.digest("SHA-256", stable.buffer),
-  );
-  return Array.from(digest).map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function copySkill(source: string, destination: string): Promise<void> {
-  await Deno.mkdir(destination, { recursive: true });
-  for (const file of ["SKILL.md", "VERSION"]) {
-    try {
-      await Deno.copyFile(join(source, file), join(destination, file));
-    } catch (cause) {
-      if (file === "VERSION" && cause instanceof Deno.errors.NotFound) {
-        continue;
-      }
-      throw cause;
-    }
-  }
-  await copyTree(join(source, "references"), join(destination, "references"));
-}
-
-async function copyTree(source: string, destination: string): Promise<void> {
-  await Deno.mkdir(destination, { recursive: true });
-  for await (const entry of Deno.readDir(source)) {
-    const from = join(source, entry.name);
-    const to = join(destination, entry.name);
-    if (entry.isDirectory) await copyTree(from, to);
-    else if (entry.isFile) await Deno.copyFile(from, to);
-    else throw new Error(`Unsupported skill entry: ${from}`);
-  }
-}
-
-async function treeSha256(root: string): Promise<string> {
-  const rows: string[] = [];
-  async function visit(dir: string, prefix: string): Promise<void> {
-    const entries = [];
-    for await (const entry of Deno.readDir(dir)) entries.push(entry);
-    entries.sort((a, b) => a.name.localeCompare(b.name));
-    for (const entry of entries) {
-      const name = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory) await visit(join(dir, entry.name), name);
-      else if (entry.isFile) {
-        rows.push(
-          `${name}:${await sha256(await Deno.readFile(join(dir, entry.name)))}`,
-        );
-      }
-    }
-  }
-  await visit(root, "");
-  return sha256(new TextEncoder().encode(rows.join("\n")));
 }

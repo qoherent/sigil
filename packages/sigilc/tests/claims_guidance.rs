@@ -157,7 +157,9 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
     // Fields of the request the interpreter reads, as opposed to rows it
     // returns. The document has to name them to explain what it is shown, and
     // they are deliberately not accepted as row names.
-    let request_fields = ["flows", "rows"];
+    let request_fields = [
+        "flows", "rows", "handle", "names", "context", "imports", "entities",
+    ];
     // Values a column takes, as opposed to names the vocabulary publishes: a
     // starting ordinal, the guard operand kinds, and the reference forms a row
     // uses to name a step or a graph.
@@ -177,6 +179,10 @@ fn published_vocabulary_and_compiled_constants_agree_in_both_directions() {
             || literals.contains(&token.as_str())
             || vocabulary::GUARD_OPERANDS.contains(&token.as_str())
             || token.starts_with(vocabulary::STEP_REF)
+            || token
+                .trim_matches('"')
+                .starts_with(vocabulary::HANDLE_PREFIX)
+            || token == "\"context\": true"
             || token.starts_with('<')
             || token.starts_with('(');
         assert!(
@@ -435,7 +441,11 @@ code:
                 // A step names no entity of its own, and a guard's operands are
                 // an ordinal, a literal or a Facet -- none of them the entity
                 // reference this check is about.
-                Row::Reading { .. } | Row::Step { .. } | Row::Guard { .. } => vec![],
+                Row::Reading { .. }
+                | Row::Step { .. }
+                | Row::Guard { .. }
+                | Row::End { .. }
+                | Row::Undeclared { .. } => vec![],
             };
             for name in names {
                 // A step ordinal and the graph reference are not entities; the

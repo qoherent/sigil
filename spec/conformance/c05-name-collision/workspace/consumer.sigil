@@ -1,0 +1,11 @@
+@provider.sigil from Provider import { query }
+
+component Consumer {
+  goal {
+    Use provider vocabulary.
+  }
+
+  interface {
+    A *query* of our own and query.
+  }
+}

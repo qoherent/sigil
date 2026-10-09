@@ -2,26 +2,38 @@ import {
   deepStrictEqual as deepEqual,
   strictEqual as equal,
 } from "node:assert/strict";
+import { exists } from "./files.ts";
 import {
   buildSchedule,
+  orchestratorPromptTemplate,
+  pendingRecord,
   readBatch,
   runBatch,
   validateSelections,
 } from "./batch.ts";
 
-Deno.test("two agent/model combinations across three passes schedule 42 distinct attempts", () => {
+Deno.test("two agent/model combinations across three passes schedule six distinct passes", () => {
   const schedule = buildSchedule([
     { agent: "claude", model: "sonnet" },
     { agent: "codex", model: "gpt-6" },
   ], 3);
-  equal(schedule.length, 42);
-  equal(new Set(schedule.map((attempt) => attempt.id)).size, 42);
+  equal(schedule.length, 6);
+  equal(new Set(schedule.map((attempt) => attempt.id)).size, 6);
   deepEqual(
     new Set(schedule.map((attempt) => attempt.pass)),
     new Set([1, 2, 3]),
   );
   for (const pass of [1, 2, 3]) {
-    equal(schedule.filter((attempt) => attempt.pass === pass).length, 14);
+    equal(schedule.filter((attempt) => attempt.pass === pass).length, 2);
+  }
+});
+
+Deno.test("one selection and two passes schedule two whole-design passes with no per-source work", () => {
+  const schedule = buildSchedule([{ agent: "claude", model: "sonnet" }], 2);
+  equal(schedule.length, 2);
+  deepEqual(schedule.map((attempt) => attempt.pass), [1, 2]);
+  for (const attempt of schedule) {
+    equal("sources" in attempt, false);
   }
 });
 
@@ -51,7 +63,7 @@ Deno.test("invalid passes, unknown agents, and duplicate selections fail before 
   }
 });
 
-Deno.test("frozen batch retains seven pending records when cancelled before launches", async () => {
+Deno.test("frozen batch retains one pending pass record when cancelled before launches", async () => {
   const outputDir = await Deno.makeTempDir({ prefix: "slotted-batch-test-" });
   await Deno.remove(outputDir);
   const controller = new AbortController();
@@ -65,42 +77,54 @@ Deno.test("frozen batch retains seven pending records when cancelled before laun
       signal: controller.signal,
     });
     const retained = await readBatch(outputDir);
-    equal(manifest.schedule.length, 7);
-    equal(retained.records.length, 7);
+    equal(manifest.schedule.length, 1);
+    equal(retained.records.length, 1);
+    equal(manifest.version, 2);
     equal(
       retained.records.every((record) => record.status === "pending"),
       true,
     );
-    equal(
-      manifest.preflight.issues.every((issue) => issue.status === "scorable"),
-      true,
+    // The linked check reads every source's private sections, so the
+    // ownership problem Rooms states in its state section is scorable.
+    deepEqual(
+      manifest.preflight.issues.map((issue) => issue.status),
+      ["scorable", "scorable", "scorable", "scorable"],
     );
     equal(Object.keys(manifest.input.sourceSha256).length, 7);
     equal(manifest.input.workspaceMemoPresent, false);
+    equal(typeof manifest.input.fixtureStateSha256, "string");
+    // The staged skills and the prompt template are pinned by hash.
+    for (
+      const key of [
+        "computeSha256",
+        "understandSha256",
+        "egglogSha256",
+        "promptSha256",
+        "claimsSha256",
+      ] as const
+    ) {
+      equal(/^[0-9a-f]{64}$/.test(manifest.tools[key]), true, key);
+    }
+    equal(
+      orchestratorPromptTemplate().includes("skills/sigil-compute/SKILL.md"),
+      true,
+    );
+    for (const skill of ["sigil-compute", "sigil-understand", "sigil-egglog"]) {
+      await Deno.stat(`${outputDir}/pinned/${skill}/SKILL.md`);
+    }
 
     await Deno.remove(`${outputDir}/records/${manifest.schedule[0].id}.json`);
     const recovered = await readBatch(outputDir);
-    equal(recovered.records.length, 7);
-    deepEqual(recovered.records[0], {
-      ...manifest.schedule[0],
-      status: "pending",
-      startedAt: null,
-      finishedAt: null,
-      state: null,
-      failureStep: null,
-      error: null,
-      observedModels: [],
-      modelVerification: "unverified",
-      presentedFacets: null,
-      coveredFacets: null,
-      outcomePath: null,
-    });
+    equal(recovered.records.length, 1);
+    deepEqual(recovered.records[0], pendingRecord(manifest.schedule[0]));
+    equal(recovered.records[0].unreadUnits, null);
+    equal(recovered.records[0].childEffortVerification, "unverified");
   } finally {
     await Deno.remove(outputDir, { recursive: true });
   }
 });
 
-Deno.test("existing output directory is refused before export or child launch", async () => {
+Deno.test("existing output directory is refused before the tree read or child launch", async () => {
   const outputDir = await Deno.makeTempDir({
     prefix: "slotted-existing-batch-",
   });
@@ -112,7 +136,7 @@ Deno.test("existing output directory is refused before export or child launch", 
         passes: 1,
         outputDir,
         timeoutMs: 1000,
-        sigilExecutable: "/missing/sigil",
+        sigilcExecutable: "/missing/sigilc",
       });
     } catch (cause) {
       message = String(cause);
@@ -136,6 +160,7 @@ Deno.test("missing pinned skill fails before scheduling attempts", async () => {
         outputDir: `${root}/batch`,
         timeoutMs: 1000,
         skillDirs: {
+          computeDir: "integrations/skills/sigil-compute",
           understandDir: missing,
           egglogDir: "integrations/skills/sigil-egglog",
         },
@@ -151,12 +176,21 @@ Deno.test("missing pinned skill fails before scheduling attempts", async () => {
   }
 });
 
-async function exists(path: string): Promise<boolean> {
+Deno.test("a batch written by an older benchmark is refused by name", async () => {
+  const root = await Deno.makeTempDir({ prefix: "slotted-old-batch-" });
   try {
-    await Deno.stat(path);
-    return true;
-  } catch (cause) {
-    if (cause instanceof Deno.errors.NotFound) return false;
-    throw cause;
+    await Deno.writeTextFile(
+      `${root}/manifest.json`,
+      JSON.stringify({ version: 1, schedule: [] }),
+    );
+    let message = "";
+    try {
+      await readBatch(root);
+    } catch (error) {
+      message = String(error);
+    }
+    equal(message.includes("manifest version 1"), true, message);
+  } finally {
+    await Deno.remove(root, { recursive: true });
   }
-}
+});

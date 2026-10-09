@@ -1,0 +1,13 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  notes {
+    Not a section.
+  }
+
+  interface {
+    Offer one interaction.
+  }
+}

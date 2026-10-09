@@ -1,0 +1,26 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  interface {
+    A *query* contains text.
+
+    A `*other*` contains text.
+
+    A *third*.
+
+    (*fourth*)
+
+    prefix*fifth*suffix
+
+    quantity * unitPrice * discount
+
+    See [*query*](./api.md) and ![query](./layout.svg) and [query](unfinished here.
+
+    Introduce the sample with a query reference.
+    ```text
+    query stays payload
+    ```
+  }
+}

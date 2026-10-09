@@ -1,0 +1,21 @@
+component Links {
+  goal {
+    Resolve links.
+  }
+
+  interface {
+    A *docs* link [one](https://x.test/a&amp;b&#35;c&bogus;d&#x26;e&#0;f&#128;g "t&amp;") and
+    [two](<./a b.md> 'x') and ![img](a.png (t)) then [broken](a b) and \[no](x).
+
+    Intro [a](u "covered {
+    by title") stays prose and
+    [b](v "x {
+    y") also {
+    wide {
+      group.
+    }
+
+    Another docs line [x
+    y](z) tail [nested [inner](i) outer](o).
+  }
+}

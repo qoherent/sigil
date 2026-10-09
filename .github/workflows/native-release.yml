@@ -105,8 +105,7 @@ jobs:
           "$claims" --version
           cp /fixtures/project/main.sigil /tmp/fixture/main.sigil
           cp /fixtures/project/fixture-config.json /tmp/fixture/.sigil/config.json
-          "$cli" export design /tmp/fixture --root /tmp/fixture > /tmp/frontend.json
-          "$compiler" compile design --root /tmp/fixture --frontend /tmp/frontend.json | grep -q '"state": "Loose"'
+          "$compiler" compile design --root /tmp/fixture | grep -q '"state": "Loose"'
           EOF
       - uses: actions/upload-artifact@v4
         with:

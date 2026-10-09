@@ -1,0 +1,109 @@
+{
+  "exported": true,
+  "sources": [
+    "order.sigil"
+  ],
+  "components": [
+    {
+      "source": "order.sigil",
+      "name": "Order",
+      "range": [
+        0,
+        141
+      ],
+      "nameRange": [
+        10,
+        15
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "order.sigil",
+      "component": "Order",
+      "section": "goal",
+      "group": null,
+      "range": [
+        27,
+        54
+      ],
+      "proseRange": [
+        27,
+        54
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "order.sigil",
+      "component": "Order",
+      "section": "interface",
+      "group": null,
+      "range": [
+        73,
+        100
+      ],
+      "proseRange": [
+        73,
+        100
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "order.sigil",
+      "component": "Order",
+      "section": "state",
+      "group": null,
+      "range": [
+        115,
+        135
+      ],
+      "proseRange": [
+        115,
+        135
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_SECTION_ORDER",
+      "stage": "structure",
+      "severity": "error",
+      "file": "order.sigil",
+      "range": [
+        107,
+        112
+      ],
+      "related": [
+        {
+          "file": "order.sigil",
+          "range": [
+            61,
+            70
+          ]
+        }
+      ]
+    }
+  ]
+}

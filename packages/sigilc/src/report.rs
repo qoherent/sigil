@@ -3,9 +3,9 @@ use crate::{
     comparison::Comparison,
     design::{DesignReport, SourceStatus},
     eqval::DesignWorld,
-    frontend::{DesignInput, Range},
     implementation::ImplementationReport,
     store::Freshness,
+    structure::{DesignInput, Range},
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -27,7 +27,7 @@ pub fn unavailable_comparison() -> Diagnostics {
             witness: None,
         }],
         omitted: 0,
-        frontend: Vec::new(),
+        language: Vec::new(),
     }
 }
 
@@ -35,9 +35,9 @@ pub fn unavailable_comparison() -> Diagnostics {
 pub struct Diagnostics {
     pub items: Vec<Finding>,
     pub omitted: usize,
-    /// Complete frontend diagnostics retain stages and related source evidence.
+    /// Complete language diagnostics retain stages and related source evidence.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub frontend: Vec<crate::frontend::Diagnostic>,
+    pub language: Vec<crate::structure::Diagnostic>,
 }
 #[derive(Debug, Serialize)]
 pub struct Location {
@@ -49,7 +49,7 @@ pub struct Location {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_digest: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub implementation_range: Option<crate::frontend::ImplementationRange>,
+    pub implementation_range: Option<crate::structure::ImplementationRange>,
 }
 #[derive(Debug, Serialize)]
 pub struct Finding {
@@ -275,7 +275,7 @@ pub fn design(
             },
         ));
     }
-    result.frontend = input
+    result.language = input
         .diagnostics
         .iter()
         .take(MAX_FINDINGS)
@@ -286,9 +286,9 @@ pub fn design(
             code: diagnostic.code.clone(),
             side: "design",
             severity: match diagnostic.severity {
-                crate::frontend::Severity::Error => "error",
-                crate::frontend::Severity::Warning => "warning",
-                crate::frontend::Severity::Info => "info",
+                crate::structure::Severity::Error => "error",
+                crate::structure::Severity::Warning => "warning",
+                crate::structure::Severity::Info => "info",
             },
             message: diagnostic.message.clone(),
             locations: diagnostic

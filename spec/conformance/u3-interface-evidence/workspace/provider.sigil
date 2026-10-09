@@ -1,0 +1,17 @@
+component Provider {
+  goal {
+    Own vocabulary.
+  }
+
+  logic {
+    The *hidden* rule applies only inside.
+  }
+
+  interface {
+    Offers *shown* and nothing else.
+
+    exported {
+      Grouped facet.
+    }
+  }
+}

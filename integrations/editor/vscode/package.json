@@ -119,11 +119,6 @@
           "default": "ask",
           "description": "Default compilation focus used by editor commands."
         },
-        "sigil.compile.languageExecutable": {
-          "type": "string",
-          "default": "sigil",
-          "description": "Path to the language CLI providing export design."
-        },
         "sigil.compile.selection": {
           "type": "string",
           "default": "",

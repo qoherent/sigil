@@ -1,0 +1,61 @@
+{
+  "exported": true,
+  "sources": [
+    "goal.sigil"
+  ],
+  "components": [
+    {
+      "source": "goal.sigil",
+      "name": "Goalless",
+      "range": [
+        0,
+        82
+      ],
+      "nameRange": [
+        10,
+        18
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "goal.sigil",
+      "component": "Goalless",
+      "section": "interface",
+      "group": null,
+      "range": [
+        49,
+        76
+      ],
+      "proseRange": [
+        49,
+        76
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_MISSING_GOAL",
+      "stage": "structure",
+      "severity": "error",
+      "file": "goal.sigil",
+      "range": [
+        21,
+        30
+      ],
+      "related": []
+    }
+  ]
+}

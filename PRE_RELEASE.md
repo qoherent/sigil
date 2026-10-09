@@ -1,13 +1,14 @@
 # Sigil pre-release status
 
-Sigil remains a pre-production 0.x toolchain. The language frontend, native
+Sigil remains a pre-production 0.x toolchain. The language packages, native
 compiler, skill, LSP and editor have independent versions owned by their manifests.
 The legacy skill's [compatibility metadata](integrations/skills/sigil/compatibility.json)
 declares supported language, CLI, core and sigilc combinations.
 
 Current architecture:
 
-- The language frontend owns parsing, resolution, inspection and structural export.
+- The TypeScript packages own parsing, resolution and inspection for editors
+  and the CLI; `sigilc` reads `.sigil` sources itself for compilation.
 - Rust `sigilc` owns source identity, disposable worlds, fixed semantic rules,
   ordered scope, catalogs and Design/Implementation reports.
 - The 0.9 design skills guide source-based understanding, writing and review;

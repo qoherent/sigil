@@ -1,0 +1,15 @@
+component Wide {
+  goal {
+    Check width.
+  }
+
+  interface {
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx *tag* tail.
+    word word word word word word word word word word word word word word word word word word overflow here
+    See [a link](uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu) and short.
+    [one](https://example.test/pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp) end of this line is quite far past the limit
+    ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé
+    éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé
+    *ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt* inside.
+  }
+}

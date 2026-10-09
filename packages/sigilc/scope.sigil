@@ -1,4 +1,3 @@
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 @packages/sigilc/sources.sigil from SigilSourceIdentity import { CompilerInputSelection, SemanticInputs }
 
 component SigilComparisonScope {
@@ -55,7 +54,7 @@ component SigilComparisonScope {
       selected roots in the reported order without maintaining a second
       focus-priority table. Selecting roots A then B reports A first. Reprioritizing
       B then A reports B first without invalidating otherwise identical per-source
-      projections. Repeated runs preserve order even when frontend or filesystem
+      projections. Repeated runs preserve order even when filesystem
       enumeration changes. The caller still establishes which interpretation is
       complete.
 
@@ -76,10 +75,10 @@ component SigilComparisonScope {
     ScopeInput {
       Accept a versioned scope containing ordered workspace-relative Design root
       paths and CompilerInputSelection. Design roots name authored Sigil
-      files in the validated ResolvedDesignInput bundle. Reject unknown
+      files in the workspace root. Reject unknown
       fields, duplicate roots, missing roots, paths outside the workspace, and
       accidental empty selection. Intentional emptiness is explicit for each side and
-      visible in the result. Without an explicit scope, retain full frontend Design
+      visible in the result. Without an explicit scope, retain full Design
       membership and ordinary Implementation selection. Reject conflicting selection
       inputs.
     }
@@ -87,7 +86,7 @@ component SigilComparisonScope {
     FocusOrder {
       Preserve the caller's *explicit root order* as focus priority. Do not sort it
       away during normalization or replace it with filesystem discovery order. Return
-      that order from scoped commands so the frontend and caller can see what to
+      that order from scoped commands so the caller can see what to
       address first and next without a temporary priority table. Report dependency
       additions deterministically after the requested roots, retaining their
       inclusion reasons without displacing explicit priorities. Identify requested
@@ -98,7 +97,7 @@ component SigilComparisonScope {
     }
 
     DesignMembership {
-      Resolve Design *roots* through frontend imports and structural ownership to a
+      Resolve Design *roots* through imports and structural ownership to a
       closed set of physical files. Include transitive import targets and owner
       declarations required by selected Tags and Facets. Terminate cycles with a
       visited set. Preserve every authored unit in each included file with its
@@ -106,15 +105,14 @@ component SigilComparisonScope {
       files included by dependency closure. Included dependency files participate in
       Design compilation and catalog construction, rather than supplying hidden
       comparison assumptions. Do not silently drop unresolved references or errors.
-      When unresolved imports require conservative full-bundle membership, report
-      that widening. Preserve applicable configuration, glossary context and global
-      diagnostics. Do not infer source membership from temporary prose or caller
-      metadata.
+      An unresolved import invalidates only its own source. Preserve applicable
+      configuration, glossary context and global diagnostics. Do not infer source
+      membership from temporary prose or caller metadata.
     }
 
     ScopedComparison {
       Expose scope inspection without requiring reconstructed projections or a
-      current catalog. Return current input identities and retained frontend
+      current catalog. Return current input identities and retained language
       diagnostics; inspection success is not a completed semantic gate. Use the same
       resolved scope for freshness inspection, preparation, ingestion, Design
       compilation, catalog export and Implementation comparison. Require per-source

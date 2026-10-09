@@ -1,0 +1,604 @@
+{
+  "exported": true,
+  "sources": [
+    "a.sigil",
+    "imp.sigil",
+    "target.sigil"
+  ],
+  "components": [
+    {
+      "source": "a.sigil",
+      "name": "Target",
+      "range": [
+        0,
+        93
+      ],
+      "nameRange": [
+        10,
+        16
+      ],
+      "identityResolved": false,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "imp.sigil",
+      "name": "Imp",
+      "range": [
+        309,
+        384
+      ],
+      "nameRange": [
+        319,
+        322
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "target.sigil",
+      "name": "Target",
+      "range": [
+        0,
+        93
+      ],
+      "nameRange": [
+        10,
+        16
+      ],
+      "identityResolved": false,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "a.sigil",
+      "component": "Target",
+      "section": "goal",
+      "group": null,
+      "range": [
+        28,
+        40
+      ],
+      "proseRange": [
+        28,
+        40
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "a.sigil",
+      "component": "Target",
+      "section": "interface",
+      "group": null,
+      "range": [
+        58,
+        87
+      ],
+      "proseRange": [
+        58,
+        87
+      ],
+      "introductions": [
+        {
+          "name": "one",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            70,
+            75
+          ],
+          "nameRange": [
+            71,
+            74
+          ]
+        },
+        {
+          "name": "two",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            80,
+            85
+          ],
+          "nameRange": [
+            81,
+            84
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "imp.sigil",
+      "component": "Imp",
+      "section": "goal",
+      "group": null,
+      "range": [
+        334,
+        347
+      ],
+      "proseRange": [
+        334,
+        347
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "imp.sigil",
+      "component": "Imp",
+      "section": "interface",
+      "group": null,
+      "range": [
+        365,
+        378
+      ],
+      "proseRange": [
+        365,
+        378
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "target.sigil",
+      "component": "Target",
+      "section": "goal",
+      "group": null,
+      "range": [
+        28,
+        40
+      ],
+      "proseRange": [
+        28,
+        40
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "target.sigil",
+      "component": "Target",
+      "section": "interface",
+      "group": null,
+      "range": [
+        58,
+        87
+      ],
+      "proseRange": [
+        58,
+        87
+      ],
+      "introductions": [
+        {
+          "name": "one",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            70,
+            75
+          ],
+          "nameRange": [
+            71,
+            74
+          ]
+        },
+        {
+          "name": "two",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            80,
+            85
+          ],
+          "nameRange": [
+            81,
+            84
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "imp.sigil",
+      "target": "a.sigil",
+      "path": "a.sigil",
+      "provider": "Target",
+      "range": [
+        0,
+        42
+      ],
+      "status": "unresolved-provider",
+      "names": [
+        {
+          "name": "one",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            30,
+            33
+          ]
+        },
+        {
+          "name": "two",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            35,
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": null,
+      "path": "b.sigil",
+      "provider": "Target",
+      "range": [
+        42,
+        87
+      ],
+      "status": "unresolved-path",
+      "names": [
+        {
+          "name": "one",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            72,
+            75
+          ]
+        },
+        {
+          "name": "",
+          "status": "invalid",
+          "entity": null,
+          "range": [
+            77,
+            77
+          ]
+        },
+        {
+          "name": "three",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            79,
+            84
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": null,
+      "path": "c.sigil",
+      "provider": "Target",
+      "range": [
+        87,
+        130
+      ],
+      "status": "unresolved-path",
+      "names": [
+        {
+          "name": "x",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            117,
+            118
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": null,
+      "path": "../out.sigil",
+      "provider": "Target",
+      "range": [
+        130,
+        169
+      ],
+      "status": "unresolved-path",
+      "names": [
+        {
+          "name": "x",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            165,
+            166
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": null,
+      "path": "missing.sigil",
+      "provider": "Target",
+      "range": [
+        169,
+        209
+      ],
+      "status": "unresolved-path",
+      "names": [
+        {
+          "name": "x",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            205,
+            206
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": "target.sigil",
+      "path": "target.sigil",
+      "provider": "Nobody",
+      "range": [
+        209,
+        248
+      ],
+      "status": "unresolved-provider",
+      "names": [
+        {
+          "name": "x",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            244,
+            245
+          ]
+        }
+      ]
+    },
+    {
+      "source": "imp.sigil",
+      "target": "target.sigil",
+      "path": "target.sigil",
+      "provider": "Target",
+      "range": [
+        248,
+        309
+      ],
+      "status": "unresolved-provider",
+      "names": [
+        {
+          "name": "one",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            283,
+            286
+          ]
+        },
+        {
+          "name": "bad*name",
+          "status": "invalid",
+          "entity": null,
+          "range": [
+            288,
+            296
+          ]
+        },
+        {
+          "name": "one",
+          "status": "unresolved",
+          "entity": null,
+          "range": [
+            298,
+            301
+          ]
+        },
+        {
+          "name": "*two*",
+          "status": "invalid",
+          "entity": null,
+          "range": [
+            303,
+            308
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SIGIL_DUPLICATE_COMPONENT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "a.sigil",
+      "range": [
+        10,
+        16
+      ],
+      "related": [
+        {
+          "file": "target.sigil",
+          "range": [
+            10,
+            16
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORT_PATH",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        131,
+        143
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        14,
+        20
+      ],
+      "related": [
+        {
+          "file": "a.sigil",
+          "range": [
+            10,
+            16
+          ]
+        },
+        {
+          "file": "target.sigil",
+          "range": [
+            10,
+            16
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORT_PATH",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        170,
+        183
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        228,
+        234
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        248,
+        309
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORTED_COMPONENT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        267,
+        273
+      ],
+      "related": [
+        {
+          "file": "a.sigil",
+          "range": [
+            10,
+            16
+          ]
+        },
+        {
+          "file": "target.sigil",
+          "range": [
+            10,
+            16
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        42,
+        87
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORT_PATH",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        43,
+        50
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        87,
+        130
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNRESOLVED_IMPORT_PATH",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "imp.sigil",
+      "range": [
+        88,
+        95
+      ],
+      "related": []
+    }
+  ]
+}

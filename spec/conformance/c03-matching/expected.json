@@ -1,0 +1,246 @@
+{
+  "exported": true,
+  "sources": [
+    "matching.sigil"
+  ],
+  "components": [
+    {
+      "source": "matching.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        306
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "name": "C++",
+      "identityResolved": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "name": "order",
+      "identityResolved": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "name": "query",
+      "identityResolved": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "name": "search results",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        131
+      ],
+      "proseRange": [
+        68,
+        131
+      ],
+      "introductions": [
+        {
+          "name": "C++",
+          "kind": "inline",
+          "tag": "Case::C++",
+          "range": [
+            91,
+            96
+          ],
+          "nameRange": [
+            92,
+            95
+          ]
+        },
+        {
+          "name": "order",
+          "kind": "inline",
+          "tag": "Case::order",
+          "range": [
+            79,
+            86
+          ],
+          "nameRange": [
+            80,
+            85
+          ]
+        },
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Case::query",
+          "range": [
+            101,
+            108
+          ],
+          "nameRange": [
+            102,
+            107
+          ]
+        },
+        {
+          "name": "search results",
+          "kind": "inline",
+          "tag": "Case::search results",
+          "range": [
+            113,
+            129
+          ],
+          "nameRange": [
+            114,
+            128
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        132,
+        198
+      ],
+      "proseRange": [
+        132,
+        198
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "order",
+          "status": "resolved",
+          "tag": "Case::order",
+          "range": [
+            140,
+            145
+          ]
+        },
+        {
+          "name": "order",
+          "status": "resolved",
+          "tag": "Case::order",
+          "range": [
+            178,
+            183
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        199,
+        233
+      ],
+      "proseRange": [
+        199,
+        233
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "C++",
+          "status": "resolved",
+          "tag": "Case::C++",
+          "range": [
+            207,
+            210
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "matching.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        234,
+        300
+      ],
+      "proseRange": [
+        234,
+        300
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "search results",
+          "status": "resolved",
+          "tag": "Case::search results",
+          "range": [
+            268,
+            282
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

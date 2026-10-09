@@ -1,0 +1,10 @@
+component Case {
+  goal {
+    Exercise one rule.
+  }
+
+  interface {
+    A *query
+    continues here.
+  }
+}

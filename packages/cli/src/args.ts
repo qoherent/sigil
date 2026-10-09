@@ -3,7 +3,6 @@ export type CommandName =
   | "init"
   | "version"
   | "parse"
-  | "export"
   | "check"
   | "fmt"
   | "glossary"
@@ -33,7 +32,6 @@ export type CommandRequest =
   | InitRequest
   | VersionRequest
   | ParseRequest
-  | ExportDesignRequest
   | CheckRequest
   | FmtRequest
   | GlossaryRequest
@@ -63,10 +61,6 @@ export interface VersionRequest extends GlobalOptions {
 export interface ParseRequest extends GlobalOptions {
   readonly command: "parse";
   readonly file: string;
-}
-export interface ExportDesignRequest extends GlobalOptions {
-  readonly command: "export-design";
-  readonly path?: string;
 }
 export interface CheckRequest extends GlobalOptions {
   readonly command: "check";
@@ -130,7 +124,7 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
     return usage(
       commandName
         ? `Unknown command "${commandName}".`
-        : "Expected command: skill, init, version, parse, export, check, fmt, glossary, graph, context, retrieve, or render.",
+        : "Expected command: skill, init, version, parse, check, fmt, glossary, graph, context, retrieve, or render.",
       "root",
     );
   }
@@ -412,21 +406,6 @@ export function parseArgs(argv: readonly string[]): ParseArgsResult {
       },
     };
   }
-  if (commandName === "export") {
-    if (positional[0] !== "design" || positional.length > 2) {
-      return usage("Expected export design [path].", "export");
-    }
-    if (quiet || (format !== undefined && format !== "json")) {
-      return usage(
-        "export design requires JSON output and does not accept --quiet.",
-        "export",
-      );
-    }
-    return {
-      kind: "ok",
-      request: { command: "export-design", path: positional[1], ...base },
-    };
-  }
   if (commandName === "version") {
     if (positional.length > 1) {
       return usage("version accepts at most one path.", "version");
@@ -550,7 +529,6 @@ function isCommand(value: string | undefined): value is CommandName {
   return value === "skill" || value === "init" ||
     value === "version" ||
     value === "parse" ||
-    value === "export" ||
     value === "check" || value === "fmt" || value === "glossary" ||
     value === "graph" ||
     value === "context" ||

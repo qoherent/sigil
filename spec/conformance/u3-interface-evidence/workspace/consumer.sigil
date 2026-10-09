@@ -1,0 +1,11 @@
+@provider.sigil from Provider import { hidden, shown, exported }
+
+component Consumer {
+  goal {
+    Use shown and exported.
+  }
+
+  interface {
+    Mentions hidden here.
+  }
+}

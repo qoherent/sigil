@@ -1,4 +1,3 @@
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 @packages/sigilc/turtle.sigil from SigilTurtleInput import { FixedOntology }
 @packages/sigilc/catalog.sigil from SigilEntityCatalog import { FrozenIdentity }
 
@@ -46,13 +45,12 @@ component SigilSourceIdentity {
       and projection format, and the FrozenIdentity catalog fingerprint.
       Selection and
       neighboring source changes do not invalidate that object. Design additionally
-      binds the conservative transitive resolved import closure and required
-      structural owners, frontend schema, language version, artifact version, and all
-      structural relation arrays, and applicable config and glossary bytes including
-      absence. Cycles terminate with a visited set. Unresolved imports conservatively
-      bind the entire selected Design set. Recheck frontend source and context bytes
-      from ResolvedDesignInput against the filesystem before accepting the bundle as
-      a current snapshot.
+      binds the source's resolved tree id and the interface hashes of the
+      components it imports, plus applicable config and glossary bytes including
+      absence. A dependent sees only imported interfaces, so a dependency's
+      internal change that leaves its interface hash alone does not invalidate it.
+      An unresolved import invalidates only its own source. Recheck source and
+      context bytes against the filesystem before accepting a snapshot as current.
       Capture membership separately from the reusable per-source key. No production
       metadata enters either key.
     }

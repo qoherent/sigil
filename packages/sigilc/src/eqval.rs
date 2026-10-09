@@ -53,7 +53,7 @@ pub struct DesignWorld {
     pub closure: SaturatedWorld,
 }
 
-/// Required units come from the validated frontend, never from model output.
+/// Required units come from the validated structure, never from model output.
 pub fn design(
     assertions: &[Assertion],
     required_units: &[[String; 2]],

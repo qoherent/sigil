@@ -1,15 +1,24 @@
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { type AttemptRecord, type BatchManifest, readBatch } from "./batch.ts";
+import {
+  type AttemptRecord,
+  type BatchManifest,
+  pendingRecord,
+  readBatch,
+} from "./batch.ts";
+import { exists } from "./files.ts";
 import type { IssuePreflight } from "./fixture.ts";
 
 type JsonObject = Record<string, unknown>;
 export interface ReportAttempt {
   readonly record: AttemptRecord;
   readonly outcome: JsonObject | null;
-  readonly rowsText: string | null;
 }
 
 interface FindingAnalysis {
+  /** True once the pass is valid, so its findings from the benchmark's own check are scored. */
+  readonly scored: boolean;
+  /** Planted problems whose anchor Facets were unread in this pass. */
+  readonly unavailable: ReadonlySet<string>;
   readonly matched: ReadonlyMap<string, readonly number[]>;
   readonly extra: readonly number[];
   readonly findings: readonly JsonObject[];
@@ -22,7 +31,6 @@ export async function writeReport(batchDir: string): Promise<string> {
   const attempts: ReportAttempt[] = [];
   for (const record of records) {
     let outcome: JsonObject | null = null;
-    let rowsText: string | null = null;
     if (record.outcomePath) {
       try {
         outcome = object(
@@ -33,53 +41,37 @@ export async function writeReport(batchDir: string): Promise<string> {
       } catch {
         // The record remains visible; the missing artifact is a reportable limit.
       }
-      const child = object(outcome?.agent);
-      if (typeof child?.finalResponsePath === "string") {
-        const canonicalPath = resolve(
-          batchDir,
-          "attempts",
-          record.id,
-          "evidence",
-          "child",
-          "final-response.txt",
-        );
-        const canonicalRows = await readFileIfPresent(canonicalPath);
-        rowsText = canonicalRows?.text ?? null;
+      // The outcome holds absolute paths from where the batch was run. The
+      // check's files live in the pass's private store, so point at them there.
+      const claimsDir = resolve(
+        batchDir,
+        "attempts",
+        record.id,
+        "pass",
+        "store",
+        "claims",
+      );
+      const linked = object(outcome?.linked);
+      const linkedResult = object(linked?.result);
+      if (outcome && linked && linkedResult) {
+        const reportPath = join(claimsDir, "workspace.linked.json");
+        const contextPath = join(claimsDir, "workspace.linked.context.json");
         outcome = {
-          ...outcome!,
-          agent: {
-            ...child,
-            finalResponsePath: canonicalRows?.path ?? null,
+          ...outcome,
+          linked: {
+            ...linked,
+            result: {
+              ...linkedResult,
+              report: await exists(reportPath) ? reportPath : null,
+              judgmentContext: await exists(contextPath) ? contextPath : null,
+            },
           },
         };
       }
-      const ingest = object(outcome?.ingestResult);
-      if (ingest) {
-        const privateClaimsDir = resolve(
-          batchDir,
-          "attempts",
-          record.id,
-          "private",
-          ".sigil",
-          "claims",
-        );
-        const reportPath = join(privateClaimsDir, `${record.source}.json`);
-        const contextPath = join(
-          privateClaimsDir,
-          `${record.source}.context.json`,
-        );
-        const report = await pathExists(reportPath) ? reportPath : null;
-        const judgmentContext = await pathExists(contextPath)
-          ? contextPath
-          : null;
-        outcome = {
-          ...outcome!,
-          ingestResult: { ...ingest, report, judgmentContext },
-        };
-      }
     }
-    const hasEvidence = outcome && object(outcome.report) &&
-      object(outcome.context) && rowsText !== null;
+    const linked = object(outcome?.linked);
+    const hasEvidence = outcome && object(linked?.report) &&
+      object(linked?.context);
     attempts.push({
       record: record.status === "valid" && !hasEvidence
         ? {
@@ -87,11 +79,10 @@ export async function writeReport(batchDir: string): Promise<string> {
           status: "invalid",
           state: null,
           failureStep: "evidence",
-          error: "retained outcome or rows missing",
+          error: "retained outcome missing",
         }
         : record,
       outcome,
-      rowsText,
     });
   }
   const path = join(batchDir, "report.md");
@@ -140,25 +131,9 @@ export function renderReport(
   batchDir = ".",
 ): string {
   const byId = new Map(attempts.map((attempt) => [attempt.record.id, attempt]));
-  const ordered = manifest.schedule.map((planned) =>
-    byId.get(planned.id) ?? {
-      record: {
-        ...planned,
-        status: "pending",
-        startedAt: null,
-        finishedAt: null,
-        state: null,
-        failureStep: null,
-        error: null,
-        observedModels: [],
-        modelVerification: "unverified",
-        presentedFacets: null,
-        coveredFacets: null,
-        outcomePath: null,
-      } as AttemptRecord,
-      outcome: null,
-      rowsText: null,
-    }
+  const ordered: ReportAttempt[] = manifest.schedule.map((planned) =>
+    byId.get(planned.id) ??
+      { record: pendingRecord(planned), outcome: null }
   );
   const analysis = new Map(
     ordered.map((
@@ -169,7 +144,12 @@ export function renderReport(
     "# Slotted interpretation benchmark",
     "",
     `Batch created: ${manifest.createdAt}. Fixture version: ${manifest.fixture.version}.`,
-    `Captured export SHA-256: \`${manifest.input.frontendSha256}\`.`,
+    manifest.input.workspaceDigest
+      ? `Workspace digest: \`${manifest.input.workspaceDigest}\`.`
+      : "Workspace digest: not recorded.",
+    manifest.reasoning
+      ? `Requested reasoning effort: ${manifest.reasoning}. Each pass is bounded by ${manifest.timeoutMs} ms.`
+      : `No reasoning effort requested (each host's default). Each pass is bounded by ${manifest.timeoutMs} ms.`,
     "",
     manifest.fixture.description,
     "",
@@ -221,46 +201,42 @@ export function renderReport(
     "",
     "## Runs",
     "",
-    "One row per scheduled source attempt. A running record from an ended controller is shown as interrupted.",
+    "One row per scheduled pass. A pass runs one orchestrator process that carries out sigil-compute's whole-design action, re-asks included, with fresh children. The benchmark then runs `sigil-claims check` itself on the pass's private store; the linked state and the planted problems are scored from that report, never from what the agent handed back. A pass is invalid when the agent's hand-back disagrees with that check, a child ran at an effort other than the requested one, or the evidence does not validate. A pass ended by a timeout is interrupted: its partial evidence is kept and it is not scored. A planted problem whose anchor Facets were still unread is N/A for that pass. A running record from an ended controller is shown as interrupted.",
     "",
-    "| # | Agent | Requested model | Observed model | Pass | Source | Validity | State | Planted findings | Additional findings | Facet coverage | Evidence |",
-    "| --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | --- |",
+    "| # | Agent | Requested model | Observed model | Reasoning | Pass | Status | Linked state | Handed back | Planted findings | Additional findings | Unread units | Children | Evidence |",
+    "| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | --- | --- |",
   );
   for (const attempt of ordered) {
     const record = attempt.record;
     const finding = analysis.get(record.id)!;
-    const relevant = manifest.preflight.issues.filter((issue) =>
-      issue.anchors[0]?.source === record.source
-    );
-    const planted = relevant.map((issue) =>
+    const planted = manifest.preflight.issues.map((issue) =>
       issue.status === "drift"
+        ? `${issue.id}: N/A`
+        : !finding.scored
+        ? ""
+        : finding.unavailable.has(issue.id)
         ? `${issue.id}: N/A`
         : finding.matched.has(issue.id)
         ? issue.id
         : ""
     ).filter(Boolean).join(", ") || "—";
-    const coverage = record.presentedFacets === null
-      ? "—"
-      : `${record.coveredFacets ?? 0}/${record.presentedFacets}`;
     const evidence = [`[record](records/${record.id}.json)`];
     if (record.outcomePath) {
       evidence.push(`[outcome](${record.outcomePath})`);
+      evidence.push(
+        `[prompt](attempts/${record.id}/evidence/prompt.txt)`,
+        `[host events](attempts/${record.id}/evidence/stdout.jsonl)`,
+        `[pass directory](attempts/${record.id}/pass)`,
+      );
     }
-    const child = object(attempt.outcome?.agent);
-    if (typeof child?.finalResponsePath === "string") {
-      const link = relativeLink(batchDir, child.finalResponsePath);
-      if (link) {
-        evidence.push(`[rows](${link})`);
-      }
-    }
-    const ingest = object(attempt.outcome?.ingestResult);
+    const linked = object(object(attempt.outcome?.linked)?.result);
     for (
-      const [label, key] of [["native report", "report"], [
-        "context",
+      const [label, key] of [["linked report", "report"], [
+        "linked context",
         "judgmentContext",
       ]] as const
     ) {
-      const link = relativeLink(batchDir, ingest?.[key]);
+      const link = relativeLink(batchDir, linked?.[key]);
       if (link) {
         evidence.push(`[${label}](${link})`);
       }
@@ -268,13 +244,13 @@ export function renderReport(
     lines.push(
       `| ${record.id} | ${cell(record.agent)} | ${cell(record.model)} | ${
         observed(record)
-      } | ${record.pass} | \`${record.source}\` | ${
+      } | ${cell(record.requestedEffort ?? "default")} | ${record.pass} | ${
         record.status === "running" ? "interrupted" : record.status
-      } | ${record.status === "valid" ? record.state : "—"} | ${
-        cell(planted)
-      } | ${
-        record.status === "valid" ? finding.extra.length : "—"
-      } | ${coverage} | ${evidence.join(", ")} |`,
+      } | ${finding.scored ? record.state : "—"} | ${
+        cell(record.handbackState ?? "—")
+      } | ${cell(planted)} | ${finding.scored ? finding.extra.length : "—"} | ${
+        record.unreadUnits ?? "—"
+      } | ${children(record)} | ${evidence.join(", ")} |`,
     );
   }
 
@@ -283,13 +259,16 @@ export function renderReport(
     "",
     "## Agent and model comparison",
     "",
-    "Counts are observations on this captured Slotted snapshot. Detection, additional findings, and repeatability are separate measures; there is no overall rank.",
+    "Counts are observations on this captured Slotted snapshot. Detection, additional findings and unread units are separate measures; there is no overall rank. Detection counts only valid passes whose anchor Facets were read.",
     "",
-    "| Agent | Requested model | Observed model | Source | Scheduled | Valid | Failed / invalid / interrupted / pending | States among valid | Planted problem detection | Additional finding frequencies (identity runs/valid) | Facet coverage |",
+    "| Agent | Requested model | Observed model | Reasoning | Passes | Valid | Failed / invalid / interrupted / pending | Linked states | Planted problem detection | Additional finding frequencies (identity passes/scored) | Unread units (scored passes) |",
     "| --- | --- | --- | --- | ---: | ---: | --- | --- | --- | --- | ---: |",
   );
   for (const group of groups) {
     const valid = group.filter((attempt) => attempt.record.status === "valid");
+    const scored = group.filter((attempt) =>
+      analysis.get(attempt.record.id)!.scored
+    );
     const sample = group[0].record;
     const counts = [
       group.filter((attempt) => attempt.record.status === "failed").length,
@@ -300,36 +279,41 @@ export function renderReport(
       ).length,
       group.filter((attempt) => attempt.record.status === "pending").length,
     ];
-    const states = ["coherent", "loose", "disjoint"].map((state) =>
+    const states = ["coherent", "loose", "disjoint", "incomplete"].map((
+      state,
+    ) =>
       `${state} ${
-        valid.filter((attempt) => attempt.record.state === state).length
+        scored.filter((attempt) => attempt.record.state === state).length
       }`
     ).join(", ");
-    const relevant = manifest.preflight.issues.filter((issue) =>
-      issue.anchors[0]?.source === sample.source
+    const detections = manifest.preflight.issues.map((issue) => {
+      if (issue.status === "drift") return `${issue.id}: N/A`;
+      const available = scored.filter((attempt) =>
+        !analysis.get(attempt.record.id)!.unavailable.has(issue.id)
+      );
+      const found = available.filter((attempt) =>
+        analysis.get(attempt.record.id)!.matched.has(issue.id)
+      ).length;
+      const withheld = scored.length - available.length;
+      return `${issue.id}: ${found}/${available.length}${
+        withheld ? ` (${withheld} unavailable)` : ""
+      }`;
+    }).join("; ") || "—";
+    const extraTotal = scored.reduce(
+      (sum, attempt) => sum + analysis.get(attempt.record.id)!.extra.length,
+      0,
     );
-    const detections = relevant.map((issue) =>
-      `${issue.id}: ${
-        issue.status === "drift"
-          ? "N/A"
-          : `${
-            valid.filter((attempt) =>
-              analysis.get(attempt.record.id)!.matched.has(issue.id)
-            ).length
-          }/${valid.length}`
-      }`
-    ).join("; ") || "—";
-    const extraTotal = valid.reduce((sum, attempt) =>
-      sum + analysis.get(attempt.record.id)!.extra.length, 0);
-    const extraFrequencies = additionalFindingFrequencies(valid, analysis);
-    const covered = group.reduce((sum, attempt) =>
-      sum + (attempt.record.coveredFacets ?? 0), 0);
-    const presented = group.reduce((sum, attempt) =>
-      sum + (attempt.record.presentedFacets ?? 0), 0);
+    const extraFrequencies = additionalFindingFrequencies(scored, analysis);
+    const unread = scored.reduce(
+      (sum, attempt) => sum + (attempt.record.unreadUnits ?? 0),
+      0,
+    );
     lines.push(
       `| ${cell(sample.agent)} | ${cell(sample.model)} | ${
         observed(sample)
-      } | \`${sample.source}\` | ${group.length} | ${valid.length} | ${
+      } | ${
+        cell(sample.requestedEffort ?? "default")
+      } | ${group.length} | ${valid.length} | ${
         counts.join(" / ")
       } | ${states} | ${cell(detections)} | ${
         cell(
@@ -337,36 +321,37 @@ export function renderReport(
             extraFrequencies.join("; ") || "no additional findings"
           }`,
         )
-      } | ${presented ? `${covered}/${presented}` : "—"} |`,
+      } | ${scored.length ? unread : "—"} |`,
     );
   }
 
   lines.push("", "## Planted finding evidence", "");
   let knownCount = 0;
   for (const attempt of ordered) {
-    if (attempt.record.status !== "valid") continue;
-    const matched = analysis.get(attempt.record.id)!.matched;
-    for (const [issueId, indices] of matched) {
+    const analyzed = analysis.get(attempt.record.id)!;
+    if (!analyzed.scored) continue;
+    for (const [issueId, indices] of analyzed.matched) {
       knownCount++;
-      const reportLink =
-        relativeLink(batchDir, object(attempt.outcome?.ingestResult)?.report) ??
-          attempt.record.outcomePath;
+      const reportLink = relativeLink(
+        batchDir,
+        object(object(attempt.outcome?.linked)?.result)?.report,
+      ) ?? attempt.record.outcomePath;
       lines.push(
-        `- Attempt ${attempt.record.id}, \`${issueId}\`: native finding ${
+        `- Attempt ${attempt.record.id}, \`${issueId}\`: linked finding ${
           indices.map((index) => index + 1).join(", ")
         } ([report](${reportLink})).`,
       );
     }
   }
   if (!knownCount) {
-    lines.push("No planted findings were detected in valid attempts.");
+    lines.push("No planted findings were detected in scored passes.");
   }
 
   lines.push("", "## Additional findings for review", "");
   let extraCount = 0;
   for (const attempt of ordered) {
-    if (attempt.record.status !== "valid") continue;
     const analyzed = analysis.get(attempt.record.id)!;
+    if (!analyzed.scored) continue;
     for (const index of analyzed.extra) {
       const finding = analyzed.findings[index];
       extraCount++;
@@ -381,52 +366,11 @@ export function renderReport(
       );
     }
   }
-  if (!extraCount) lines.push("No additional findings in valid attempts.");
+  if (!extraCount) lines.push("No additional findings in scored passes.");
 
-  lines.push("", "## Variation across valid repeated runs", "");
-  let varied = 0;
-  for (const group of groups) {
-    const valid = group.filter((attempt) =>
-      attempt.record.status === "valid" && attempt.rowsText !== null
-    );
-    if (valid.length < 2) continue;
-    const rowMaps = valid.map((attempt) => rowsByFacet(attempt.rowsText!));
-    const facets = [...new Set(rowMaps.flatMap((map) => [...map.keys()]))]
-      .sort();
-    for (const facet of facets) {
-      const versions = rowMaps.map((map) =>
-        (map.get(facet) ?? []).slice().sort().join("\n")
-      );
-      if (new Set(versions).size <= 1) continue;
-      varied++;
-      const sample = valid[0].record;
-      lines.push(
-        `### ${sample.agent} / ${sample.model} / ${sample.source} / ${facet}`,
-        "",
-      );
-      for (let index = 0; index < valid.length; index++) {
-        const attempt = valid[index];
-        lines.push(
-          `<details><summary>Attempt ${attempt.record.id}, pass ${attempt.record.pass} — <a href="attempts/${attempt.record.id}/evidence/child/final-response.txt">original rows</a></summary>`,
-          "",
-          "```egglog",
-          versions[index] || "(no row)",
-          "```",
-          "",
-          "</details>",
-          "",
-        );
-      }
-    }
-  }
-  if (!varied) {
-    lines.push(
-      "No differing Facet rows among groups with at least two valid saved interpretations.",
-    );
-  }
   lines.push(
     "",
-    "Additional findings need review before they can be called interpretation errors. This report describes only the saved attempts on the captured snapshot.",
+    "Additional findings need review before they can be called interpretation errors. This report describes only the saved passes on the captured snapshot.",
     "",
   );
   return lines.join("\n");
@@ -436,18 +380,29 @@ function analyze(
   attempt: ReportAttempt,
   issues: readonly IssuePreflight[],
 ): FindingAnalysis {
-  const findings = array(object(attempt.outcome?.report)?.findings).map(object)
+  const linked = object(attempt.outcome?.linked);
+  const report = object(linked?.report);
+  const findings = array(report?.findings).map(object)
     .filter((entry): entry is JsonObject => entry !== null);
-  if (attempt.record.status !== "valid") {
+  // A pass is scored when it is valid: the benchmark's own check validated and
+  // the agent agreed. A check that reports the workspace incomplete still
+  // scores what was read.
+  if (
+    attempt.record.status !== "valid" || !report ||
+    object(linked?.validation)?.valid !== true
+  ) {
     return {
+      scored: false,
+      unavailable: new Set(),
       matched: new Map(),
       extra: [],
       findings,
       claimFacet: new Map(),
     };
   }
+  // Claims of every source map to their Facets through the linked context.
   const claimFacet = new Map<string, string>();
-  for (const unit of array(object(attempt.outcome?.context)?.units)) {
+  for (const unit of array(object(linked?.context)?.units)) {
     const row = object(unit);
     if (typeof row?.facet !== "string") continue;
     for (const asserted of array(row.asserted)) {
@@ -455,13 +410,31 @@ function analyze(
       if (typeof claim === "string") claimFacet.set(claim, row.facet);
     }
   }
+  const unreadFacets = new Set<string>();
+  const unreadSources = new Set<string>();
+  for (const entry of array(report.unread)) {
+    const unread = object(entry);
+    if (!unread) continue;
+    const facets = array(unread.facets).filter((facet): facet is string =>
+      typeof facet === "string"
+    );
+    for (const facet of facets) unreadFacets.add(facet);
+    if (facets.length === 0 && typeof unread.source === "string") {
+      unreadSources.add(unread.source);
+    }
+  }
+  const unavailable = new Set<string>();
   const matched = new Map<string, number[]>();
   const consumed = new Set<number>();
   for (const issue of issues) {
+    if (issue.status !== "scorable") continue;
     if (
-      issue.status !== "scorable" ||
-      issue.anchors[0]?.source !== attempt.record.source
-    ) continue;
+      issue.facets.some((facet) => unreadFacets.has(facet)) ||
+      issue.anchors.some((anchor) => unreadSources.has(anchor.source))
+    ) {
+      unavailable.add(issue.id);
+      continue;
+    }
     const indices: number[] = [];
     for (let index = 0; index < findings.length; index++) {
       if (matchesIssue(findings[index], issue, claimFacet)) {
@@ -472,6 +445,8 @@ function analyze(
     if (indices.length) matched.set(issue.id, indices);
   }
   return {
+    scored: true,
+    unavailable,
     matched,
     extra: findings.map((_, index) => index).filter((index) =>
       !consumed.has(index)
@@ -556,9 +531,9 @@ function groupAttempts(attempts: readonly ReportAttempt[]): ReportAttempt[][] {
     const key = JSON.stringify([
       r.agent,
       r.model,
+      r.requestedEffort,
       r.modelVerification,
       [...r.observedModels].sort(),
-      r.source,
     ]);
     const group = groups.get(key) ?? [];
     group.push(attempt);
@@ -567,52 +542,24 @@ function groupAttempts(attempts: readonly ReportAttempt[]): ReportAttempt[][] {
   return [...groups.values()];
 }
 
-function rowsByFacet(text: string): Map<string, string[]> {
-  const rows = new Map<string, string[]>();
-  let start = -1;
-  let depth = 0;
-  let quoted = false;
-  let escape = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (escape) escape = false;
-      else if (ch === "\\") escape = true;
-      else if (ch === '"') quoted = false;
-      continue;
-    }
-    if (ch === '"') {
-      quoted = true;
-      continue;
-    }
-    if (ch === "(") {
-      if (depth === 0) start = i;
-      depth++;
-    }
-    if (ch === ")" && depth > 0) {
-      depth--;
-      if (depth === 0 && start >= 0) {
-        const expression = text.slice(start, i + 1);
-        const match = /^\(\s*[a-z-]+\s+("(?:\\.|[^"\\])*")/.exec(expression);
-        if (match) {
-          try {
-            const facet = JSON.parse(match[1]);
-            const entries = rows.get(facet) ?? [];
-            entries.push(expression);
-            rows.set(facet, entries);
-          } catch { /* Native ingest already validates the artifact. */ }
-        }
-        start = -1;
-      }
-    }
-  }
-  return rows;
-}
-
 function observed(record: AttemptRecord): string {
   return record.observedModels.length
     ? `${cell(record.observedModels.join(", "))} (${record.modelVerification})`
     : "unverified";
+}
+function children(record: AttemptRecord): string {
+  if (record.childCount === null && record.childModels.length === 0) {
+    return "not shown";
+  }
+  const models = record.childModels.length
+    ? cell(record.childModels.join(", "))
+    : "model unobserved";
+  const efforts = record.childEfforts.length
+    ? `${
+      cell(record.childEfforts.join(", "))
+    } (${record.childEffortVerification})`
+    : "effort unverified";
+  return `${record.childCount ?? "?"} × ${models} / ${efforts}`;
 }
 function cell(value: unknown): string {
   return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
@@ -629,25 +576,4 @@ function relativeLink(batchDir: string, value: unknown): string | null {
   if (typeof value !== "string") return null;
   const rel = relative(resolve(batchDir), resolve(value));
   return rel && rel !== ".." && !rel.startsWith(`..${sep}`) ? rel : null;
-}
-
-async function readFileIfPresent(
-  path: string,
-): Promise<{ path: string; text: string } | null> {
-  try {
-    return { path, text: await Deno.readTextFile(path) };
-  } catch (cause) {
-    if (cause instanceof Deno.errors.NotFound) return null;
-    throw cause;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await Deno.stat(path);
-    return true;
-  } catch (cause) {
-    if (cause instanceof Deno.errors.NotFound) return false;
-    throw cause;
-  }
 }

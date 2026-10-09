@@ -1,0 +1,623 @@
+{
+  "exported": true,
+  "sources": [
+    "recover.sigil"
+  ],
+  "components": [
+    {
+      "source": "recover.sigil",
+      "name": "One",
+      "range": [
+        13,
+        536
+      ],
+      "nameRange": [
+        23,
+        26
+      ],
+      "identityResolved": false,
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "name": "One",
+      "range": [
+        536,
+        655
+      ],
+      "nameRange": [
+        546,
+        549
+      ],
+      "identityResolved": false,
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "tags": [],
+  "groups": [
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "name": "bad name,",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        151,
+        198
+      ],
+      "headerRange": [
+        151,
+        167
+      ],
+      "bodyRange": [
+        167,
+        192
+      ],
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "name": "outer",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        198,
+        254
+      ],
+      "headerRange": [
+        198,
+        210
+      ],
+      "bodyRange": [
+        210,
+        248
+      ],
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "name": "inner",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        210,
+        248
+      ],
+      "headerRange": [
+        210,
+        224
+      ],
+      "bodyRange": [
+        224,
+        240
+      ],
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "name": "empty",
+      "tag": null,
+      "section": "interface",
+      "range": [
+        254,
+        272
+      ],
+      "headerRange": [
+        254,
+        266
+      ],
+      "bodyRange": [
+        266,
+        266
+      ],
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "goal",
+      "group": null,
+      "range": [
+        38,
+        54
+      ],
+      "proseRange": [
+        38,
+        54
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "goal",
+      "group": null,
+      "range": [
+        67,
+        84
+      ],
+      "proseRange": [
+        67,
+        84
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": null,
+      "range": [
+        102,
+        151
+      ],
+      "proseRange": [
+        102,
+        151
+      ],
+      "introductions": [
+        {
+          "name": "tag",
+          "kind": "inline",
+          "tag": null,
+          "range": [
+            136,
+            141
+          ],
+          "nameRange": [
+            137,
+            140
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": "bad name,",
+      "range": [
+        167,
+        192
+      ],
+      "proseRange": [
+        167,
+        192
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": "inner",
+      "range": [
+        224,
+        240
+      ],
+      "proseRange": [
+        224,
+        240
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": null,
+      "range": [
+        316,
+        332
+      ],
+      "proseRange": [
+        316,
+        332
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": null,
+      "range": [
+        382,
+        447
+      ],
+      "proseRange": [
+        382,
+        401
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": {
+        "type": null,
+        "range": [
+          401,
+          447
+        ],
+        "bodyRange": [
+          410,
+          438
+        ],
+        "openingRange": [
+          401,
+          410
+        ],
+        "closingRange": [
+          438,
+          447
+        ],
+        "fenceLength": 4,
+        "rawBody": "    four ``` inside\n    ```\n"
+      },
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": null,
+      "range": [
+        447,
+        498
+      ],
+      "proseRange": [
+        447,
+        464
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": {
+        "type": "bad type!",
+        "range": [
+          464,
+          498
+        ],
+        "bodyRange": [
+          481,
+          490
+        ],
+        "openingRange": [
+          464,
+          481
+        ],
+        "closingRange": [
+          490,
+          498
+        ],
+        "fenceLength": 3,
+        "rawBody": "    body\n"
+      },
+      "valid": false,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "state",
+      "group": null,
+      "range": [
+        512,
+        530
+      ],
+      "proseRange": [
+        512,
+        530
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "goal",
+      "group": null,
+      "range": [
+        561,
+        586
+      ],
+      "proseRange": [
+        561,
+        586
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "recover.sigil",
+      "component": "One",
+      "section": "interface",
+      "group": null,
+      "range": [
+        604,
+        655
+      ],
+      "proseRange": [
+        604,
+        630
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": {
+        "type": null,
+        "range": [
+          630,
+          655
+        ],
+        "bodyRange": [
+          638,
+          655
+        ],
+        "openingRange": [
+          630,
+          638
+        ],
+        "closingRange": null,
+        "fenceLength": 3,
+        "rawBody": "    never closed\n"
+      },
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        0,
+        11
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_PARSE_STRUCTURE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        11,
+        13
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_INVALID_TAG_NAME",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        155,
+        164
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_NESTED_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        210,
+        224
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            198,
+            210
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_DUPLICATE_COMPONENT",
+      "stage": "resolution",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        23,
+        26
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            546,
+            549
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_EMPTY_TAG_GROUP",
+      "stage": "structure",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        254,
+        266
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_LITERAL_WITHOUT_INTRODUCTION",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        272,
+        282
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_DUPLICATE_SECTION",
+      "stage": "structure",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        31,
+        35
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            60,
+            64
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_DETACHED_LITERAL_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        333,
+        349
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            316,
+            332
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_INVALID_LITERAL_TYPE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        340,
+        348
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_INVALID_LITERAL_TYPE",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        471,
+        480
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_SECTION_ORDER",
+      "stage": "structure",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        504,
+        509
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            90,
+            99
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_INCOMPLETE_TAG",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        617,
+        629
+      ],
+      "related": []
+    },
+    {
+      "code": "SIGIL_UNCLOSED_LITERAL_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "recover.sigil",
+      "range": [
+        630,
+        638
+      ],
+      "related": [
+        {
+          "file": "recover.sigil",
+          "range": [
+            655,
+            655
+          ]
+        }
+      ]
+    }
+  ]
+}

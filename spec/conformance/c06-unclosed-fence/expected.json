@@ -1,0 +1,106 @@
+{
+  "exported": true,
+  "sources": [
+    "unclosed.sigil"
+  ],
+  "components": [
+    {
+      "source": "unclosed.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        135
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "unclosed.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "unclosed.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        135
+      ],
+      "proseRange": [
+        68,
+        95
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": {
+        "type": "text",
+        "range": [
+          95,
+          135
+        ],
+        "bodyRange": [
+          107,
+          135
+        ],
+        "openingRange": [
+          95,
+          107
+        ],
+        "closingRange": null,
+        "fenceLength": 3,
+        "rawBody": "    component Fake {\n\n  }\n}\n"
+      },
+      "valid": false,
+      "complete": false
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_UNCLOSED_LITERAL_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "unclosed.sigil",
+      "range": [
+        95,
+        107
+      ],
+      "related": [
+        {
+          "file": "unclosed.sigil",
+          "range": [
+            135,
+            135
+          ]
+        }
+      ]
+    }
+  ]
+}

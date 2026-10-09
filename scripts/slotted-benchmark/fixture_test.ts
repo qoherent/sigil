@@ -3,15 +3,13 @@ import {
   match as assertMatch,
   ok as assert,
 } from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import {
-  type DesignInput,
-  InMemorySigilFileSystem,
-  loadDesignInput,
-} from "../../packages/core/src/mod.ts";
-import {
+  type DesignView,
+  designViewFromTrees,
   preflightSlottedFixture,
-  type PreparedFacetRequest,
   SLOTTED_FIXTURE,
+  type TreeOutput,
 } from "./fixture.ts";
 
 const sourcePaths = [
@@ -23,73 +21,122 @@ const sourcePaths = [
   "booking.sigil",
   "calendar.sigil",
 ];
+const exe = Deno.build.os === "windows" ? ".exe" : "";
+const sigilc = fileURLToPath(
+  new URL(`../../packages/sigilc/target/debug/sigilc${exe}`, import.meta.url),
+);
+const claims = fileURLToPath(
+  new URL(
+    `../../packages/sigilc/target/debug/sigil-claims${exe}`,
+    import.meta.url,
+  ),
+);
 
-async function snapshot(
+async function run(
+  executable: string,
+  args: string[],
+  code = 0,
+): Promise<string> {
+  const output = await new Deno.Command(executable, {
+    args,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(
+    output.code,
+    code,
+    `${args.join(" ")}: ${new TextDecoder().decode(output.stderr)}`,
+  );
+  return stdout;
+}
+
+/** A temporary Slotted workspace, optionally edited before use. */
+async function slottedWorkspace(
   change?: (files: Record<string, string>) => void,
-): Promise<{ design: DesignInput; prepared: PreparedFacetRequest[] }> {
-  const files: Record<string, string> = {
-    ".sigil/config.json": JSON.stringify({
-      sigilVersion: "0.9.0",
-      workspace: { name: "slotted" },
-      files: { include: ["**/*.sigil"] },
-    }),
-  };
+): Promise<{ root: string; files: Record<string, string> }> {
+  const root = await Deno.makeTempDir({ prefix: "slotted-fixture-" });
+  const files: Record<string, string> = {};
   for (const path of sourcePaths) {
     files[path] = await Deno.readTextFile(
       new URL(`../../examples/slotted/${path}`, import.meta.url),
     );
   }
   change?.(files);
-  const { bundle } = await loadDesignInput(
-    new InMemorySigilFileSystem(files),
-    { startPath: "." },
+  await Deno.mkdir(`${root}/.sigil`);
+  await Deno.writeTextFile(
+    `${root}/.sigil/config.json`,
+    JSON.stringify({
+      sigilVersion: "0.9.0",
+      workspace: { name: "slotted" },
+      files: { include: ["**/*.sigil"] },
+    }),
   );
-  assert(bundle, "Slotted export must be available");
-  const sourceByModule = new Map(
-    SLOTTED_FIXTURE.sources.map((source) => [
-      source.path === "shared.sigil"
-        ? "SharedKernel"
-        : source.path.replace(/\.sigil$/, "").replace(/^./, (letter) =>
-          letter.toUpperCase()),
-      source.path,
-    ]),
-  );
-  const prepared = SLOTTED_FIXTURE.sources.filter((source) =>
-    files[source.path]
-  )
-    .map((source) => {
-      const closure = new Set<string>();
-      const visit = (path: string) => {
-        if (closure.has(path)) return;
-        closure.add(path);
-        const dependency = SLOTTED_FIXTURE.sources.find((entry) =>
-          entry.path === path
-        );
-        for (const imported of dependency?.imports ?? []) {
-          const importedPath = sourceByModule.get(imported);
-          if (importedPath) visit(importedPath);
-        }
-      };
-      visit(source.path);
-      return {
-        binding: { source: source.path },
-        rows: bundle.units.filter((unit) =>
-          closure.has(unit.source) && unit.valid
-        ).map((unit) => ({
-          facet: unit.id,
-          source: unit.source,
-          section: unit.section,
-          prose: bundle.sources.find((entry) => entry.path === unit.source)!
-            .text.slice(unit.proseRange.start, unit.proseRange.end),
-        })),
-      };
-    });
-  return { design: bundle, prepared };
+  for (const [path, text] of Object.entries(files)) {
+    await Deno.writeTextFile(`${root}/${path}`, text);
+  }
+  return { root, files };
+}
+
+/** What `sigil-claims prepare` really shows the model for one source. */
+interface PreparedRequest {
+  readonly binding: { readonly source: string };
+  readonly rows: readonly {
+    readonly facet: string;
+    readonly source: string;
+    readonly section: string;
+    readonly context?: boolean;
+  }[];
+}
+
+/**
+ * The workspace trees plus the black-box request of every source, taken from
+ * the real `sigil-claims prepare`. Dependencies' private sections are not in
+ * these requests, which is the behaviour the linked check exists to cover.
+ */
+async function snapshot(
+  change?: (files: Record<string, string>) => void,
+): Promise<{ design: DesignView; requests: PreparedRequest[] }> {
+  const { root, files } = await slottedWorkspace(change);
+  try {
+    const tree = JSON.parse(
+      await run(sigilc, [
+        "tree",
+        "--root",
+        root,
+        "--store",
+        `${root}/store`,
+      ]),
+    ) as TreeOutput;
+    const design = designViewFromTrees(tree, files);
+    const requests: PreparedRequest[] = [];
+    for (const source of SLOTTED_FIXTURE.sources) {
+      if (!files[source.path]) continue;
+      const out = `${root}/prepared-${source.path}`;
+      await run(claims, [
+        "prepare",
+        "--root",
+        root,
+        "--store",
+        `${root}/prepare-store-${source.path}`,
+        "--source",
+        source.path,
+        "--out",
+        out,
+      ]);
+      requests.push(
+        JSON.parse(await Deno.readTextFile(`${out}/request.json`)),
+      );
+    }
+    return { design, requests };
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 }
 
 Deno.test("tool fixture resolves all seven Slotted sources and four issue IDs", async () => {
-  const { design, prepared } = await snapshot();
-  const result = preflightSlottedFixture(design, prepared);
+  const { design } = await snapshot();
+  const result = preflightSlottedFixture(design);
   assertEquals(SLOTTED_FIXTURE.version, 1);
   assertEquals(SLOTTED_FIXTURE.sources.map((s) => s.path), sourcePaths);
   assertEquals(result.canSchedule, true);
@@ -137,13 +184,13 @@ Deno.test("tool fixture resolves all seven Slotted sources and four issue IDs", 
 });
 
 Deno.test("removed Booking exclusivity evidence withholds only ownership", async () => {
-  const { design, prepared } = await snapshot((files) => {
+  const { design } = await snapshot((files) => {
     files["booking.sigil"] = files["booking.sigil"].replace(
       "Booking owns the archived room mark, and Booking is the only one that may set\n    or clear it, because only its archive workflow and unarchive workflow change\n    it.",
       "Booking calls Rooms to archive and unarchive a room.",
     );
   });
-  const result = preflightSlottedFixture(design, prepared);
+  const result = preflightSlottedFixture(design);
   assertEquals(result.canSchedule, true);
   assertEquals(result.issues.map((issue) => issue.status), [
     "scorable",
@@ -155,14 +202,15 @@ Deno.test("removed Booking exclusivity evidence withholds only ownership", async
 });
 
 Deno.test("anchor ownership drift withholds only the affected issue", async () => {
-  const { design, prepared } = await snapshot();
+  const { design } = await snapshot();
   const ownershipAnchor = SLOTTED_FIXTURE.issues[1].anchors[0];
   const original = design.units.find((unit) =>
     unit.source === ownershipAnchor.source &&
     unit.section === ownershipAnchor.section &&
-    design.sources.find((source) => source.path === unit.source)!.text.slice(
-      unit.proseRange.start,
-      unit.proseRange.end,
+    new TextDecoder().decode(
+      new TextEncoder().encode(
+        design.sources.find((source) => source.path === unit.source)!.text,
+      ).slice(unit.proseRange.start, unit.proseRange.end),
     ).includes(ownershipAnchor.text)
   );
   assert(original, "ownership anchor Facet must exist");
@@ -178,7 +226,7 @@ Deno.test("anchor ownership drift withholds only the affected issue", async () =
     ),
   };
 
-  const result = preflightSlottedFixture(changed, prepared);
+  const result = preflightSlottedFixture(changed);
   assertEquals(result.issues.map((issue) => issue.status), [
     "scorable",
     "drift",
@@ -189,7 +237,7 @@ Deno.test("anchor ownership drift withholds only the affected issue", async () =
 });
 
 Deno.test("fixed entity identity drift withholds only its issue", async () => {
-  const { design, prepared } = await snapshot();
+  const { design } = await snapshot();
   const rangeChangeTag = design.entities.find((entity) =>
     entity.id === SLOTTED_FIXTURE.issues[0].findingEvidence.object
   );
@@ -219,7 +267,6 @@ Deno.test("fixed entity identity drift withholds only its issue", async () => {
   for (const testCase of cases) {
     const result = preflightSlottedFixture(
       { ...design, entities: testCase.entities },
-      prepared,
     );
     assertEquals(
       result.issues.map((issue) => issue.status),
@@ -230,57 +277,50 @@ Deno.test("fixed entity identity drift withholds only its issue", async () => {
   }
 });
 
-Deno.test("ownership issue requires every anchor Facet in Booking closure", async () => {
-  const { design, prepared } = await snapshot();
-  const resultBefore = preflightSlottedFixture(design, prepared);
-  const issue = resultBefore.issues[1];
-  const roomsAnchorIndex = issue.anchors.findIndex((anchor) =>
-    anchor.source === "rooms.sigil"
-  );
-  const roomsFacet = issue.facets[roomsAnchorIndex];
-  const bookingRequest = prepared.find((request) =>
-    request.binding.source === "booking.sigil"
-  );
-  const roomsRequest = prepared.find((request) =>
-    request.binding.source === "rooms.sigil"
-  );
-  assert(bookingRequest && roomsRequest, "source requests must exist");
-  assert(
-    bookingRequest.rows.some((row) => row.facet === roomsFacet),
-    `Booking closure lacks ${roomsFacet}; rows include ${
-      bookingRequest.rows
-        .filter((row) => row.source === "rooms.sigil").map((row) => row.facet)
-        .join(", ")
-    }`,
-  );
-  assert(roomsRequest.rows.some((row) => row.facet === roomsFacet));
-  const changedPrepared = prepared.map((request) =>
-    request.binding.source === "booking.sigil"
-      ? {
-        ...request,
-        rows: request.rows.filter((row) => row.facet !== roomsFacet),
-      }
-      : request
-  );
-
-  const result = preflightSlottedFixture(design, changedPrepared);
+Deno.test("ownership is scorable although Booking's black-box request omits Rooms' private anchor", async () => {
+  const { design, requests } = await snapshot();
+  const result = preflightSlottedFixture(design);
   assertEquals(result.issues.map((entry) => entry.status), [
     "scorable",
-    "drift",
+    "scorable",
     "scorable",
     "scorable",
   ]);
-  assertMatch(result.issues[1].reason ?? "", /Booking.*all.*anchor Facets/i);
+  const issue = result.issues[1];
+  assertEquals(issue.id, "booking-rooms-archived-mark-ownership");
+  const roomsFacet = issue.facets[
+    issue.anchors.findIndex((anchor) => anchor.source === "rooms.sigil")
+  ];
+  const bookingFacet = issue.facets[
+    issue.anchors.findIndex((anchor) => anchor.source === "booking.sigil")
+  ];
+  const booking = requests.find((request) =>
+    request.binding.source === "booking.sigil"
+  );
+  const rooms = requests.find((request) =>
+    request.binding.source === "rooms.sigil"
+  );
+  assert(booking && rooms, "source requests must exist");
+  // Booking sees Rooms' interface only, never its `state` section.
+  assert(!booking.rows.some((row) => row.facet === roomsFacet));
+  assert(
+    booking.rows.some((row) => row.facet === bookingFacet && !row.context),
+  );
+  assert(rooms.rows.some((row) => row.facet === roomsFacet && !row.context));
+  // Every anchor Facet exists in the workspace trees.
+  for (const facet of issue.facets) {
+    assert(design.units.some((unit) => unit.id === facet && unit.valid));
+  }
 });
 
 Deno.test("Identity display-name provider withholds only Calendar obligation", async () => {
-  const { design, prepared } = await snapshot((files) => {
+  const { design } = await snapshot((files) => {
     files["identity.sigil"] = files["identity.sigil"].replace(
       "    Identity provides resolution of the session from request headers outside",
       "    Identity keeps a display name for each user.\n\n    Identity provides resolution of the session from request headers outside",
     );
   });
-  const result = preflightSlottedFixture(design, prepared);
+  const result = preflightSlottedFixture(design);
   assertEquals(result.issues.map((issue) => issue.status), [
     "scorable",
     "scorable",
@@ -294,13 +334,13 @@ Deno.test("Identity display-name provider withholds only Calendar obligation", a
 });
 
 Deno.test("explicit Identity absence does not count as a display-name provider", async () => {
-  const { design, prepared } = await snapshot((files) => {
+  const { design } = await snapshot((files) => {
     files["identity.sigil"] = files["identity.sigil"].replace(
       "    Identity provides resolution of the session from request headers outside",
       "    Identity does not provide a display name for each user.\n\n    Identity will not provide a display name for each user.\n\n    Identity won't provide a display name for each user.\n\n    Identity provides resolution of the session from request headers outside",
     );
   });
-  const result = preflightSlottedFixture(design, prepared);
+  const result = preflightSlottedFixture(design);
   assertEquals(result.issues.map((issue) => issue.status), [
     "scorable",
     "scorable",
@@ -310,7 +350,7 @@ Deno.test("explicit Identity absence does not count as a display-name provider",
 });
 
 Deno.test("an anchor in two Facets is ambiguous", async () => {
-  const { design, prepared } = await snapshot((files) => {
+  const { design } = await snapshot((files) => {
     const phrase =
       "Booking must not provide a range change of a pending request";
     files["booking.sigil"] = files["booking.sigil"].replace(
@@ -318,7 +358,7 @@ Deno.test("an anchor in two Facets is ambiguous", async () => {
       `    ${phrase}.\n\n    Booking must not accept a booking request from the room owner of its room.`,
     );
   });
-  const result = preflightSlottedFixture(design, prepared);
+  const result = preflightSlottedFixture(design);
   assertEquals(result.issues[0].status, "drift");
   assertMatch(result.issues[0].reason ?? "", /ambiguous.*booking\.sigil/i);
   assertEquals(result.issues.slice(1).map((issue) => issue.status), [
@@ -329,26 +369,81 @@ Deno.test("an anchor in two Facets is ambiguous", async () => {
 });
 
 Deno.test("a missing required source refuses the seven-source batch", async () => {
-  const { design, prepared } = await snapshot((files) => {
+  const { design } = await snapshot((files) => {
     delete files["rooms.sigil"];
   });
-  const result = preflightSlottedFixture(design, prepared);
+  const result = preflightSlottedFixture(design);
   assertEquals(result.canSchedule, false);
   assertMatch(result.sourceDrift.join(" "), /missing.*rooms\.sigil/i);
 });
 
 Deno.test("import drift is reported while all seven sources can still run", async () => {
-  const { design, prepared } = await snapshot();
+  const { design } = await snapshot();
   const changed = {
     ...design,
     imports: design.imports.filter((entry) =>
       !(entry.source === "calendar.sigil" && entry.provider === "Booking")
     ),
   };
-  const result = preflightSlottedFixture(changed, prepared);
+  const result = preflightSlottedFixture(changed);
   assertEquals(result.canSchedule, true);
   assertMatch(
     result.sourceDrift.join(" "),
     /imports changed for calendar\.sigil/i,
   );
+});
+
+Deno.test("a reformat between two prepares with a shared store requests no units", async () => {
+  const { root, files } = await slottedWorkspace();
+  const store = `${root}/store`;
+  const prepare = async (label: string) => {
+    const out = `${root}/prepared-${label}`;
+    const summary = JSON.parse(
+      await run(claims, [
+        "prepare",
+        "--root",
+        root,
+        "--store",
+        store,
+        "--source",
+        "booking.sigil",
+        "--out",
+        out,
+      ]),
+    );
+    return { out, summary };
+  };
+  try {
+    const first = await prepare("first");
+    assert(first.summary.requestedUnits > 0);
+    assertMatch(first.summary.workspaceDigest, /^[a-f0-9]{64}$/);
+    const request = JSON.parse(
+      await Deno.readTextFile(`${first.out}/request.json`),
+    );
+    const readings = request.rows.filter((row: { context?: boolean }) =>
+      !row.context
+    ).map((row: { facet: string }) =>
+      `(reading ${JSON.stringify(row.facet)} "no-commitment")\n`
+    ).join("");
+    await Deno.writeTextFile(`${root}/readings.egg`, readings);
+    await run(claims, [
+      "ingest",
+      "--root",
+      root,
+      "--store",
+      store,
+      "--binding",
+      `${first.out}/binding.json`,
+      "--claims",
+      `${root}/readings.egg`,
+    ], 0);
+    for (const [path, text] of Object.entries(files)) {
+      await Deno.writeTextFile(`${root}/${path}`, `\n\n${text}\n`);
+    }
+    const second = await prepare("second");
+    assertEquals(second.summary.requestedUnits, 0);
+    assert(second.summary.reusedUnits > 0);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });

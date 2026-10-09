@@ -588,12 +588,7 @@ Deno.test("check --show-locations adds file, line, and column to text diagnostic
 Deno.test("check reports exact Tag collisions in module files and ordinary consumers", async () => {
   const root = await providerWorkspace();
   try {
-    const exported = parseJson(
-      (await runCli(["export", "design", root])).stdout,
-    );
-    const consumer = exported.sources.find((s: { path: string }) =>
-      s.path === "consumer.sigil"
-    ).text;
+    const consumer = await Deno.readTextFile(`${root}/consumer.sigil`);
     for (const path of ["consumer.sigil", "_module.sigil"]) {
       await Deno.writeTextFile(
         `${root}/${path}`,
@@ -613,9 +608,7 @@ Deno.test("check reports exact Tag collisions in module files and ordinary consu
       new Set(
         diagnostics.filter((d: { code: string }) =>
           d.code === "SIGIL_TAG_NAME_COLLISION"
-        ).map((d: { filePath: string }) =>
-          d.filePath
-        ),
+        ).map((d: { filePath: string }) => d.filePath),
       ).size,
       2,
     );
@@ -1097,10 +1090,15 @@ Deno.test("context Markdown preserves consumer and provider contracts, payload a
     assert(result.stdout.includes("### Direct Dependencies"));
     assert(result.stdout.includes("Selected Tags:"));
     assert(result.stdout.includes("Consumer uses: 2"));
-    const exported = parseJson(
-      (await runCli(["export", "design", root])).stdout,
+    const fixture = JSON.parse(
+      await Deno.readTextFile(
+        new URL(
+          "../../core/tests/fixtures/design-input-080.json",
+          import.meta.url,
+        ),
+      ),
     );
-    const payload = exported.units.find((u: { payload: unknown }) => u.payload)
+    const payload = fixture.units.find((u: { payload: unknown }) => u.payload)
       ?.payload;
     assert(result.stdout.includes(payload.rawBody));
     assert(!result.stdout.includes("undefined"));
@@ -2436,7 +2434,6 @@ Deno.test("fmt variadic paths leave other commands positional limits intact", as
     ["init"],
     ["version"],
     ["parse"],
-    ["export", "design"],
     ["check"],
     ["glossary"],
     ["graph"],

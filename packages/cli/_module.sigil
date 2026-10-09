@@ -6,7 +6,6 @@
 @packages/core/src/projections.sigil from SigilProjections import { direct importing files, complete declaration }
 @packages/core/src/formatter.sigil from SigilFormatter import { Formatting }
 @packages/core/src/model/workspace.sigil from SigilWorkspaceModel import { selected source }
-@packages/core/src/design-input.sigil from SigilDesignInput import { ResolvedDesignInput }
 @packages/core/_module.sigil from SigilCore import { CorePackage, manifest-owned version literal, source interpretation }
 @spec/glossary.sigil from SigilWorkspaceGlossary import { GlossaryFile }
 @spec/language.sigil from SigilWorkspaceConfig import { ConfigFile, SourceSelection }
@@ -21,7 +20,7 @@ component SigilCli {
     Expose *deterministic Sigil language* and workspace operations to agents, CI,
     scripts, debugging and review workflows through a non-interactive command line.
 
-    Use CorePackage for language operations and structural Design export. Keep
+    Use CorePackage for language operations. Keep
     skill installation separate. Models and operators invoke sigilc directly for
     semantic compilation; this language CLI owns no compiler facade.
   }
@@ -207,11 +206,6 @@ component SigilCli {
       prose; validate every selected candidate against the same provider snapshot
       before the existing all-source write preflight.
 
-      Design export emits frontend schema 2 and explicit languageVersion 0.9.0.
-      Invalid UTF-8 yields a language failure with diagnostics and no faithful JSON
-      bundle; retained partial diagnostics remain available through other language
-      operations. No *successful native verdict* is inferred from export.
-
       Catalog and installation output retain all four bundled skills. Label the
       *retained sigil skill* as legacy 0.7 with its frozen incompatible tool
       requirements; do not claim compatibility with the current binaries. Current
@@ -224,8 +218,7 @@ component SigilCli {
 
     StructuredOutput {
       Workspace-dependent inspection JSON includes workspaceRoot, configPath,
-      sigilVersion, and workspaceName. Design export instead emits the exact closed
-      core bundle, with no CLI envelope.
+      sigilVersion, and workspaceName.
 
       *Deterministic CLI commands* are non-interactive and reproducible from the same
       inputs.
@@ -505,23 +498,6 @@ component SigilCli {
   }
 
   interface {
-    DesignExport {
-      *sigil export* has this invocation:
-      ```text
-      sigil export design [path] [--root workspace] [--pretty]
-      ```
-
-      Use ResolvedDesignInput through the core loadDesignInput operation to export
-      the complete discovered workspace as its closed structural JSON bundle. A path
-      locates a workspace; native sigilc scope selects focused Design roots
-      afterward. Write the raw bundle to stdout without a CLI envelope, semantic
-      lowering, display-path substitution or changes to captured text. Retain
-      diagnostics and return the ordinary language diagnostic exit code. Runtime
-      failures produce no partial bundle. Support only JSON; reject quiet
-      suppression. Never invoke sigilc, a model, a profile or the removed semantic
-      compiler.
-    }
-
     SourceDiscovery {
       Host listing skips git metadata and *symlinks*. Within a Sigil metadata
       directory, list only config.json, local.json and glossary.json so nested
@@ -535,9 +511,9 @@ component SigilCli {
       their
       handlers, compiler adapter dispatch and tests dedicated to beams, accepted
       worlds, managed views, handoffs, receipts and TS7 verification. An invocation
-      of a removed command returns ordinary invalid usage. No compatibility dispatch
-      or renamed legacy command survives. Export structural Design through core; the
-      model or operator uses native sigilc directly. Retain normal configuration
+      of a removed command returns ordinary CLI invalid usage. No
+      compatibility dispatch or renamed legacy command survives. The model or
+      operator uses native sigilc directly. Retain normal configuration
       discovery/validation, init and version metadata. No JSONL compiler event
       stream, compiler history or compiler subprocess belongs in this language
       command path.

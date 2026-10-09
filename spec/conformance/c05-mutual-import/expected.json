@@ -1,0 +1,251 @@
+{
+  "exported": true,
+  "sources": [
+    "a.sigil",
+    "b.sigil"
+  ],
+  "components": [
+    {
+      "source": "a.sigil",
+      "name": "A",
+      "range": [
+        33,
+        133
+      ],
+      "nameRange": [
+        43,
+        44
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "b.sigil",
+      "name": "B",
+      "range": [
+        34,
+        132
+      ],
+      "nameRange": [
+        44,
+        45
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "a.sigil",
+      "component": "A",
+      "name": "alpha",
+      "identityResolved": true
+    },
+    {
+      "source": "b.sigil",
+      "component": "B",
+      "name": "beta",
+      "identityResolved": true
+    }
+  ],
+  "groups": [],
+  "facets": [
+    {
+      "source": "a.sigil",
+      "component": "A",
+      "section": "goal",
+      "group": null,
+      "range": [
+        56,
+        71
+      ],
+      "proseRange": [
+        56,
+        71
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "alpha",
+          "status": "resolved",
+          "tag": "A::alpha",
+          "range": [
+            64,
+            69
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "a.sigil",
+      "component": "A",
+      "section": "interface",
+      "group": null,
+      "range": [
+        90,
+        127
+      ],
+      "proseRange": [
+        90,
+        127
+      ],
+      "introductions": [
+        {
+          "name": "alpha",
+          "kind": "inline",
+          "tag": "A::alpha",
+          "range": [
+            97,
+            104
+          ],
+          "nameRange": [
+            98,
+            103
+          ]
+        }
+      ],
+      "references": [
+        {
+          "name": "beta",
+          "status": "resolved",
+          "tag": "B::beta",
+          "range": [
+            121,
+            125
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "b.sigil",
+      "component": "B",
+      "section": "goal",
+      "group": null,
+      "range": [
+        57,
+        71
+      ],
+      "proseRange": [
+        57,
+        71
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "beta",
+          "status": "resolved",
+          "tag": "B::beta",
+          "range": [
+            65,
+            69
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "b.sigil",
+      "component": "B",
+      "section": "interface",
+      "group": null,
+      "range": [
+        90,
+        126
+      ],
+      "proseRange": [
+        90,
+        126
+      ],
+      "introductions": [
+        {
+          "name": "beta",
+          "kind": "inline",
+          "tag": "B::beta",
+          "range": [
+            96,
+            102
+          ],
+          "nameRange": [
+            97,
+            101
+          ]
+        }
+      ],
+      "references": [
+        {
+          "name": "alpha",
+          "status": "resolved",
+          "tag": "A::alpha",
+          "range": [
+            119,
+            124
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [
+    {
+      "source": "a.sigil",
+      "target": "b.sigil",
+      "path": "b.sigil",
+      "provider": "B",
+      "range": [
+        0,
+        32
+      ],
+      "status": "resolved",
+      "names": [
+        {
+          "name": "beta",
+          "status": "resolved",
+          "entity": "B::beta",
+          "range": [
+            25,
+            29
+          ]
+        }
+      ]
+    },
+    {
+      "source": "b.sigil",
+      "target": "a.sigil",
+      "path": "a.sigil",
+      "provider": "A",
+      "range": [
+        0,
+        33
+      ],
+      "status": "resolved",
+      "names": [
+        {
+          "name": "alpha",
+          "status": "resolved",
+          "entity": "A::alpha",
+          "range": [
+            25,
+            30
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

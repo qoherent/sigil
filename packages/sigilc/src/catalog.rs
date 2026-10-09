@@ -1,8 +1,8 @@
 //! Identity validation is separate from graph meaning and source freshness.
 use crate::{
     eqval::DesignState,
-    frontend::{DesignInput, EntityType, encode_identifier, normalized_path},
     sources::hash,
+    structure::{DesignInput, EntityType, encode_identifier, normalized_path},
     turtle::{self, Assertion, ONTOLOGY, Object, RDF_TYPE, XSD},
 };
 use serde::Serialize;
@@ -68,7 +68,7 @@ fn text(value: &str) -> Object {
 }
 
 fn reserved(input: &DesignInput) -> Result<BTreeMap<String, Identity>, String> {
-    input.validate()?;
+    input.assert_consistent()?;
     let mut ids = BTreeMap::new();
     for entity in &input.entities {
         ids.insert(
@@ -200,7 +200,7 @@ fn declarations(
                 assertion.subject
             )
         })?;
-        // Restrict to the same canonical percent encoding used for frontend IDs.
+        // Restrict to the same canonical percent encoding used for structural IDs.
         if name.is_empty() || !canonical_name(name) {
             return Err(format!("noncanonical domain local name: {name}"));
         }
@@ -211,7 +211,7 @@ fn declarations(
             };
             let kind = value.strip_prefix(ONTOLOGY).expect("validated class");
             if ["Component", "Tag"].contains(&kind) {
-                return Err("Component and Tag identities are reserved by the frontend".into());
+                return Err("Component and Tag identities are reserved".into());
             }
             types.insert(kind.into());
         } else {

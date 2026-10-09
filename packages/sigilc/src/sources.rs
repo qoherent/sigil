@@ -1,4 +1,4 @@
-use crate::frontend::normalized_path;
+use crate::structure::normalized_path;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use snapdir_core::hash_file::HashFile;

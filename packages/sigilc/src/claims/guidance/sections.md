@@ -2,7 +2,7 @@
 
 Every Facet you read belongs to exactly one of seven contract roles. You are not
 told the role in the row you complete, and you must not restate it: the tool
-fills that column from the design export, which is the only thing that knows it.
+fills that column from the workspace, which is the only thing that knows it.
 What the role changes is *what kind of claim the Facet can support*.
 
 | Role | Read it as |
@@ -58,45 +58,73 @@ the tool computes.
 
 ## Naming what a claim is about
 
-A claim's subject and object must each be one of three things:
+Every Facet row in the request carries a `names` list: the only things a claim,
+property, measure or guard from that Facet may name. It is its own component, the
+components its source imports from, and the Tags its own prose introduces or
+names. Write a name exactly as it appears in the list. A plural or differently
+cased form is not the name.
 
-1. the Facet's own component;
-2. a component its source imports from;
-3. a Tag that appears in this exact Facet's own prose, spelled exactly as the
-   Tag is named.
+The tool built that list from what it already resolved about the Facet, and it
+checks every row against it. A row naming anything else refuses the unit and you
+are asked about it again. That includes a Tag that appears only in a different
+Facet's prose, a Tag owned by a source this one does not import, and a Tag the
+design declares that this Facet's prose does not name. Being declared somewhere
+does not put a name on a Facet's list. If a Facet's prose does not name a Tag,
+do not invent a claim about it. Return a `reading` row instead.
 
-The third case covers two ways a Tag reaches the prose. A Tag the Facet
+Two cases need a way to say what the prose says without a name for it:
+
+- The prose relies on a thing the design never declares, such as a library, a
+  mechanism, or a notion with no Tag: return `(undeclared "<facet>" "<name>")`
+  with the name as the prose writes it. It is reported as a warning about the
+  design and counts as reading the Facet.
+- The prose names another component only in passing, such as in a list of
+  allowed dependencies, and that component is not on the Facet's list: return a
+  `reading` for that part.
+
+The third way a Tag reaches the prose is how it is written. A Tag the Facet
 introduces is marked with asterisks: `*a name like this*`. A Tag that already
 exists, whether the component defines it elsewhere or imports it, is written
-bare, with no asterisks: `a name like this`. Both are grounded.
+bare, with no asterisks. An asterisk defines a new Tag. Never put asterisks
+around a Tag that already exists. Doing so declares a second definition and the
+design fails its check.
 
-An asterisk defines a new Tag. Never put asterisks around a Tag that already
-exists. Doing so declares a second definition and the design fails its check.
+The request's `entities` list is wider than any Facet's `names`: it holds
+everything the source can see, so the tool can read it back. Do not take a name
+from it that the Facet's own list lacks.
 
-A claim about anything else is rejected as ungrounded, even though the row is
-otherwise well-formed. That includes a Tag that appears only in a different
-Facet's prose, a plural or differently cased form that does not match the
-Tag's name, and a Tag owned by a source this one does not import. If a Facet's
-prose does not name a Tag, do not invent a claim about it. Return a `reading`
-row instead.
+**Imported interface Facets are context.** A row marked `"context": true` is an
+interface Facet of a component this source imports. It is there so you can read
+what the names it exposes mean. Return nothing for it: its own source's run
+reads it. A dependency's other roles are not presented at all, and nothing they
+introduce is on the entity list. A Constraints Facet of your own source can also
+be marked `"context": true` when only its Logic section is asked again: it is
+shown so a guard can name it, and it is answered by nothing.
 
-**The entity list is wider than what a Facet may name.** The request's
-`entities` lists every component and Tag in the whole closure, including ones a
-source never imports. Being on that list does not ground a name. The request's
-`imports` list says, for each source, which components it imports from and which
-Tag names it takes from each. A Facet may name another component only if its own
-source appears in `imports` with that component under `from`. Look the source up
-there before you write the claim. When a Facet names a module only in passing,
-such as in a list of allowed dependencies, and that module is not in the source's
-`imports`, return a `reading` for that part instead of a claim the tool refuses
-as ungrounded.
-
-**Who does the requiring.** For `requires`, `provides`, `owns`, and `dependsOn`,
-the subject is a component (or a step, for a flow). Never a Tag. A Tag cannot
+**Who does the requiring.** For `requires`, `provides`, `owns`, `dependsOn` and
+`excludes`, the subject is a component (or a step, for a flow). Never a Tag: the
+tool refuses the unit and asks again. A Tag cannot
 provide anything, so `booking request requires open time` can never be
 satisfied and reports an obligation that nothing could meet. When a Facet says
 a *booking request* must lie inside open time, the requirement belongs to the
 component that handles it: `Booking requires open time`.
+
+**Sole ownership is two rows.** When a Facet says a component owns some state
+and that it alone may change it, in words such as "the only one that may set or
+clear it", "only its workflows change it" or "no other component may write it",
+return both rows:
+
+```
+(claim "<facet>" "<component>" "owns" "<state>" "required" "true")
+(property "<facet>" "<state>" "exclusive" "true")
+```
+
+The `owns` claim alone says nothing about anyone else, so a second owner
+elsewhere in the design is never reported. This holds in every role. A
+`constraints` Facet that says who alone may change a piece of state is a
+commitment, never a `no-commitment`. Before you hand the answer over, read
+every `owns` claim you wrote against its Facet once more and add the `property`
+row wherever the prose says "only".
 
 **A scoped exception is not a global ban.** When a Facet says something is
 absent only in one case, such as "the view of a closed search, with no search
@@ -109,6 +137,24 @@ thing in general. Write the positive claim and leave the exception unclaimed.
 from X" says what a flow refuses. The step that checks X is where the refusal
 happens, so a claim that the component excludes X is reported against that step.
 Return a `reading` for such a rule, or the positive requirement the flow meets.
+
+**`excludes` means never, not "not when".** Write `excludes` only when the
+component never does or uses the thing at all. A rule that limits when or how,
+such as "must not change while a request is pending", "windows must not
+overlap" or "must never cancel a confirmed booking", is not an exclusion: every
+step that touches the thing would be reported against it. Return a `reading`
+for such a rule, or the positive requirement it states.
+
+## Hand over what you read
+
+Write every row from reading its Facet's prose. You may check your rows against
+the `names` lists, and fix a wrong row by reading its Facet again and rewriting
+that row, with whatever editing you like. What you must never do is drop rows
+in bulk, such as filtering out every row a check flags. A row you cannot fix
+stays in: the tool refuses only its unit and asks about it again. A deleted row
+is a claim lost for good. Never write `no-commitment` for a Facet because its
+rows were removed: `no-commitment` means you read the Facet and it commits to
+nothing.
 
 ## What the role does to a claim
 

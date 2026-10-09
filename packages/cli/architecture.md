@@ -29,7 +29,6 @@ Tag ownership independently.
 - Keep command modules thin over `sigil-core`.
 - Keep Deno filesystem and process APIs at the outer edge.
 - Keep semantic compilation in native `sigilc`, invoked directly by its caller.
-  Export structural Design through core without semantic lowering or forwarding.
 - Keep CLI behavior deterministic and non-interactive.
 
 ## 3. Internal Modules
@@ -77,7 +76,7 @@ Owns command handlers.
 Responsibilities:
 
 - implement `skill list`, `skill install`, `parse`, `check`, `graph`, `context`,
-  `retrieve`, `render`, configuration, and structural Design export;
+  `retrieve`, `render`, and configuration;
 - call `sigil-core` through shared helpers;
 - return typed command result objects;
 - avoid command-specific duplication of parser and resolver behavior.
@@ -88,8 +87,7 @@ Rules:
 - must not write directly to stdout or stderr;
 - must not directly call Deno filesystem APIs.
 
-Language handlers use core directly. Structural Design export supplies raw input
-for native sigilc. No semantic handler, compiler forwarding command, profile
+Language handlers use core directly. No semantic handler, compiler forwarding command, profile
 selector, retained event stream or provider dispatch remains in this package.
 
 ### `core-adapter`
@@ -349,7 +347,6 @@ Required scenarios:
 - invalid arguments return exit code `2`;
 - runtime filesystem failures return exit code `3`;
 - JSON output includes stable diagnostic codes.
-- structural export preserves captured buffers and emits the closed core bundle;
 - removed compile/config/provider/doctor commands reject usage;
 - language operations require no semantic runtime or model configuration.
 
@@ -364,8 +361,7 @@ locations are derived from the captured source; implementation annotations use
 separate UTF-16 ranges. Output path normalization touches structured path
 fields, never arbitrary text, link destinations or fenced contents.
 
-The exporter emits core schema 2 directly. A missing bundle is an encoding
-failure, with no stdout transport. Native compilation stays outside this
+Native compilation stays outside this
 process. Context obtains complete provider contracts and consumer uses from
 shared core projections. Retrieval Markdown takes the version-2 presentation
 projection. Formatting validates all proposed source replacements before any

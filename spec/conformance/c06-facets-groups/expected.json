@@ -1,0 +1,158 @@
+{
+  "exported": true,
+  "sources": [
+    "facets.sigil"
+  ],
+  "components": [
+    {
+      "source": "facets.sigil",
+      "name": "Facets",
+      "range": [
+        0,
+        250
+      ],
+      "nameRange": [
+        10,
+        16
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "name": "first",
+      "identityResolved": true
+    }
+  ],
+  "groups": [
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "name": "first",
+      "tag": "Facets::first",
+      "section": "constraints",
+      "range": [
+        76,
+        123
+      ],
+      "headerRange": [
+        76,
+        88
+      ],
+      "bodyRange": [
+        88,
+        117
+      ],
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "section": "goal",
+      "group": null,
+      "range": [
+        28,
+        55
+      ],
+      "proseRange": [
+        28,
+        55
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "section": "constraints",
+      "group": "first",
+      "range": [
+        88,
+        117
+      ],
+      "proseRange": [
+        88,
+        117
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "section": "interface",
+      "group": null,
+      "range": [
+        142,
+        190
+      ],
+      "proseRange": [
+        142,
+        190
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "section": "interface",
+      "group": null,
+      "range": [
+        191,
+        213
+      ],
+      "proseRange": [
+        191,
+        213
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "facets.sigil",
+      "component": "Facets",
+      "section": "interface",
+      "group": null,
+      "range": [
+        214,
+        244
+      ],
+      "proseRange": [
+        214,
+        244
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

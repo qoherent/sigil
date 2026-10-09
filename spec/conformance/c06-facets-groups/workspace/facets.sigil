@@ -1,0 +1,20 @@
+component Facets {
+  goal {
+    Show facet boundaries.
+  }
+
+  constraints {
+    first {
+      One grouped paragraph.
+    }
+  }
+
+  interface {
+    First paragraph
+    wrapped over two lines.
+
+    Second paragraph.
+
+    Return { enabled: true }.
+  }
+}

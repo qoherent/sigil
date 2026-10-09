@@ -1,0 +1,193 @@
+{
+  "exported": true,
+  "sources": [
+    "vocabulary.sigil"
+  ],
+  "components": [
+    {
+      "source": "vocabulary.sigil",
+      "name": "Vocabulary",
+      "range": [
+        0,
+        228
+      ],
+      "nameRange": [
+        10,
+        20
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "name": "query",
+      "identityResolved": true
+    }
+  ],
+  "groups": [
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "name": "query",
+      "tag": "Vocabulary::query",
+      "section": "logic",
+      "range": [
+        79,
+        126
+      ],
+      "headerRange": [
+        79,
+        91
+      ],
+      "bodyRange": [
+        91,
+        120
+      ],
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "name": "query",
+      "tag": "Vocabulary::query",
+      "section": "interface",
+      "range": [
+        182,
+        222
+      ],
+      "headerRange": [
+        182,
+        194
+      ],
+      "bodyRange": [
+        194,
+        216
+      ],
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "facets": [
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "section": "goal",
+      "group": null,
+      "range": [
+        32,
+        64
+      ],
+      "proseRange": [
+        32,
+        64
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "section": "logic",
+      "group": "query",
+      "range": [
+        91,
+        120
+      ],
+      "proseRange": [
+        91,
+        120
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "tag": "Vocabulary::query",
+          "range": [
+            113,
+            118
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "section": "interface",
+      "group": null,
+      "range": [
+        145,
+        181
+      ],
+      "proseRange": [
+        145,
+        181
+      ],
+      "introductions": [
+        {
+          "name": "query",
+          "kind": "inline",
+          "tag": "Vocabulary::query",
+          "range": [
+            151,
+            158
+          ],
+          "nameRange": [
+            152,
+            157
+          ]
+        }
+      ],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "vocabulary.sigil",
+      "component": "Vocabulary",
+      "section": "interface",
+      "group": "query",
+      "range": [
+        194,
+        216
+      ],
+      "proseRange": [
+        194,
+        216
+      ],
+      "introductions": [],
+      "references": [
+        {
+          "name": "query",
+          "status": "resolved",
+          "tag": "Vocabulary::query",
+          "range": [
+            209,
+            214
+          ]
+        }
+      ],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

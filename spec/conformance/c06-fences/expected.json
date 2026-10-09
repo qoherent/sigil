@@ -1,0 +1,168 @@
+{
+  "exported": true,
+  "sources": [
+    "fences.sigil"
+  ],
+  "components": [
+    {
+      "source": "fences.sigil",
+      "name": "Case",
+      "range": [
+        0,
+        269
+      ],
+      "nameRange": [
+        10,
+        14
+      ],
+      "identityResolved": true,
+      "valid": false,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "fences.sigil",
+      "component": "Case",
+      "section": "goal",
+      "group": null,
+      "range": [
+        26,
+        49
+      ],
+      "proseRange": [
+        26,
+        49
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "fences.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        68,
+        128
+      ],
+      "proseRange": [
+        68,
+        95
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": {
+        "type": "json",
+        "range": [
+          95,
+          128
+        ],
+        "bodyRange": [
+          107,
+          120
+        ],
+        "openingRange": [
+          95,
+          107
+        ],
+        "closingRange": [
+          120,
+          128
+        ],
+        "fenceLength": 3,
+        "rawBody": "    {\"a\": 1}\n"
+      },
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "fences.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        128,
+        161
+      ],
+      "proseRange": [
+        128,
+        161
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "fences.sigil",
+      "component": "Case",
+      "section": "interface",
+      "group": null,
+      "range": [
+        162,
+        188
+      ],
+      "proseRange": [
+        162,
+        188
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": [
+    {
+      "code": "SIGIL_DETACHED_LITERAL_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "fences.sigil",
+      "range": [
+        189,
+        201
+      ],
+      "related": [
+        {
+          "file": "fences.sigil",
+          "range": [
+            162,
+            188
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SIGIL_DETACHED_LITERAL_BLOCK",
+      "stage": "parsing",
+      "severity": "error",
+      "file": "fences.sigil",
+      "range": [
+        223,
+        235
+      ],
+      "related": [
+        {
+          "file": "fences.sigil",
+          "range": [
+            162,
+            188
+          ]
+        }
+      ]
+    }
+  ]
+}

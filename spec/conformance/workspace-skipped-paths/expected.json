@@ -1,0 +1,69 @@
+{
+  "exported": true,
+  "sources": [
+    "minimal.sigil"
+  ],
+  "components": [
+    {
+      "source": "minimal.sigil",
+      "name": "Minimal",
+      "range": [
+        0,
+        111
+      ],
+      "nameRange": [
+        10,
+        17
+      ],
+      "identityResolved": true,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "tags": [],
+  "groups": [],
+  "facets": [
+    {
+      "source": "minimal.sigil",
+      "component": "Minimal",
+      "section": "goal",
+      "group": null,
+      "range": [
+        29,
+        59
+      ],
+      "proseRange": [
+        29,
+        59
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    },
+    {
+      "source": "minimal.sigil",
+      "component": "Minimal",
+      "section": "interface",
+      "group": null,
+      "range": [
+        78,
+        105
+      ],
+      "proseRange": [
+        78,
+        105
+      ],
+      "introductions": [],
+      "references": [],
+      "links": [],
+      "payload": null,
+      "valid": true,
+      "complete": true
+    }
+  ],
+  "imports": [],
+  "diagnostics": []
+}

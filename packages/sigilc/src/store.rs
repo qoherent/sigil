@@ -1,9 +1,9 @@
 //! Small disposable index and atomic per-source publication. No external-work registry.
 use crate::{
     assertions,
-    frontend::normalized_path,
     inputs::{Binding, SemanticInput},
     sources::{self, hash},
+    structure::normalized_path,
     turtle::{Assertion, TurtleLimits},
 };
 use serde::{Deserialize, Serialize};
@@ -14,8 +14,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const WORLDS: &str = ".sigil/worlds";
-const INDEX: &str = ".sigil/worlds/index.json";
+/// Paths inside the store directory, which is `<root>/.sigil` unless `--store` moves it.
+const WORLDS: &str = "worlds";
+const INDEX: &str = "worlds/index.json";
+const TREES: &str = "trees";
 const INDEX_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +54,8 @@ pub enum Freshness {
     Incompatible,
     Incomplete,
     Deleted,
+    /// The source, or a source it imports, has errors, so nothing was read.
+    Invalid,
 }
 
 #[derive(Debug)]
@@ -82,39 +86,52 @@ impl Default for StoreLimits {
 /// Owns the exclusive lock until dropped. Host code computes current Design and
 /// catalog bindings inside this lifetime before preparing or publishing.
 pub struct LockedStore {
+    /// The workspace root: where the authored and implementation sources are read.
     root: PathBuf,
+    /// The store directory: where the projections and their index live.
+    store: PathBuf,
     _lock: File,
     index: Index,
     limits: StoreLimits,
 }
 
 impl LockedStore {
+    /// Open the store at its default place, `<root>/.sigil`.
     pub fn open(root: &Path, limits: StoreLimits) -> Result<Self, String> {
-        let (root, lock) = acquire(root)?;
-        let index = match fs::symlink_metadata(sources::checked_path(&root, INDEX)?) {
+        Self::open_in(root, &root.join(".sigil"), limits)
+    }
+
+    /// Open the store in `store`, while the sources are read from `root`.
+    pub fn open_in(root: &Path, store: &Path, limits: StoreLimits) -> Result<Self, String> {
+        let (root, store, lock) = acquire(root, store)?;
+        let index = match fs::symlink_metadata(sources::checked_path(&store, INDEX)?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Index {
                 version: INDEX_VERSION,
                 entries: BTreeMap::new(),
             },
             Err(e) => return Err(e.to_string()),
-            Ok(_) => serde_json::from_slice::<Index>(
-                &sources::capture(&root, INDEX, limits.max_index_bytes)?.bytes,
-            )
-            .map_err(|e| format!("invalid projection index: {e}"))?,
+            Ok(_) => parse_index(&sources::capture(&store, INDEX, limits.max_index_bytes)?.bytes)
+                .map_err(|e| format!("invalid projection index: {e}"))?,
         };
         if index.version != INDEX_VERSION {
             return Err("unsupported projection index version".into());
         }
         for (key, entry) in &index.entries {
-            if *key != object_key(&entry.binding)? && *key != history_key(&entry.binding)?
-                || !checksum(&entry.generation)
-                || !checksum(&entry.assertion_checksum)
-            {
+            let object = object_key(&entry.binding)?;
+            // An entry of an older projection format keeps its key but not its
+            // fingerprint, which only the current layout can reproduce.
+            let keyed = if entry.binding.projection_format == crate::inputs::PROJECTION_FORMAT {
+                *key == object || *key == history_key(&entry.binding)?
+            } else {
+                *key == object || key.starts_with(&format!("{object}~"))
+            };
+            if !keyed || !checksum(&entry.generation) || !checksum(&entry.assertion_checksum) {
                 return Err(format!("invalid projection index entry: {key}"));
             }
         }
         Ok(Self {
             root,
+            store,
             _lock: lock,
             index,
             limits,
@@ -171,7 +188,10 @@ impl LockedStore {
         compatible(current)?;
         let key = object_key(current)?;
         if prepared.version != 2 || prepared.binding != *current {
-            return Err("prepared semantic inputs no longer match current inputs".into());
+            return Err(format!(
+                "prepared semantic inputs no longer match current inputs: {} moved",
+                crate::inputs::moved(&prepared.binding, current)
+            ));
         }
         if self
             .entry_for(current)
@@ -196,7 +216,7 @@ impl LockedStore {
             && previous.binding != *current
         {
             let previous_key = history_key(&previous.binding)?;
-            preserve_projection(&self.root, &key, &previous_key, self.limits)?;
+            preserve_projection(&self.store, &key, &previous_key, self.limits)?;
             proposed.entries.insert(previous_key, previous);
             proposed.entries.remove(&key);
         }
@@ -215,11 +235,11 @@ impl LockedStore {
         // A crash between replacements leaves a detectable checksum mismatch or
         // orphan. Failed publication never becomes current in this handle either.
         atomic_write(
-            &self.root,
+            &self.store,
             &format!("{WORLDS}/{key}.egg"),
             encoded.as_bytes(),
         )?;
-        atomic_write(&self.root, INDEX, &data)?;
+        atomic_write(&self.store, INDEX, &data)?;
         self.index = proposed;
         Ok(generation)
     }
@@ -239,7 +259,7 @@ impl LockedStore {
             return Ok(inspected(status));
         }
         let path = format!("{WORLDS}/{key}.egg");
-        match fs::symlink_metadata(sources::checked_path(&self.root, &path)?) {
+        match fs::symlink_metadata(sources::checked_path(&self.store, &path)?) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 return Ok(inspected(Freshness::Incomplete));
             }
@@ -248,7 +268,7 @@ impl LockedStore {
             _ => (),
         }
         let captured = sources::capture(
-            &self.root,
+            &self.store,
             &path,
             self.limits.assertions.max_document_bytes as u64,
         )?;
@@ -283,34 +303,31 @@ impl LockedStore {
             .map(|entry| (history, entry))
     }
 
+    /// A binding is live while what it recorded still holds on disk. An
+    /// Implementation source is read again byte for byte. A Design source is
+    /// read through its trees again, and only the source's content identity and
+    /// the interface hashes it imports (and the context) are compared, so the
+    /// failure names the field that moved.
     fn check_live(&self, binding: &Binding) -> Result<(), String> {
-        let mut inputs = vec![(&binding.source.path, Some(binding.source.checksum.as_str()))];
-        if let SemanticInput::Design {
-            dependencies,
-            context,
-            ..
-        } = &binding.semantic
-        {
-            inputs.extend(
-                dependencies
-                    .iter()
-                    .map(|d| (&d.path, Some(d.checksum.as_str()))),
-            );
-            inputs.extend(context.iter().map(|c| (&c.path, c.checksum.as_deref())));
-        }
-        for (path, expected) in inputs {
-            if let Some(expected) = expected {
-                let current = sources::capture(&self.root, path, self.limits.max_source_bytes)?;
-                if current.identity.checksum != expected {
-                    return Err(format!("source input changed: {path}"));
-                }
-            } else {
-                match fs::symlink_metadata(sources::checked_path(&self.root, path)?) {
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-                    Err(e) => return Err(e.to_string()),
-                    Ok(_) => return Err(format!("source input appeared: {path}")),
-                }
+        if matches!(binding.semantic, SemanticInput::Design { .. }) {
+            let live = crate::tree::design_input::load_basis(&self.root, &self.store)?
+                .binding(&binding.source.path)
+                .map_err(|e| format!("source input changed: {e}"))?;
+            if live != *binding {
+                return Err(format!(
+                    "prepared semantic inputs no longer match current inputs: {} moved",
+                    crate::inputs::moved(binding, &live)
+                ));
             }
+            return Ok(());
+        }
+        let current = sources::capture(
+            &self.root,
+            &binding.source.path,
+            self.limits.max_source_bytes,
+        )?;
+        if current.identity.checksum != binding.source.checksum {
+            return Err(format!("source input changed: {}", binding.source.path));
         }
         Ok(())
     }
@@ -318,9 +335,20 @@ impl LockedStore {
 
 // @sigil implements packages/sigilc/store.sigil::SigilProjectionStore::DisposableCleanup interface
 pub fn clean(root: &Path) -> Result<Vec<String>, String> {
-    let (root, _lock) = acquire(root)?;
+    clean_in(root, &root.join(".sigil"))
+}
+
+/// Remove the disposable state in `store`: projections and the tree cache.
+pub fn clean_in(root: &Path, store: &Path) -> Result<Vec<String>, String> {
+    let (root, store, _lock) = acquire(root, store)?;
+    // Report paths the way the caller can read them: under the workspace root
+    // when the store sits there, otherwise under the store directory itself.
+    let label = store
+        .strip_prefix(&root)
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| store.display().to_string());
     let mut removed = Vec::new();
-    for entry in fs::read_dir(sources::checked_path(&root, WORLDS)?).map_err(|e| e.to_string())? {
+    for entry in fs::read_dir(sources::checked_path(&store, WORLDS)?).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         if entry.file_name() == ".lock" {
             continue;
@@ -334,16 +362,30 @@ pub fn clean(root: &Path) -> Result<Vec<String>, String> {
             fs::remove_file(entry.path())
         }
         .map_err(|e| e.to_string())?;
-        removed.push(format!("{WORLDS}/{}", entry.file_name().to_string_lossy()));
+        removed.push(format!(
+            "{label}/{WORLDS}/{}",
+            entry.file_name().to_string_lossy()
+        ));
+    }
+    // The tree cache is disposable too; `trees` is only ever a directory.
+    let trees = sources::checked_path(&store, TREES)?;
+    if fs::symlink_metadata(&trees).is_ok_and(|m| m.is_dir()) {
+        fs::remove_dir_all(&trees).map_err(|e| e.to_string())?;
+        removed.push(format!("{label}/{TREES}"));
     }
     removed.sort();
     Ok(removed)
 }
 
-fn acquire(root: &Path) -> Result<(PathBuf, File), String> {
+/// The workspace root and the store directory, canonical, with the store locked.
+fn acquire(root: &Path, store: &Path) -> Result<(PathBuf, PathBuf, File), String> {
     let root = root.canonicalize().map_err(|e| e.to_string())?;
-    fs::create_dir_all(sources::checked_path(&root, WORLDS)?).map_err(|e| e.to_string())?;
-    let path = sources::checked_path(&root, &format!("{WORLDS}/.lock"))?;
+    if fs::symlink_metadata(store).is_ok_and(|m| m.file_type().is_symlink()) {
+        return Err(format!("symlink path is not allowed: {}", store.display()));
+    }
+    fs::create_dir_all(store.join(WORLDS)).map_err(|e| e.to_string())?;
+    let store = store.canonicalize().map_err(|e| e.to_string())?;
+    let path = sources::checked_path(&store, &format!("{WORLDS}/.lock"))?;
     regular_or_absent(&path)?;
     let lock = OpenOptions::new()
         .create(true)
@@ -354,7 +396,37 @@ fn acquire(root: &Path) -> Result<(PathBuf, File), String> {
         .map_err(|e| e.to_string())?;
     lock.try_lock()
         .map_err(|e| format!("projection store lock unavailable: {e}"))?;
-    Ok((root, lock))
+    Ok((root, store, lock))
+}
+
+fn parse_index(bytes: &[u8]) -> Result<Index, String> {
+    let mut value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+    // A Design binding of an older projection format has other semantic fields.
+    // Keep it readable so it reports `incompatible` instead of failing the open.
+    let current = u64::from(crate::inputs::PROJECTION_FORMAT);
+    if let Some(entries) = value.get_mut("entries").and_then(|e| e.as_object_mut()) {
+        for entry in entries.values_mut() {
+            let Some(binding) = entry.get_mut("binding") else {
+                continue;
+            };
+            if binding["projection_format"].as_u64() == Some(current) {
+                continue;
+            }
+            if let Some(semantic) = binding.get_mut("semantic").and_then(|s| s.as_object_mut())
+                && semantic.get("side").and_then(|s| s.as_str()) == Some("design")
+            {
+                semantic.remove("dependencies");
+                // The reader version used to be recorded as `frontend_version`.
+                if let Some(version) = semantic.remove("frontend_version") {
+                    semantic.entry("reader_version").or_insert(version);
+                }
+                semantic
+                    .entry("imports")
+                    .or_insert_with(|| serde_json::json!([]));
+            }
+        }
+    }
+    serde_json::from_value(value).map_err(|e| e.to_string())
 }
 
 fn inspected(status: Freshness) -> Inspection {

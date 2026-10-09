@@ -1,0 +1,15 @@
+@a.sigil from Target import { one, two, }
+@b.sigil from Target import { one, , three }
+@c.sigil from Target import { x } trailing
+@../out.sigil from Target import { x }
+@missing.sigil from Target import { x }
+@target.sigil from Nobody import { x }
+@target.sigil from Target import { one, bad*name, one, *two*
+component Imp {
+  goal {
+    Imports.
+  }
+  interface {
+    Use one.
+  }
+}

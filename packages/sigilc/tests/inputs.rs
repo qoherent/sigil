@@ -3,7 +3,7 @@ use serde_json::json;
 use sigilc::{
     catalog::DesignIdentities,
     eqval::DesignState,
-    inputs::{self, Binding, DesignSnapshot, SemanticInput},
+    inputs::{self, Binding, DesignSnapshot, SemanticInput, moved},
     sources::capture,
 };
 use std::collections::BTreeMap;
@@ -14,89 +14,130 @@ fn workspace() -> Workspace {
     support::cycle_workspace()
 }
 fn snapshot(root: &Workspace) -> DesignSnapshot {
-    DesignSnapshot::capture(&root.0, support::cycle_input(root), 10_000).unwrap()
+    root.snapshot()
+}
+fn edit(root: &Workspace, path: &str, from: &str, to: &str) {
+    let text = std::fs::read_to_string(root.0.join(path)).unwrap();
+    assert!(text.contains(from), "{from} is in {path}");
+    root.write(path, text.replacen(from, to, 1).as_bytes());
 }
 
 #[test]
-fn design_transitive_imports_and_cycles_bind_private_bytes() {
+fn a_dependency_private_edit_reaches_nobody_and_an_interface_edit_reaches_importers() {
     let root = workspace();
     let before = snapshot(&root);
-    let text = std::fs::read_to_string(root.0.join("b.sigil")).unwrap();
-    root.write("b.sigil", format!("{text}\n// private change").as_bytes());
-    let after = snapshot(&root);
-    for path in ["a.sigil", "b.sigil", "c.sigil"] {
-        assert_ne!(before.binding(path).unwrap(), after.binding(path).unwrap());
-    }
-    assert_eq!(
-        before.binding("unrelated.sigil").unwrap(),
-        after.binding("unrelated.sigil").unwrap()
+    // b's goal is private: a imports b, c imports a, a cycle closes through c.
+    edit(
+        &root,
+        "b.sigil",
+        "Describe B.",
+        "Describe B in more detail.",
     );
-    let SemanticInput::Design { dependencies, .. } = before.binding("a.sigil").unwrap().semantic
-    else {
+    let after = snapshot(&root);
+    for path in ["a.sigil", "c.sigil", "unrelated.sigil"] {
+        assert_eq!(
+            before.binding(path).unwrap(),
+            after.binding(path).unwrap(),
+            "{path} reads only interfaces"
+        );
+    }
+    let (old, new) = (
+        before.binding("b.sigil").unwrap(),
+        after.binding("b.sigil").unwrap(),
+    );
+    assert_ne!(old, new);
+    assert_eq!(moved(&old, &new), "source content");
+    assert_ne!(before.fingerprint().unwrap(), after.fingerprint().unwrap());
+
+    // b's interface is what a imports; c imports only a, so it is still unmoved.
+    edit(&root, "b.sigil", "A *b* exists.", "A *b* exists today.");
+    let interface = snapshot(&root);
+    assert_eq!(
+        after.binding("c.sigil").unwrap(),
+        interface.binding("c.sigil").unwrap()
+    );
+    let (old, new) = (
+        after.binding("a.sigil").unwrap(),
+        interface.binding("a.sigil").unwrap(),
+    );
+    assert_eq!(old.source, new.source, "a's own content did not move");
+    assert_eq!(moved(&old, &new), "interface of b.sigil::B");
+    let SemanticInput::Design { imports, .. } = new.semantic else {
         panic!()
     };
-    assert_eq!(dependencies.len(), 2);
-    assert_ne!(before.fingerprint().unwrap(), after.fingerprint().unwrap());
+    assert_eq!(imports.len(), 1);
+    assert_eq!(
+        (imports[0].path.as_str(), imports[0].component.as_str()),
+        ("b.sigil", "B")
+    );
+    assert_eq!(imports[0].interface.len(), 1);
+
     root.write(".sigil/glossary.json", b"{}");
     let context_changed = snapshot(&root);
     for path in PATHS {
         assert_ne!(
-            after.binding(path).unwrap(),
+            interface.binding(path).unwrap(),
             context_changed.binding(path).unwrap()
         );
     }
+    assert_eq!(
+        moved(
+            &interface.binding("a.sigil").unwrap(),
+            &context_changed.binding("a.sigil").unwrap()
+        ),
+        "context"
+    );
 }
 
 #[test]
-fn deleted_provider_bindings_widen_conservatively_instead_of_shrinking_the_world() {
+fn a_pure_reformat_of_a_source_leaves_its_binding_and_its_importers_alone() {
     let root = workspace();
     let before = snapshot(&root);
-    std::fs::remove_file(root.0.join("b.sigil")).unwrap();
-    let value = support::missing_cycle_provider();
-    let input = sigilc::frontend::DesignInput::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
-    let deleted = DesignSnapshot::capture(&root.0, input, 10_000).unwrap();
-    for path in ["a.sigil", "c.sigil", "unrelated.sigil"] {
-        assert_ne!(
+    edit(&root, "a.sigil", "Describe A.", "Describe\n   A.");
+    edit(&root, "a.sigil", "A *a* exists.", "A  *a*\n  exists.");
+    let after = snapshot(&root);
+    for path in PATHS {
+        assert_eq!(
             before.binding(path).unwrap(),
-            deleted.binding(path).unwrap()
+            after.binding(path).unwrap(),
+            "{path}"
         );
     }
-    assert!(sigilc::design::valid_frontend(&deleted).is_err());
 }
 
 #[test]
-fn stale_frontend_buffers_and_context_absence_are_rejected() {
+fn a_deleted_provider_invalidates_only_the_sources_that_depend_on_it() {
     let root = workspace();
-    let input = root.input(PATHS, json!([]));
-    root.write("a.sigil", b"changed");
+    let before = snapshot(&root);
+    assert!(PATHS.iter().all(|p| before.invalid(p).is_none()));
+    std::fs::remove_file(root.0.join("b.sigil")).unwrap();
+    let deleted = snapshot(&root);
+    // a imports the deleted b; c imports a, so b is in c's import closure.
+    assert!(deleted.invalid("a.sigil").is_some());
     assert!(
-        DesignSnapshot::capture(&root.0, input, 10_000)
-            .err()
+        deleted
+            .invalid("c.sigil")
             .unwrap()
-            .contains("source changed")
+            .contains("import closure: a.sigil")
     );
-    let input = root.input(PATHS, json!([]));
-    root.write(".sigil/local.json", b"{}");
-    assert!(
-        DesignSnapshot::capture(&root.0, input, 10_000)
-            .err()
-            .unwrap()
-            .contains("context appeared")
+    assert!(deleted.invalid("unrelated.sigil").is_none());
+    assert_ne!(
+        before.binding("a.sigil").unwrap(),
+        deleted.binding("a.sigil").unwrap()
     );
-    let input = root.input(PATHS, json!([]));
-    root.write(".sigil/config.json", b"changed");
-    assert!(
-        DesignSnapshot::capture(&root.0, input, 10_000)
-            .err()
-            .unwrap()
-            .contains("context changed")
+    assert_eq!(
+        before.binding("unrelated.sigil").unwrap(),
+        deleted.binding("unrelated.sigil").unwrap()
     );
+    assert!(sigilc::design::valid_structure(&deleted).is_err());
+    assert!(deleted.require_valid("a.sigil").is_err());
+    deleted.require_valid("unrelated.sigil").unwrap();
 }
 
 #[test]
 fn implementation_key_contains_only_its_target_and_ontology_format_catalog() {
     let root = workspace();
-    let mut input = root.input(PATHS, json!([]));
+    let input = root.design_input();
     let frozen = DesignIdentities::collect(&input, &BTreeMap::new())
         .unwrap()
         .freeze(DesignState::Loose, "d1".into(), true)
@@ -113,16 +154,12 @@ fn implementation_key_contains_only_its_target_and_ontology_format_catalog() {
             &frozen.catalog
         )
     );
-    let source = "component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}";
-    input
-        .sources
-        .iter_mut()
-        .find(|s| s.path == "a.sigil")
-        .unwrap()
-        .text = source.into();
-    input
-        .entities
-        .push(serde_json::from_value(support::component("a.sigil", "A", source)).unwrap());
+    // A new Component in the workspace changes the catalog, and so the key.
+    root.write(
+        "a.sigil",
+        b"component A {\ngoal {\nDescribe A.\n}\ninterface {\nOffer A.\n}\n}\ncomponent Added {\ngoal {\nDescribe it.\n}\n}",
+    );
+    let input = root.design_input();
     let changed = DesignIdentities::collect(&input, &BTreeMap::new())
         .unwrap()
         .freeze(DesignState::Coherent, "d2".into(), true)

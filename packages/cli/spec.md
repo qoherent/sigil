@@ -28,7 +28,6 @@ Version 0.9 must provide commands to:
 - initialize a non-interactive versioned workspace config;
 - report CLI, core, and Sigil versions.
 - surface Tag diagnostics and owner-qualified Tag namespaces.
-- export the complete structural Design bundle for direct native `sigilc` use.
 
 Version 0.9 should favor predictable, machine-readable behavior over rich
 terminal UI.
@@ -152,15 +151,6 @@ Catalog and installation results include declared language/tool requirements,
 language compatibility, and `runtimeValidation: "not-run"`. The retained legacy
 skill requirements remain frozen and incompatible with the new language
 toolchain.
-
-### `sigil export design [path]`
-
-Emit raw schema-2 Design JSON for language 0.9.0 without a command envelope.
-Preserve original source bytes through strict UTF-8 capture and byte-ranged
-structural records. Representable language errors stay in the bundle and exit 1.
-Malformed UTF-8 emits no bundle; diagnostics go to stderr and exit 1. Runtime
-failures exit 3 without partial transport. Native semantic operations remain
-direct `sigilc` invocations by the caller.
 
 ### `sigil parse <file>`
 
@@ -315,17 +305,6 @@ command must never overwrite an existing config.
 
 Reports CLI and core package versions and—when a workspace resolves—the
 workspace name and configured Sigil version.
-
-### `sigil export design [path]`
-
-Use core's `loadDesignInput` to emit the raw closed structural JSON bundle. The
-optional path locates the complete workspace; use native `--scope` for focus.
-Preserve captured source/config/glossary text and diagnostics without
-display-path rewriting or a CLI envelope. Support `--root`, `--pretty` and
-`--format json`; reject quiet suppression and non-JSON formats. Language errors
-return 1 with the bundle; runtime failures return 3 without partial output.
-Export invokes no model or semantic compiler. Use `sigilc` directly for semantic
-operations.
 
 The legacy `sigil semantic` group is removed, including beam/accepted-world,
 managed-view, retained handoff, receipt and TS7 verification commands.
