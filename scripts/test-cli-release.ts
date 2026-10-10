@@ -28,7 +28,7 @@ try {
   const suffix = Deno.build.os === "windows" ? ".exe" : "";
   const language = join(relocated, "bin", `sigil${suffix}`);
   const compiler = join(relocated, "bin", `sigilc${suffix}`);
-  const claims = join(relocated, "bin", `sigil-claims${suffix}`);
+  assert(!await exists(join(relocated, "bin", `sigil-claims${suffix}`)));
   const home = join(scratch, "empty home");
   const fixture = join(scratch, "fixture project");
   await Deno.mkdir(home);
@@ -84,7 +84,8 @@ try {
   assertEquals(catalog.skills, [
     "sigil",
     "sigil-align",
-    "sigil-compute",
+    "sigil-compute-align",
+    "sigil-compute-design",
     "sigil-egglog",
     "sigil-evaluate",
     "sigil-understand",
@@ -100,8 +101,6 @@ try {
   assert(await exists(join(scratch, ".agents/skills/sigil-align/SKILL.md")));
   const compilerVersion = (await run(compiler, ["--version"])).trim();
   assert(/^sigilc \d+\.\d+\.\d+$/.test(compilerVersion));
-  const claimsVersion = (await run(claims, ["--version"])).trim();
-  assert(/^sigil-claims \d+\.\d+\.\d+$/.test(claimsVersion));
   await run(language, ["check", fixture, "--format", "json"]);
   const protocol = await validateNativeProtocol({
     language,
@@ -114,7 +113,6 @@ try {
     JSON.stringify({
       version,
       compilerVersion,
-      claimsVersion,
       relocated: true,
       hostTools: false,
       ...protocol,

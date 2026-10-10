@@ -19,7 +19,7 @@ use super::{
     vocabulary,
 };
 use crate::{
-    inputs::DesignBasis,
+    basis::DesignBasis,
     structure::{DesignInput, ImportStatus},
 };
 use serde::{Deserialize, Serialize};

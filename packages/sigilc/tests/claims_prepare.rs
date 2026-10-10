@@ -5,10 +5,7 @@ mod support;
 use support::{BASE, CONSUMER, Workspace, shared_input, shared_workspace};
 
 fn out_dir(name: &str) -> std::path::PathBuf {
-    let path = std::env::temp_dir().join(format!(
-        "sigil-claims-prepare-{}-{name}",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir().join(format!("sigilc-prepare-{}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&path);
     path
 }

@@ -101,11 +101,21 @@ jobs:
           test "$("$cli" --version)" = "$SIGIL_RELEASE_VERSION"
           compiler="/tmp/sigil/sigil-$SIGIL_RELEASE_VERSION/bin/sigilc"
           "$compiler" --version
-          claims="/tmp/sigil/sigil-$SIGIL_RELEASE_VERSION/bin/sigil-claims"
-          "$claims" --version
+          test ! -e "/tmp/sigil/sigil-$SIGIL_RELEASE_VERSION/bin/sigil-claims"
           cp /fixtures/project/main.sigil /tmp/fixture/main.sigil
           cp /fixtures/project/fixture-config.json /tmp/fixture/.sigil/config.json
-          "$compiler" compile design --root /tmp/fixture | grep -q '"state": "Loose"'
+          set +e
+          "$compiler" check --root /tmp/fixture > /tmp/design.json
+          status=$?
+          set -e
+          test "$status" = 1
+          grep -q '"state": "incomplete"' /tmp/design.json
+          set +e
+          "$compiler" align check --root /tmp/fixture > /tmp/align.json
+          status=$?
+          set -e
+          test "$status" = 1
+          grep -q '"state": "incomplete"' /tmp/align.json
           EOF
       - uses: actions/upload-artifact@v4
         with:
@@ -215,8 +225,7 @@ jobs:
             run_install
             compiler_wrapper="$bin_root_native/sigilc.cmd"
             pwsh -NoProfile -Command "& '$compiler_wrapper' --version"
-            claims_wrapper="$bin_root_native/sigil-claims.cmd"
-            pwsh -NoProfile -Command "& '$claims_wrapper' --version"
+            test ! -e "$bin_root/sigil-claims.cmd"
             wrapper="$bin_root_native/sigil.cmd"
             version_one="$(pwsh -NoProfile -Command "& '$wrapper' --version")"
             run_install
@@ -255,7 +264,7 @@ jobs:
             }
             run_install
             "$bin_root/sigilc" --version
-            "$bin_root/sigil-claims" --version
+            test ! -e "$bin_root/sigil-claims" && test ! -L "$bin_root/sigil-claims"
             version_one="$("$bin_root/sigil" --version)"
             run_install
             version_two="$("$bin_root/sigil" --version)"
@@ -281,104 +290,45 @@ jobs:
             fi
             test "$("$bin_root/sigil" --version)" = "$version_one"
           fi
-      - name: Exercise two-binary legacy archive compatibility
+      - name: Remove managed claims wrappers from a 0.2 installation
         shell: bash
         run: |
           set -euo pipefail
           if [[ "${RUNNER_OS}" = Windows ]]; then
-            temp_root="$(cygpath -u "$RUNNER_TEMP")"
             artifact="$(cygpath -u "$RUNNER_TEMP/release-artifact")"
-            extracted="$(cygpath -u "$RUNNER_TEMP/release-extracted")"
+            temp_root="$(cygpath -u "$RUNNER_TEMP")"
           else
-            temp_root="$RUNNER_TEMP"
             artifact="$RUNNER_TEMP/release-artifact"
-            extracted="$RUNNER_TEMP/release-extracted"
+            temp_root="$RUNNER_TEMP"
           fi
-          install_root="$temp_root/sigil-legacy-install"
-          bin_root="$temp_root/sigil-legacy-bin"
           archive="$(find "$artifact" -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.zip' \) | head -n 1)"
-          checksums="$artifact/checksums.txt"
-          distribution="$(find "$extracted" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-          version="${distribution##*/sigil-}"
-          legacy="$temp_root/sigil-legacy-layout"
-          rm -rf "$legacy" "$install_root" "$bin_root"
-          mkdir -p "$legacy" "$install_root" "$bin_root"
-          cp -R "$distribution" "$legacy/sigil-$version"
-          rm -f "$legacy/sigil-$version/bin/sigil-claims" \
-            "$legacy/sigil-$version/bin/sigil-claims.exe"
-          if [[ "${RUNNER_OS}" = Windows ]]; then
-            SIGIL_LEGACY_ROOT="$(cygpath -w "$legacy")" \
-              SIGIL_LEGACY_ARCHIVE="$(cygpath -w "$legacy/legacy.zip")" \
-              SIGIL_VERSION="$version" \
-              pwsh -NoProfile -NonInteractive -Command \
-              '$ErrorActionPreference = "Stop"; Compress-Archive -Path (Join-Path $env:SIGIL_LEGACY_ROOT ("sigil-" + $env:SIGIL_VERSION)) -DestinationPath $env:SIGIL_LEGACY_ARCHIVE -Force'
-            (cd "$legacy" && sha256sum legacy.zip > checksums.txt)
-            installer="$(cygpath -w "$artifact/install.ps1")"
-            install_root_native="$(cygpath -w "$install_root")"
-            bin_root_native="$(cygpath -w "$bin_root")"
-            run_install() {
-              SIGIL_VERSION="$version" \
-                SIGIL_ARCHIVE_PATH="$(cygpath -w "$1")" \
-                SIGIL_CHECKSUMS_PATH="$(cygpath -w "$2")" \
-                SIGIL_INSTALL_DIR="$install_root_native" \
-                SIGIL_BIN_DIR="$bin_root_native" \
-                pwsh -NoProfile -ExecutionPolicy Bypass -File "$installer"
-            }
-            run_install "$archive" "$checksums"
-            test -f "$bin_root/sigil-claims.cmd"
-            run_install "$legacy/legacy.zip" "$legacy/checksums.txt"
-            test ! -e "$bin_root/sigil-claims.cmd"
-            test "$(pwsh -NoProfile -Command "& '$bin_root_native/sigil.cmd' --version")" = "$version"
-            pwsh -NoProfile -Command "& '$bin_root_native/sigilc.cmd' --version" >/dev/null
-            changed_install_root="$temp_root/sigil-legacy-install-changed-root"
-            rm -rf "$changed_install_root"
-            run_install "$archive" "$checksums"
-            test -f "$bin_root/sigil-claims.cmd"
-            changed_install_root_native="$(cygpath -w "$changed_install_root")"
-            SIGIL_VERSION="$version" \
-              SIGIL_ARCHIVE_PATH="$(cygpath -w "$legacy/legacy.zip")" \
-              SIGIL_CHECKSUMS_PATH="$(cygpath -w "$legacy/checksums.txt")" \
-              SIGIL_INSTALL_DIR="$changed_install_root_native" \
-              SIGIL_BIN_DIR="$bin_root_native" \
-              pwsh -NoProfile -ExecutionPolicy Bypass -File "$installer"
-            test ! -e "$bin_root/sigil-claims.cmd"
-            test "$(pwsh -NoProfile -Command "& '$bin_root_native/sigil.cmd' --version")" = "$version"
-            pwsh -NoProfile -Command "& '$bin_root_native/sigilc.cmd' --version" >/dev/null
-          else
-            legacy_archive="$legacy/legacy.tar.gz"
-            (cd "$legacy" && tar -czf "$legacy_archive" "sigil-$version")
-            (cd "$legacy" && sha256sum legacy.tar.gz > checksums.txt)
-            installer="$artifact/install.sh"
-            chmod +x "$installer"
-            run_install() {
-              SIGIL_VERSION="$version" \
-                SIGIL_ARCHIVE_PATH="$1" \
-                SIGIL_CHECKSUMS_PATH="$2" \
-                SIGIL_INSTALL_DIR="$install_root" \
+          install_root="$temp_root/old-claims-install"
+          bin_root="$temp_root/old-claims-bin"
+          mkdir -p "$install_root/versions/0.2/bin" "$bin_root"
+          for round in same-root changed-root; do
+            if [[ "$round" = changed-root ]]; then new_root="$temp_root/new-install-root"; else new_root="$install_root"; fi
+            if [[ "${RUNNER_OS}" = Windows ]]; then
+              SIGIL_OLD_TARGET="$(cygpath -w "$install_root/versions/0.2/bin/sigil-claims.exe")" \
+                SIGIL_OLD_WRAPPER="$(cygpath -w "$bin_root/sigil-claims.cmd")" \
+                pwsh -NoProfile -Command \
+                '[IO.File]::WriteAllText($env:SIGIL_OLD_WRAPPER, "@echo off`r`n@chcp 65001 >nul`r`n`"$env:SIGIL_OLD_TARGET`" %*`r`n", [Text.UTF8Encoding]::new($false))'
+              SIGIL_ARCHIVE_PATH="$(cygpath -w "$archive")" \
+                SIGIL_CHECKSUMS_PATH="$(cygpath -w "$artifact/checksums.txt")" \
+                SIGIL_INSTALL_DIR="$(cygpath -w "$new_root")" \
+                SIGIL_BIN_DIR="$(cygpath -w "$bin_root")" \
+                pwsh -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$artifact/install.ps1")"
+              test ! -e "$bin_root/sigil-claims.cmd"
+            else
+              ln -s "$install_root/versions/0.2/bin/sigil-claims" "$bin_root/sigil-claims"
+              SIGIL_ARCHIVE_PATH="$archive" \
+                SIGIL_CHECKSUMS_PATH="$artifact/checksums.txt" \
+                SIGIL_INSTALL_DIR="$new_root" \
                 SIGIL_BIN_DIR="$bin_root" \
-                "$installer"
-            }
-            run_install "$archive" "$checksums"
-            test -L "$bin_root/sigil-claims"
-            run_install "$legacy_archive" "$legacy/checksums.txt"
-            test ! -e "$bin_root/sigil-claims" && test ! -L "$bin_root/sigil-claims"
-            test "$("$bin_root/sigil" --version)" = "$version"
-            "$bin_root/sigilc" --version >/dev/null
-            changed_install_root="$temp_root/sigil-legacy-install-changed-root"
-            rm -rf "$changed_install_root"
-            run_install "$archive" "$checksums"
-            test -L "$bin_root/sigil-claims"
-            SIGIL_VERSION="$version" \
-              SIGIL_ARCHIVE_PATH="$legacy/legacy.tar.gz" \
-              SIGIL_CHECKSUMS_PATH="$legacy/checksums.txt" \
-              SIGIL_INSTALL_DIR="$changed_install_root" \
-              SIGIL_BIN_DIR="$bin_root" \
-              "$installer"
-            test ! -e "$bin_root/sigil-claims" && test ! -L "$bin_root/sigil-claims"
-            test "$("$bin_root/sigil" --version)" = "$version"
-            "$bin_root/sigilc" --version >/dev/null
-          fi
-          echo "Two-binary archive installed and stale claims wrapper removed."
+                "$artifact/install.sh"
+              test ! -e "$bin_root/sigil-claims" && test ! -L "$bin_root/sigil-claims"
+              "$bin_root/sigilc" --version
+            fi
+          done
       - name: Write consumer summary
         shell: bash
         run: |

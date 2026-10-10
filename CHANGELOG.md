@@ -2,7 +2,28 @@
 
 ## Unreleased
 
-- The `sigil-compute` skill (0.4.0) writes back what a one-source run read,
+### Breaking native changes
+
+- Native `sigilc` 0.3.0 owns design claims and implementation alignment. The
+  separate `sigil-claims` executable and Turtle worlds, ontology, catalog, scope,
+  compare, stale and side-specific commands are removed.
+- Design commands are `prepare`, `ingest`, `check` and `extract-guidance`;
+  implementation commands are `align prepare`, `align ingest` and `align check`.
+  Code selection lives in `tools.sigilc.implementation` in workspace config.
+- Rename `sigil-compute` to `sigil-compute-design`; add `sigil-compute-align`.
+  Skill installation prunes retired managed entries while preserving unmanaged
+  paths. Upgrades remove managed wrappers for the retired executable.
+- Design vocabulary generation 5 adds distinct day-count bounds. Existing
+  readings are asked once more; identity domains otherwise remain stable.
+- VS Code compile commands use design report 6 and alignment report 1 with
+  located findings and Incomplete states.
+
+
+- Rename `sigil-compute` to `sigil-compute-design` (0.4.0). Its reading,
+  re-ask and store write-back behavior stays the same; it now invokes the
+  merged `sigilc` binary. The installed catalog and live callers use the new name.
+
+- The `sigil-compute-design` skill (0.4.0) writes back what a one-source run read,
   under the same rules as the full-design action: only new or changed readings
   are copied, never one the workspace changed during the run, and a failed run
   writes nothing. The next run of either action asks only about what changed.

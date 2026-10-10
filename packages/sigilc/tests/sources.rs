@@ -293,3 +293,86 @@ fn symlinks_and_special_files_cannot_be_explicit_sources_or_artifact_parents() {
         .is_err()
     );
 }
+
+#[test]
+fn alignment_reports_filters_before_capture_and_only_auto_excludes_workspace_design() {
+    use sigilc::sources::discover_alignment;
+    use std::collections::BTreeSet;
+    let root = Workspace::new();
+    for path in [
+        "src/code.ts",
+        "src/test.ts",
+        "src/contract.sigil",
+        "src/unselected.sigil",
+        "vendor/code.ts",
+        "src/.sigil/hidden",
+    ] {
+        root.write(path, b"bytes");
+    }
+    let design_sources = BTreeSet::from(["src/contract.sigil".into()]);
+    let selection = Selection {
+        dirs: vec!["src".into()],
+        exclude: vec!["**/test.ts".into()],
+        vendor_dirs: vec!["vendor".into()],
+        ..Default::default()
+    };
+    let result = discover_alignment(&root.0, &selection, &design_sources, 1024).unwrap();
+    assert_eq!(
+        result
+            .files
+            .iter()
+            .map(|f| f.path.as_str())
+            .collect::<Vec<_>>(),
+        ["src/code.ts", "src/unselected.sigil"]
+    );
+    assert_eq!(result.auto_excluded_design, ["src/contract.sigil"]);
+    assert_eq!(result.exclusions[0].pattern, "**/test.ts");
+    assert_eq!(result.exclusions[0].removed, 1);
+    root.write("src/test.ts", b"\xffmore than the byte limit but excluded");
+    assert_eq!(
+        result.fingerprint,
+        discover_alignment(&root.0, &selection, &design_sources, 1024)
+            .unwrap()
+            .fingerprint
+    );
+    let only_code = discover_alignment(
+        &root.0,
+        &Selection {
+            exclude: vec!["**/*.sigil".into()],
+            ..selection
+        },
+        &design_sources,
+        1024,
+    )
+    .unwrap();
+    assert_eq!(only_code.auto_excluded_design, ["src/contract.sigil"]);
+    assert_eq!(
+        only_code.exclusions[0].removed, 1,
+        "workspace design is reported separately from user removals"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn alignment_lists_linked_directories_even_when_include_globs_match_only_files() {
+    use sigilc::sources::discover_alignment;
+    use std::{collections::BTreeSet, os::unix::fs::symlink};
+    let root = Workspace::new();
+    let outside = Workspace::new();
+    root.write("src/code.ts", b"code");
+    outside.write("secret.ts", b"not selected");
+    symlink(&outside.0, root.0.join("src/linked-dir")).unwrap();
+    let result = discover_alignment(
+        &root.0,
+        &Selection {
+            dirs: vec!["src".into()],
+            include: vec!["**/*.ts".into()],
+            ..Default::default()
+        },
+        &BTreeSet::new(),
+        1024,
+    )
+    .unwrap();
+    assert_eq!(result.files.len(), 1);
+    assert_eq!(result.skipped_symlinks, ["src/linked-dir"]);
+}

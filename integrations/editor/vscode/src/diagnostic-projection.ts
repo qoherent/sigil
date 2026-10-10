@@ -25,6 +25,7 @@ export async function publishCompilationDiagnostics(
       bytes: Uint8Array;
       document: ProjectionDocument;
     }>;
+    readonly sourceFilter?: string;
     isCurrent(): boolean;
     publish(diagnostics: readonly ProjectedDiagnostic[]): void;
   },
@@ -37,6 +38,9 @@ export async function publishCompilationDiagnostics(
   for (const group of diagnosticGroups(report)) {
     for (const finding of group.items) {
       for (const location of finding.locations) {
+        if (host.sourceFilter && location.source !== host.sourceFilter) {
+          continue;
+        }
         let range: EditorRange = {
           start: { line: 0, character: 0 },
           end: { line: 0, character: 0 },

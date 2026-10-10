@@ -1,7 +1,7 @@
 //! The linked check: every valid stored reading of the workspace joined into
 //! one program, with every law run over it.
 //!
-//! Each test drives the `sigil-claims` binary against a real `.sigil`
+//! Each test drives the `sigilc` binary against a real `.sigil`
 //! workspace. Interpretation is per source and sees only imported interfaces;
 //! `check` is what lets a dependency's private readings meet a dependent's.
 use serde_json::Value;
@@ -17,10 +17,10 @@ mod support;
 use support::Workspace;
 
 fn claims(args: &[&str]) -> (i32, Value, String) {
-    let output = Command::new(env!("CARGO_BIN_EXE_sigil-claims"))
+    let output = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
         .output()
-        .expect("sigil-claims runs");
+        .expect("sigilc runs");
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     (
         output.status.code().unwrap_or(-1),
@@ -296,7 +296,7 @@ fn a_dependents_ownership_claim_meets_its_dependencys_private_reading() {
     assert_eq!(code, 1, "{summary}{stderr}");
     assert_eq!(summary["state"], "disjoint");
     let report = run.report(&summary);
-    assert_eq!(report["version"], 5);
+    assert_eq!(report["version"], 6);
     assert!(laws(&report).contains(&"exclusive-ownership".to_owned()));
 
     // Both authors see the finding in their own view.

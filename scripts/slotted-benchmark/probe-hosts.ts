@@ -4,14 +4,14 @@
  * For each host (Codex, Claude Code, Pi) this launches one orchestrator
  * process in a throwaway pass directory with the benchmark's orchestrator
  * settings and a tiny prompt. The orchestrator reads a staged stub SKILL.md,
- * runs the pinned `sigil-claims --version`, starts ONE fresh child that writes
+ * runs the pinned `sigilc --version`, starts ONE fresh child that writes
  * `child.txt`, and reports back. The probe then records whether the child was
  * fresh, which model and reasoning effort it ran with, whether the host shows
  * that to the caller, which skill file was read, and the wall time.
  *
  * Live calls run one host at a time. This is a manual probe against real hosts,
- * not a test, and it does not build `sigil-claims`: it uses the pinned binary
- * from `packages/sigilc/target/debug` (or `--sigil-claims PATH`).
+ * not a test, and it does not build `sigilc`: it uses the pinned binary
+ * from `packages/sigilc/target/debug` (or `--sigilc PATH`).
  */
 import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,13 +33,13 @@ type Host = HostName;
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const DEFAULT_SIGIL_CLAIMS = join(
   REPO_ROOT,
-  "packages/sigilc/target/debug/sigil-claims",
+  "packages/sigilc/target/debug/sigilc",
 );
 
 const SKILL_MARKER = "STAGED-SKILL-MARKER-4471";
 const SECRET_WORD = "PLUM-7731";
 const SKILL_STUB =
-  `---\nname: sigil-compute\ndescription: probe stub\n---\nProbe stub SKILL.md. Marker: ${SKILL_MARKER}.\n`;
+  `---\nname: sigil-compute-design\ndescription: probe stub\n---\nProbe stub SKILL.md. Marker: ${SKILL_MARKER}.\n`;
 const CHILD_TASK =
   "Write the word OK to the file child.txt in your working directory. Then write to child-context.txt the secret word if you were told one earlier in this conversation, otherwise write NONE. Then reply DONE.";
 
@@ -48,7 +48,7 @@ const HELP = `Host probe: can each host orchestrate one fresh child?
   deno task slotted-benchmark:probe [--host codex|claude|pi]... [--effort LEVEL]
     [--child-effort LEVEL] [--codex-model M] [--claude-model M]
     [--claude-child-model M] [--pi-model PROVIDER/ID] [--pi-child-model PROVIDER/ID]
-    [--timeout-ms N] [--out DIR] [--sigil-claims PATH]
+    [--timeout-ms N] [--out DIR] [--sigilc PATH]
 
 Defaults: all hosts, run one at a time; effort medium, child effort low;
 timeout 600000 ms per host. Scratch output goes to a new temp directory unless
@@ -63,7 +63,7 @@ interface Options {
   childModels: Record<Host, string>;
   timeoutMs: number;
   outDir: string | null;
-  sigilClaims: string;
+  sigilc: string;
 }
 
 export interface HostProbeResult {
@@ -133,7 +133,7 @@ function parseArgs(args: string[]): Options {
     childModels: { codex: "", claude: "", pi: "" },
     timeoutMs: 600_000,
     outDir: null,
-    sigilClaims: DEFAULT_SIGIL_CLAIMS,
+    sigilc: DEFAULT_SIGIL_CLAIMS,
   };
   const childOverride: Partial<Record<Host, string>> = {};
   for (let index = 0; index < args.length; index += 2) {
@@ -177,8 +177,8 @@ function parseArgs(args: string[]): Options {
       case "--out":
         options.outDir = resolve(value);
         break;
-      case "--sigil-claims":
-        options.sigilClaims = resolve(value);
+      case "--sigilc":
+        options.sigilc = resolve(value);
         break;
       default:
         throw new Error(`Unknown option ${flag}\n${HELP}`);
@@ -198,19 +198,21 @@ async function probeHost(
 ): Promise<HostProbeResult> {
   const passDir = join(hostDir, "pass");
   const binDir = join(hostDir, "bin");
-  await Deno.mkdir(join(passDir, "skills/sigil-compute"), { recursive: true });
+  await Deno.mkdir(join(passDir, "skills/sigil-compute-design"), {
+    recursive: true,
+  });
   await Deno.mkdir(binDir, { recursive: true });
   await Deno.writeTextFile(
-    join(passDir, "skills/sigil-compute/SKILL.md"),
+    join(passDir, "skills/sigil-compute-design/SKILL.md"),
     SKILL_STUB,
   );
-  await Deno.symlink(options.sigilClaims, join(binDir, "sigil-claims")).catch(
+  await Deno.symlink(options.sigilc, join(binDir, "sigilc")).catch(
     async () => {
-      await Deno.remove(join(binDir, "sigil-claims"));
-      await Deno.symlink(options.sigilClaims, join(binDir, "sigil-claims"));
+      await Deno.remove(join(binDir, "sigilc"));
+      await Deno.symlink(options.sigilc, join(binDir, "sigilc"));
     },
   );
-  const expectedVersion = await commandOutput(options.sigilClaims, [
+  const expectedVersion = await commandOutput(options.sigilc, [
     "--version",
   ]);
   // The Codex launch copies a credential into the host directory. It is
@@ -289,7 +291,7 @@ async function probeHost(
     }
     if (!stagedSkillRead) gaps.push("staged SKILL.md was not read");
     if (!versionReported) {
-      gaps.push("orchestrator did not report the sigil-claims version");
+      gaps.push("orchestrator did not report the sigilc version");
     }
 
     let status: HostProbeResult["status"];
@@ -344,8 +346,8 @@ async function probeHost(
 function orchestratorPrompt(spawnStep: string): string {
   return [
     "You are the probe orchestrator. Do these steps in order.",
-    "1. Read skills/sigil-compute/SKILL.md (relative to your working directory) and note its marker.",
-    "2. Run `sigil-claims --version` in the shell and note the output.",
+    "1. Read skills/sigil-compute-design/SKILL.md (relative to your working directory) and note its marker.",
+    "2. Run `sigilc --version` in the shell and note the output.",
     `3. Start exactly ONE fresh child sub-agent. ${spawnStep} Its task, verbatim: "${CHILD_TASK}"`,
     "4. Wait for the child, then reply with one line: marker, version, child result.",
     `Secret word, for you only: ${SECRET_WORD}.`,
@@ -375,7 +377,7 @@ async function buildLaunch(
     childEffort: options.childEffort,
     passDir,
     codexHome,
-    allowedShell: ["sigil-claims"],
+    allowedShell: ["sigilc"],
     childPrompt:
       "You are a careful file-writing helper. Do exactly what the task says.",
     piSubagentsEntry: defaultPiSubagentsEntry(),
@@ -400,7 +402,7 @@ function isStaged(path: string, passDir: string): boolean {
   })();
   const realPass = Deno.realPathSync(passDir);
   return real.startsWith(realPass + "/") ||
-    real === join(realPass, "skills/sigil-compute/SKILL.md");
+    real === join(realPass, "skills/sigil-compute-design/SKILL.md");
 }
 
 function summaryLine(result: HostProbeResult): string {

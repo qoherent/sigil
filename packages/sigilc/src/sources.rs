@@ -52,6 +52,231 @@ pub struct CapturedSource {
     pub bytes: Vec<u8>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct PatternExclusion {
+    pub pattern: String,
+    pub removed: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UnpresentableSource {
+    pub path: String,
+    pub reason: String,
+}
+
+/// Alignment distinguishes files that can be presented from selected files
+/// that keep the check incomplete. All report lists are deterministically sorted.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AlignmentManifest {
+    pub fingerprint: String,
+    pub files: Vec<SourceIdentity>,
+    pub exclusions: Vec<PatternExclusion>,
+    pub auto_excluded_design: Vec<String>,
+    pub empty_files: Vec<String>,
+    pub unpresentable: Vec<UnpresentableSource>,
+    pub skipped_symlinks: Vec<String>,
+    pub intentional_empty: bool,
+}
+
+/// Discover alignment units without following links or reading excluded files.
+/// Exclude patterns remove candidates in config order; an overlapping pattern
+/// only counts files not already removed by an earlier pattern.
+pub fn discover_alignment(
+    root: &Path,
+    selection: &Selection,
+    design_sources: &BTreeSet<String>,
+    max_bytes: u64,
+) -> Result<AlignmentManifest, String> {
+    let root = root.canonicalize().map_err(|e| e.to_string())?;
+    for vendor in &selection.vendor_dirs {
+        normalized_path(vendor)?;
+    }
+    let includes = selection
+        .include
+        .iter()
+        .map(|p| glob(p))
+        .collect::<Result<Vec<_>, _>>()?;
+    let excludes = selection
+        .exclude
+        .iter()
+        .map(|p| glob(p))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut candidates = BTreeSet::new();
+    let mut links = BTreeSet::new();
+    for path in &selection.paths {
+        normalized_path(path)?;
+        if symlink_segment(&root, path)? {
+            links.insert(path.clone());
+            continue;
+        }
+        let target = checked_path(&root, path)?;
+        if !fs::symlink_metadata(target)
+            .map_err(|e| format!("{path}: {e}"))?
+            .is_file()
+        {
+            return Err(format!("not a regular source file: {path}"));
+        }
+        candidates.insert(path.clone());
+    }
+    for dir in &selection.dirs {
+        normalized_path(dir)?;
+        if symlink_segment(&root, dir)? {
+            links.insert(dir.clone());
+            continue;
+        }
+        let target = checked_path(&root, dir)?;
+        if !fs::symlink_metadata(target)
+            .map_err(|e| format!("{dir}: {e}"))?
+            .is_dir()
+        {
+            return Err(format!("not a source directory: {dir}"));
+        }
+        if !internal_or_vendor(dir, selection) {
+            alignment_candidates(&root, dir, selection, &mut candidates, &mut links)?;
+        }
+    }
+    if selection.paths.is_empty() && selection.dirs.is_empty() {
+        alignment_candidates(&root, "", selection, &mut candidates, &mut links)?;
+    }
+    let included = |path: &str| {
+        !internal_or_vendor(path, selection)
+            && (includes.is_empty() || includes.iter().any(|p| p.is_match(path)))
+    };
+    candidates.retain(|p| included(p));
+    // A linked directory may contain included files, but checking its contents
+    // would follow the link. Report every encountered link that is not excluded.
+    links.retain(|p| !internal_or_vendor(p, selection) && !excludes.iter().any(|e| e.is_match(p)));
+    let auto_excluded_design: Vec<_> = candidates.intersection(design_sources).cloned().collect();
+    candidates.retain(|p| !design_sources.contains(p));
+    let mut exclusions = Vec::new();
+    for (pattern, matcher) in selection.exclude.iter().zip(&excludes) {
+        let before = candidates.len();
+        candidates.retain(|p| !matcher.is_match(p));
+        exclusions.push(PatternExclusion {
+            pattern: pattern.clone(),
+            removed: before - candidates.len(),
+        });
+    }
+    let mut files = Vec::new();
+    let mut empty_files = Vec::new();
+    let mut unpresentable = Vec::new();
+    for path in &candidates {
+        let metadata =
+            fs::symlink_metadata(checked_path(&root, path)?).map_err(|e| format!("{path}: {e}"))?;
+        if metadata.len() > max_bytes {
+            unpresentable.push(UnpresentableSource {
+                path: path.clone(),
+                reason: format!("source exceeds presentation byte limit ({max_bytes})"),
+            });
+            continue;
+        }
+        let source = capture(&root, path, max_bytes)?;
+        if source.bytes.is_empty() {
+            empty_files.push(path.clone());
+        } else if std::str::from_utf8(&source.bytes).is_err() {
+            unpresentable.push(UnpresentableSource {
+                path: path.clone(),
+                reason: "source is not UTF-8".into(),
+            });
+        } else {
+            files.push(source.identity);
+        }
+    }
+    // Empty files are not units. Unpresentable regular files remain selected
+    // units, so a binary-only selection reaches Incomplete rather than usage.
+    let intentional_empty = files.is_empty() && unpresentable.is_empty();
+    if intentional_empty && !selection.allow_empty {
+        return Err(format!(
+            "empty source selection; intentional empty scope requires allowEmpty; empty files: {empty_files:?}; skipped symlinks: {links:?}; auto-excluded design sources: {auto_excluded_design:?}"
+        ));
+    }
+    let skipped_symlinks: Vec<_> = links.into_iter().collect();
+    let fingerprint = hash(
+        &serde_json::to_vec(&(
+            "sigil-align-sources-v1",
+            &files,
+            &exclusions,
+            &auto_excluded_design,
+            &empty_files,
+            &unpresentable,
+            &skipped_symlinks,
+        ))
+        .map_err(|e| e.to_string())?,
+    );
+    Ok(AlignmentManifest {
+        fingerprint,
+        files,
+        exclusions,
+        auto_excluded_design,
+        empty_files,
+        unpresentable,
+        skipped_symlinks,
+        intentional_empty,
+    })
+}
+
+fn internal_or_vendor(path: &str, selection: &Selection) -> bool {
+    path.split('/').any(|part| INTERNAL.contains(&part))
+        || selection
+            .vendor_dirs
+            .iter()
+            .any(|v| path == v || path.starts_with(&format!("{v}/")))
+}
+
+/// Inspect each segment before checking the final file type. No target behind a
+/// link is statted or read, including explicit paths that cross a linked parent.
+fn symlink_segment(root: &Path, path: &str) -> Result<bool, String> {
+    let mut target = root.to_path_buf();
+    for part in path.split('/') {
+        target.push(part);
+        let metadata = fs::symlink_metadata(&target).map_err(|e| format!("{path}: {e}"))?;
+        if metadata.file_type().is_symlink() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn alignment_candidates(
+    root: &Path,
+    dir: &str,
+    selection: &Selection,
+    files: &mut BTreeSet<String>,
+    links: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    let target = if dir.is_empty() {
+        root.to_owned()
+    } else {
+        checked_path(root, dir)?
+    };
+    for entry in fs::read_dir(target).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| "non-UTF-8 source path")?;
+        let path = if dir.is_empty() {
+            name
+        } else {
+            format!("{dir}/{name}")
+        };
+        if internal_or_vendor(&path, selection) {
+            continue;
+        }
+        normalized_path(&path)?;
+        let kind = entry.file_type().map_err(|e| e.to_string())?;
+        if kind.is_symlink() {
+            links.insert(path);
+        } else if kind.is_dir() {
+            alignment_candidates(root, &path, selection, files, links)?;
+        } else if kind.is_file() {
+            files.insert(path);
+        }
+    }
+    Ok(())
+}
+
 pub fn hash(bytes: &[u8]) -> String {
     Blake3Hasher.hash_hex(bytes)
 }

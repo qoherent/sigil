@@ -1,0 +1,31 @@
+{
+  "id": "plumbing-beside-name",
+  "title": "Logging file beside a Booking design name",
+  "explanation": "A booking-named plumbing file logs a declared design label without delivering or implementing it.",
+  "findingClass": "alignment",
+  "laws": [
+    "undesigned-file"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/booking-plumbing.ts",
+      "section": "code",
+      "text": "console.log(\"Booking::booking request\", message)"
+    }
+  ],
+  "implementation": {
+    "source": "src/booking-plumbing.ts",
+    "element": "traceBooking"
+  },
+  "changes": [
+    {
+      "path": "src/booking-plumbing.ts",
+      "after": "export function traceBooking(message: string) { console.log(\"Booking::booking request\", message); }\n"
+    }
+  ]
+}

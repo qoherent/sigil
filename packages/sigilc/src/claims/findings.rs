@@ -25,8 +25,8 @@ use std::{
 /// `linked` evidence. 5 reports an ingest that left units unread as
 /// `incomplete` with the same `unread` list, adds the `gap` class and drops the
 /// `ungrounded-claim` finding: a name outside a Facet's list now refuses the
-/// unit rather than being kept and flagged.
-pub const REPORT_VERSION: u32 = 5;
+/// unit rather than being kept and flagged. 6 adds editor-compatible finding locations.
+pub const REPORT_VERSION: u32 = 6;
 
 /// The suffix of a linked report, so it never overwrites an ingest report.
 pub const LINKED_SUFFIX: &str = ".linked.json";
@@ -67,6 +67,8 @@ pub enum Class {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Finding {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub locations: Vec<crate::locations::Location>,
     pub class: Class,
     /// The law that derived this finding, or the admission rule that decided it.
     pub law: String,
@@ -182,6 +184,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
         let witness = text(row, 3);
         let (component, section) = where_of(&witness);
         findings.push(Finding {
+            locations: Vec::new(),
             class: violation_class(&law),
             law,
             subject: text(row, 1),
@@ -200,6 +203,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
         let step = text(row, 0);
         let (component, section) = where_of(&step);
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Flow,
             law: "unreached-step".into(),
             subject: step.clone(),
@@ -217,6 +221,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
         let (law, step, object, witness) = (text(row, 0), text(row, 1), text(row, 2), text(row, 3));
         let (component, section) = where_of(&step);
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Flow,
             law: law.clone(),
             subject: step.clone(),
@@ -254,6 +259,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
             .get(&graph)
             .is_some_and(|owner| *owner != component);
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Flow,
             law: "unguarded-flow".into(),
             subject: graph,
@@ -276,6 +282,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
     for row in world.table("suppressed-graph") {
         let component = text(row, 0);
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Flow,
             law: "suppressed-graph".into(),
             subject: component.clone(),
@@ -294,6 +301,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
         let witness = text(row, 0);
         let (component, section) = where_of(&witness);
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::UnmetObligation,
             law: "unmet-obligation".into(),
             subject: text(row, 1),
@@ -315,6 +323,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
                 ),
             };
             findings.push(Finding {
+                locations: Vec::new(),
                 class: Class::Interpretation,
                 law: law.into(),
                 subject: subject_of(&fact.body),
@@ -347,6 +356,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
             ),
         };
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Gap,
             law: law.into(),
             subject: fact.component.clone(),
@@ -362,6 +372,7 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
     // interpretation, never to the design.
     for (component, section) in super::identity::uninterpreted(request, facts) {
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Interpretation,
             law: "uninterpreted-section".into(),
             subject: component.clone(),
@@ -417,6 +428,7 @@ pub fn report(
     // run never requests it; its own source's run does.
     for (component, facet) in super::identity::uninterpreted_context(request, facts) {
         findings.push(Finding {
+            locations: Vec::new(),
             class: Class::Interpretation,
             law: "uninterpreted-context".into(),
             subject: component.clone(),
@@ -588,7 +600,7 @@ pub fn write(report: &Report, root: &Path) -> Result<PathBuf, String> {
 ///
 /// Shared by the report and the judgment context so the two cannot drift on
 /// naming, formatting, or which directory they land in.
-pub(super) fn store(
+pub(crate) fn store(
     value: &impl Serialize,
     root: &Path,
     source: &str,
@@ -652,4 +664,39 @@ fn one(fact: &Fact, only_in: &str) -> Disagreement {
 /// Identity of what a row says, independent of which run produced it.
 fn body_key(body: &Body) -> String {
     serde_json::to_string(body).expect("body serialization")
+}
+
+/// Attach editor-compatible source ranges without changing claim identities.
+// @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ComputedFindings interface
+pub fn locate(report: &mut Report, input: &crate::structure::DesignInput, facts: &[Fact]) {
+    for finding in &mut report.findings {
+        let mut facets: BTreeSet<&str> = finding
+            .claims
+            .iter()
+            .filter_map(|id| facts.iter().find(|f| f.id == *id).map(|f| f.facet.as_str()))
+            .collect();
+        // A context finding names the unread Facet directly.
+        if input.units.iter().any(|u| u.id == finding.object) {
+            facets.insert(&finding.object);
+        }
+        if facets.is_empty() {
+            facets.extend(
+                input
+                    .units
+                    .iter()
+                    .filter(|u| {
+                        u.owner.as_deref() == Some(finding.component.as_str())
+                            && super::vocabulary::section_name(&u.section)
+                                == finding.section.as_str()
+                    })
+                    .map(|u| u.id.as_str()),
+            );
+        }
+        finding.locations = facets
+            .into_iter()
+            .filter_map(|facet| crate::locations::Location::design(input, facet))
+            .collect();
+        finding.locations.sort();
+        finding.locations.dedup();
+    }
 }

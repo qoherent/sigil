@@ -381,10 +381,10 @@ Sigil deliberately splits fuzzy interpretation from deterministic reasoning.
                  LLM territory
                       │
                       ▼
-source ───────→ Turtle generators
+source ───────→ data-only claims readers
                       │
                       ▼
-                semantic objects
+                admitted claims
                       │
                  compiler territory
                       ▼
@@ -424,7 +424,7 @@ Design and Implementation are separate universes.
     ↓
 semanticize
     ↓
-Design semantic objects
+Design admitted claims
     ↓
 D
     ↓
@@ -435,7 +435,7 @@ source code
     ↓
 independent semanticize
     ↓
-Implementation semantic objects
+Implementation admitted claims
     ↓
 I
     ↓
@@ -693,9 +693,7 @@ high-level project summary for this configured boundary.
   documents.
 - `examples/` contains independently configured Sigil projects used as
   design-pressure fixtures.
-- `packages/` contains the implemented `sigil-core`, `sigil-compiler`,
-  standalone Claude, OpenCode, and Pi compiler adapters, `sigil-cli`, and
-  initial `sigil-lsp`.
+- `packages/` contains the shared core, language CLI, native `sigilc` and language server.
 - `integrations/` contains host adapters such as coding-agent skills, the
   initial VS Code extension, and future editor integrations.
 
@@ -747,15 +745,16 @@ repository.
 ## Coding-Agent Skills
 
 The bundle provides four Sigil 0.9 design entry points, an implementation
-alignment skill, and one egglog language skill:
+alignment skill, its computed partner, and one egglog language skill:
 
 | Skill | Use it to |
 | --- | --- |
 | [sigil-understand](integrations/skills/sigil-understand/SKILL.md) | Explain intent, contract roles, Tag ownership, and relevant context. |
 | [sigil-evaluate](integrations/skills/sigil-evaluate/SKILL.md) | Review design read-only for consequential problems and useful simplification. |
-| [sigil-compute](integrations/skills/sigil-compute/SKILL.md) | Run the claims loop on an existing design and hand back the computed Coherent, Loose, Disjoint, or Incomplete ingest state with findings, distinct from advisory review. |
+| [sigil-compute-design](integrations/skills/sigil-compute-design/SKILL.md) | Run the claims loop on an existing design and hand back the computed Coherent, Loose, Disjoint, or Incomplete ingest state with findings, distinct from advisory review. |
 | [sigil-write](integrations/skills/sigil-write/SKILL.md) | Write compact contracts and apply supported corrections through independent delegated review. |
 | [sigil-align](integrations/skills/sigil-align/SKILL.md) | Review and repair a selected component's implementation against its accepted contract, then report code and test evidence. |
+| [sigil-compute-align](integrations/skills/sigil-compute-align/SKILL.md) | Run the design-first computed implementation check and hand back Closed, Converged, Drift, or Incomplete with findings and proposed excludes. |
 | [sigil-egglog](integrations/skills/sigil-egglog/SKILL.md) | Teach egglog/datalog for claims data-only rows and `.egg` law programs. |
 
 The four design skills and `sigil-align` start at artifact version 0.1.0 and
@@ -763,10 +762,14 @@ share the bundled 0.9.0 normative reference and grammar. `sigil-egglog` starts
 at 0.1.0 with no design-skill dependency. Install the complete catalog with
 `sigil skill install`
 (or `--project`); writer and evaluator require their sibling reference files.
-`sigil-compute` requires its declared siblings `sigil-understand` and
+`sigil-compute-design` requires its declared siblings `sigil-understand` and
 `sigil-egglog`; it routes only explicit claims or computed-check requests, so a
-generic review stays on `sigil-evaluate`. It needs the `sigil-claims` binary and
+generic review stays on `sigil-evaluate`. It needs the `sigilc` binary and
 a host that can delegate a fresh child.
+`sigil-compute-align` starts at 0.1.0 and requires `sigil-compute-design`,
+`sigil-understand`, and `sigil-egglog`, plus `sigilc` and fresh-child delegation.
+It needs configured implementation selection and proposes excludes as output only;
+a plain implementation review stays on `sigil-align`.
 `sigil-align` requires `sigil-understand`, `sigil-evaluate`, and `sigil-write`.
 Use it for implementation conformance and determinate code repairs; use
 `sigil-evaluate` for read-only design review. A consequential contract change
@@ -871,8 +874,8 @@ use those shared results. VS Code provides navigation, diagnostics, highlighting
 whole-document preview and direct native compilation with verified source ranges.
 
 Independent interpretation remains external to deterministic tooling. Native
-states describe the supplied projections and compiler laws; successful language
-checks, fixed-Turtle protocol tests and design reviews make different claims.
+states describe admitted readings and compiler laws; successful language
+checks, canned-claims protocol tests and advisory design reviews establish different facts.
 The retained 0.7 skill is historical and excluded from active workspace discovery.
 The 0.9 understanding, writing and evaluation skills provide the current design
 workflow without requiring compiler-based proof.

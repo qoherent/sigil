@@ -53,6 +53,15 @@ component SkillInstaller {
 
       Preflight every destination before changing any *managed installation*.
 
+      Remove manifest-managed skill paths whose names have left the bundled
+      catalog, and remove those entries from the managed manifest.
+
+      Retired manifest entries must name immediate, non-hidden destination paths.
+      Refuse an invalid entry before changing any destination.
+
+      Leave skills outside the catalog without managed entries untouched and
+      report those unmanaged paths.
+
       Prefer relative directory links and fall back to managed copies when permitted
       *link creation* fails.
 
@@ -147,9 +156,9 @@ component SkillInstaller {
 
     SkillCompatibility {
       Catalog and installation results include declared language/tool compatibility.
-      The four-skill bundle retains sigil as legacy 0.7 with frozen incompatible
+      The bundled catalog retains sigil as legacy 0.7 with frozen incompatible
       tool
-      ranges and includes the three current 0.9 sibling skills. Discovery remains
+      ranges and includes the current 0.9 sibling skills. Discovery remains
       data-driven; packaging compatibility metadata does not authorize silently
       choosing or installing another binary.
     }
@@ -162,6 +171,8 @@ component SkillInstaller {
     SkillInstallation {
       installSkills(options?) returns the selected scope, *agents*, source directory,
       and installed, updated, existing, or copied destination results
+
+      Return pruned managed paths and preserved unmanaged skill paths separately.
 
       scope *installation defaults* to global and accepts global or project
 

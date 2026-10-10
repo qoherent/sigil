@@ -39,6 +39,57 @@ evaluator, profile and migration configuration has no consumer or compatibility
 schema. Native sigilc accepts explicit inputs and limits on its own command line;
 model configuration and orchestration remain external.
 
+`sigilc align` reads its code selection from `tools.sigilc.implementation`:
+
+```json
+{
+  "tools": {
+    "sigilc": {
+      "implementation": {
+        "dirs": ["src"],
+        "include": ["**/*.rs"],
+        "exclude": ["**/generated/**"],
+        "vendorDirs": ["vendor"],
+        "allowEmpty": false,
+        "design": ["booking.sigil"]
+      }
+    }
+  }
+}
+```
+
+This fragment belongs in the workspace config above, or in `.sigil/local.json`.
+Local configuration contains only `tools`; its objects merge recursively into
+workspace tool settings, while arrays and scalars replace the workspace values.
+All paths remain relative to the workspace root.
+
+The implementation namespace is required for alignment. `sigilc` rejects unknown
+keys in its namespace, including unknown implementation fields. Core continues
+to validate only the tools' object shape. The selection fields are optional:
+
+- `paths`: explicit file paths; defaults to `[]`.
+- `dirs`: directory trees; defaults to `[]`. With no paths or directories,
+  discovery starts at the workspace root.
+- `include`, `exclude`: file globs; default to `[]`. An empty include list accepts
+  every file. Exclude patterns remove files in configuration order; a later
+  overlapping pattern counts only files earlier patterns have not removed.
+- `vendorDirs`: directory trees excluded from discovery; defaults to `[]`.
+- `allowEmpty`: permits a selection with no code units; defaults to `false`.
+- `design`: non-empty list of unique design source roots. Roots expand through
+  required imports and owners using the design scope closure. Omit it to judge
+  the whole workspace design. Components outside the closure are listed in the
+  report and their promises are outside the implementation check.
+
+Path and glob fields are arrays of non-empty strings. Discovery always excludes
+the internal `.sigil`, `.git`, `.deno`, `node_modules`, `build`, `target`, and
+`coverage` trees. Workspace design sources encountered inside the selection are
+auto-excluded and listed separately from user exclude patterns. Symlinks are
+skipped and listed, including linked directories whose contents cannot safely be
+checked against include globs. Design auto-exclusions happen before user exclude
+counts. Zero-byte files are listed but are not units. Non-UTF-8 files
+and files over the presentation byte limit are listed as unpresentable and keep
+the implementation check Incomplete until the user excludes them.
+
 `workspace.members` is the sole authority for additional project roots in the
 workspace. Each entry is a unique, non-root, non-overlapping,
 workspace-relative directory. Package manifests and repository workspace

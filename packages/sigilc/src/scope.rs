@@ -1,4 +1,4 @@
-//! Ordered focus and effective world membership, without external scheduling.
+//! Ordered focus and dependency closure for library callers.
 use crate::{
     sources::{self, Selection, SourceManifest},
     structure::{DesignInput, normalized_path},

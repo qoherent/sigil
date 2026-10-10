@@ -50,35 +50,28 @@ can connect stable entrypoints to governing section occurrences:
 The `Send` concept must actually occur in the selected section. These comments
 support navigation and context; they do not prove semantic correspondence.
 
-## Comparison scope and generated state
+## Implementation selection and stored readings
 
-Language export captures the current workspace. A native scope pairs ordered
-Design roots with language-neutral Implementation selection:
+Commit the selected code and design roots in `.sigil/config.json`:
 
 ```json
-{
-  "version": 1,
-  "design": { "paths": ["notifier.sigil"] },
-  "implementation": {
-    "dirs": ["src"],
-    "exclude": ["**/generated/**"],
-    "vendorDirs": ["vendor"]
-  }
-}
+{ "tools": { "sigilc": { "implementation": {
+  "dirs": ["src"],
+  "exclude": ["**/generated/**"],
+  "vendorDirs": ["vendor"],
+  "design": ["notifier.sigil"]
+} } } }
 ```
 
-Store the scope outside selected sources. Use
-`sigilc scope --root . --scope FILE` to inspect ordered focus and effective
-import/owner closure. Carry the same scope through stale, prepare, ingest,
-entities and compile/compare. Empty path/directory lists do not mean empty scope;
-intentional emptiness must be explicit. Narrowing focus never proves a whole
-project complete.
+The implementation block also accepts `paths`, `include` and `allowEmpty`.
+`.sigil/local.json` can override it: objects merge, arrays replace. Optional
+`design` roots expand through required imports and owners; omission selects
+the whole design. `sigilc align prepare --root . --out DIR` reports the resolved
+selection, exclusions and out-of-scope components. A full-design check always
+gates alignment. Intentional empty selections require `allowEmpty`.
 
-Keep `.sigil/worlds/` ignored. `sigilc clean --root DIR` discards generated worlds
-without changing authored files or external preparations. After cleaning, obtain
-required reconstructions again. Do not commit generated worlds as authored truth.
-
-Use the [native protocol reference](../integrations/skills/sigil/references/compilation-execution.md)
-for exact per-source inputs and exits. Independent interpreters and the coding loop
-remain external. Record current native states and unavailable prerequisites
-alongside ordinary tests and actual delivery evidence.
+Use [sigil-compute-align](../integrations/skills/sigil-compute-align/SKILL.md)
+for the design-first reading loop and
+[the native guide](../packages/sigilc/README.md) for exact commands and exits.
+Stored claims live in `.sigil/claims/`. `sigilc clean --root .` removes generated
+trees and old worlds while keeping readings, authored files and config.

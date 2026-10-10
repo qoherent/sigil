@@ -25,7 +25,7 @@ component SigilReleaseDistribution {
       Windows.
 
       Package stable *platform-specific archive names* containing versioned
-      bin/sigil, bin/sigilc, bin/sigil-claims, and integrations/skills paths.
+      bin/sigil, bin/sigilc, and integrations/skills paths.
       Each binary reports its owning manifest version; the archive version follows
       the language CLI manifest.
 
@@ -108,9 +108,9 @@ component SigilReleaseDistribution {
       without host Deno, Node, npm, Rust or TypeScript tools.
 
       Matching *native runners* build and execute every retained target. Relocated
-      archives export structural Design with sigil, run native scope, preparation,
-      ingestion and gates directly with sigilc using fixed fixtures, and expose
-      sigil-claims to run the computed claims workflow. Runtime errors are distinct
+      archives export structural Design with sigil, run native preparation,
+      ingestion and design and alignment checks directly with sigilc using canned
+      claims fixtures. Runtime errors are distinct
       from named Design and Implementation states. No legacy bridge, TypeScript
       proof runtime, runtime manifest or compiler wrapper is packaged.
       Repository-local repos dependencies are unnecessary.
@@ -136,7 +136,7 @@ component SigilReleaseDistribution {
       Linux, and Windows targets
 
       each archive contains the *language executable* sigil, the independent semantic
-      compiler sigilc, the computed claims command sigil-claims, and the
+      compiler sigilc owning both computed checks, and the
       distribution-version-matched skill catalog
 
       install.sh installs the latest or explicitly selected *macOS CLI release*

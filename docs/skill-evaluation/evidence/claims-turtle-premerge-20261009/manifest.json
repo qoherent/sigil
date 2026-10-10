@@ -1,0 +1,374 @@
+{
+  "version": 2,
+  "createdAt": "2026-10-09T11:44:32.917Z",
+  "fixture": {
+    "version": 1,
+    "description": "Slotted is a room-booking design: people own rooms and rent other people's rooms, with owner approval of requests. SharedKernel is a kernel rather than a module.",
+    "sources": [
+      {
+        "path": "slotted.sigil",
+        "role": "The app: module list, dependency rules, technology stack",
+        "imports": [
+          "Identity",
+          "Rooms",
+          "Availability",
+          "Booking",
+          "SharedKernel"
+        ],
+        "target": {
+          "state": "Coherent",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "identity.sigil",
+        "role": "User accounts, sessions, the signed-in user, requireUser",
+        "imports": [],
+        "target": {
+          "state": "Coherent",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "rooms.sigil",
+        "role": "Rooms, room owners, room timezone, archiving, the room lock",
+        "imports": [
+          "Identity"
+        ],
+        "target": {
+          "state": "Coherent",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "shared.sigil",
+        "role": "The kernel: clock, 30-minute grid, time conversion, domain errors",
+        "imports": [],
+        "target": {
+          "state": "Coherent",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "availability.sigil",
+        "role": "Weekly windows, blackouts, open time",
+        "imports": [
+          "Identity",
+          "Rooms",
+          "SharedKernel"
+        ],
+        "target": {
+          "state": "Coherent",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "booking.sigil",
+        "role": "Booking requests, their lifecycle, the no-overlap rule, owner workflows",
+        "imports": [
+          "Identity",
+          "Rooms",
+          "Availability",
+          "SharedKernel"
+        ],
+        "target": {
+          "state": "Disjoint",
+          "exitCode": 1
+        }
+      },
+      {
+        "path": "calendar.sigil",
+        "role": "The room calendar, with masking by viewer",
+        "imports": [
+          "Rooms",
+          "Availability",
+          "Booking",
+          "SharedKernel"
+        ],
+        "target": {
+          "state": "Loose",
+          "exitCode": 0
+        }
+      }
+    ],
+    "issues": [
+      {
+        "id": "booking-pending-range-contradiction",
+        "title": "Pending request range change contradiction",
+        "explanation": "Booking's interface offers a renter a range change for their pending request, while its constraint forbids that range change.",
+        "findingClass": "contradiction",
+        "laws": [
+          "contradictory-claims",
+          "negated-claim-holds"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:booking.sigil:Booking",
+          "object": "urn:sigil:component:booking.sigil:Booking:tag:range%20change"
+        },
+        "remedy": "Decide whether a pending range may change, then make the interface and constraint agree.",
+        "anchors": [
+          {
+            "source": "booking.sigil",
+            "section": "interface",
+            "text": "Booking provides a renter a *range change* of their own pending request"
+          },
+          {
+            "source": "booking.sigil",
+            "section": "constraints",
+            "text": "Booking must not provide a range change of a pending request"
+          }
+        ]
+      },
+      {
+        "id": "booking-rooms-archived-mark-ownership",
+        "title": "Archived room mark ownership conflict",
+        "explanation": "Booking claims exclusive control of the archived room mark, while Rooms also claims ownership of that mark.",
+        "findingClass": "ownership-conflict",
+        "laws": [
+          "exclusive-ownership"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:booking.sigil:Booking",
+          "object": "urn:sigil:component:rooms.sigil:Rooms",
+          "eitherDirection": true
+        },
+        "remedy": "Keep the mark in Rooms. Reword Booking so its workflows call Rooms' archive and unarchive mutations.",
+        "anchors": [
+          {
+            "source": "booking.sigil",
+            "section": "constraints",
+            "text": "Booking owns the archived room mark, and Booking is the only one that may set"
+          },
+          {
+            "source": "rooms.sigil",
+            "section": "state",
+            "text": "Rooms owns the archived room\n    mark"
+          }
+        ]
+      },
+      {
+        "id": "calendar-display-name-unmet-obligation",
+        "title": "Renter display name without a provider",
+        "explanation": "Calendar requires each renter's display name from Identity, which supplies no display-name provider.",
+        "findingClass": "unmet-obligation",
+        "laws": [
+          "unmet-obligation"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:calendar.sigil:Calendar",
+          "object": "urn:sigil:component:calendar.sigil:Calendar:tag:renter%20display%20name"
+        },
+        "remedy": "Give Identity a display name and interface, return the label from Booking, or use the email.",
+        "anchors": [
+          {
+            "source": "calendar.sigil",
+            "section": "constraints",
+            "text": "Calendar requires the *renter display name* of each renter from Identity"
+          }
+        ],
+        "requiresAbsentIdentityDisplayNameProvider": true
+      },
+      {
+        "id": "calendar-owner-digest-unreached-step",
+        "title": "Owner digest comparison without an effect",
+        "explanation": "Calendar compares the owner digest with the previous digest, but the step writes and returns nothing.",
+        "findingClass": "flow",
+        "laws": [
+          "unreached-step"
+        ],
+        "findingEvidence": {
+          "subject": "cited-claim",
+          "object": "urn:sigil:component:calendar.sigil:Calendar"
+        },
+        "remedy": "Delete the step or say what consumes its result.",
+        "anchors": [
+          {
+            "source": "calendar.sigil",
+            "section": "logic",
+            "text": "Step two compares the\n    owner digest of the room with the digest kept from the previous refresh"
+          }
+        ]
+      }
+    ]
+  },
+  "fixtureSha256": "770e7acc516f9d83c99e0a1d15e24851a1e497a65a8bb2eb0b6cb6aab2ae312e",
+  "preflight": {
+    "canSchedule": true,
+    "sourceDrift": [],
+    "issues": [
+      {
+        "id": "booking-pending-range-contradiction",
+        "title": "Pending request range change contradiction",
+        "explanation": "Booking's interface offers a renter a range change for their pending request, while its constraint forbids that range change.",
+        "findingClass": "contradiction",
+        "laws": [
+          "contradictory-claims",
+          "negated-claim-holds"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:booking.sigil:Booking",
+          "object": "urn:sigil:component:booking.sigil:Booking:tag:range%20change"
+        },
+        "remedy": "Decide whether a pending range may change, then make the interface and constraint agree.",
+        "anchors": [
+          {
+            "source": "booking.sigil",
+            "section": "interface",
+            "text": "Booking provides a renter a *range change* of their own pending request"
+          },
+          {
+            "source": "booking.sigil",
+            "section": "constraints",
+            "text": "Booking must not provide a range change of a pending request"
+          }
+        ],
+        "status": "scorable",
+        "reason": null,
+        "facets": [
+          "facet:502352940eb9b1a4bfdee8d04c376244dd5f69753f814e2da903db71734d645f",
+          "facet:d329833b4f5147276ac2ca435490c950e3fcd51e1f7042be08464f7876b8a216"
+        ]
+      },
+      {
+        "id": "booking-rooms-archived-mark-ownership",
+        "title": "Archived room mark ownership conflict",
+        "explanation": "Booking claims exclusive control of the archived room mark, while Rooms also claims ownership of that mark.",
+        "findingClass": "ownership-conflict",
+        "laws": [
+          "exclusive-ownership"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:booking.sigil:Booking",
+          "object": "urn:sigil:component:rooms.sigil:Rooms",
+          "eitherDirection": true
+        },
+        "remedy": "Keep the mark in Rooms. Reword Booking so its workflows call Rooms' archive and unarchive mutations.",
+        "anchors": [
+          {
+            "source": "booking.sigil",
+            "section": "constraints",
+            "text": "Booking owns the archived room mark, and Booking is the only one that may set"
+          },
+          {
+            "source": "rooms.sigil",
+            "section": "state",
+            "text": "Rooms owns the archived room\n    mark"
+          }
+        ],
+        "status": "scorable",
+        "reason": null,
+        "facets": [
+          "facet:26b911731a63d6f4158404ebbcef17e7cbd20594b1f3a9eb6e42de8c3be7cc2b",
+          "facet:53997e8fdbaceec19f6b85ca2cdade65bc10e95757c2aaf7e304add386eae9f2"
+        ]
+      },
+      {
+        "id": "calendar-display-name-unmet-obligation",
+        "title": "Renter display name without a provider",
+        "explanation": "Calendar requires each renter's display name from Identity, which supplies no display-name provider.",
+        "findingClass": "unmet-obligation",
+        "laws": [
+          "unmet-obligation"
+        ],
+        "findingEvidence": {
+          "subject": "urn:sigil:component:calendar.sigil:Calendar",
+          "object": "urn:sigil:component:calendar.sigil:Calendar:tag:renter%20display%20name"
+        },
+        "remedy": "Give Identity a display name and interface, return the label from Booking, or use the email.",
+        "anchors": [
+          {
+            "source": "calendar.sigil",
+            "section": "constraints",
+            "text": "Calendar requires the *renter display name* of each renter from Identity"
+          }
+        ],
+        "requiresAbsentIdentityDisplayNameProvider": true,
+        "status": "scorable",
+        "reason": null,
+        "facets": [
+          "facet:1fee7711dacc90ea02a9cabf05b627c86a68f3bffc404c5435d83058d46f00ef"
+        ]
+      },
+      {
+        "id": "calendar-owner-digest-unreached-step",
+        "title": "Owner digest comparison without an effect",
+        "explanation": "Calendar compares the owner digest with the previous digest, but the step writes and returns nothing.",
+        "findingClass": "flow",
+        "laws": [
+          "unreached-step"
+        ],
+        "findingEvidence": {
+          "subject": "cited-claim",
+          "object": "urn:sigil:component:calendar.sigil:Calendar"
+        },
+        "remedy": "Delete the step or say what consumes its result.",
+        "anchors": [
+          {
+            "source": "calendar.sigil",
+            "section": "logic",
+            "text": "Step two compares the\n    owner digest of the room with the digest kept from the previous refresh"
+          }
+        ],
+        "status": "scorable",
+        "reason": null,
+        "facets": [
+          "facet:9705a9f9816078474431a821a8f2b9a0f97566b733427c38079099cb3b5f02b2"
+        ]
+      }
+    ]
+  },
+  "selections": [
+    {
+      "agent": "codex",
+      "model": "gpt-6-luna"
+    }
+  ],
+  "passes": 3,
+  "timeoutMs": 7200000,
+  "reasoning": "high",
+  "schedule": [
+    {
+      "id": "000001",
+      "agent": "codex",
+      "model": "gpt-6-luna",
+      "pass": 1
+    },
+    {
+      "id": "000002",
+      "agent": "codex",
+      "model": "gpt-6-luna",
+      "pass": 2
+    },
+    {
+      "id": "000003",
+      "agent": "codex",
+      "model": "gpt-6-luna",
+      "pass": 3
+    }
+  ],
+  "input": {
+    "workspaceDigest": "52ebee356c4c2efb93cec157ca609ba9caabc83219481875d494ebc951fb4fa9",
+    "sourceSha256": {
+      "availability.sigil": "3833c3b8d364763d8fa86bb3637da4d5534fe9593d28c9a9b3814b3bfa629158",
+      "booking.sigil": "71013e1118c7a72e335080e5d7f201a123cf8a2d365e04149fac24becd886b18",
+      "calendar.sigil": "03cf7040ff52f356be9b44700fc930493aeb4f81030af5c426ced05c0a662fa5",
+      "identity.sigil": "8cce3df6aecf395bc6f42a98ceece4d707dd895d8c9847ae0b353933b9aa3862",
+      "rooms.sigil": "c230a63ce7fcede4cf4c52b6534ac617e42537e430b8c39ab02bb189acf0df25",
+      "shared.sigil": "0c3d6c5891a96e931ee928f92b34e170a0c77ca104e5f1d94f17aa43503dc98e",
+      "slotted.sigil": "da892e9a74766c547b369aa754d170f1d78e46cd7cf4cbced858c11574b5439e"
+    },
+    "workspaceMemoPresent": false,
+    "fixtureStateSha256": "b2a81a8a04193e5e2eba93e533075ee9c7c81f128b5d1ac8f3c4a0b2b11cad3d"
+  },
+  "tools": {
+    "claimsPath": "pinned/sigil-claims",
+    "claimsSha256": "ceff72ee3703885b041331b70bbfde73bafb2938d95d6bdb6bff2099c88728f1",
+    "sigilcSha256": "907c90b16aede71eb5a5f176259cede94dd21eef60c91afffb45caa81eda3e11",
+    "computeSha256": "9d7aec9a9f2615310ebdb48534bda2235d7010a8672eba363b5dbd563779c1f2",
+    "understandSha256": "262247f5b27a7b2d34df92ccbb2311147b043432919487927b3b423ee27fe762",
+    "egglogSha256": "a70416a5e4c62d67f9d1dcf0600569260a7508459b8d6672819c5c62d3f074e1",
+    "promptSha256": "87c305099652631d47b2751fafaf39391bce353e3dec0f64e734d7d1350bb5f1",
+    "guidanceFingerprint": "57ad65f3af2d5f15ce0b9fa61e34b52eef1809cd425af833e8b772bdb02cca76",
+    "vocabularyGeneration": 4
+  }
+}

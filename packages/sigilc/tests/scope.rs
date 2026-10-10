@@ -1,7 +1,8 @@
 mod support;
 use serde_json::{Value, json};
 use sigilc::{
-    inputs::DesignSnapshot,
+    basis::DesignBasis,
+    claims::prepare,
     scope::{ResolvedScope, Scope},
     structure::DesignInput,
 };
@@ -15,11 +16,8 @@ fn workspace() -> Workspace {
 fn input(root: &Workspace) -> DesignInput {
     support::cycle_input(root)
 }
-fn full(root: &Workspace) -> DesignSnapshot {
-    root.snapshot()
-}
-fn narrowed(input: DesignInput, root: &Workspace) -> DesignSnapshot {
-    DesignSnapshot::new(input, root.load().1).unwrap()
+fn full(root: &Workspace) -> DesignBasis {
+    root.load().1
 }
 fn definition(paths: &[&str]) -> Value {
     json!({"version":1,"design":{"paths":paths},"implementation":{"paths":["source.any"]}})
@@ -32,9 +30,10 @@ fn resolve(root: &Workspace, input: &mut DesignInput, paths: &[&str]) -> Resolve
 }
 
 #[test]
-fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs() {
+fn focus_order_and_membership_are_separate_and_source_basis_is_reusable() {
     let root = workspace();
     let full = full(&root);
+    let full_input = input(&root);
     let mut first_input = input(&root);
     let first = resolve(&root, &mut first_input, &["c.sigil", "b.sigil"]);
     assert_eq!(
@@ -52,9 +51,12 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
     );
     assert_eq!(first_input.units.len(), 9);
     assert_eq!(first_input.references.len(), 3);
-    let scoped = narrowed(first_input, &root);
     for path in &first.report.design.sources {
-        assert_eq!(full.binding(path).unwrap(), scoped.binding(path).unwrap());
+        assert_eq!(
+            prepare::project(&full_input, &full, path).unwrap().binding,
+            prepare::project(&first_input, &full, path).unwrap().binding,
+            "narrowing membership preserves the source's interpretation binding"
+        );
     }
     let mut second_input = input(&root);
     second_input.sources.reverse();
@@ -72,11 +74,15 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
         first.report.order_fingerprint,
         second.report.order_fingerprint
     );
-    let reordered = narrowed(second_input, &root);
-    assert_eq!(
-        scoped.fingerprint().unwrap(),
-        reordered.fingerprint().unwrap()
-    );
+    for path in &first.report.design.sources {
+        assert_eq!(
+            prepare::project(&first_input, &full, path).unwrap().binding,
+            prepare::project(&second_input, &full, path)
+                .unwrap()
+                .binding,
+            "root priority does not change the source's interpretation binding"
+        );
+    }
     let mut again_input = input(&root);
     let again = resolve(&root, &mut again_input, &["b.sigil", "c.sigil"]);
     assert_eq!(
@@ -91,22 +97,22 @@ fn focus_order_and_membership_are_separate_and_bindings_reuse_full_world_inputs(
     edit("Describe A.", "Describe A in detail.");
     let private = self::full(&root);
     assert_eq!(
-        full.binding("c.sigil").unwrap(),
-        private.binding("c.sigil").unwrap()
+        full.sources["c.sigil"].imports,
+        private.sources["c.sigil"].imports
     );
     assert_ne!(
-        full.binding("a.sigil").unwrap(),
-        private.binding("a.sigil").unwrap()
+        full.sources["a.sigil"].identity,
+        private.sources["a.sigil"].identity
     );
     edit("A *a* exists.", "A *a* exists today.");
     let changed = self::full(&root);
     assert_ne!(
-        full.binding("c.sigil").unwrap(),
-        changed.binding("c.sigil").unwrap()
+        full.sources["c.sigil"].imports,
+        changed.sources["c.sigil"].imports
     );
     assert_eq!(
-        full.binding("unrelated.sigil").unwrap(),
-        changed.binding("unrelated.sigil").unwrap()
+        full.sources["unrelated.sigil"].identity,
+        changed.sources["unrelated.sigil"].identity
     );
 }
 

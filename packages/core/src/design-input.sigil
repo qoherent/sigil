@@ -59,7 +59,6 @@ component SigilDesignInput {
       forwarding export or compatibility helper in the removed TypeScript compiler
       package.
     }
-    Exposes Turtle to direct consumers.
 
   }
 }

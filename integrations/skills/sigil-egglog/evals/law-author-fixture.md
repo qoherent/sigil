@@ -4,7 +4,7 @@
 
 Copy the complete skill bundle to a temporary directory outside the checkout.
 Use a fresh agent with only the request below, the installed `sigil-egglog` skill, and the in-fixture program below.
-Do not provide a repository checkout, `sigil-claims`, or the acceptance notes to the agent.
+Do not provide a repository checkout, `sigilc`, or the acceptance notes to the agent.
 Record the skill/input hashes, host/model when exposed, actual response, and limitations.
 This fixture is not itself an observed pass.
 
@@ -24,6 +24,6 @@ Use `$sigil-egglog` to extend this tiny law so a `known` fact is derived from ea
 
 ## Acceptance notes for the observer
 
-- The agent adds a `(rule ... :ruleset closure)` that writes `known` from `edge`, matching the in-bundle kernel pattern rather than a birewrite or Turtle loader.
-- The agent does not invoke `sigil-claims` or open `packages/sigilc`.
+- The agent adds a `(rule ... :ruleset closure)` that writes `known` from `edge`, matching the in-bundle relation rule pattern rather than a birewrite or input loader.
+- The agent does not invoke `sigilc` or open `packages/sigilc`.
 - Absence of a row is not treated as negation.

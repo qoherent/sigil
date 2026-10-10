@@ -1,0 +1,32 @@
+{
+  "id": "second-owner",
+  "title": "Booking also owns room archive state",
+  "explanation": "Booking also owns room archive state",
+  "findingClass": "alignment",
+  "laws": [
+    "exclusive-ownership"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/booking.ts",
+      "section": "code",
+      "text": "room-owned-by-booking"
+    }
+  ],
+  "implementation": {
+    "source": "src/booking.ts",
+    "element": "submitBookingRequest"
+  },
+  "changes": [
+    {
+      "path": "src/booking.ts",
+      "before": "  return { durationDays, leadDays };",
+      "after": "  const archivedRoomMarks = new Map<string, boolean>();\n  archivedRoomMarks.set(\"room-owned-by-booking\", true);\n  return { durationDays, leadDays, archivedRoomMarks };"
+    }
+  ]
+}

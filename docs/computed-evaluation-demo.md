@@ -147,7 +147,7 @@ about an agent or model.
 
 The two tools answer different questions.
 
-- **Computed evaluation** (`sigil-claims`) gives a Coherent, Loose, or Disjoint
+- **Computed evaluation** (`sigilc`) gives a Coherent, Loose, or Disjoint
   state for one source, structured findings, and an exit code you can gate on.
 - **Advisory review** (`sigil-evaluate`) reads the design and returns prose. It
   gives no state and no gate.

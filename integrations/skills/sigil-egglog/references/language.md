@@ -1,6 +1,6 @@
 # Egglog language (pinned engine)
 
-This repository pins egglog 3.0.0 at revision `90635860397ce710f8c0a4eeb04154a8ebc3ac05`. A Rust host runs egglog; law authors edit `.egg` programs. Installed copies of this skill have no checkout: examples below are in-bundle excerpts named to `kernel.egg`, `design.egg`, `comparison.egg`, and `claims.egg`.
+This repository pins egglog 3.0.0 at revision `90635860397ce710f8c0a4eeb04154a8ebc3ac05`. A Rust host runs egglog; law authors edit `.egg` programs. Installed copies of this skill have no checkout: examples below are in-bundle excerpts named to `claims.egg`.
 
 Claims interpreters should read [dialect](dialect.md) first. This file is the law-author reference.
 
@@ -14,7 +14,7 @@ Three table kinds matter here:
 | --- | --- |
 | `relation` | A set of fact rows. Not unionable. |
 | `function` with `:merge` | One output per key; collisions join on a lattice. |
-| `constructor` / `datatype` | Equality-sort terms. The four law programs do not declare datatypes. |
+| `constructor` / `datatype` | Equality-sort terms. The law programs do not declare datatypes. |
 
 The engine is incremental: a rule adds rows or equalities; equality rebuilds; rebuild can make more rules match.
 
@@ -36,26 +36,26 @@ Base sorts used in the laws: `String`, `i64`, `f64`. Integer merge uses `min` / 
 
 ## Datatypes and constructors
 
-`(datatype ...)` declares an equality sort and constructors. Terms of that sort can be unioned. These repo laws do not use datatypes; they store RDF-shaped n-ary tables as relations. Prefer `relation` for facts that must not be equality-saturated.
+`(datatype ...)` declares an equality sort and constructors. Terms of that sort can be unioned. These repo laws do not use datatypes; they store n-ary claim tables as relations. Prefer `relation` for facts that must not be equality-saturated.
 
 ## Relations versus functions
 
 `relation` is a set of tuples. `function` requires `:merge` or `:no-merge`.
 
-From `kernel.egg`:
+From `claims.egg`:
 
 ```lisp
-(relation edge (String String String String))
+(relation claim (String String String String String String String String))
 ```
 
 ```lisp
 (function distance (String String) f64 :merge (min old new))
 ```
 
-From `design.egg`:
+From `claims.egg`:
 
 ```lisp
-(function design-filled (String String String String) i64 :merge (max old new))
+(function filled (String String String String) i64 :merge (max old new))
 ```
 
 From `claims.egg`:
@@ -76,27 +76,33 @@ Rule form used in the laws:
 (rule (<facts>) (<actions>) :ruleset <name>)
 ```
 
-From `kernel.egg`:
+From `claims.egg`:
 
 ```lisp
-(rule ((edge s p o f)) ((known s p o) (because s p o "asserted" f)) :ruleset closure)
+(rule ((claim id f sec s p o "required" "true") (commits sec))
+      ((holds s p o) (because s p o "asserted" id)) :ruleset closure)
 ```
 
 `!=` is used as a body guard. String literals such as `"dependsOn"` are predicate names, not typed IRIs.
 
 ## Rulesets and schedules
 
-The laws use two phases: `closure` then `diagnostics`. From `kernel.egg`:
+The laws use two phases: `closure` then `diagnostics`.
+
+From `claims.egg`:
 
 ```lisp
 (ruleset closure)
 (ruleset diagnostics)
 ```
 
-From `comparison.egg`, diagnostics read a lattice after closure has stopped growing:
+Diagnostics read a lattice after closure has stopped growing.
+
+From `claims.egg`:
 
 ```lisp
-(rule ((= (answered id) 0)) ((unresolved id)) :ruleset diagnostics)
+(rule ((obligation id s p o) (= (filled id s p o) 0))
+      ((unmet-obligation id s p o)) :ruleset diagnostics)
 ```
 
 The host, not the `.egg` file, runs the schedule. Declaring a rule does not execute it.
@@ -105,9 +111,9 @@ The host, not the `.egg` file, runs the schedule. Declaring a rule does not exec
 
 Equality-sort constructors participate in saturation and extraction. These laws reason over relation rows and lattice functions instead. Do not add unrestricted `(rewrite ...)` or `(birewrite ...)` to a law program that is built as a two-phase ruleset.
 
-## Turtle boundary
+## Data boundary
 
-Egglog does not parse Turtle. The compiler lowers RDF-shaped tables in Rust into relations (`kind`, `edge`, `boolean`, `text`, `number` in `kernel.egg`). `claims.egg` states that facts are n-ary claims, not RDF triples; the host re-emits them; the interpreter supplies no rule.
+The host re-emits validated n-ary claim rows into a tool-authored program. The interpreter supplies data and no rule.
 
 From `claims.egg`:
 
@@ -115,7 +121,7 @@ From `claims.egg`:
 ; host from parsed values; the interpreter supplies no rule and fills no table.
 ```
 
-Do not parse Turtle inside egglog. Do not invent an `(input ...)` loader in a law file.
+Do not invent an `(input ...)` loader in a law file.
 
 ## Common mistakes these laws hit
 
@@ -139,7 +145,7 @@ A missing row is not false. `claims.egg` models unreached steps as a lattice, no
 ; A lattice, not a negation. Written as "no path exists" the rule cannot fire at
 ```
 
-`comparison.egg` likewise: no rule satisfies a negative obligation from a missing positive row.
+A missing positive row does not satisfy a negative claim.
 
 ### Forgetting merge
 
@@ -151,4 +157,4 @@ The laws use explicit `(rule ... :ruleset ...)`, not birewrites.
 
 ## Authoring
 
-Keep declarations, closure rules, and diagnostic rules in that order. Put findings in diagnostic relations after the lattice has stabilized. Match existing names in the four law files rather than inventing parallel tables.
+Keep declarations, closure rules, and diagnostic rules in that order. Put findings in diagnostic relations after the lattice has stabilized. Match existing names in the law file rather than inventing parallel tables.

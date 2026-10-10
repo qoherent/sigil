@@ -15,7 +15,7 @@ import { copySkill, copyTree, treeSha256 } from "./files.ts";
 import { exists } from "./files.ts";
 
 const claims =
-  new URL("../../packages/sigilc/target/debug/sigil-claims", import.meta.url)
+  new URL("../../packages/sigilc/target/debug/sigilc", import.meta.url)
     .pathname;
 const slotted = new URL("../../examples/slotted", import.meta.url).pathname;
 
@@ -60,7 +60,7 @@ function linkedInput(state: string, exitCode: number, unread: unknown[] = []) {
 }
 
 Deno.test("a linked report exits 1 exactly when disjoint or incomplete", () => {
-  equal(LINKED_REPORT_VERSION, 5);
+  equal(LINKED_REPORT_VERSION, 6);
   const loose = validateLinkedEvidence(linkedInput("loose", 0));
   equal(loose.valid, true, loose.errors.join("; "));
   equal(loose.state, "loose");
@@ -81,7 +81,7 @@ Deno.test("a linked report exits 1 exactly when disjoint or incomplete", () => {
   equal(validateLinkedEvidence(linkedInput("incomplete", 0)).valid, false);
 });
 
-Deno.test("a report that is not version 5 is rejected", () => {
+Deno.test("a report that is not version 6 is rejected", () => {
   const old = linkedInput("loose", 0);
   const checked = validateLinkedEvidence({
     ...old,
@@ -90,7 +90,7 @@ Deno.test("a report that is not version 5 is rejected", () => {
   });
   equal(checked.valid, false);
   equal(
-    checked.errors.some((error) => error.includes("version is not 5")),
+    checked.errors.some((error) => error.includes("version is not 6")),
     true,
   );
 });
@@ -125,14 +125,14 @@ async function setup(prefix: string): Promise<Setup> {
   const fixtureRoot = join(scratch, "fixture");
   await copyTree(slotted, fixtureRoot);
   const skillDirs = {
-    computeDir: join(scratch, "skills/sigil-compute"),
+    computeDir: join(scratch, "skills/sigil-compute-design"),
     understandDir: join(scratch, "skills/sigil-understand"),
     egglogDir: join(scratch, "skills/sigil-egglog"),
   };
   const hashes: Record<string, string> = {};
   for (
     const [name, dir] of [
-      ["sigil-compute", skillDirs.computeDir],
+      ["sigil-compute-design", skillDirs.computeDir],
       ["sigil-understand", skillDirs.understandDir],
       ["sigil-egglog", skillDirs.egglogDir],
     ]
@@ -260,7 +260,7 @@ Deno.test("a pass directory has a copied root with config and no claims store, t
       equal(staged.skillSha256[name], s.expected.skillSha256[name]);
     }
     equal(
-      await Deno.realPath(`${passDir}/bin/sigil-claims`),
+      await Deno.realPath(`${passDir}/bin/sigilc`),
       await Deno.realPath(claims),
     );
     equal((await Array.fromAsync(Deno.readDir(`${passDir}/store`))).length, 0);
@@ -572,5 +572,38 @@ Deno.test("a second pass starts from nothing the first pass stored", async () =>
     equal(stored.join(), "0,0");
   } finally {
     await Deno.remove(s.scratch, { recursive: true });
+  }
+});
+
+Deno.test("staged code and selection changes invalidate a pass even when its design report matches", async () => {
+  for (const path of ["src/new.ts", ".sigil/config.json"]) {
+    const ctx = await setup("staged-input-tamper-");
+    try {
+      const result = await runPass(
+        ctx.request({
+          orchestrate: async (passDir, _binDir, evidenceDir) => {
+            const target = join(passDir, "root", path);
+            await Deno.mkdir(join(passDir, "root/src"), { recursive: true });
+            if (path.endsWith("config.json")) {
+              const config = JSON.parse(await Deno.readTextFile(target));
+              config.tools = {
+                sigilc: {
+                  implementation: { exclude: ["**"], allowEmpty: true },
+                },
+              };
+              await Deno.writeTextFile(target, JSON.stringify(config));
+            } else {await Deno.writeTextFile(
+                target,
+                "export function newCode() {}\n",
+              );}
+            return agentRun(evidenceDir, "Hand-back state: incomplete");
+          },
+        }),
+      );
+      equal(result.status, "invalid", result.error ?? "");
+      equal(result.failureStep, "fixture");
+    } finally {
+      await Deno.remove(ctx.scratch, { recursive: true });
+    }
   }
 });

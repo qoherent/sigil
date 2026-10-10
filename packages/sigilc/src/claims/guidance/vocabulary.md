@@ -209,7 +209,12 @@ A claim's relation is one of these, and nothing else:
 
 ## Numeric properties
 
-`cost`, `latencyBudgetMs`, `latencyMs`, `risk`
+`cost`, `latencyBudgetMs`, `latencyMs`, `risk`, `maxDurationDays`, `maxLeadDays`,
+`maxSpanDays`
+
+The three day bounds are distinct: maximum duration, days ahead of the current
+date, and total span. Convert the prose to whole days. Two different bounds on
+one Tag stay two measures; never collapse them into one generic day count.
 
 ## What you never supply
 

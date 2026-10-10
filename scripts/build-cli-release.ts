@@ -118,16 +118,6 @@ async function buildTarget(target: ReleaseTarget): Promise<void> {
       ),
       join(stage, "bin", `sigilc${suffix}`),
     );
-    await Deno.copyFile(
-      join(
-        root,
-        "packages/sigilc/target",
-        target.rust,
-        "release",
-        `sigil-claims${suffix}`,
-      ),
-      join(stage, "bin", `sigil-claims${suffix}`),
-    );
     await Deno.copyFile(join(root, "LICENSE"), join(stage, "LICENSE"));
     await Deno.copyFile(
       join(root, "packages/core/src/data/UNICODE-LICENSE.txt"),

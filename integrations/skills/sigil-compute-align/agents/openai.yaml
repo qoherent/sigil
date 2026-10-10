@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Compute Align"
+  short_description: "Computed implementation alignment against Sigil 0.9"
+  default_prompt: "Use $sigil-compute-align to run the design-first computed implementation check and hand back the bound verdict, findings and proposed excludes."

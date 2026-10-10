@@ -1,0 +1,31 @@
+{
+  "id": "missing-promise",
+  "title": "Missing pending range change",
+  "explanation": "Missing pending range change",
+  "findingClass": "alignment",
+  "laws": [
+    "provides"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/booking.ts",
+      "section": "code",
+      "text": "return { durationDays, leadDays"
+    }
+  ],
+  "implementation": {
+    "source": "src/booking.ts"
+  },
+  "changes": [
+    {
+      "path": "src/booking.ts",
+      "before": "\nexport function changePendingRange(\n  request: ReturnType<typeof submitBookingRequest>,\n  durationDays: number,\n  leadDays: number,\n) {\n  return { ...request, ...submitBookingRequest(durationDays, leadDays) };\n}\n",
+      "after": "\n"
+    }
+  ]
+}

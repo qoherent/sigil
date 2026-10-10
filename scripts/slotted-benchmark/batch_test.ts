@@ -79,7 +79,7 @@ Deno.test("frozen batch retains one pending pass record when cancelled before la
     const retained = await readBatch(outputDir);
     equal(manifest.schedule.length, 1);
     equal(retained.records.length, 1);
-    equal(manifest.version, 2);
+    equal(manifest.version, 3);
     equal(
       retained.records.every((record) => record.status === "pending"),
       true,
@@ -106,10 +106,18 @@ Deno.test("frozen batch retains one pending pass record when cancelled before la
       equal(/^[0-9a-f]{64}$/.test(manifest.tools[key]), true, key);
     }
     equal(
-      orchestratorPromptTemplate().includes("skills/sigil-compute/SKILL.md"),
+      orchestratorPromptTemplate().includes(
+        "skills/sigil-compute-design/SKILL.md",
+      ),
       true,
     );
-    for (const skill of ["sigil-compute", "sigil-understand", "sigil-egglog"]) {
+    for (
+      const skill of [
+        "sigil-compute-design",
+        "sigil-understand",
+        "sigil-egglog",
+      ]
+    ) {
       await Deno.stat(`${outputDir}/pinned/${skill}/SKILL.md`);
     }
 
@@ -160,7 +168,7 @@ Deno.test("missing pinned skill fails before scheduling attempts", async () => {
         outputDir: `${root}/batch`,
         timeoutMs: 1000,
         skillDirs: {
-          computeDir: "integrations/skills/sigil-compute",
+          computeDir: "integrations/skills/sigil-compute-design",
           understandDir: missing,
           egglogDir: "integrations/skills/sigil-egglog",
         },

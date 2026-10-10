@@ -1,0 +1,95 @@
+component SigilImplementationClaims {
+  goal {
+    Present whole code files for independent claims readings against the design
+    names inside configured promise scope, and judge the implementation against
+    those promises after the full design check.
+  }
+
+  interface {
+    CodeVocabulary {
+      Describe code elements, actions and measures in their own vocabulary.
+      Separate observations from interpreter-written realizes mappings.
+      Component realization establishes membership; Tag realization states delivery.
+      A test element's mappings account for its exercise of the design and never
+      establish implementation membership or delivery.
+    }
+
+    CodeGuidance {
+      Publish compiled code guidance under its own fingerprint and vocabulary
+      generation. Extract copies only outside the workspace under validation.
+      Teach unmapped elements as faithful readings of undesigned code.
+    }
+
+    FileRequests {
+      Present each selected whole file in a safe directory carrying full source,
+      qualified design names, admitted design claims, exact Facet context and code
+      guidance. Bind each request to its path, content, names, effective selection,
+      code guidance and vocabulary generation. List empty files, skipped symlinks,
+      automatic design exclusions and unpresentable files separately.
+    }
+
+    AlignCommands {
+      Offer align prepare, align ingest and align check in the single sigilc executable. Read selection from
+      workspace configuration, refuse nonempty output directories, and launch no
+      interpreter. Present only files with stale or unread readings, and report reuse.
+      Ingest one file against its own binding; name every field that changed.
+      Accept either binding or rows from standard input, never both at once.
+    }
+
+    ImplementationLaws {
+      Judge only scoped design commitments against independent production code
+      observations. Component membership and Tag delivery answer provides;
+      dependencies on components or their Tags can answer requires through a
+      delivering service. Enforce exclusions, required state owners, exclusive
+      ownership and latency or calendar-day budgets. Keep unmapped writers visible
+      and count multiple members of one rightful component as one owner.
+      Test elements never establish production membership, delivery or ownership.
+      Logic, Cases and negative claims can breach but never demand an answer.
+    }
+
+    AlignCheck {
+      Gate the implementation laws on the complete linked design, including
+      sources outside configured promise roots. An incomplete or disjoint design,
+      unread code or an unpresentable file makes alignment Incomplete. Otherwise
+      disagreements, undesigned files or elements, and unanswered required promises
+      make Drift. Clean coherent design is Closed; clean loose design is Converged.
+      Closed and Converged exit zero, Drift and Incomplete exit one, usage exits
+      two and operational failure exits three. No command launches an interpreter.
+    }
+
+    LocatedFindings {
+      Write the versioned workspace report and judgment context under claims.
+      Each finding names its law, design claims and Facet spans, and code rows
+      with whole-file locations. Locations use UTF-8 byte offsets and a SHA256
+      digest of captured source bytes. Report incomplete reasons, unread files,
+      undesigned code, unanswered promises, active exclusion counts, components
+      outside promise scope and identity digests.
+    }
+
+    FileReadings {
+      Admit data-only code rows against the file's presented names. Resolve
+      qualified labels and unique bare labels to design identities. Refuse only
+      this file on a defect; empty or elementless answers keep it unread.
+      Store local element names under claims/implementation using content, code
+      guidance and vocabulary identities, so a path rename reuses the reading.
+      Ask again for changed code, changed cited names, changed component membership
+      promises, or newly added names when elements remain undesigned. Unrelated
+      design edits leave the reading fresh. An identical ingest makes no write.
+    }
+  }
+
+  constraints {
+    CodeVocabulary {
+      The unit of code is the whole file. No language parser or source annotation
+      supplies an implementation mapping. File location alone is no membership
+      evidence. An unmapped element must remain visible.
+    }
+
+    FileReadings {
+      Rules and nested expressions refuse the whole answer. An action target is
+      a presented design name, never another file's element. Each referenced
+      element must be declared within this file. Ambiguous labels list qualified
+      alternatives, and every mapping originates in the interpreter's rows.
+    }
+  }
+}

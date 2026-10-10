@@ -38,27 +38,30 @@ function harness() {
   };
   const report = (
     code: string,
-    state: DesignReport["world"]["state"],
+    state: DesignReport["state"],
   ): DesignReport => ({
-    version: 2,
-    world: { state },
-    diagnostics: {
-      omitted: 0,
-      items: [{
-        code,
+    version: 6,
+    source: "workspace",
+    state,
+    identity: {},
+    iterations: 1,
+    findings: [{
+      class: "gap",
+      law: code,
+      subject: "Facet",
+      object: "Tag",
+      claims: [],
+      component: "A",
+      section: "interface",
+      detail: code,
+      locations: [...sources].map(([source, { bytes }]) => ({
+        source,
         side: "design",
-        severity: "warning",
-        message: code,
-        omitted_locations: 0,
-        locations: [...sources].map(([source, { bytes }]) => ({
-          source,
-          side: "design",
-          coordinate_system: "utf8-bytes",
-          source_digest: sourceDigest(bytes),
-          range: { start: 0, end: 6 },
-        })),
-      }],
-    },
+        coordinate_system: "utf8-bytes",
+        source_digest: sourceDigest(bytes),
+        range: { start: 0, end: 6 },
+      })),
+    }],
   });
   function start(report: DesignReport, isCurrent: () => boolean, pause = true) {
     return publishCompilationDiagnostics(report, {
@@ -87,7 +90,7 @@ function harness() {
 for (const change of ["dirty", "saved version"] as const) {
   test(`a ${change} edit to an already captured document prevents publication`, async () => {
     const h = harness();
-    const pending = h.start(h.report("obsolete", "Disjoint"), () => true);
+    const pending = h.start(h.report("obsolete", "disjoint"), () => true);
     await h.entered.promise;
     const document = h.sources.get("first.sigil")!.document;
     if (change === "dirty") document.isDirty = true;
@@ -108,7 +111,7 @@ test("a workspace edit during projection preserves the stale status", async () =
   let revision = 1;
   const startedAt = revision;
   const pending = h.start(
-    h.report("obsolete", "Disjoint"),
+    h.report("obsolete", "disjoint"),
     () => revision === startedAt,
   );
   await h.entered.promise;
@@ -126,7 +129,7 @@ test("a replacement compilation stays visible when an obsolete projection finish
   const obsolete = {}, replacement = {};
   let active = obsolete;
   const pending = h.start(
-    h.report("obsolete", "Disjoint"),
+    h.report("obsolete", "disjoint"),
     () => active === obsolete,
   );
   await h.entered.promise;
@@ -134,7 +137,7 @@ test("a replacement compilation stays visible when an obsolete projection finish
 
   active = replacement;
   await h.start(
-    h.report("replacement", "Coherent"),
+    h.report("replacement", "coherent"),
     () => active === replacement,
     false,
   );
@@ -150,4 +153,130 @@ test("a replacement compilation stays visible when an obsolete projection finish
   }]);
   assert.equal(h.visible.diagnostics, replacementDiagnostics);
   assert.equal(h.visible.status, "Coherent");
+});
+
+test("Facet findings retain half-open native UTF-8 byte ranges", async () => {
+  const h = harness();
+  await h.start(h.report("facet", "loose"), () => true, false);
+  assert.deepEqual(h.visible.diagnostics[0].range, {
+    start: { line: 0, character: 0 },
+    end: { line: 0, character: 6 },
+  });
+  assert.equal(h.visible.diagnostics[0].finding.code, "facet");
+});
+
+test("implementation file diagnostics filter to that code file and verify its digest", async () => {
+  const text = "😀 café results", bytes = Buffer.from(text);
+  const finding = {
+    law: "code-breach",
+    subject: "element",
+    object: "promise",
+    detail: "Code disagrees",
+    claims: [],
+    codeRows: [],
+    locations: ["src/a.ts", "src/b.ts"].map((source) => ({
+      side: "implementation" as const,
+      source,
+      coordinate_system: "utf8-bytes" as const,
+      source_digest: sourceDigest(bytes),
+      range: { start: 5, end: bytes.length },
+    })),
+  };
+  const report = {
+    version: 1 as const,
+    source: "workspace" as const,
+    state: "drift" as const,
+    designState: "coherent" as const,
+    identity: {},
+    iterations: 1,
+    incompleteReasons: [],
+    findings: [finding],
+    undesignedFiles: [],
+    undesignedElements: [],
+    unanswered: [],
+    unreadFiles: [],
+    selection: {},
+    designFindings: [],
+  };
+  let published: readonly ProjectedDiagnostic[] = [];
+  const loaded: string[] = [];
+  const host = {
+    sourceFilter: "src/a.ts",
+    isCurrent: () => true,
+    loadSource(source: string) {
+      loaded.push(source);
+      return Promise.resolve({
+        bytes,
+        document: { version: 1, isDirty: false, getText: () => text },
+      });
+    },
+    publish(diagnostics: readonly ProjectedDiagnostic[]) {
+      published = diagnostics;
+    },
+  };
+  await publishCompilationDiagnostics(report, host);
+  assert.deepEqual(loaded, ["src/a.ts"]);
+  assert.equal(published.length, 1);
+  assert.equal(published[0].source, "src/a.ts");
+  assert.deepEqual(published[0].range, {
+    start: { line: 0, character: 3 },
+    end: { line: 0, character: text.length },
+  });
+  published = [];
+  finding.locations[0].source_digest = "0".repeat(64);
+  await assert.rejects(
+    publishCompilationDiagnostics(report, host),
+    /Stale source/,
+  );
+  assert.deepEqual(published, []);
+});
+
+test("an unanswered promise included in native findings projects once as a Drift error", async () => {
+  const bytes = Buffer.from("promise");
+  const finding = {
+    law: "unanswered-promise",
+    subject: "A",
+    object: "promise",
+    detail: "No implementation supplies the promise",
+    claims: [],
+    codeRows: [],
+    locations: [{
+      side: "design" as const,
+      source: "a.sigil",
+      coordinate_system: "utf8-bytes" as const,
+      source_digest: sourceDigest(bytes),
+      range: { start: 0, end: bytes.length },
+    }],
+  };
+  const report = {
+    version: 1 as const,
+    source: "workspace" as const,
+    state: "drift" as const,
+    designState: "coherent" as const,
+    identity: {},
+    iterations: 1,
+    incompleteReasons: [],
+    findings: [finding],
+    unanswered: [finding],
+    undesignedFiles: [],
+    undesignedElements: [],
+    unreadFiles: [],
+    selection: {},
+    designFindings: [],
+  };
+  let projected: readonly ProjectedDiagnostic[] = [];
+  await publishCompilationDiagnostics(report, {
+    isCurrent: () => true,
+    loadSource() {
+      return Promise.resolve({
+        bytes,
+        document: { version: 1, isDirty: false, getText: () => "promise" },
+      });
+    },
+    publish(value) {
+      projected = value;
+    },
+  });
+  assert.equal(projected.length, 1);
+  assert.equal(projected[0].finding.severity, "error");
 });

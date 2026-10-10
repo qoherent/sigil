@@ -147,6 +147,19 @@ Nothing is inferred from what a step merely does.
 A bound becomes a measure. A prohibition becomes a claim whose `expected` is
 `false`. Both are `required`, because Constraints binds.
 
+### Day-count bounds
+
+> A *booking request* lasts at most 7 days and starts at most 180 days ahead.
+
+```
+(measure "#11" "booking request" "maxDurationDays" "7")
+(measure "#11" "booking request" "maxLeadDays" "180")
+```
+
+The limits describe different quantities on the same Tag. Use `maxSpanDays`
+when the prose bounds a total span, rather than a duration or how far ahead it
+starts. The interpreter converts units to whole days.
+
 ## `decisions`
 
 > We considered a *result cache* in the panel and rejected it, because two

@@ -2,5 +2,9 @@
   "sigilVersion": "0.9.0",
   "workspace": { "name": "release-fixture", "members": [] },
   "files": { "include": ["**/*.sigil"], "exclude": [] },
-  "tools": {}
+  "tools": {
+    "sigilc": {
+      "implementation": { "include": ["**/*.ts"], "allowEmpty": true }
+    }
+  }
 }

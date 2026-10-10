@@ -27,7 +27,7 @@ function facetIds(component: unknown): string[] {
   return found;
 }
 
-/** Real fixed-Turtle protocol checks; no semantic reconstruction claim. */
+/** Canned readings exercise the native protocol, not model interpretation quality. */
 export async function validateNativeProtocol(
   { language, compiler, fixture, scratch, run }: {
     language: string;
@@ -38,168 +38,161 @@ export async function validateNativeProtocol(
   },
 ) {
   const store = join(scratch, "store");
-  const tree = JSON.parse(
-    await run(compiler, ["tree", "--root", fixture, "--store", store]),
-  );
-  const units = tree.trees.flatMap((t: { parse: { components: unknown[] } }) =>
-    t.parse.components.flatMap(facetIds)
-  );
-  assert(units.length && units.every((id: string) => id.startsWith("facet:")));
-  const components = tree.trees.flatMap((
-    t: { parse: { components: { name: string; iri: string }[] } },
-  ) => t.parse.components);
-  assert(components.length);
-  const scopePath = join(scratch, "scope.json");
-  await Deno.writeTextFile(
-    scopePath,
-    JSON.stringify({
-      version: 1,
-      design: { paths: ["main.sigil"] },
-      implementation: { paths: ["main.any"] },
-    }),
-  );
-  const native = async (args: string[], code = 0) => {
-    return JSON.parse(
-      await run(compiler, [
-        ...args,
-        "--root",
-        fixture,
-        "--store",
-        store,
-        "--scope",
-        scopePath,
-      ], code),
+  const configPath = join(fixture, ".sigil/config.json");
+  const config = JSON.parse(await Deno.readTextFile(configPath));
+  config.tools = { sigilc: { implementation: { paths: ["main.any"] } } };
+  await Deno.writeTextFile(configPath, JSON.stringify(config));
+  const native = async (args: string[], code = 0) =>
+    JSON.parse(
+      await run(compiler, [...args, "--root", fixture, "--store", store], code),
     );
+  assertEquals((await run(compiler, ["--version"])).trim(), "sigilc 0.3.0");
+  const tree = await native(["tree"]);
+  assert(
+    tree.trees.flatMap((t: { parse: { components: unknown[] } }) =>
+      t.parse.components.flatMap(facetIds)
+    ).length,
+  );
+  const inspect = async (args: string[], state: string, code: number) => {
+    const summary = await native(args, code);
+    assertEquals(summary.state, state);
+    const report = JSON.parse(await Deno.readTextFile(summary.report));
+    const context = JSON.parse(
+      await Deno.readTextFile(summary.judgmentContext),
+    );
+    assertEquals(report.state, state);
+    assertEquals(report.version, args[0] === "align" ? 1 : 6);
+    assertEquals(context.identity, report.identity);
+    return report;
   };
-  assertEquals((await native(["scope"])).scope.design.focus_order, [
-    "main.sigil",
-  ]);
-  const loose = await native(["compile", "design"]);
-  assertEquals(loose.version, 2);
-  assertEquals(loose.world.state, "Loose");
-  assertEquals((await native(["compare"], 3)).comparison, null);
-  await native(["stale", "design"], 1);
-  const turtle = join(scratch, "facts.ttl");
-  const publish = async (side: string, text: string, label: string) => {
-    const source = side === "design" ? "main.sigil" : "main.any";
-    const bindingDir = join(scratch, label);
-    const prepared = await native([
-      "prepare",
-      side,
-      "--source",
-      source,
-      "--out",
-      bindingDir,
-    ]);
-    if (side === "implementation") assertEquals(prepared.inputs.length, 3);
-    await Deno.writeTextFile(turtle, text);
+  await inspect(["check"], "incomplete", 1);
+  await inspect(["align", "check"], "incomplete", 1);
+  let round = 0;
+  const design = async (mode: "coherent" | "loose" | "disjoint") => {
+    // Each canned scenario starts with fresh readings of unchanged source bytes.
+    await Deno.remove(join(store, "claims/interpretations"), {
+      recursive: true,
+    }).catch((e) => {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    });
+    const out = join(scratch, `design-${round++}`);
+    await native(["prepare", "--source", "main.sigil", "--out", out]);
+    const request = JSON.parse(
+      await Deno.readTextFile(join(out, "request.json")),
+    );
+    const rows = request.rows.filter((f: { context?: boolean }) => !f.context)
+      .map((f: { facet: string; section: string }) => {
+        const id = JSON.stringify(f.facet);
+        if (f.section !== "interface") return `(reading ${id} "no-commitment")`;
+        if (mode === "loose") {
+          return `(property ${id} "fixture operation" "required" "true")`;
+        }
+        const claim =
+          `(claim ${id} "ReleaseFixture" "provides" "fixture operation" "required" "true")`;
+        return mode === "disjoint"
+          ? claim +
+            `\n(claim ${id} "ReleaseFixture" "provides" "fixture operation" "required" "false")`
+          : claim;
+      }).join("\n");
+    const answer = join(out, "answer.egg");
+    await Deno.writeTextFile(answer, rows);
     await native([
       "ingest",
-      side,
-      "--source",
-      source,
       "--binding",
-      join(bindingDir, "binding.json"),
-      "--turtle",
-      turtle,
+      join(out, "binding.json"),
+      "--claims",
+      answer,
+    ], mode === "disjoint" ? 1 : 0);
+  };
+  const code = async (mapped: boolean, owns = false) => {
+    await Deno.remove(join(store, "claims/implementation"), { recursive: true })
+      .catch((e) => {
+        if (!(e instanceof Deno.errors.NotFound)) throw e;
+      });
+    const out = join(scratch, `code-${round++}`);
+    const prepared = await native(["align", "prepare", "--out", out]);
+    assertEquals(prepared.requestedUnits, 1);
+    const dir = prepared.inputs[0];
+    const answer = join(dir, "answer.egg");
+    await Deno.writeTextFile(
+      answer,
+      `(element "operation" "function")\n` +
+        (mapped
+          ? `(realizes "operation" "ReleaseFixture")\n(realizes "operation" "ReleaseFixture::fixture operation")\n`
+          : ""),
+    );
+    if (owns) {
+      await Deno.writeTextFile(
+        answer,
+        '(act "operation" "owns" "ReleaseFixture::fixture operation")\n',
+        { append: true },
+      );
+    }
+    await native([
+      "align",
+      "ingest",
+      "--binding",
+      join(dir, "binding.json"),
+      "--claims",
+      answer,
     ]);
   };
-  const prefix = "@prefix s: <https://sigil.dev/ontology/1#> .\n";
-  const entity = `<${
-    components.find((e: { name: string }) => e.name === "ReleaseFixture").iri
-  }>`;
-  // Fixed Turtle tests the shipped native protocol. This is not a model or a
-  // claim about this repository's independent semantic reconstruction.
-  const negative = units.map((id: string) =>
-    `<${id}> s:from ${entity}; s:relation "uses"; s:target ${entity}; s:expected false .`
-  ).join("\n");
-  const positive = units.map((id: string) =>
-    `<${id}> s:from ${entity}; s:relation "provides"; s:target ${entity}; s:expected true .`
-  ).join("\n");
-  await publish(
-    "design",
-    prefix + positive + `\n${entity} s:provides ${entity} .`,
-    "positive design binding",
-  );
-  await publish(
-    "implementation",
-    prefix + `${entity} s:provides ${entity} .`,
-    "closed implementation binding",
-  );
-  const closed = await native(["compile", "implementation"]);
-  assertEquals(
-    closed.comparison.implementation,
-    "Closed",
-    JSON.stringify(closed.diagnostics),
-  );
-  await publish("design", prefix + negative, "design binding");
-  await native(["stale", "design"]);
-  assertEquals((await native(["compile", "design"])).world.state, "Coherent");
-  assertEquals((await native(["entities"])).status, "authoritative");
-  assertEquals(
-    (await native(["compare"])).comparison.implementation,
-    "Converged",
-  );
-  await publish(
-    "implementation",
-    prefix + `${entity} s:uses ${entity} .`,
-    "implementation binding",
-  );
-  assertEquals(
-    (await native(["compile", "implementation"], 1)).comparison.implementation,
-    "Drift",
-  );
-  await publish(
-    "design",
-    prefix + `${entity} s:uses ${entity}; s:excludes ${entity} .`,
-    "contradiction binding",
-  );
-  assertEquals(
-    (await native(["compile", "design"], 1)).world.state,
-    "Disjoint",
-  );
-  await publish("design", prefix + negative, "restored design binding");
-  const staleBinding = join(scratch, "stale binding");
-  await native([
+  await design("coherent");
+  await inspect(["check"], "coherent", 0);
+  await inspect(["align", "check"], "incomplete", 1);
+  await code(true);
+  await inspect(["align", "check"], "closed", 0);
+  await design("loose");
+  await inspect(["check"], "loose", 0);
+  await code(true, true);
+  await inspect(["align", "check"], "converged", 0);
+  await design("coherent");
+  await code(false);
+  const drift = await inspect(["align", "check"], "drift", 1);
+  assert(drift.undesignedElements.length);
+  await design("disjoint");
+  await inspect(["check"], "disjoint", 1);
+  const gated = await inspect(["align", "check"], "incomplete", 1);
+  assert(gated.incompleteReasons.includes("design-disjoint"));
+  assertEquals(gated.findings, []);
+  await design("coherent");
+  await Deno.remove(join(store, "claims/implementation"), { recursive: true });
+  const stale = await native([
+    "align",
     "prepare",
-    "implementation",
-    "--source",
-    "main.any",
     "--out",
-    staleBinding,
+    join(scratch, "stale"),
   ]);
+  const staleBinding = join(stale.inputs[0], "binding.json");
   await Deno.writeTextFile(
     join(fixture, "main.any"),
     "changed after preparation\n",
   );
-  await Deno.writeTextFile(turtle, prefix + `${entity} s:uses ${entity} .`);
+  const staleAnswer = join(scratch, "stale.egg");
+  await Deno.writeTextFile(staleAnswer, '(element "changed" "function")');
   await run(compiler, [
+    "align",
     "ingest",
-    "implementation",
-    "--source",
-    "main.any",
     "--binding",
-    join(staleBinding, "binding.json"),
-    "--turtle",
-    turtle,
+    staleBinding,
+    "--claims",
+    staleAnswer,
     "--root",
     fixture,
     "--store",
     store,
-    "--scope",
-    scopePath,
-  ], 3);
+  ], 2);
 
   const tagRoot = join(scratch, "Tag import probe");
   await Deno.mkdir(join(tagRoot, ".sigil"), { recursive: true });
-  const config = {
+  const tagConfig = {
     sigilVersion: SIGIL_VERSION,
     workspace: { name: "tag-probe", members: [] },
     files: { include: ["**/*.sigil"], exclude: [] },
   };
   await Deno.writeTextFile(
     join(tagRoot, ".sigil/config.json"),
-    JSON.stringify(config),
+    JSON.stringify(tagConfig),
   );
   const providerText =
     "\uFEFFcomponent Provider {\r\ngoal {\r\nOwn vocabulary.\r\n}\r\ninterface {\r\n😀 A *café results* preserves content.\r\n}\r\n}\r\n";
@@ -222,33 +215,40 @@ export async function validateNativeProtocol(
     consumer.parse.components[0].sections[1].children[0].links.length,
     1,
   );
-  const tagScope = join(scratch, "tag-scope.json");
   await Deno.writeTextFile(
-    tagScope,
+    join(tagRoot, ".sigil/config.json"),
     JSON.stringify({
-      version: 1,
-      design: { paths: ["consumer.sigil"] },
-      implementation: { exclude: ["**"], allowEmpty: true },
+      ...tagConfig,
+      tools: {
+        sigilc: {
+          implementation: {
+            design: ["consumer.sigil"],
+            exclude: ["**"],
+            allowEmpty: true,
+          },
+        },
+      },
     }),
   );
   const selected = JSON.parse(
     await run(compiler, [
-      "scope",
+      "align",
+      "prepare",
       "--root",
       tagRoot,
       "--store",
       tagStore,
-      "--scope",
-      tagScope,
+      "--out",
+      join(scratch, "tag-prep"),
     ]),
   );
-  assertEquals(selected.scope.design.sources, [
+  assertEquals(selected.selection.design.sources, [
     "consumer.sigil",
     "provider.sigil",
   ]);
   await Deno.writeTextFile(
     join(tagRoot, ".sigil/config.json"),
-    JSON.stringify({ ...config, sigilVersion: "0.7.0" }),
+    JSON.stringify({ ...tagConfig, sigilVersion: "0.7.0" }),
   );
   const rejected = JSON.parse(
     await run(language, ["check", tagRoot, "--format", "json"], 1),
@@ -259,10 +259,9 @@ export async function validateNativeProtocol(
     ),
   );
   return {
-    design: ["Loose", "Coherent", "Disjoint"],
-    implementation: ["Closed", "Converged", "Drift"],
-    unavailable: 3,
-    staleIngest: 3,
+    design: ["incomplete", "coherent", "loose", "disjoint"],
+    implementation: ["incomplete", "closed", "converged", "drift"],
+    staleIngest: 2,
   };
 }
 

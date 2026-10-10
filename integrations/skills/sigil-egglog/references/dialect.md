@@ -1,6 +1,6 @@
-# Claims dialect
+# Design claims dialect
 
-This note is language background for a claims interpreter. It does not replace the prepared request's guidance bundle.
+This note is language background for a design claims interpreter. It does not replace the prepared request's guidance bundle.
 
 ## Which side is binding
 

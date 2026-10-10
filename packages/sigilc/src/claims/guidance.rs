@@ -73,6 +73,14 @@ pub fn fingerprint() -> String {
 /// affects only what the interpreter is told; no extracted file is ever read
 /// back, so editing one cannot widen what the tool accepts.
 pub fn extract(out: &Path, workspace_root: &Path) -> Result<Vec<PathBuf>, String> {
+    extract_bundle(BUNDLE, out, workspace_root)
+}
+
+pub(crate) fn extract_bundle(
+    bundle: &[Document],
+    out: &Path,
+    workspace_root: &Path,
+) -> Result<Vec<PathBuf>, String> {
     if contains(workspace_root, out)? {
         return Err(format!(
             "refusing to write guidance inside the workspace under validation: {}",
@@ -81,7 +89,7 @@ pub fn extract(out: &Path, workspace_root: &Path) -> Result<Vec<PathBuf>, String
     }
     std::fs::create_dir_all(out).map_err(|e| format!("{}: {e}", out.display()))?;
     let mut written = Vec::new();
-    for doc in BUNDLE {
+    for doc in bundle {
         let path = out.join(doc.name);
         std::fs::write(&path, doc.text).map_err(|e| format!("{}: {e}", path.display()))?;
         written.push(path);

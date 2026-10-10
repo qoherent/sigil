@@ -53,6 +53,14 @@ export interface InstallSkillsResult {
   readonly agents: readonly SkillAgent[];
   readonly sourceDirectory: string;
   readonly skills: readonly InstalledSkill[];
+  readonly pruned: readonly SkillDestination[];
+  readonly unmanaged: readonly SkillDestination[];
+}
+
+export interface SkillDestination {
+  readonly name: string;
+  readonly agents: readonly SkillAgent[];
+  readonly target: string;
 }
 
 interface ManagedEntry {
@@ -78,6 +86,10 @@ interface PlannedInstall {
   readonly source: string;
   readonly target: string;
   readonly action: "install" | "update" | "existing";
+}
+
+interface PlannedRemoval extends SkillDestination {
+  readonly destination: Destination;
 }
 
 // @sigil implements packages/cli/src/installer.sigil::SkillInstaller::SkillCatalog interface,state,logic,constraints,cases
@@ -122,6 +134,41 @@ export async function installSkills(
     ? resolve(options.userHome ?? homeDirectory())
     : resolve(options.targetRoot ?? Deno.cwd());
   const destinations = await installationDestinations(base, scope, agents);
+  const removals: PlannedRemoval[] = [];
+  const unmanaged: SkillDestination[] = [];
+  for (const destination of destinations) {
+    for (const name of Object.keys(destination.manifest.entries).sort()) {
+      if (sourceEntries.includes(name)) continue;
+      const entry = destination.manifest.entries[name];
+      if (
+        !name || name.startsWith(".") || /[\\/]/.test(name) ||
+        !entry || typeof entry.source !== "string" ||
+        !["link", "copy"].includes(entry.mode)
+      ) {
+        throw new Error(`Invalid managed skill entry ${name}.`);
+      }
+      removals.push({
+        destination,
+        name,
+        agents: destination.agents,
+        target: join(destination.directory, name),
+      });
+    }
+    try {
+      for (const name of await skillDirectories(destination.directory)) {
+        if (
+          sourceEntries.includes(name) || destination.manifest.entries[name]
+        ) continue;
+        unmanaged.push({
+          name,
+          agents: destination.agents,
+          target: join(destination.directory, name),
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  }
   const planned: PlannedInstall[] = [];
   for (const destination of destinations) {
     for (const name of sourceEntries) {
@@ -137,6 +184,20 @@ export async function installSkills(
     }
   }
 
+  const pruned: SkillDestination[] = [];
+  for (const item of removals) {
+    try {
+      await Deno.remove(item.target, { recursive: true });
+      pruned.push({
+        name: item.name,
+        agents: item.agents,
+        target: item.target,
+      });
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+    delete item.destination.manifest.entries[item.name];
+  }
   const results: InstalledSkill[] = [];
   for (const item of planned) {
     await Deno.mkdir(item.destination.directory, { recursive: true });
@@ -182,7 +243,15 @@ export async function installSkills(
       );
     }
   }
-  return { scope, agents, sourceDirectory, skills: results, catalog };
+  return {
+    scope,
+    agents,
+    sourceDirectory,
+    skills: results,
+    catalog,
+    pruned,
+    unmanaged,
+  };
 }
 
 // @sigil implements packages/cli/src/installer.sigil::SkillInstaller::SkillSourceDiscovery interface,logic,cases

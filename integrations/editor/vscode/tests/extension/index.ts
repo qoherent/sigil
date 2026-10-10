@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
@@ -128,6 +128,16 @@ export async function run(): Promise<void> {
   );
   const folder = vscode.workspace.getWorkspaceFolder(source);
   assert(folder);
+  const localPath = path.join(workspace, ".sigil", "local.json");
+  const originalLocal = await readFile(localPath).catch(
+    (error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+      return undefined;
+    },
+  );
+  const codeSource = vscode.Uri.file(
+    path.join(workspace, "editor-alignment.ts"),
+  );
   const errors: string[] = [];
   const originalError = vscode.window.showErrorMessage;
   (vscode.window as unknown as {
@@ -163,9 +173,11 @@ export async function run(): Promise<void> {
     changes.length = 0;
     const report = await vscode.commands.executeCommand<{
       version: number;
-      world: { state: string };
-      scope: { design: { roots: string[]; sources: string[] } };
-      diagnostics: { items: Array<{ code: string; locations: unknown[] }> };
+      source: string;
+      state: string;
+      linked: { sources: { source: string }[] };
+      unread: { source: string }[];
+      findings: Array<{ law: string; locations: unknown[] }>;
     }>("sigil.compileFile");
     assert(
       report,
@@ -173,50 +185,79 @@ export async function run(): Promise<void> {
         JSON.stringify(changes)
       }`,
     );
-    assert.equal(report.version, 2);
-    assert.equal(report.world.state, "Loose");
-    assert.deepEqual(report.scope.design.roots, ["booking.sigil"]);
-    assert(report.scope.design.sources.includes("availability.sigil"));
-    assert(report.scope.design.sources.includes("rooms.sigil"));
-    assert(report.scope.design.sources.includes("identity.sigil"));
-    assert(report.scope.design.sources.includes("shared.sigil"));
+    assert.equal(report.version, 6);
+    assert.equal(report.source, "booking.sigil");
+    assert.equal(report.state, "incomplete");
+    const linkedSources = report.linked.sources.map((item) => item.source);
+    for (
+      const name of [
+        "availability.sigil",
+        "rooms.sigil",
+        "identity.sigil",
+        "shared.sigil",
+      ]
+    ) assert(linkedSources.includes(name));
+    assert(report.unread.some((item) => item.source === "booking.sigil"));
     assert(
-      report.diagnostics.items.some((item) =>
-        item.code === "DESIGN_UNRESOLVED"
-      ),
+      report.findings.some((item) => item.law === "uninterpreted-section"),
     );
     assert(
       vscode.languages.getDiagnostics(source).some((item) =>
-        item.source === "sigilc" && item.code === "DESIGN_UNRESOLVED"
+        item.source === "sigilc" && item.code === "uninterpreted-section"
       ),
       "Native ranged findings must reach editor diagnostics",
     );
 
-    const selection = path.join(fixtureDirectory, "selection.json");
-    await writeFile(selection, JSON.stringify({ paths: ["booking.sigil"] }));
-    await compileConfiguration.update(
-      "selection",
-      selection,
-      vscode.ConfigurationTarget.Global,
-    );
-    const unavailable = await vscode.commands.executeCommand<
-      {
-        comparison: null;
-        implementation: null;
-        diagnostics: { items: Array<{ code: string }> };
-      }
+    // A design file always checks Design, including an explicit Implementation request.
+    const designOverride = await vscode.commands.executeCommand<
+      { version: number; source: string }
     >("sigil.compileFile", "implementation");
+    assert(designOverride);
+    assert.equal(designOverride.version, 6);
+    assert.equal(designOverride.source, "booking.sigil");
+
+    await writeFile(codeSource.fsPath, "export const value = 1;\n");
+    const local = originalLocal ? JSON.parse(originalLocal.toString()) : {};
+    local.tools = {
+      ...local.tools,
+      sigilc: {
+        ...local.tools?.sigilc,
+        implementation: { paths: ["editor-alignment.ts"] },
+      },
+    };
+    await writeFile(localPath, JSON.stringify(local));
+    const codeDocument = await vscode.workspace.openTextDocument(codeSource);
+    await vscode.window.showTextDocument(codeDocument);
+    const aligned = await eventually(async () => {
+      const value = await vscode.commands.executeCommand<{
+        version: number;
+        source: string;
+        state: string;
+        designState: string;
+        incompleteReasons: string[];
+        unreadFiles: string[];
+      }>("sigil.compileFile", "implementation");
+      return value ? [value] : [];
+    });
     assert(
-      unavailable,
-      `Native unavailable report missing: ${errors.join("; ")}`,
+      aligned[0],
+      `Native Implementation report missing: ${errors.join("; ")}`,
     );
-    assert.equal(unavailable.comparison, null);
-    assert.equal(unavailable.implementation, null);
-    assert.equal(
-      unavailable.diagnostics.items[0].code,
-      "COMPARISON_UNAVAILABLE",
+    assert.equal(aligned[0].version, 1);
+    assert.equal(aligned[0].source, "workspace");
+    assert.equal(aligned[0].state, "incomplete");
+    assert.equal(aligned[0].designState, "incomplete");
+    assert(aligned[0].incompleteReasons.includes("design-incomplete"));
+    assert(aligned[0].incompleteReasons.includes("unread-files"));
+    assert(aligned[0].unreadFiles.includes("editor-alignment.ts"));
+    assert(
+      !vscode.languages.getDiagnostics(source).some((item) =>
+        item.source === "sigilc"
+      ),
+      "Code-file checks clear previous Design diagnostics and filter to the code file",
     );
     assert.equal(errors.length, 0);
+    const reopenedEditor = await vscode.window.showTextDocument(document);
 
     await compileConfiguration.update(
       "executable",
@@ -236,7 +277,7 @@ export async function run(): Promise<void> {
     );
 
     assert(
-      await editor.edit((edit) =>
+      await reopenedEditor.edit((edit) =>
         edit.insert(document.positionAt(document.getText().length), "\n")
       ),
     );
@@ -270,7 +311,7 @@ export async function run(): Promise<void> {
     (vscode.window as unknown as { showErrorMessage: typeof originalError })
       .showErrorMessage = originalError;
     for (
-      const key of ["executable", "selection", "focus"]
+      const key of ["executable", "focus"]
     ) {
       await compileConfiguration.update(
         key,
@@ -278,6 +319,9 @@ export async function run(): Promise<void> {
         vscode.ConfigurationTarget.Global,
       );
     }
+    if (originalLocal) await writeFile(localPath, originalLocal);
+    else await rm(localPath, { force: true });
+    await rm(codeSource.fsPath, { force: true });
     await rm(fixtureDirectory, { recursive: true, force: true });
   }
 
@@ -395,23 +439,21 @@ async function verifyCoordinates(
       const report = await vscode.commands.executeCommand<
         {
           version: number;
-          diagnostics: {
-            items: {
-              code: string;
-              locations: {
-                source: string;
-                range?: { start: number; end: number };
-              }[];
+          findings: {
+            law: string;
+            locations: {
+              source: string;
+              range?: { start: number; end: number };
             }[];
-          };
+          }[];
         }
       >("sigil.compileFile");
       return report ? [report] : [];
     });
     const report = reports[0];
     assert(report, `Coordinate compilation failed: ${errors.join("; ")}`);
-    assert.equal(report.version, 2);
-    const expected = report.diagnostics.items.flatMap((item) =>
+    assert.equal(report.version, 6);
+    const expected = report.findings.flatMap((item) =>
       item.locations.filter((l) =>
         l.source === "coordinate-provider.sigil" && l.range
       ).map((l) =>

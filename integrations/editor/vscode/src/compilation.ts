@@ -1,11 +1,14 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 export type CompilationFocus = "design" | "implementation";
-export type DesignState = "Coherent" | "Loose" | "Disjoint";
-export type ImplementationState = "Closed" | "Converged" | "Drift";
+export type DesignState = "coherent" | "loose" | "disjoint" | "incomplete";
+export type ImplementationState =
+  | "closed"
+  | "converged"
+  | "drift"
+  | "incomplete";
 export interface NativeLocation {
   readonly side: CompilationFocus;
   readonly source: string;
@@ -17,36 +20,80 @@ export interface NativeLocation {
     readonly end: { readonly line: number; readonly column: number };
   };
 }
+export interface DesignFinding {
+  readonly class:
+    | "contradiction"
+    | "ownership-conflict"
+    | "unmet-obligation"
+    | "interpretation"
+    | "flow"
+    | "gap";
+  readonly law: string;
+  readonly subject: string;
+  readonly object: string;
+  readonly claims: readonly string[];
+  readonly component: string;
+  readonly section: string;
+  readonly detail: string;
+  readonly locations?: readonly NativeLocation[];
+}
+export interface ImplementationFinding {
+  readonly law: string;
+  readonly subject: string;
+  readonly object: string;
+  readonly detail: string;
+  readonly claims: readonly string[];
+  readonly codeRows: readonly unknown[];
+  readonly locations: readonly NativeLocation[];
+}
+/** The editor presentation of a native law finding. */
 export interface NativeFinding {
   readonly code: string;
   readonly side: CompilationFocus;
   readonly severity: "error" | "warning" | "info";
   readonly message: string;
   readonly locations: readonly NativeLocation[];
-  readonly omitted_locations: number;
-  readonly witness?: unknown;
 }
 export interface NativeDiagnostics {
   readonly items: readonly NativeFinding[];
-  readonly omitted: number;
 }
 export interface DesignReport {
-  readonly version: 2;
-  readonly world: { readonly state: DesignState };
-  readonly diagnostics: NativeDiagnostics;
-  readonly scope?: unknown;
+  readonly version: 6;
+  readonly source: string;
+  readonly state: DesignState;
+  readonly identity: Readonly<Record<string, unknown>>;
+  readonly iterations: number;
+  readonly findings: readonly DesignFinding[];
+  readonly linked?: { readonly workspaceDigest: string };
+  readonly unread?: readonly {
+    source: string;
+    component: string;
+    section: string;
+    facets: readonly string[];
+    refusal?: string;
+  }[];
+  readonly unresolvedImports?: readonly {
+    source: string;
+    path: string;
+    provider: string;
+    status: string;
+  }[];
 }
 export interface ImplementationReport {
-  readonly version: 2;
-  readonly design: DesignReport;
-  readonly implementation: unknown | null;
-  readonly comparison: {
-    readonly implementation: ImplementationState;
-    readonly design: DesignState;
-  } | null;
-  readonly diagnostics: NativeDiagnostics;
-  readonly reason?: string;
-  readonly scope?: unknown;
+  readonly version: 1;
+  readonly source: "workspace";
+  readonly state: ImplementationState;
+  readonly designState: DesignState;
+  readonly identity: Readonly<Record<string, unknown>>;
+  readonly iterations: number;
+  readonly incompleteReasons: readonly string[];
+  readonly findings: readonly ImplementationFinding[];
+  readonly undesignedFiles: readonly string[];
+  readonly undesignedElements: readonly string[];
+  readonly unanswered: readonly ImplementationFinding[];
+  readonly unreadFiles: readonly string[];
+  readonly selection: unknown;
+  readonly designFindings: readonly DesignFinding[];
 }
 export type NativeReport = DesignReport | ImplementationReport;
 export interface CompilationProcess {
@@ -58,7 +105,6 @@ export interface CompilationOptions {
   readonly cwd: string;
   readonly focus: CompilationFocus;
   readonly file?: string;
-  readonly selection?: string;
   readonly onLog: (text: string) => void;
 }
 
@@ -69,52 +115,74 @@ export function runCompilationProcess(
   const controller = new AbortController();
   const signal = controller.signal;
   const result = (async () => {
-    if (options.focus === "implementation" && !options.selection) {
+    const focus = options.file?.endsWith(".sigil") ? "design" : options.focus;
+    const args = focus === "implementation" ? ["align", "check"] : ["check"];
+    args.push("--root", options.cwd);
+    if (focus === "design" && options.file?.endsWith(".sigil")) {
+      args.push("--source", options.file);
+    }
+    const native = await runJson(
+      options.executable,
+      args,
+      options.cwd,
+      signal,
+      options.onLog,
+    );
+    const summary = native.value;
+    if (
+      !object(summary) || native.code > 1 ||
+      summary.version !== (focus === "design" ? 6 : 1) ||
+      !validState(summary.state, focus, native.code) ||
+      typeof summary.scope !== "string" || !count(summary.findings) ||
+      typeof summary.report !== "string" ||
+      typeof summary.workspaceDigest !== "string" ||
+      typeof summary.guidanceFingerprint !== "string" ||
+      !count(summary.vocabularyGeneration)
+    ) {
+      throw incompatible(focus, native.code);
+    }
+    const reportPath = await realpath(
+      path.resolve(options.cwd, summary.report),
+    );
+    const relative = path.relative(
+      await realpath(path.join(options.cwd, ".sigil", "claims")),
+      reportPath,
+    );
+    if (
+      !relative || path.isAbsolute(relative) ||
+      relative.split(path.sep).includes("..")
+    ) {
       throw new Error(
-        "Set sigil.compile.selection to a native Implementation selection JSON file.",
+        "Incompatible native report path outside the workspace claims store.",
       );
     }
-    const directory = await mkdtemp(path.join(os.tmpdir(), "sigil-editor-"));
-    try {
-      const args = [
-        "compile",
-        options.focus,
-        "--root",
-        options.cwd,
-      ];
-      if (options.file) {
-        const implementation = options.focus === "implementation"
-          ? JSON.parse(
-            await readFile(
-              path.resolve(options.cwd, options.selection!),
-              "utf8",
-            ),
-          )
-          : { exclude: ["**"], allowEmpty: true };
-        const scope = path.join(directory, "scope.json");
-        await writeFile(
-          scope,
-          JSON.stringify({
-            version: 1,
-            design: { paths: [options.file] },
-            implementation,
-          }),
-        );
-        args.push("--scope", scope);
-      } else if (options.focus === "implementation") {
-        args.push("--selection", path.resolve(options.cwd, options.selection!));
-      }
-      const native = await runJson(
-        options.executable,
-        args,
-        options.cwd,
-        signal,
-        options.onLog,
-      );
-      return parseNativeReport(native.value, options.focus, native.code);
-    } finally {
-      await rm(directory, { recursive: true, force: true });
+    if ((await stat(reportPath)).size > 64 * 1024 * 1024) {
+      throw new Error("Compiler JSON exceeds 64 MiB.");
     }
+    const report = parseNativeReport(
+      JSON.parse(await readFile(reportPath, "utf8")),
+      focus,
+      native.code,
+    );
+    if (signal.aborted) throw new Error("Compilation cancelled.");
+    if (
+      report.state !== summary.state || report.source !== summary.scope ||
+      report.findings.length !== summary.findings ||
+      summary.workspaceDigest !==
+        (report.version === 6
+          ? report.linked?.workspaceDigest
+          : report.identity.workspaceDigest) ||
+      summary.guidanceFingerprint !== report.identity.guidanceFingerprint ||
+      summary.vocabularyGeneration !== report.identity.vocabularyGeneration ||
+      (report.version === 1 && (report.designState !== summary.designState ||
+        JSON.stringify(report.incompleteReasons) !==
+          JSON.stringify(summary.incompleteReasons)))
+    ) {
+      throw new Error(
+        "Incompatible native summary and stored report; compile again.",
+      );
+    }
+    return report;
   })();
   return { result, cancel: () => controller.abort() };
 }
@@ -210,56 +278,64 @@ function object(value: unknown): value is Record<string, unknown> {
 function count(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
 }
-function position(value: unknown): value is { line: number; column: number } {
-  return object(value) && count(value.line) && value.line > 0 &&
-    count(value.column) && value.column > 0;
+function strings(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.every((item) => typeof item === "string");
 }
 function location(value: unknown): boolean {
   if (
     !object(value) ||
     !["design", "implementation"].includes(String(value.side)) ||
     typeof value.source !== "string" || !value.source ||
-    path.isAbsolute(value.source) || value.source.split(/[\\/]/).includes("..")
+    path.isAbsolute(value.source) ||
+    value.source.split(/[\\/]/).includes("..") ||
+    value.coordinate_system !== "utf8-bytes" ||
+    typeof value.source_digest !== "string" ||
+    !/^[a-f0-9]{64}$/.test(value.source_digest) ||
+    value.implementation_range !== undefined
   ) return false;
-  if (
-    !["utf8-bytes", "utf16-lines"].includes(String(value.coordinate_system))
-  ) return false;
-  if (
-    value.source_digest !== undefined &&
-    (typeof value.source_digest !== "string" ||
-      !/^[a-f0-9]{64}$/.test(value.source_digest))
-  ) return false;
-  if (value.coordinate_system === "utf8-bytes") {
-    if (value.implementation_range !== undefined) return false;
-    return value.range === undefined || (object(value.range) &&
-      count(value.range.start) && count(value.range.end) &&
-      value.range.end >= value.range.start &&
-      typeof value.source_digest === "string");
-  }
-  if (value.range !== undefined) return false;
-  const range = value.implementation_range;
-  return range === undefined || (typeof value.source_digest === "string" &&
-    object(range) && position(range.start) && position(range.end) &&
-    (range.end.line > range.start.line ||
-      (range.end.line === range.start.line &&
-        range.end.column >= range.start.column)));
+  return object(value.range) && count(value.range.start) &&
+    count(value.range.end) && value.range.end >= value.range.start;
 }
-function diagnostics(value: unknown): value is NativeDiagnostics {
-  return object(value) && count(value.omitted) && Array.isArray(value.items) &&
-    value.items.length <= 1000 &&
-    value.items.every((item) =>
-      object(item) && typeof item.code === "string" &&
-      typeof item.message === "string" &&
-      ["design", "implementation"].includes(String(item.side)) &&
-      ["error", "warning", "info"].includes(String(item.severity)) &&
-      count(item.omitted_locations) && Array.isArray(item.locations) &&
-      item.locations.length <= 8 && item.locations.every(location)
-    );
+function finding(value: unknown, focus: CompilationFocus): boolean {
+  if (
+    !object(value) ||
+    !["law", "subject", "object", "detail"].every((key) =>
+      typeof value[key] === "string"
+    ) ||
+    !strings(value.claims) || (value.locations !== undefined &&
+      (!Array.isArray(value.locations) || !value.locations.every(location)))
+  ) return false;
+  return focus === "design"
+    ? [
+      "contradiction",
+      "ownership-conflict",
+      "unmet-obligation",
+      "interpretation",
+      "flow",
+      "gap",
+    ].includes(String(value.class)) &&
+      typeof value.component === "string" && typeof value.section === "string"
+    : Array.isArray(value.codeRows) && Array.isArray(value.locations);
 }
-function designReport(value: unknown): value is DesignReport {
-  return object(value) && value.version === 2 && object(value.world) &&
-    ["Coherent", "Loose", "Disjoint"].includes(String(value.world.state)) &&
-    diagnostics(value.diagnostics);
+function findings(value: unknown, focus: CompilationFocus): boolean {
+  return Array.isArray(value) && value.every((item) => finding(item, focus));
+}
+function validState(
+  value: unknown,
+  focus: CompilationFocus,
+  exit: number,
+): boolean {
+  const states = focus === "design"
+    ? ["coherent", "loose", "disjoint", "incomplete"]
+    : ["closed", "converged", "drift", "incomplete"];
+  const index = states.indexOf(String(value));
+  return index >= 0 && exit === (index < 2 ? 0 : 1);
+}
+function incompatible(focus: CompilationFocus, exit: number): Error {
+  return new Error(
+    `Incompatible ${focus} report or gate exit ${exit}; configure the current sigilc executable.`,
+  );
 }
 
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::CompilationSurface constraints,cases
@@ -268,47 +344,99 @@ export function parseNativeReport(
   focus: CompilationFocus,
   exit: number,
 ): NativeReport {
-  if (focus === "design") {
-    if (
-      designReport(value) && exit === (value.world.state === "Disjoint" ? 1 : 0)
-    ) return value;
-  } else if (
-    object(value) && value.version === 2 && designReport(value.design) &&
-    diagnostics(value.diagnostics)
+  if (
+    object(value) && value.version === (focus === "design" ? 6 : 1) &&
+    typeof value.source === "string" && object(value.identity) &&
+    count(value.iterations) &&
+    validState(value.state, focus, exit) && findings(value.findings, focus)
   ) {
-    if (
-      exit === 3 && value.implementation === null &&
-      value.comparison === null && typeof value.reason === "string"
-    ) return value as unknown as ImplementationReport;
-    const comparison = value.comparison;
-    if (
-      object(value.implementation) && object(comparison) &&
-      comparison.design === value.design.world.state &&
-      comparison.design !== "Disjoint" &&
-      ["Closed", "Converged", "Drift"].includes(
-        String(comparison.implementation),
+    if (focus === "design") {
+      if (
+        (value.unread === undefined ||
+          (Array.isArray(value.unread) &&
+            value.unread.every((item) =>
+              object(item) && typeof item.source === "string" &&
+              typeof item.component === "string" &&
+              typeof item.section === "string" && strings(item.facets)
+            ))) &&
+        (value.unresolvedImports === undefined ||
+          (Array.isArray(value.unresolvedImports) &&
+            value.unresolvedImports.every((item) =>
+              object(item) &&
+              ["source", "path", "provider", "status"].every((key) =>
+                typeof item[key] === "string"
+              )
+            )))
+      ) return value as unknown as DesignReport;
+    } else if (
+      value.source === "workspace" &&
+      ["coherent", "loose", "disjoint", "incomplete"].includes(
+        String(value.designState),
       ) &&
-      (comparison.implementation !== "Closed" ||
-        comparison.design === "Coherent") &&
-      exit === (comparison.implementation === "Drift" ? 1 : 0)
+      strings(value.incompleteReasons) && strings(value.undesignedFiles) &&
+      strings(value.undesignedElements) &&
+      strings(value.unreadFiles) && object(value.selection) &&
+      findings(value.unanswered, "implementation") &&
+      findings(value.designFindings, "design")
     ) return value as unknown as ImplementationReport;
   }
-  throw new Error(
-    `Incompatible ${focus} report or gate exit ${exit}; configure current sigil and sigilc executables.`,
-  );
+  throw incompatible(focus, exit);
 }
 
-export function nativeState(
-  report: NativeReport,
-): DesignState | ImplementationState | undefined {
-  return "world" in report
-    ? report.world.state
-    : report.comparison?.implementation;
+export function nativeState(report: NativeReport): string {
+  return report.state[0].toUpperCase() + report.state.slice(1);
 }
+export function incompleteExplanation(report: NativeReport): string {
+  if (report.state !== "incomplete") return "";
+  if (report.version === 6) {
+    const reasons = [
+      ...(report.unread ?? []).map((unit) =>
+        `Unread ${unit.source}: ${unit.component} ${unit.section}${
+          unit.refusal ? ` (${unit.refusal})` : ""
+        }`
+      ),
+      ...(report.unresolvedImports ?? []).map((item) =>
+        `Unresolved import ${item.path} from ${item.source}: ${item.status}`
+      ),
+    ];
+    return [...reasons, "Run sigil-compute-design to supply design readings."]
+      .join("\n");
+  }
+  return [
+    ...report.incompleteReasons,
+    ...report.unreadFiles.map((file) => `Unread ${file}`),
+    "Run sigil-compute-design for design readings and sigil-compute-align for implementation readings.",
+  ].join("\n");
+}
+
 export function diagnosticGroups(
   report: NativeReport,
 ): readonly NativeDiagnostics[] {
-  return "world" in report
-    ? [report.diagnostics]
-    : [report.diagnostics, report.design.diagnostics];
+  const design = (findings: readonly DesignFinding[]): NativeDiagnostics => ({
+    items: findings.map((f) => ({
+      code: f.law,
+      side: "design",
+      severity: f.class === "contradiction" || f.class === "ownership-conflict"
+        ? "error"
+        : "warning",
+      message: f.detail,
+      locations: f.locations ?? [],
+    })),
+  });
+  if (report.version === 6) return [design(report.findings)];
+  const implementation = (
+    findings: readonly ImplementationFinding[],
+  ): NativeDiagnostics => ({
+    items: findings.map((f) => ({
+      code: f.law,
+      side: "implementation",
+      severity: "error",
+      message: f.detail,
+      locations: f.locations,
+    })),
+  });
+  return [
+    implementation(report.findings),
+    design(report.designFindings),
+  ];
 }

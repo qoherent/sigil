@@ -14,7 +14,7 @@ impl Scratch {
     fn new(name: &str) -> Self {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
-            "sigil-claims-cli-{}-{name}-{}",
+            "sigilc-cli-{}-{name}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
@@ -57,10 +57,10 @@ impl Drop for Scratch {
 }
 
 fn claims(args: &[&str]) -> (i32, String, String) {
-    let output = Command::new(env!("CARGO_BIN_EXE_sigil-claims"))
+    let output = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
         .output()
-        .expect("sigil-claims runs");
+        .expect("sigilc runs");
     (
         output.status.code().unwrap_or(-1),
         String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -508,10 +508,10 @@ fn a_binding_from_a_different_guidance_build_is_refused() {
 // ------------------------------------------------------------- exit contract
 
 #[test]
-fn the_tool_names_itself_and_not_the_compiler() {
+fn the_tool_reports_the_merged_version_and_boundary() {
     let (code, stdout, _) = claims(&["--version"]);
     assert_eq!(code, 0);
-    assert!(stdout.starts_with("sigil-claims "), "{stdout}");
+    assert!(stdout.trim() == "sigilc 0.3.0", "{stdout}");
 
     let (code, stdout, _) = claims(&["--help"]);
     assert_eq!(code, 0);
@@ -624,29 +624,35 @@ fn guidance_is_refused_when_it_would_land_in_the_workspace_under_validation() {
 // ---------------------------------------------------------- the compiler
 
 #[test]
-fn the_compilers_own_command_surface_is_unchanged() {
+fn the_merged_compiler_exposes_design_commands_without_retired_worlds() {
     let output = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .arg("--help")
         .output()
         .unwrap();
+    assert!(output.status.success());
     let help = String::from_utf8_lossy(&output.stdout);
-    assert!(help.starts_with("sigilc — deterministic Semantic Worlds compiler"));
+    assert!(help.starts_with("sigilc"));
     for command in [
-        "prepare design",
-        "ingest design",
-        "compile design",
-        "compare",
+        "align prepare --out",
+        "prepare --source",
+        "ingest --binding",
+        "check",
+        "extract-guidance",
+        "tree",
         "clean",
     ] {
-        assert!(
-            help.contains(command),
-            "{command} vanished from sigilc help"
-        );
+        assert!(help.contains(command), "missing merged command: {command}");
     }
-    assert!(
-        !help.contains("sigil-claims"),
-        "the compiler must not advertise another binary's commands"
-    );
+    assert!(help.contains("extract-guidance [--implementation]"));
+    for retired in [
+        "prepare design",
+        "compile design",
+        "compare",
+        "ontology",
+        "stale",
+    ] {
+        assert!(!help.contains(retired), "retired command: {retired}");
+    }
 }
 
 // ------------------------------------------------------- ownership annotations

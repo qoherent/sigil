@@ -1,7 +1,10 @@
 //! `sigilc tree [--source PATH] [--diff] [--root DIR] [--store DIR]`: the
 //! resolved trees as deterministic JSON, or what changed since the previous one.
 use super::{ResolvedTree, Snapshot, cache::TreeCache, diff::diff_trees};
-use crate::{cli::Output, language::workspace::Workspace};
+use crate::{
+    command::{Output, json},
+    language::workspace::Workspace,
+};
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -28,11 +31,6 @@ struct SourceDiff {
 struct Diffs {
     version: u32,
     diffs: Vec<SourceDiff>,
-}
-
-fn json(value: &impl Serialize) -> Output {
-    let text = serde_json::to_string_pretty(value).map_err(|e| (3, e.to_string()))?;
-    Ok((0, text + "\n"))
 }
 
 pub fn run(args: &[&str]) -> Output {
@@ -64,7 +62,7 @@ pub fn run(args: &[&str]) -> Output {
         }
     }
     let root = PathBuf::from(root.unwrap_or("."));
-    let store = crate::cli::store_dir(&root, store);
+    let store = crate::command::store_dir(&root, store);
     if !root.is_dir() {
         return Err((
             3,
@@ -83,14 +81,17 @@ pub fn run(args: &[&str]) -> Output {
         None => snapshot.trees.iter().collect(),
     };
     if diff {
-        return json(&Diffs {
-            version: 1,
-            diffs: trees.iter().map(|tree| diff_of(&cache, tree)).collect(),
-        });
+        return json(
+            0,
+            &Diffs {
+                version: 1,
+                diffs: trees.iter().map(|tree| diff_of(&cache, tree)).collect(),
+            },
+        );
     }
     match (source, trees.as_slice()) {
         (Some(_), [tree]) => Ok((0, tree.to_json() + "\n")),
-        _ => json(&Trees { version: 1, trees }),
+        _ => json(0, &Trees { version: 1, trees }),
     }
 }
 

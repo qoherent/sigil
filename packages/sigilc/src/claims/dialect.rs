@@ -200,6 +200,26 @@ pub fn parse(source: &str, limits: Limits) -> Result<Vec<Row>, String> {
     }
 }
 
+/// The shared data-only transport, without either side's row vocabulary.
+/// Callers admit the flat string columns against their own published shapes.
+pub fn literal_calls(source: &str, limits: Limits) -> Result<Vec<(String, Vec<String>)>, String> {
+    if source.len() > limits.max_document_bytes {
+        return Err(format!(
+            "claims artifact exceeds byte limit: {} > {}",
+            source.len(),
+            limits.max_document_bytes
+        ));
+    }
+    refuse_deep_nesting(source)?;
+    atoms(source, limits)?.into_iter().map(|(name, args)| {
+        let values = args.into_iter().map(|arg| match arg {
+            Arg::Text(value) => Ok(value),
+            Arg::Other(value) => Err(format!("every argument of ({name} ...) must be a quoted string literal; {value} is not")),
+        }).collect::<Result<Vec<_>, _>>()?;
+        Ok((name, values))
+    }).collect()
+}
+
 /// The nesting depth beyond which an artifact is refused before parsing.
 ///
 /// Every accepted row is one flat call with literal-only arguments, so a

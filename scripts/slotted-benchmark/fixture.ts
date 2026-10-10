@@ -130,11 +130,16 @@ export interface FixtureIssue {
   readonly id: string;
   readonly title: string;
   readonly explanation: string;
+  readonly implementation?: {
+    readonly source: string;
+    readonly element?: string;
+  };
   readonly findingClass:
     | "contradiction"
     | "ownership-conflict"
     | "unmet-obligation"
-    | "flow";
+    | "flow"
+    | "alignment";
   readonly laws: readonly string[];
   readonly findingEvidence: {
     /** Exact native subject URI, or the ID of a cited claim for flow findings. */

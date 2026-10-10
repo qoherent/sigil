@@ -1,0 +1,32 @@
+{
+  "id": "day-count-breach",
+  "title": "Requests accepted 365 days ahead",
+  "explanation": "Requests accepted 365 days ahead",
+  "findingClass": "alignment",
+  "laws": [
+    "numeric-budget"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/booking.ts",
+      "section": "code",
+      "text": "leadDays > 365"
+    }
+  ],
+  "implementation": {
+    "source": "src/booking.ts",
+    "element": "submitBookingRequest"
+  },
+  "changes": [
+    {
+      "path": "src/booking.ts",
+      "before": "leadDays > 180",
+      "after": "leadDays > 365"
+    }
+  ]
+}

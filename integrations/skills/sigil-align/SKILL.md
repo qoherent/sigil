@@ -24,8 +24,9 @@ changed behavior, run relevant checks, and reassess without a separate approval
 step. Repeat the read-only assessment for changed paths when delegation is
 available.
 
-Do not invoke `sigilc` for alignment. Its Sigil 0.9 implementation comparison
-path is unverified; use contract, code, and test evidence for this skill.
+Use contract, code, and test evidence for this advisory skill. Explicit computed
+implementation checks belong to `sigil-compute-align`, which owns the
+`sigilc align` loop.
 
 Only a consequential contract choice not settled by accepted intent belongs to
 the user. Finish independent code work, present the smallest choice and its

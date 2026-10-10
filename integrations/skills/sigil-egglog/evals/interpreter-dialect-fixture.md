@@ -4,7 +4,7 @@
 
 Copy the complete skill bundle to a temporary directory outside the checkout.
 Use a fresh agent with only the request below and the installed `sigil-egglog` skill.
-Do not provide a repository checkout, `sigil-claims`, or the acceptance notes to the agent.
+Do not provide a repository checkout, `sigilc`, or the acceptance notes to the agent.
 Record the skill hash, host/model when exposed, actual response, and limitations.
 This fixture is not itself an observed pass.
 
@@ -20,5 +20,5 @@ Use `$sigil-egglog` to explain why this returned claims artifact is refused whol
 ## Acceptance notes for the observer
 
 - The agent says a `rule` is not data and the whole artifact is refused, including the valid `claim` row beside it.
-- The agent does not invoke `sigil-claims` or open `packages/sigilc`.
+- The agent does not invoke `sigilc` or open `packages/sigilc`.
 - The agent names quoted string literals as the only accepted arguments.

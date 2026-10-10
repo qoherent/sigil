@@ -120,8 +120,8 @@ printf '%s\\n' '{"type":"result","result":"Final: ok\\nHand-back state: loose\\n
     );
     for (
       const entry of [
-        "Bash(sigil-claims *)",
-        "Bash(./bin/sigil-claims *)",
+        "Bash(sigilc *)",
+        "Bash(./bin/sigilc *)",
         "Bash(cp *)",
         "Bash(mv *)",
         "Bash(mkdir *)",
@@ -173,7 +173,7 @@ Deno.test("the prompt names the staged skill, root, store, run directory, model,
     const prompt = await Deno.readTextFile(result.promptPath);
     for (
       const needle of [
-        "skills/sigil-compute/SKILL.md",
+        "skills/sigil-compute-design/SKILL.md",
         "references/computed-evaluation.md",
         "`root`",
         "`store`",

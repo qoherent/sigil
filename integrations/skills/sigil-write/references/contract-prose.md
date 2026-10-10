@@ -1,6 +1,6 @@
 # Prose the claims check can read
 
-`sigil-claims` checks a design in three stages:
+`sigilc` checks a design in three stages:
 
 1. A model reads each Facet and returns short data rows, such as
    "Booking requires recurring booking series".

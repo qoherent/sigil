@@ -53,8 +53,7 @@ The rejected anchor proposal below remains historical and inactive.
 ## 4. Runtime And Dependency Requirements
 
 The source package is implemented in TypeScript and Deno modules. Standalone
-archives ship the compiled `sigil` language CLI beside the native `sigilc` and
-`sigil-claims` binaries; archive consumers do not need a separately installed
+archives ship the compiled `sigil` language CLI beside the single native `sigilc` binary; archive consumers do not need a separately installed
 TypeScript or egglog runtime.
 
 `sigil-cli` must depend on `sigil-core` for:

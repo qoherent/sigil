@@ -3,10 +3,10 @@
 The benchmark runs Sigil's computed-claims evaluation against the seven-source
 Slotted design. One **pass** launches one orchestrator process (Codex, Claude
 Code or Pi) in its own pass directory. The orchestrator carries out the
-`sigil-compute` skill's whole-design action end to end: it reads every source
-with fresh children, re-asks what ingest left unread (at most twice), writes the
-readings back, and runs the final check. The benchmark then runs the pinned
-`sigil-claims check` itself and scores the planted problems from that report.
+`sigil-compute-design` skill's whole-design action end to end: it reads every
+source with fresh children, re-asks what ingest left unread (at most twice),
+writes the readings back, and runs the final check. The benchmark then runs the
+pinned `sigilc check` itself and scores the planted problems from that report.
 What the agent hands back is only cross-checked against it.
 
 The benchmark owns the Slotted fixture and its four planted problems in
@@ -29,8 +29,8 @@ score.
 - Each model selector must be accepted by its selected CLI.
 - Pi additionally needs the `pi-subagents` extension (see below).
 
-The `deno task slotted-benchmark` command builds `sigilc` and `sigil-claims`
-with Cargo before running the benchmark.
+The `deno task slotted-benchmark` command builds `sigilc` and `sigilc` with
+Cargo before running the benchmark.
 
 ## Run a batch
 
@@ -77,13 +77,13 @@ minutes per call, and parallel runs make them worse.
 
 Each pass gets a directory, `attempts/<id>/pass/`, which is kept as evidence:
 
-| Part               | What it is                                                                                                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `root/`            | A copy of `examples/slotted` that keeps `.sigil/config.json` and has no `.sigil/claims/` store. It is the skill's `--root`, so the full-design write-back lands here, never in the fixture. |
-| `store/`           | The private store. It must be empty when the pass starts; a pass whose store is not empty is refused. Nothing from an earlier pass is reused.                                               |
-| `run/`             | The run directory: the orchestrator's preparations, seeds and the children's answer files.                                                                                                  |
-| `skills/`          | `sigil-compute`, `sigil-understand` and `sigil-egglog` staged as siblings. The prompt names `skills/sigil-compute/SKILL.md` by path, and their hashes are recorded in the manifest.         |
-| `bin/sigil-claims` | The pinned binary, first on the orchestrator's `PATH`.                                                                                                                                      |
+| Part         | What it is                                                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root/`      | A copy of `examples/slotted` that keeps `.sigil/config.json` and has no `.sigil/claims/` store. It is the skill's `--root`, so the full-design write-back lands here, never in the fixture.       |
+| `store/`     | The private store. It must be empty when the pass starts; a pass whose store is not empty is refused. Nothing from an earlier pass is reused.                                                     |
+| `run/`       | The run directory: the orchestrator's preparations, seeds and the children's answer files.                                                                                                        |
+| `skills/`    | `sigil-compute-design`, `sigil-understand` and `sigil-egglog` staged as siblings. The prompt names `skills/sigil-compute-design/SKILL.md` by path, and their hashes are recorded in the manifest. |
+| `bin/sigilc` | The pinned binary, first on the orchestrator's `PATH`.                                                                                                                                            |
 
 Host output is kept beside it in `attempts/<id>/evidence/`: the prompt, raw
 events, the last message, and the benchmark's own check under `check/`.
@@ -98,7 +98,7 @@ for context rows, write the answer to a file) live in the skill, not here.
 The state and the planted problems come from the check the benchmark runs after
 the agent exits. The pass is:
 
-- `valid` when that check validates (report version 5, the fixture's workspace
+- `valid` when that check validates (report version 6, the fixture's workspace
   digest, stored readings) and the agent's hand-back state agrees with it;
 - `invalid` when the hand-back disagrees with the benchmark's check, a child ran
   at an effort other than the requested one, the check does not validate, or the
@@ -133,7 +133,7 @@ the probe checked.
 | Host        | Orchestrator                                                                                                                                                                                                                                                                                                                                         | Children                                                                                                                                                     |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Codex       | `codex exec --json --ignore-user-config --ignore-rules --enable skip_host_skill_discovery --sandbox workspace-write -C PASS --skip-git-repo-check`, `-c model_reasoning_effort="LEVEL"`; a scratch `CODEX_HOME` with the auth file copied in for the run and deleted afterwards. No `--ephemeral`, which would hide the children's model and effort. | `spawn_agent` with `fork_turns: "none"`; effort from `-c agents.default_subagent_reasoning_effort="LEVEL"`.                                                  |
-| Claude Code | `claude --print --output-format stream-json --restricted --strict-mcp-config --permission-mode dontAsk --tools Bash,Read,Write,Glob,Grep,Agent --effort LEVEL`, with `--allowedTools` for `Bash(sigil-claims *)` and the shell the skill needs (`mkdir`, `cp`, `mv`, `ls`, `cat`, `test`). `--safe-mode` is not passed: it disables `--agents`.      | An `interpreter` agent given with `--agents` (tools Read, Glob, Grep, Write; the requested model and effort).                                                |
+| Claude Code | `claude --print --output-format stream-json --restricted --strict-mcp-config --permission-mode dontAsk --tools Bash,Read,Write,Glob,Grep,Agent --effort LEVEL`, with `--allowedTools` for `Bash(sigilc *)` and the shell the skill needs (`mkdir`, `cp`, `mv`, `ls`, `cat`, `test`). `--safe-mode` is not passed: it disables `--agents`.            | An `interpreter` agent given with `--agents` (tools Read, Glob, Grep, Write; the requested model and effort).                                                |
 | Pi          | `pi --print --mode json --no-extensions -e PI_SUBAGENTS_ENTRY --no-skills --tools read,bash,subagent --thinking LEVEL`                                                                                                                                                                                                                               | An `interpreter` agent in `.pi/agents/` (`context: "fresh"` is required by the prompt; restricted tools; `thinking: LEVEL`; no inherited context or skills). |
 
 **Pi support is untested live.** The host probe could not run Pi: the xAI
@@ -141,8 +141,8 @@ provider answered 403 (out of credits). The Pi settings and the readers of its
 event stream were written from the `pi-subagents` documentation and are only
 exercised by fake-host tests. Treat the first live Pi pass as a probe. Codex and
 Claude Code were verified live in U1, except that the Claude shell allowlist
-beyond `sigil-claims` (`mkdir`, `cp`, `mv`, `ls`, `cat`, `test`) is chosen from
-what the skill's seed and write-back steps need and has not been run live.
+beyond `sigilc` (`mkdir`, `cp`, `mv`, `ls`, `cat`, `test`) is chosen from what
+the skill's seed and write-back steps need and has not been run live.
 
 None of the hosts gives an OS-level boundary. Codex's `workspace-write` sandbox
 confines writes to the pass directory but can read elsewhere; Claude Code's and
@@ -194,3 +194,26 @@ planted-problem answer key or prior batch output.
 See [`report.ts`](./report.ts) for report definitions and
 [`docs/computed-evaluation-demo.md`](../../docs/computed-evaluation-demo.md) for
 the current demo workflow and historical manual results.
+
+## Implementation action
+
+Use `--action implementation --variant clean` for the repaired, trimmed
+`examples/slotted-implementation` workspace. Use `--variant planted` to apply
+all six independent code overlays to a benchmark-owned copy. The original
+Slotted design stays unchanged. The answer key and overlay descriptors remain
+outside every interpretation workspace.
+
+Implementation passes stage `sigil-compute-align` and its three dependencies.
+They first run the full design loop on one private store, then the whole-file
+code loop. The benchmark independently runs `sigilc align check`; only a
+matching version-1 report/context in that store supplies Closed, Converged,
+Drift or Incomplete. A hand-back alone never supplies evidence.
+
+All staged input files (including code, design and `.sigil` configuration) are
+hashed before and after the orchestrator. Only `.sigil/claims` write-back is
+allowed. Changed, added or removed inputs invalidate the pass.
+
+New manifests are version 3 and record action, variant, model, effort and the
+pinned native digest. Design manifests also record both old binary digests from
+the immutable `claims-turtle-premerge-20261009` baseline. Version-2 recorded
+batches remain readable for comparison; new runs use only `sigilc`.

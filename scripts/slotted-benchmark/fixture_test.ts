@@ -27,7 +27,7 @@ const sigilc = fileURLToPath(
 );
 const claims = fileURLToPath(
   new URL(
-    `../../packages/sigilc/target/debug/sigil-claims${exe}`,
+    `../../packages/sigilc/target/debug/sigilc${exe}`,
     import.meta.url,
   ),
 );
@@ -78,7 +78,7 @@ async function slottedWorkspace(
   return { root, files };
 }
 
-/** What `sigil-claims prepare` really shows the model for one source. */
+/** What `sigilc prepare` really shows the model for one source. */
 interface PreparedRequest {
   readonly binding: { readonly source: string };
   readonly rows: readonly {
@@ -91,7 +91,7 @@ interface PreparedRequest {
 
 /**
  * The workspace trees plus the black-box request of every source, taken from
- * the real `sigil-claims prepare`. Dependencies' private sections are not in
+ * the real `sigilc prepare`. Dependencies' private sections are not in
  * these requests, which is the behaviour the linked check exists to cover.
  */
 async function snapshot(

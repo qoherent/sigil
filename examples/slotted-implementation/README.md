@@ -1,0 +1,3 @@
+This fixture owns a repaired, trimmed subset of Slotted: booking requests with separate 7-day duration and 180-day lead bounds, a pending range-change promise, and Rooms as the sole exclusive owner of archived room marks. The clean TypeScript answers these promises. Stock examples/slotted remains deliberately disjoint and unchanged.
+
+The six code overlays and answer key live outside this workspace under scripts/slotted-benchmark/implementation/plants. Run the benchmark with --action implementation --variant clean or --variant planted. Deterministic canned checks are in implementation_fixture_test.ts; canned rows are test evidence, not observed model behavior.

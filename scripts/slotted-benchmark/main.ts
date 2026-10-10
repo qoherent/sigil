@@ -11,13 +11,13 @@ const DEFAULT_OUTPUT = fileURLToPath(
 export const HELP = `Slotted interpretation benchmark
 
 Run a batch:
-  deno task slotted-benchmark run --agent claude:MODEL --agent codex:MODEL --passes 3 [--out DIR] [--timeout-ms N] [--reasoning LEVEL] [--codex-auth FILE] [--pi-subagents FILE]
+  deno task slotted-benchmark run --agent claude:MODEL --agent codex:MODEL --passes 3 [--action design|implementation] [--variant clean|planted] [--out DIR] [--timeout-ms N] [--reasoning LEVEL] [--codex-auth FILE] [--pi-subagents FILE]
 
 Rebuild a report without launching an agent:
   deno task slotted-benchmark report DIR
 
 Each --agent selects one coding agent and requested model. Repeat it for more combinations.
-Each pass runs one orchestrator process that carries out sigil-compute's whole-design
+Each pass runs one orchestrator process that carries out sigil-compute-design's whole-design
 action in its own pass directory; the benchmark then runs the linked check itself and
 scores the planted problems from that report. --timeout-ms bounds one whole pass (default
 7200000). --reasoning sets the reasoning effort of the orchestrator and every child.
@@ -60,6 +60,8 @@ export async function executeCommand(
   }
   if (command !== "run") throw new Error(HELP);
   const selections: { agent: string; model: string }[] = [];
+  let action: "design" | "implementation" = "design";
+  let variant: "clean" | "planted" = "clean";
   let passes: number | null = null;
   let outputDir: string | null = null;
   let timeoutMs = 7_200_000;
@@ -72,6 +74,8 @@ export async function executeCommand(
     if (
       !value ||
       ![
+        "--action",
+        "--variant",
         "--agent",
         "--passes",
         "--out",
@@ -85,7 +89,17 @@ export async function executeCommand(
         `Unknown or incomplete option: ${flag ?? "(none)"}\n${HELP}`,
       );
     }
-    if (flag === "--agent") {
+    if (flag === "--action") {
+      if (value !== "design" && value !== "implementation") {
+        throw new Error("Action must be design or implementation");
+      }
+      action = value;
+    } else if (flag === "--variant") {
+      if (value !== "clean" && value !== "planted") {
+        throw new Error("Variant must be clean or planted");
+      }
+      variant = value;
+    } else if (flag === "--agent") {
       const colon = value.indexOf(":");
       if (colon < 0) throw new Error("Agent selection must be AGENT:MODEL");
       selections.push({
@@ -126,6 +140,8 @@ export async function executeCommand(
     }`,
   );
   await runBatch({
+    action,
+    variant,
     selections,
     passes,
     outputDir: destination,

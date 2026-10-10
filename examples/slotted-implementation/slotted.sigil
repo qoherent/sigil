@@ -1,0 +1,34 @@
+component Booking {
+  goal {
+    Accept renter booking requests and changes to a pending request's range.
+  }
+  interface {
+    Request {
+      Booking provides a *booking request* carrying duration and lead time in whole days.
+    }
+    RangeChange {
+      Booking provides a *range change* for a pending booking request, preserving its other fields.
+    }
+  }
+  constraints {
+    Window {
+      A booking request lasts at most 7 days and may begin at most 180 days ahead.
+      Booking validates both limits before accepting a request or changing its range.
+    }
+  }
+}
+component Rooms {
+  goal {
+    Preserve the room's archived state under one owner.
+  }
+  interface {
+    Archive {
+      Rooms owns and updates an *archived room mark* indexed by room identity.
+    }
+  }
+  state {
+    ArchiveOwnership {
+      Rooms must exclusively own the archived room mark. Rooms stores each mark and can set it to true.
+    }
+  }
+}

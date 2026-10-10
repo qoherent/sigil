@@ -1,0 +1,10 @@
+{
+  "sigilVersion": "0.9.0",
+  "workspace": { "name": "slotted-implementation", "members": [] },
+  "files": { "include": ["**/*.sigil"], "exclude": [] },
+  "tools": {
+    "sigilc": {
+      "implementation": { "dirs": ["src"], "design": ["slotted.sigil"] }
+    }
+  }
+}

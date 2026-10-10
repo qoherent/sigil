@@ -124,7 +124,15 @@ test("editor title compile action uses the same focus-selection command as the s
     (item: MenuItem) => item.command === "sigil.selectCompilationFocus",
   );
   assert(entry, "editor/title must contribute select compilation focus");
-  assert.equal(entry.when, "editorLangId == sigil");
+  assert.equal(entry.when, "resourceScheme == file");
+  const fileCommand = manifest.contributes.menus.commandPalette.find(
+    (item: MenuItem) => item.command === "sigil.compileFile",
+  );
+  assert.equal(fileCommand.when, "resourceScheme == file");
+  assert.equal(
+    manifest.contributes.configuration.properties["sigil.compile.selection"],
+    undefined,
+  );
   assert.equal(entry.group, "navigation");
   assert.equal(
     editorTitle.some(

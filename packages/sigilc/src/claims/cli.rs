@@ -7,9 +7,9 @@ use super::{
     canon, context, dialect, findings, guidance, identity, link, memo, prepare, program, vocabulary,
 };
 use crate::{
-    cli::{Output, store_dir},
-    eqval,
-    inputs::DesignBasis,
+    basis::DesignBasis,
+    command::{Output, json, store_dir},
+    engine,
     structure::{DesignInput, Severity, Stage},
     tree::design_input::load_design,
 };
@@ -21,23 +21,23 @@ use std::{
 const MAX_BINDING_BYTES: u64 = 16_000_000;
 
 pub fn help() -> String {
-    r#"sigil-claims — computed design validation
+    r#"sigilc — computed design validation
 
 Commands:
   prepare --source PATH --out NEW_DIR [--root DIR] [--store DIR]
   ingest --binding FILE --claims FILE|- [--claims-repeat FILE|-] [--root DIR] [--store DIR]
   check [--source PATH] [--root DIR] [--store DIR]
-  extract-guidance --out DIR [--root DIR]
+  extract-guidance [--implementation] --out DIR [--root DIR]
 
---root DIR is the workspace; sigil-claims reads its .sigil configuration and
+--root DIR is the workspace; sigilc reads its .sigil configuration and
 sources directly (default: the current directory). --store DIR holds the stored
 interpretations and the reports (default: ROOT/.sigil).
 
 Flow:
-  1. Prepare one source:       sigil-claims prepare --root . \
+  1. Prepare one source:       sigilc prepare --root . \
                                  --source a.sigil --out claims-a
   2. An external interpreter reads claims-a and writes Datalog claims.
-  3. Ingest the result:        sigil-claims ingest --root . \
+  3. Ingest the result:        sigilc ingest --root . \
                                  --binding claims-a/binding.json --claims claims-a/result.egg
 
 This command never launches a model. Step 3 is the caller's, and passing the
@@ -61,16 +61,16 @@ breach), 2 = usage, 3 = operational failure.
 // @sigil implements packages/sigilc/claims.sigil::SigilComputedClaims::ClaimsCommands interface,constraints
 pub fn run(args: &[&str]) -> Output {
     let (command, tail) = match args {
-        [] => return Err((2, "Expected a command. Run sigil-claims --help.".into())),
+        [] => return Err((2, "Expected a command. Run sigilc --help.".into())),
         ["--help"] | ["-h"] => return Ok((0, help())),
         ["--version"] => {
-            return Ok((0, format!("sigil-claims {}\n", env!("CARGO_PKG_VERSION"))));
+            return Ok((0, format!("sigilc {}\n", env!("CARGO_PKG_VERSION"))));
         }
         [
             command @ ("prepare" | "ingest" | "check" | "extract-guidance"),
             tail @ ..,
         ] => (*command, tail),
-        _ => return Err((2, "Invalid command. Run sigil-claims --help.".into())),
+        _ => return Err((2, "Invalid command. Run sigilc --help.".into())),
     };
 
     let allowed: &[&str] = match command {
@@ -85,7 +85,7 @@ pub fn run(args: &[&str]) -> Output {
             "--store",
         ],
         "check" => &["--source", "--root", "--store"],
-        _ => &["--out", "--root"],
+        _ => &["--out", "--root", "--implementation"],
     };
     let options = parse(tail, allowed)?;
     if options.values().filter(|v| v.as_str() == "-").count() > 1 {
@@ -101,12 +101,24 @@ pub fn run(args: &[&str]) -> Output {
     match command {
         "extract-guidance" => {
             let out = required("--out")?;
-            let written = guidance::extract(Path::new(&out), Path::new(&root)).map_err(usage)?;
+            let implementation = options.contains_key("--implementation");
+            let (written, fingerprint) = if implementation {
+                (
+                    crate::align::guidance::extract(Path::new(&out), Path::new(&root))
+                        .map_err(usage)?,
+                    crate::align::guidance::fingerprint(),
+                )
+            } else {
+                (
+                    guidance::extract(Path::new(&out), Path::new(&root)).map_err(usage)?,
+                    guidance::fingerprint(),
+                )
+            };
             json(
                 0,
                 &serde_json::json!({
                     "version": findings::REPORT_VERSION,
-                    "guidanceFingerprint": guidance::fingerprint(),
+                    "guidanceFingerprint": fingerprint,
                     "written": written,
                 }),
             )
@@ -184,9 +196,10 @@ fn check(source: Option<&str>, root: &str, store: &Path) -> Output {
         return Err((2, format!("design source not found: {source}")));
     }
     let linked = link::link(&input, &basis, store).map_err(operational)?;
-    let world = program::saturate(&linked.request, &linked.facts, eqval::Limits::default())
+    let world = program::saturate(&linked.request, &linked.facts, engine::Limits::default())
         .map_err(gate)?;
-    let report = findings::linked_report(&linked, &world, source);
+    let mut report = findings::linked_report(&linked, &world, source);
+    findings::locate(&mut report, &input, &linked.facts);
     let mut context = context::build(
         &linked.request,
         &linked.facts,
@@ -229,7 +242,7 @@ fn ingest(options: &BTreeMap<String, String>, root: &str, store: &Path) -> Outpu
     );
     let (input, basis) = workspace(root, store)?;
     let supplied: prepare::Binding = serde_json::from_slice(
-        &crate::cli::read(&binding_path, MAX_BINDING_BYTES).map_err(operational)?,
+        &crate::command::read(&binding_path, MAX_BINDING_BYTES).map_err(operational)?,
     )
     .map_err(|e| operational(format!("{binding_path}: {e}")))?;
 
@@ -462,8 +475,9 @@ fn ingest(options: &BTreeMap<String, String>, root: &str, store: &Path) -> Outpu
         }
     }
 
-    let world = program::saturate(&request, &facts, eqval::Limits::default()).map_err(gate)?;
+    let world = program::saturate(&request, &facts, engine::Limits::default()).map_err(gate)?;
     let mut report = findings::report(&request, &facts, &world, &digests);
+    findings::locate(&mut report, &input, &facts);
     let mut disagreements = Vec::new();
     for repeat in &comparisons {
         disagreements.extend(findings::disagreements(&facts, repeat));
@@ -627,7 +641,8 @@ fn workspace(root: &str, store: &Path) -> Result<(DesignInput, DesignBasis), (u8
 }
 
 fn artifact(path: &str, limits: dialect::Limits) -> Result<String, (u8, String)> {
-    let bytes = crate::cli::read(path, limits.max_document_bytes as u64).map_err(operational)?;
+    let bytes =
+        crate::command::read(path, limits.max_document_bytes as u64).map_err(operational)?;
     String::from_utf8(bytes).map_err(|_| gate("claims artifact is not valid UTF-8".to_string()))
 }
 
@@ -646,10 +661,15 @@ fn parse(tail: &[&str], allowed: &[&str]) -> Result<BTreeMap<String, String>, (u
             return Err((
                 2,
                 format!(
-                    "unknown or duplicate option: {flag} (accepted: {}; sigil-claims reads the workspace from --root DIR)",
+                    "unknown or duplicate option: {flag} (accepted: {}; sigilc reads the workspace from --root DIR)",
                     allowed.join(" ")
                 ),
             ));
+        }
+        if *flag == "--implementation" {
+            options.insert((*flag).to_string(), "true".to_string());
+            rest = next;
+            continue;
         }
         let Some((value, remaining)) = next.split_first() else {
             return Err((2, format!("missing value for {flag}")));
@@ -670,11 +690,4 @@ fn gate(message: String) -> (u8, String) {
 
 fn operational(message: String) -> (u8, String) {
     (3, message)
-}
-
-fn json(code: u8, value: &impl serde::Serialize) -> Output {
-    Ok((
-        code,
-        serde_json::to_string_pretty(value).map_err(|e| operational(e.to_string()))? + "\n",
-    ))
 }

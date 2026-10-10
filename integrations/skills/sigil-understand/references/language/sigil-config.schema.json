@@ -82,6 +82,7 @@
     },
     "tools": {
       "type": "object",
+      "description": "Namespaced tool settings. Core validates only object shape. sigilc strictly validates tools.sigilc.implementation: paths, dirs, include, exclude, vendorDirs, allowEmpty, and optional design source roots. Local tool settings merge recursively; arrays replace workspace arrays.",
       "propertyNames": {
         "minLength": 1
       },

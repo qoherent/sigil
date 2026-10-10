@@ -60,27 +60,26 @@ sigil context . --component Notifier --format markdown
 Language checks validate syntax, imports and configuration. They do not establish
 semantic coherence or implementation delivery.
 
-## 4. Use the native flow
+## 4. Run computed checks
 
-Compile the workspace directly. `sigilc` reads the `.sigil` files itself:
+`sigilc` reads workspace sources and stored external interpretations:
 
 ```sh
-sigilc compile design --root .
+sigilc check --root .
+sigilc align check --root .
 ```
 
-Without independent source reconstructions, this can report Loose with missing
-projection warnings. That is not evidence that implementation is complete.
-Follow the skill's [native compilation protocol](../integrations/skills/sigil/references/compilation-execution.md)
-for scope, freshness, preparation, external interpreter inputs, ingestion,
-catalog export and comparison.
+A fresh workspace is Incomplete until its readings are supplied. Run
+[sigil-compute-design](../integrations/skills/sigil-compute-design/SKILL.md)
+for design computation or
+[sigil-compute-align](../integrations/skills/sigil-compute-align/SKILL.md)
+for a design-first implementation check. The latter reads selection from
+`tools.sigilc.implementation` in workspace config and proposes excludes as output.
 
-Design gates return Coherent or Loose with exit 0 and Disjoint with exit 1.
-Implementation gates return Closed or Converged with exit 0 and Drift with exit 1.
-Loose and Converged are yellow with warnings. Usage is exit 2; runtime or
-unavailable comparison is exit 3. Inspection exits have their own meanings.
+Design states are Coherent, Loose, Disjoint and Incomplete. Implementation
+states are Closed, Converged, Drift and Incomplete. The first two states on
+each side exit 0; the latter two exit 1. Usage exits 2 and operational failures
+exit 3. See the [native command guide](../packages/sigilc/README.md).
 
-Each independent Implementation interpreter receives only captured source bytes,
-fixed ontology and frozen identity catalog. Keep Design prose, neighboring code,
-binding files and repair feedback out of its inputs. The external host owns
-model calls, isolation, coding and iteration. Actual checks and removal evidence
-remain necessary alongside semantic comparison.
+Model readers supply data-only rows; the native tool admits them and applies
+the laws. Ordinary tests and delivery evidence remain necessary.

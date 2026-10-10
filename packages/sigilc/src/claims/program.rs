@@ -8,7 +8,7 @@ use super::{
     prepare::Request,
     vocabulary,
 };
-use crate::{assertions::quote, eqval};
+use crate::{engine, engine::quote};
 use egglog::EGraph;
 use serde::Serialize;
 use serde_json::Value;
@@ -270,7 +270,7 @@ pub fn program(request: &Request, facts: &[Fact]) -> String {
 pub fn saturate(
     request: &Request,
     facts: &[Fact],
-    limits: eqval::Limits,
+    limits: engine::Limits,
 ) -> Result<Saturated, String> {
     if facts.len() > limits.max_input_assertions {
         return Err("interpretation exceeds the accepted fact limit".into());
@@ -280,15 +280,15 @@ pub fn saturate(
     graph
         .parse_and_run_program(Some("sigil-claims".into()), &program(request, facts))
         .map_err(|e| e.to_string())?;
-    let iterations = eqval::fixedpoint(&mut graph, limits, started)?;
+    let iterations = engine::fixedpoint(&mut graph, limits, started)?;
     let mut tables = BTreeMap::new();
     for (name, arity) in EXPORTED {
         tables.insert(
             (*name).to_owned(),
-            eqval::rows(&graph, name, *arity, limits)?,
+            engine::rows(&graph, name, *arity, limits)?,
         );
     }
-    eqval::check_limits(&graph, limits, started)?;
+    engine::check_limits(&graph, limits, started)?;
     Ok(Saturated {
         guidance_fingerprint: super::guidance::fingerprint(),
         iterations,

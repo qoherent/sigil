@@ -15,7 +15,7 @@ Package docs:
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
 
-Standalone GitHub releases install `sigil`, `sigilc`, and `sigil-claims`, plus
+Standalone GitHub releases install `sigil` and `sigilc`, plus
 bundled skills. Each binary reports its own manifest version. On macOS or Linux:
 
 ```bash
@@ -108,12 +108,12 @@ designs.
 Use the native compiler directly:
 
 ```sh
-sigilc stale design --root .
-sigilc compile design --root .
+sigilc prepare --root . --source architecture/a.sigil --out reading-a
+sigilc check --root .
 ```
 
-See the [native command guide](../sigilc/README.md) for ordered scope, external
-reconstruction, preparation/ingestion, catalogs and Implementation comparison.
+See the [native command guide](../sigilc/README.md) for configured selection, external
+interpretation, preparation/ingestion, claims and implementation alignment.
 The model or operator invokes `sigilc` directly. The language CLI does not
 launch semanticizers or forward compiler commands.
 

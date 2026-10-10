@@ -8,7 +8,7 @@
 //! `{kind}:{path}:{start}` occurrence id, because those never feed content
 //! identity.
 use super::{Snapshot, cache::TreeCache, facet_ids_by_start, ids::encode};
-use crate::inputs::{ContextIdentity, DesignBasis, ImportedInterface, SourceBasis};
+use crate::basis::{ContextIdentity, DesignBasis, ImportedInterface, SourceBasis};
 use crate::language::{
     parse::{self, Span},
     resolve::{

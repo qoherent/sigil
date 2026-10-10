@@ -12,7 +12,8 @@ use std::{collections::BTreeSet, sync::LazyLock};
 /// row.
 /// 4 refuses a Tag as the subject of `requires`, `provides`, `owns`,
 /// `dependsOn` or `excludes`, which generation 3 admitted.
-pub const VOCABULARY_GENERATION: u32 = 4;
+/// 5 adds distinct maximum duration, lead and span bounds in whole days.
+pub const VOCABULARY_GENERATION: u32 = 5;
 
 /// How a returned row names a step, which it cannot name by identity.
 ///
@@ -228,7 +229,15 @@ const RELATION_NAMES: &[&str] = &[
 
 const BOOLEAN_NAMES: &[&str] = &["required", "exclusive", "assumed", "expected"];
 
-const NUMERIC_NAMES: &[&str] = &["cost", "latencyBudgetMs", "latencyMs", "risk"];
+const NUMERIC_NAMES: &[&str] = &[
+    "cost",
+    "latencyBudgetMs",
+    "latencyMs",
+    "risk",
+    "maxDurationDays",
+    "maxLeadDays",
+    "maxSpanDays",
+];
 
 /// Relation names a claim may use.
 // @sigil implements packages/sigilc/vocabulary.sigil::SigilClaimsVocabulary::AcceptedVocabulary interface,constraints

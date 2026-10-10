@@ -28,18 +28,19 @@ const PROBE_TIMEOUT_MS = 5_000;
 
 /** Shell programs the orchestrator may run on Claude Code; what the skill needs. */
 export const ORCHESTRATOR_SHELL = [
-  "sigil-claims",
+  "sigilc",
   "mkdir",
   "cp",
   "mv",
   "ls",
   "cat",
   "test",
+  "cmp",
 ] as const;
 
 /** Where each part of a pass lives, relative to the pass directory. */
 export const PASS_LAYOUT = {
-  skill: "skills/sigil-compute/SKILL.md",
+  skill: "skills/sigil-compute-design/SKILL.md",
   root: "root",
   store: "store",
   run: "run",
@@ -47,6 +48,7 @@ export const PASS_LAYOUT = {
 } as const;
 
 export interface AgentRunRequest {
+  readonly action?: "design" | "implementation";
   readonly agent: AgentName;
   readonly requestedModel: string;
   /**
@@ -56,7 +58,7 @@ export interface AgentRunRequest {
   readonly reasoning?: string;
   /** The prepared pass directory. It is the orchestrator's working directory. */
   readonly passDir: string;
-  /** The directory the pinned `sigil-claims` is put on PATH from. */
+  /** The directory the pinned `sigilc` is put on PATH from. */
   readonly binDir: string;
   /** Attempt-specific retained directory outside the pass directory. */
   readonly evidenceDir: string;
@@ -111,6 +113,7 @@ export interface AgentRunResult {
 }
 
 export interface OrchestratorPromptInput {
+  readonly action?: "design" | "implementation";
   /** How the host starts a child; from the host's launch settings. */
   readonly spawnInstruction: string;
   readonly model: string;
@@ -124,12 +127,15 @@ export const HANDBACK_STATES = [
   "disjoint",
   "incomplete",
   "failed",
+  "closed",
+  "converged",
+  "drift",
 ] as const;
 export type HandbackState = typeof HANDBACK_STATES[number];
 
 /**
  * The orchestrator prompt. The child instructions (return nothing for context
- * rows, write the answer to a file) live in the sigil-compute skill's handoff,
+ * rows, write the answer to a file) live in the sigil-compute-design skill's handoff,
  * not here: this names the staged skill, where everything is, and what the
  * benchmark requires.
  */
@@ -137,22 +143,37 @@ export function orchestratorPrompt(input: OrchestratorPromptInput): string {
   const effort = input.effort
     ? `reasoning effort ${input.effort}`
     : "the host's default reasoning effort";
-  const { skill, root, store, run } = PASS_LAYOUT;
+  const { root, store, run } = PASS_LAYOUT;
+  const alignment = input.action === "implementation";
+  const skillName = alignment ? "sigil-compute-align" : "sigil-compute-design";
+  const skill = `skills/${skillName}/SKILL.md`;
   return [
-    "Run the sigil-compute skill's full-design action on the Sigil design in this directory, end to end.",
+    alignment
+      ? "Run the sigil-compute-align skill end to end on this workspace, including its composed full-design action first."
+      : "Run the sigil-compute-design skill's full-design action on the Sigil design in this directory, end to end.",
     "",
-    `Read ${skill} first, then the orchestration contract it names, skills/sigil-compute/references/computed-evaluation.md. Use only these staged copies: skills/sigil-compute, skills/sigil-understand and skills/sigil-egglog sit beside each other here, and the reading children load the last two from there. Do not use a copy of any of these skills installed elsewhere on this machine.`,
+    `Read ${skill} first, then the orchestration contract it names, ${
+      alignment
+        ? "skills/sigil-compute-align/references/computed-alignment.md"
+        : "skills/sigil-compute-design/references/computed-evaluation.md"
+    }. Use only these staged copies: ${
+      alignment ? "skills/sigil-compute-align, " : ""
+    } skills/sigil-compute-design, skills/sigil-understand and skills/sigil-egglog sit beside each other here, and the reading children load the last two from there. Do not use a copy of any of these skills installed elsewhere on this machine.`,
     "",
-    `- The workspace root is \`${root}\`. Pass \`--root ${root}\` to every sigil-claims command. The workspace has no stored readings, so the seed the skill takes from its store is empty.`,
-    `- The private store is \`${store}\`, not a directory inside \`${run}\`: this replaces the contract's default location. It starts empty. Pass \`--store ${store}\` to every sigil-claims command, including the final check.`,
+    `- The workspace root is \`${root}\`. Pass \`--root ${root}\` to every sigilc command. The workspace has no stored readings, so the seed the skill takes from its store is empty.`,
+    `- The private store is \`${store}\`, not a directory inside \`${run}\`: this replaces the contract's default location. It starts empty. Pass \`--store ${store}\` to every sigilc command, including the final check.`,
     `- Keep the run directory, preparations, seeds and every answer file under \`${run}\`. A child writes its answer to a file under \`${run}\` named \`<source>-answer-<round>.egg\`, which is plain egglog text with one claim row per line — never JSON. The child writes each row from reading the prose and never drops rows in bulk. You pass that exact file to ingest and never set an answer aside yourself: ingest decides.`,
-    `- Run the tool as \`./bin/sigil-claims\` wherever the skill writes \`sigil-claims\`. A \`sigil-claims\` found elsewhere on this machine is a different version and must not be used. Never edit the design files.`,
+    `- Run the tool as \`./bin/sigilc\` wherever the skill writes \`sigilc\`. A \`sigilc\` found elsewhere on this machine is a different version and must not be used. Never edit design, code or configuration. Proposed excludes are output only.`,
     "",
     `Every reading, including each re-ask, comes from a fresh child that inherits none of your conversation. ${input.spawnInstruction} Children run with model ${input.model} at ${effort}; the host is already set to that, so do not pass a model or effort override when starting a child. Never write, edit or repair rows yourself.`,
     "",
     "Do not read anything outside this directory except the tool and the files it names. There is no answer key to look for. Finish the whole action, including the write-back and the final check, then stop.",
     "",
-    `Your final message must report the final check's state, its unread units and the findings it lists, and must end with exactly one line of the form \`Hand-back state: STATE\`, where STATE is coherent, loose, disjoint or incomplete (the check's state), or failed if you stopped on a failure.`,
+    `Your final message must report the final check's state, its unread units and the findings it lists, and must end with exactly one line of the form \`Hand-back state: STATE\`, where STATE is ${
+      alignment
+        ? "closed, converged, drift or incomplete"
+        : "coherent, loose, disjoint or incomplete"
+    } (the check's state), or failed if you stopped on a failure.`,
     "",
   ].join("\n");
 }
@@ -175,7 +196,7 @@ export function parseHandbackState(text: string): HandbackState | null {
 
 /**
  * Launches one orchestrator process in its pass directory and retains its raw
- * evidence. The process runs the whole sigil-compute action; this function does
+ * evidence. The process runs the whole sigil-compute-design action; this function does
  * not read or judge what it produced.
  */
 export async function runOrchestrator(
@@ -241,6 +262,7 @@ export async function runOrchestrator(
       spawnInstruction: launch.spawnInstruction,
       model: request.requestedModel,
       effort: requestedEffort,
+      action: request.action,
     });
     await Deno.writeTextFile(promptPath, prompt);
     const env = {

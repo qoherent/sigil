@@ -23,11 +23,8 @@ component SigilComputedClaims {
     }
 
     SectionAwareClosure {
-      Workers supply no laws and fill no tool-owned table. The compiler's stored
-      projections, its world cache and the files its runtime identity
-      fingerprints are read-only to this component; writing any of them would
-      invalidate every stored world. Findings and stores live under a path this
-      component owns.
+      Workers supply no laws and fill no tool-owned table. The source trees are read-only to this component. Findings and stored
+      readings live under claims in the chosen store.
     }
 
     CompiledGuidance {
@@ -65,7 +62,8 @@ component SigilComputedClaims {
       compiled into the binary and released with it; an operator may write an
       editable copy to a named path outside the workspace under validation.
       Fingerprint the guidance text, the vocabulary and the laws as one runtime
-      identity. Guidance changes what the interpreter is told and never what the
+      identity. Day-count bounds use distinct maximum duration, lead and span
+      measures in whole days. Guidance changes what the interpreter is told and never what the
       tool accepts.
     }
 
@@ -203,6 +201,8 @@ component SigilComputedClaims {
     }
 
     ComputedFindings {
+      Attach each finding's Facet source spans as UTF-8 byte ranges with SHA256
+      source digests for editor projection, without changing claim or memo identities.
       Report contradictions, ownership conflicts and unmet obligations with the
       law that produced each one, with the claims it rests on where it rests on
       any, and with the *steps* and the graph where steps produced it. Report a
@@ -237,8 +237,8 @@ component SigilComputedClaims {
     }
 
     ClaimsCommands {
-      Offer preparation, ingestion, a linked check and guidance extraction as a
-      separate executable beside the compiler. Refuse a binding that does not
+      Offer preparation, ingestion, a linked check and guidance extraction in the single native sigilc
+      executable. Refuse a binding that does not
       match the running *invocation* on any of its four parts. Exit zero for pass and
       warning, one for a gate failure, two for usage and a refused input, and
       three for operational failure. Only a contradiction or an ownership

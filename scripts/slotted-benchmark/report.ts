@@ -54,8 +54,18 @@ export async function writeReport(batchDir: string): Promise<string> {
       const linked = object(outcome?.linked);
       const linkedResult = object(linked?.result);
       if (outcome && linked && linkedResult) {
-        const reportPath = join(claimsDir, "workspace.linked.json");
-        const contextPath = join(claimsDir, "workspace.linked.context.json");
+        const reportPath = join(
+          claimsDir,
+          manifest.action === "implementation"
+            ? "workspace.align.json"
+            : "workspace.linked.json",
+        );
+        const contextPath = join(
+          claimsDir,
+          manifest.action === "implementation"
+            ? "workspace.align.context.json"
+            : "workspace.linked.context.json",
+        );
         outcome = {
           ...outcome,
           linked: {
@@ -152,6 +162,17 @@ export function renderReport(
       : `No reasoning effort requested (each host's default). Each pass is bounded by ${manifest.timeoutMs} ms.`,
     "",
     manifest.fixture.description,
+    `Action: ${manifest.action ?? "design"}; variant: ${
+      manifest.variant ?? "clean"
+    }.`,
+    `Native binary SHA256: ${
+      manifest.tools.sigilcSha256 ?? manifest.tools.claimsSha256
+    }.`,
+    ...(manifest.tools.baselineClaimsSha256
+      ? [
+        `Pre-merge claims SHA256: ${manifest.tools.baselineClaimsSha256}; pre-merge sigilc SHA256: ${manifest.tools.baselineSigilcSha256}.`,
+      ]
+      : []),
     "",
     "## Slotted fixture",
     "",
@@ -201,7 +222,7 @@ export function renderReport(
     "",
     "## Runs",
     "",
-    "One row per scheduled pass. A pass runs one orchestrator process that carries out sigil-compute's whole-design action, re-asks included, with fresh children. The benchmark then runs `sigil-claims check` itself on the pass's private store; the linked state and the planted problems are scored from that report, never from what the agent handed back. A pass is invalid when the agent's hand-back disagrees with that check, a child ran at an effort other than the requested one, or the evidence does not validate. A pass ended by a timeout is interrupted: its partial evidence is kept and it is not scored. A planted problem whose anchor Facets were still unread is N/A for that pass. A running record from an ended controller is shown as interrupted.",
+    "One row per scheduled pass. A pass runs the selected computed skill with fresh children. The benchmark then runs the selected `sigilc check` or `sigilc align check` itself on the pass's private store; the linked state and the planted problems are scored from that report, never from what the agent handed back. A pass is invalid when the agent's hand-back disagrees with that check, a child ran at an effort other than the requested one, or the evidence does not validate. A pass ended by a timeout is interrupted: its partial evidence is kept and it is not scored. A planted problem whose anchor Facets were still unread is N/A for that pass. A running record from an ended controller is shown as interrupted.",
     "",
     "| # | Agent | Requested model | Observed model | Reasoning | Pass | Status | Linked state | Handed back | Planted findings | Additional findings | Unread units | Children | Evidence |",
     "| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | --- | --- |",
@@ -423,6 +444,9 @@ function analyze(
       unreadSources.add(unread.source);
     }
   }
+  for (const path of array(report.unreadFiles)) {
+    if (typeof path === "string") unreadSources.add(path);
+  }
   const unavailable = new Set<string>();
   const matched = new Map<string, number[]>();
   const consumed = new Set<number>();
@@ -503,6 +527,16 @@ function matchesIssue(
   issue: IssuePreflight,
   claimFacet: ReadonlyMap<string, string>,
 ): boolean {
+  if (issue.implementation) {
+    if (!issue.laws.includes(String(finding.law))) return false;
+    const source = issue.implementation.source;
+    const element = issue.implementation.element;
+    return array(finding.locations).some((location) =>
+      object(location)?.source === source
+    ) && (!element || array(finding.codeRows).some((row) =>
+      object(row)?.element === element
+    ) || String(finding.subject) === `${source}::${element}`);
+  }
   if (
     finding.class !== issue.findingClass ||
     !issue.laws.includes(String(finding.law))

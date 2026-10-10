@@ -4,7 +4,7 @@ import {
   rejects,
 } from "node:assert/strict";
 import { dirname, join, resolve } from "node:path";
-import { validateFoundation } from "./validate-skill.ts";
+import { FOUNDATION_SKILLS, validateFoundation } from "./validate-skill.ts";
 import {
   documentaryLinks,
   LANGUAGE_PACK_PATH,
@@ -65,7 +65,7 @@ Deno.test("foundation validates relocated catalog and rejects broken dependencie
     );
     await rejects(() => validateFoundation(catalog), /Required skills/);
     await Deno.writeTextFile(metadataPath, metadata);
-    const computeEntry = join(catalog, "sigil-compute/SKILL.md");
+    const computeEntry = join(catalog, "sigil-compute-design/SKILL.md");
     const computeOriginal = await Deno.readTextFile(computeEntry);
     await Deno.writeTextFile(
       computeEntry,
@@ -78,7 +78,7 @@ Deno.test("foundation validates relocated catalog and rejects broken dependencie
     await Deno.writeTextFile(computeEntry, computeOriginal);
     const computeMetadataPath = join(
       catalog,
-      "sigil-compute/compatibility.json",
+      "sigil-compute-design/compatibility.json",
     );
     const computeMetadata = await Deno.readTextFile(computeMetadataPath);
     await Deno.writeTextFile(
@@ -139,6 +139,85 @@ Deno.test("alignment skill validates declared siblings and local links in a relo
     await rejects(
       () => validateFoundation(catalog),
       /Missing foundation skill dependency: .*sigil-write\/SKILL\.md/,
+    );
+  } finally {
+    await Deno.remove(catalog, { recursive: true });
+  }
+});
+
+Deno.test("computed alignment declares its composed loop dependencies and validates relocated metadata", async () => {
+  equal(FOUNDATION_SKILLS["sigil-compute-align"], [
+    "sigil-compute-design",
+    "sigil-understand",
+    "sigil-egglog",
+  ]);
+  const catalog = await Deno.makeTempDir({
+    prefix: "sigil computed alignment 空 ",
+  });
+  try {
+    await copyTree(join(root, "integrations/skills"), catalog);
+    await validateFoundation(catalog);
+    const directory = join(catalog, "sigil-compute-align");
+    for (
+      const [file, content, error] of [
+        ["VERSION", "invalid", /Invalid artifact version/],
+        [
+          "compatibility.json",
+          JSON.stringify({ sigilVersion: "0.9.0", requiredSkills: [] }),
+          /Required skills/,
+        ],
+        [
+          "compatibility.json",
+          JSON.stringify({
+            sigilVersion: "0.7.0",
+            requiredSkills: FOUNDATION_SKILLS["sigil-compute-align"],
+          }),
+          /Language version/,
+        ],
+        [
+          "compatibility.json",
+          JSON.stringify({
+            sigilVersion: "0.9.0",
+            requiredSkills: FOUNDATION_SKILLS["sigil-compute-align"],
+            nativeVersion: "*",
+          }),
+          /Unexpected compatibility fields/,
+        ],
+        [
+          "agents/openai.yaml",
+          'interface:\n  display_name: "Align"\n  short_description: "Computed alignment"\n  default_prompt: "Run alignment"\n',
+          /Adapter must invoke/,
+        ],
+      ] as const
+    ) {
+      const path = join(directory, file);
+      const original = await Deno.readTextFile(path);
+      await Deno.writeTextFile(path, content);
+      await rejects(() => validateFoundation(catalog), error);
+      await Deno.writeTextFile(path, original);
+    }
+    const entry = join(directory, "SKILL.md");
+    const original = await Deno.readTextFile(entry);
+    for (
+      const [link, error] of [
+        ["[Missing](references/absent.md)", /Missing local reference/],
+        [
+          "[Advisory](../sigil-align/SKILL.md)",
+          /outside declared foundation dependencies/,
+        ],
+      ] as const
+    ) {
+      await Deno.writeTextFile(entry, original + "\n" + link + "\n");
+      await rejects(() => validateFoundation(catalog), error);
+      await Deno.writeTextFile(entry, original);
+    }
+    await Deno.rename(
+      join(catalog, "sigil-compute-design"),
+      join(catalog, "unavailable-compute-design"),
+    );
+    await rejects(
+      () => validateFoundation(catalog),
+      /Missing foundation skill/,
     );
   } finally {
     await Deno.remove(catalog, { recursive: true });

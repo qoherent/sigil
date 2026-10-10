@@ -46,6 +46,7 @@ const manifest = {
     },
   ],
   input: { workspaceDigest: "snapshot" },
+  tools: { sigilcSha256: "native", claimsSha256: "native" },
   timeoutMs: 1000,
   reasoning: "medium",
 } as unknown as BatchManifest;

@@ -1,6 +1,3 @@
-@packages/sigilc/turtle.sigil from SigilTurtleInput import { FixedOntology }
-@packages/sigilc/catalog.sigil from SigilEntityCatalog import { FrozenIdentity }
-
 component SigilSourceIdentity {
   goal {
     Capture language-neutral source identity with snapdir walking and *BLAKE3*.
@@ -12,7 +9,7 @@ component SigilSourceIdentity {
       Preparation and per-source Design binding include schema 2, *languageVersion*
       0.9.0, components and Facets, Tag introductions and groupings, import
       selections, bare references, links, ranges, and provenance. Changed relevant
-      structure invalidates bindings through existing freshness checks even when
+      structure changes captured source identities even when
       semantic assertions appear unchanged.
     }
     SourceIdentity {
@@ -41,18 +38,14 @@ component SigilSourceIdentity {
 
   interface {
     SemanticInputs {
-      Bind Implementation to only its captured path and exact bytes, FixedOntology
-      and projection format, and the FrozenIdentity catalog fingerprint.
-      Selection and
-      neighboring source changes do not invalidate that object. Design additionally
-      binds the source's resolved tree id and the interface hashes of the
-      components it imports, plus applicable config and glossary bytes including
-      absence. A dependent sees only imported interfaces, so a dependency's
-      internal change that leaves its interface hash alone does not invalidate it.
+      Capture a source's normalized path and exact bytes separately from selection
+      membership and neighboring sources. Design basis records the source's resolved
+      tree id and the interface hashes of components it imports, plus applicable
+      config and glossary bytes including absence. A dependency's internal change
+      that leaves its interface hash alone does not change the importer's basis.
       An unresolved import invalidates only its own source. Recheck source and
       context bytes against the filesystem before accepting a snapshot as current.
-      Capture membership separately from the reusable per-source key. No production
-      metadata enters either key.
+      No production metadata enters source identity.
     }
 
     CompilerInputSelection {

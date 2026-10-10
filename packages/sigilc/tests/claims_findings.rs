@@ -6,7 +6,7 @@ use sigilc::{
         prepare::Request,
         program,
     },
-    eqval,
+    engine,
 };
 use std::fs;
 
@@ -23,7 +23,7 @@ fn run(artifact: &str) -> (Request, Vec<Fact>, Report) {
     let request = support::project(&input, BASE).unwrap();
     let rows = dialect::parse(artifact, Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, engine::Limits::default()).unwrap();
     let report = findings::report(&request, &facts, &world, &["artifact-digest".into()]);
     (request, facts, report)
 }
@@ -389,7 +389,7 @@ fn supplying_a_second_artifact_changes_the_recorded_report_identity() {
     let request = support::project(&input, BASE).unwrap();
     let rows = dialect::parse(&clean_artifact(), Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, engine::Limits::default()).unwrap();
     let two = findings::report(
         &request,
         &facts,
@@ -427,7 +427,7 @@ fn run_flow(paragraphs: &[&str], artifact: &str) -> Report {
     let request = support::project(&input, "flow.sigil").unwrap();
     let rows = support::resolved(&request, artifact);
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, engine::Limits::default()).unwrap();
     findings::report(&request, &facts, &world, &["artifact-digest".into()])
 }
 
@@ -527,7 +527,7 @@ fn two_runs_over_one_unchanged_interpretation_report_identically() {
     assert_eq!(a.findings, b.findings);
     assert_eq!(a.state, b.state);
     assert_eq!(
-        a.version, 5,
+        a.version, 6,
         "the report version moved with ingest's incomplete state"
     );
 }
@@ -601,7 +601,7 @@ fn a_dependencys_finding_is_not_repeated_in_its_dependents_report() {
         format!("(claim {base_facet:?} \"Base\" \"provides\" \"Base\" \"required\" \"true\")\n");
     let rows = dialect::parse(&artifact, Limits::default()).unwrap();
     let facts = identity::admit(&request, &input, &rows).unwrap();
-    let world = program::saturate(&request, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&request, &facts, engine::Limits::default()).unwrap();
     let report = findings::report(&request, &facts, &world, &["d".into()]);
 
     assert!(
@@ -614,7 +614,7 @@ fn a_dependencys_finding_is_not_repeated_in_its_dependents_report() {
     // does report it.
     let own = support::project(&input, BASE).unwrap();
     let facts = identity::admit(&own, &input, &rows).unwrap();
-    let world = program::saturate(&own, &facts, eqval::Limits::default()).unwrap();
+    let world = program::saturate(&own, &facts, engine::Limits::default()).unwrap();
     let report = findings::report(&own, &facts, &world, &["d".into()]);
     assert!(
         report.findings.iter().any(|f| f.law == "degenerate-claim"),

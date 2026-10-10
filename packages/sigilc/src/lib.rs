@@ -1,18 +1,15 @@
-//! Deterministic Semantic Worlds compiler. Model orchestration is external.
-pub mod assertions;
-pub mod catalog;
+//! Native Sigil compiler and claims checks. Model orchestration is external.
+pub mod align;
 pub mod claims;
 pub mod cli;
-pub mod comparison;
-pub mod design;
-pub mod eqval;
-pub mod implementation;
-pub mod inputs;
 pub mod language;
-pub mod report;
 pub mod scope;
 pub mod sources;
 pub mod store;
 pub mod structure;
 pub mod tree;
-pub mod turtle;
+
+pub mod basis;
+pub mod command;
+pub mod engine;
+pub mod locations;

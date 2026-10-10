@@ -127,9 +127,6 @@ fn named_law_excerpts_occur_in_the_named_source() {
             continue;
         };
         let relative = match name {
-            "kernel.egg" => "src/kernel.egg",
-            "design.egg" => "src/design.egg",
-            "comparison.egg" => "src/comparison.egg",
             "claims.egg" => "src/claims/claims.egg",
             other => panic!("skill names unknown law file {other}"),
         };
@@ -163,6 +160,65 @@ fn named_law_excerpts_occur_in_the_named_source() {
     }
     assert!(
         named >= 4,
-        "expected excerpts named to each law file, found {named}"
+        "expected source-checked examples of the active laws, found {named}"
     );
+}
+
+#[test]
+fn code_skill_names_only_compiled_code_rows_and_uses_its_own_guidance() {
+    let dialect = skill_text("code-dialect.md");
+    let quoted = inline_code(&dialect);
+    let compiled = sigilc::align::vocabulary::RETURNED;
+    for name in compiled {
+        assert!(
+            quoted.iter().any(|token| token == name),
+            "missing code row {name}"
+        );
+    }
+    for token in &quoted {
+        if compiled.contains(&token.as_str()) {
+            continue;
+        }
+        let allowed = [
+            "rule",
+            "command",
+            "schedule",
+            "ruleset",
+            "run",
+            "rows.md",
+            "examples.md",
+            "rejected.md",
+            "sigil-understand",
+        ];
+        assert!(
+            allowed.contains(&token.as_str()) || token.contains(' '),
+            "invented code row or design-profile instruction: {token}"
+        );
+    }
+    assert!(!dialect.contains("vocabulary.md"));
+    assert!(!dialect.contains("Facet"));
+    for document in sigilc::align::guidance::BUNDLE {
+        assert!(
+            dialect.contains(document.name),
+            "missing code guidance {}",
+            document.name
+        );
+    }
+}
+
+#[test]
+fn code_skill_and_compiled_guidance_agree_on_data_only_file_refusal() {
+    let dialect = skill_text("code-dialect.md");
+    let published = sigilc::align::guidance::BUNDLE
+        .iter()
+        .map(|document| document.text)
+        .collect::<Vec<_>>()
+        .join("\n");
+    for token in ["rule", "quoted string"] {
+        assert!(dialect.contains(token), "code skill missing {token}");
+        assert!(published.contains(token), "code guidance missing {token}");
+    }
+    assert!(dialect.contains("whole file"));
+    assert!(dialect.contains("unread"));
+    assert!(dialect.contains("never answers a production promise"));
 }

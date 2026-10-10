@@ -5,7 +5,7 @@ use sigilc::{
         prepare::{AdmissibleEntity, Binding, FacetRow, Request},
         program::{self, Saturated},
     },
-    eqval,
+    engine,
 };
 
 mod support;
@@ -120,7 +120,7 @@ fn fact(facet: &str, section: &str, body: Body) -> Fact {
 }
 
 fn run(request: &Request, facts: &[Fact]) -> Saturated {
-    program::saturate(request, facts, eqval::Limits::default()).unwrap()
+    program::saturate(request, facts, engine::Limits::default()).unwrap()
 }
 
 fn cell(row: &[Value], index: usize) -> &str {

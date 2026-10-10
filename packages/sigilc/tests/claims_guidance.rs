@@ -242,16 +242,6 @@ fn runtime_identity_covers_the_guidance_the_vocabulary_and_the_laws() {
         hash(files_only.as_bytes()),
         "the runtime identity must hash exactly the guidance, the vocabulary and the laws.          The compiler's ontology is deliberately not folded in: the accepted set is this          component's own, so an unrelated compiler edit must not invalidate prepared requests"
     );
-    // The inverse of what this once asserted. The compiler's ontology used to be
-    // folded in, defensively, because `vocabulary::relations()` read it at
-    // runtime. It no longer does, so an edit to the compiler's predicate list
-    // must leave every prepared interpretation directory valid.
-    let with_ontology = format!("{files_only}{}", sigilc::turtle::ontology_fingerprint());
-    assert_ne!(
-        guidance::fingerprint(),
-        hash(with_ontology.as_bytes()),
-        "the compiler's ontology must not reach the runtime identity: the accepted set          is this component's own, and folding the ontology in would make an unrelated          compiler edit invalidate every prepared request"
-    );
 }
 
 #[test]
@@ -534,4 +524,14 @@ fn accepted_vocabulary_carries_every_name_the_laws_read() {
     // which are not distinguishable from vocabulary names by shape. The pinned
     // list above is the honest check, and it fails if a name leaves the set.
     let _ = (&quoted, numerics);
+}
+
+#[test]
+fn day_count_guidance_and_generation_are_published() {
+    assert_eq!(vocabulary::VOCABULARY_GENERATION, 5);
+    let text = guidance::document("vocabulary.md").unwrap().text;
+    for name in ["maxDurationDays", "maxLeadDays", "maxSpanDays"] {
+        assert!(vocabulary::numeric_properties().contains(name));
+        assert!(text.contains(name), "guidance must teach {name}");
+    }
 }

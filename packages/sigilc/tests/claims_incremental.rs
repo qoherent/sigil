@@ -1,7 +1,7 @@
 //! Claims over trees: what `prepare` requests after an edit, what `ingest`
 //! accepts after one, and how a stored reading is re-grounded without a model.
 //!
-//! Every test drives the `sigil-claims` binary against a real `.sigil`
+//! Every test drives the `sigilc` binary against a real `.sigil`
 //! workspace, the way a caller does.
 use serde_json::Value;
 use std::{
@@ -15,10 +15,10 @@ mod support;
 use support::Workspace;
 
 fn claims(args: &[&str]) -> (i32, Value, String) {
-    let output = Command::new(env!("CARGO_BIN_EXE_sigil-claims"))
+    let output = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
         .output()
-        .expect("sigil-claims runs");
+        .expect("sigilc runs");
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     (
         output.status.code().unwrap_or(-1),

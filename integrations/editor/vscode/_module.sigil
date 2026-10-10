@@ -1,5 +1,3 @@
-@packages/sigilc/scope.sigil from SigilComparisonScope import { ScopeInput, DesignMembership }
-@packages/sigilc/report.sigil from SigilGateDiagnostics import { ReportSchema, NativeFindings }
 @packages/lsp/_module.sigil from SigilLsp import { LspPackage, LanguageFeatures, DocumentRendering, OwnershipSourceWatching, client, file URIs, server, Markdown }
 @packages/core/src/model/diagnostics.sigil from SigilDiagnosticModel import { diagnostics }
 
@@ -66,19 +64,20 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Design Workspace invokes compile design. Implementation Workspace invokes
-      compile implementation with the *configured native selection*. File commands
-      supply a native scope with that ordered Design root and the Implementation
-      selection. Design-only file scope explicitly excludes all Implementation files;
-      it makes no Implementation comparison claim. Native source selection and
-      dependency closure remain compiler-owned. File compilation uses its containing
-      workspace; multi-root workspace compilation uses the active folder or asks for
-      an eligible folder. Keep stdout as one native JSON report and stderr as
-      operational progress. Display findings at their native locations and retain
-      bounded witnesses in output. Missing code ranges stay file-only. Report omitted
-      finding counts. Use exactly Coherent/Loose/Disjoint and Closed/Converged/Drift
-      with their native green/yellow/red mapping. Unavailable comparison is not a
-      color. Refuse dirty workspace documents before capture. Clear displayed
+      Design Workspace invokes check. Implementation Workspace invokes align check
+      using the *configured native selection* in workspace configuration. A .sigil
+      file always invokes check --source; the full workspace determines completeness
+      while the report presents that source's findings. A code file with Implementation
+      focus invokes the workspace align check and projects findings only to that file.
+      File checking uses its containing workspace; multi-root workspace checking uses
+      the active folder or asks for an eligible folder. Stdout is a native summary:
+      validate its exit, state and version, then read its matching bounded report from
+      the claims store. Keep stderr as operational progress. Display findings at
+      their native locations and retain provenance in output. Use Coherent, Loose,
+      Disjoint or Incomplete for Design and Closed, Converged, Drift or Incomplete for
+      Implementation. Incomplete displays its reasons and identifies sigil-compute-design
+      and sigil-compute-align as the reading owners. Refuse dirty workspace documents
+      before capture. Clear displayed
       findings and mark stale after workspace document, disk or relevant settings
       changes.
       Cancel on replacement or extension deactivation; discard superseded results.
@@ -92,16 +91,18 @@ component SigilVsCodeExtension {
       selections, all seven contracts, local grouping and inline Tags, links, and
       inert payloads without legacy expand or directory-import fallback.
 
-      Consume ReportSchema native report schema 2.
+      Consume Design report version 6 and Implementation report version 1.
       Convert every Sigil byte range, including related and destination locations, to
       UTF-16 using the exact captured source snapshot. If only disk text is
       available, verify its captured digest first. Never publish stale-source
       locations; clear obsolete findings through the existing cancellation and
       freshness lifecycle.
 
-      Compilation runs *native compile* on the workspace root against
-      stored projections. External producers own prepare and ingest; the editor
-      neither reconstructs missing projections nor interprets eqval tables.
+      Compilation runs *native checks* on the workspace root against stored claims
+      readings. External producers own prepare and ingest; the editor neither
+      reconstructs missing readings nor interprets claim rows. Native writes below
+      .sigil/claims and .sigil/trees do not invalidate the displayed check; authored
+      .sigil/config.json, .sigil/local.json and design or code changes do.
     ArtifactVersionOwnership assigns the extension artifact version to
     package.json.
     The extension Sigil contract does not duplicate its *manifest-owned version*
@@ -165,16 +166,16 @@ component SigilVsCodeExtension {
 
     CompilationSurface {
       Keep *bundled language support* and ordinary preview independent of installed
-      compiler executables. Compilation needs current sigil and sigilc tools; show
+      compiler executables. Compilation needs the current sigilc tool; show
       actionable settings guidance for missing or incompatible tools. Validate the
       final native result shape and its exit/state pairing before displaying success.
       Design Coherent/Loose and Implementation Closed/Converged exit 0; Design
-      Disjoint and Implementation Drift exit 1. Exit 3 with an unavailable report
-      leaves Implementation unset; operational failures and cancellation supply no
-      completed semantic verdict. Bound stdout, stderr and process lifetime. Use argv
-      arrays without a shell and clean temporary capture files after the child exits.
+      Disjoint, Implementation Drift and either Incomplete exit 1. Usage exit 2,
+      operational exit 3 and cancellation supply no completed semantic verdict.
+      Bound stdout, report bytes, stderr and process lifetime. Use argv arrays
+      without a shell; cancellation kills the child before the operation finishes.
       Delete the old JSONL lifecycle, profiles, diagnostic history, stage UI and
-      related tests. Do not parse Sigil or interpret eqval tables in the extension.
+      related tests. Do not parse Sigil or interpret claim rows in the extension.
     }
   }
 
@@ -224,12 +225,12 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      File compilation passes the *workspace-relative active Sigil* path as native
-      scope root, independent of cursor position. Multi-component-file and invalid
-      duplicate-name cases use the same physical-file boundary, with native ownership
-      closure. Scope output exposes included dependency files and explicit root
-      order. All six state/exit pairings display their native name and correct color;
-      unavailable comparison remains unset. Reject malformed or mismatched results.
+      File checking passes the *workspace-relative active Sigil* path with --source,
+      independent of cursor position and selected focus. Code-file Implementation
+      checking uses workspace selection and filters diagnostics to that code file.
+      All eight state/exit pairings display their native name and correct color.
+      Incomplete reports show reasons and their reading owners. Reject incompatible
+      versions, malformed locations and mismatched summary/report results.
       The extension-host test exercises native diagnostic projection, with
       separate fixed-report fixtures for gate states.
       Language navigation and ordinary Markdown preview still work. Removed workflow
@@ -286,16 +287,14 @@ component SigilVsCodeExtension {
     }
 
     CompilationSurface {
-      Use ScopeInput and DesignMembership for native file membership, and
-      NativeFindings for compiler-owned presentation.
+      Consume computed findings with compiler-owned presentation and locations.
       Contribute Compile File and Compile Workspace with Design or Implementation
       focus. Invoke native sigilc directly on the workspace root and display its
       named state and native diagnostics. File focus
-      uses the active physical Sigil file as an ordered native Design root; native
-      scope adds imports and structural owners. Show the effective scope honestly,
-      including wider dependencies, rather than claiming a cursor-selected component
-      was independently compiled. Implementation focus requires an explicit native
-      source-selection JSON path. No model invocation, compiler package, profile or
+      presents the active physical Sigil source under the full workspace design check.
+      Code-file Implementation focus presents only that file's findings from the
+      workspace check. Implementation selection lives at tools.sigilc.implementation
+      in workspace config and local config. No model invocation, compiler package, profile or
       legacy event adapter.
     }
   }
@@ -407,7 +406,7 @@ component SigilVsCodeExtension {
     UserSelectedCompilationFocus {
       Decision: Let users select *Design compilation* or
       *Implementation compilation* from commands and the status item. Require
-      explicit Implementation source selection and display native named states so
+      workspace-configured Implementation selection and display native named states so
       yellow Converged is never mislabeled Drift.
     }
   }

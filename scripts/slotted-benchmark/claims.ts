@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { captureStream, settleWithin, signalOwnedProcess } from "./process.ts";
 import {
@@ -6,13 +7,20 @@ import {
   parseHandbackState,
   PASS_LAYOUT,
 } from "./agents.ts";
-import { copySkill, copyTree, exists, treeSha256 } from "./files.ts";
+import { copySkill, copyTree, exists, sha256, treeSha256 } from "./files.ts";
 
 type JsonObject = Record<string, unknown>;
 /** The linked check's state; ingest and the check share these four. */
-export type ComputedState = "coherent" | "loose" | "disjoint" | "incomplete";
-/** The report version the pinned `sigil-claims` writes. */
-export const LINKED_REPORT_VERSION = 5;
+export type ComputedState =
+  | "coherent"
+  | "loose"
+  | "disjoint"
+  | "incomplete"
+  | "closed"
+  | "converged"
+  | "drift";
+/** The report version the pinned `sigilc` writes. */
+export const LINKED_REPORT_VERSION = 6;
 
 /** The budget a check keeps even when the orchestrator used the whole pass. */
 const CHECK_BUDGET_FLOOR_MS = 30_000;
@@ -143,18 +151,19 @@ export interface PassExpectations {
   /** Hash of the fixture's own `.sigil` directory when the batch started. */
   readonly fixtureStateSha256: string;
   /** Hashes of the pinned skill trees every pass stages. */
-  readonly skillSha256: Readonly<Record<StagedSkill, string>>;
+  readonly skillSha256: Readonly<Record<string, string>>;
 }
 
 export const STAGED_SKILLS = [
-  "sigil-compute",
+  "sigil-compute-design",
   "sigil-understand",
   "sigil-egglog",
 ] as const;
 export type StagedSkill = typeof STAGED_SKILLS[number];
 
 export interface PassRequest {
-  /** The pinned `sigil-claims`. The orchestrator gets it on PATH; the benchmark runs the check with it. */
+  readonly action?: "design" | "implementation";
+  /** The pinned `sigilc`. The orchestrator gets it on PATH; the benchmark runs the check with it. */
   readonly executable: string;
   /** The fixture workspace. It is copied, never exposed in place. */
   readonly fixtureRoot: string;
@@ -166,6 +175,7 @@ export interface PassRequest {
     readonly computeDir: string;
     readonly understandDir: string;
     readonly egglogDir: string;
+    readonly alignDir?: string;
   };
   readonly expected: PassExpectations;
   /** The effort requested for every child, or null when none was requested. */
@@ -231,13 +241,18 @@ export interface PassResult {
 /**
  * Build one pass: a copy of the fixture that keeps `.sigil/config.json` and has
  * no `.sigil/claims/` store, the three skills staged as siblings, the pinned
- * `sigil-claims` behind `bin/`, an empty private store and an empty run
+ * `sigilc` behind `bin/`, an empty private store and an empty run
  * directory. A pass directory whose store is not empty is refused.
  */
 export async function preparePass(
   input: Pick<
     PassRequest,
-    "executable" | "fixtureRoot" | "passDir" | "skillDirs" | "expected"
+    | "executable"
+    | "fixtureRoot"
+    | "passDir"
+    | "skillDirs"
+    | "expected"
+    | "action"
   >,
 ): Promise<NonNullable<PassResult["staged"]>> {
   const passDir = resolve(input.passDir);
@@ -264,7 +279,7 @@ export async function preparePass(
 
   const skillSha256: Record<string, string> = {};
   const sources: Record<StagedSkill, string> = {
-    "sigil-compute": input.skillDirs.computeDir,
+    "sigil-compute-design": input.skillDirs.computeDir,
     "sigil-understand": input.skillDirs.understandDir,
     "sigil-egglog": input.skillDirs.egglogDir,
   };
@@ -276,9 +291,21 @@ export async function preparePass(
       throw new Error(`staged ${name} differs from the pinned copy`);
     }
   }
+  if (input.action === "implementation") {
+    if (!input.skillDirs.alignDir) {
+      throw new Error("alignment skill is missing");
+    }
+    const staged = join(passDir, "skills/sigil-compute-align");
+    await copySkill(input.skillDirs.alignDir, staged);
+    skillSha256["sigil-compute-align"] = await treeSha256(staged);
+    if (
+      skillSha256["sigil-compute-align"] !==
+        input.expected.skillSha256["sigil-compute-align"]
+    ) throw new Error("staged alignment skill differs from pinned copy");
+  }
   const bin = join(passDir, PASS_LAYOUT.bin);
   await Deno.mkdir(bin, { recursive: true });
-  await Deno.symlink(resolve(input.executable), join(bin, "sigil-claims"));
+  await Deno.symlink(resolve(input.executable), join(bin, "sigilc"));
   return {
     skillSha256,
     storeEntriesAtStart: storeEntries.length,
@@ -287,7 +314,7 @@ export async function preparePass(
 }
 
 /**
- * Run one pass: one orchestrator process runs the sigil-compute whole-design
+ * Run one pass: one orchestrator process runs the sigil-compute-design whole-design
  * action in the pass directory, then the benchmark runs the pinned linked check
  * itself and judges the pass from that report, never from the orchestrator's
  * hand-back. The hand-back only has to agree with it.
@@ -300,6 +327,8 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
   const root = join(passDir, PASS_LAYOUT.root);
   let staged: PassResult["staged"] = null;
   let sha256Before: string | null = null;
+  let stagedBefore: string | null = null;
+  let originalBefore: string | null = null;
   const early = (
     message: string,
     status: PassResult["status"] = "failed",
@@ -318,6 +347,7 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
   try {
     await Deno.mkdir(evidenceDir, { recursive: true });
     if (input.signal?.aborted) return early("pass cancelled", "interrupted");
+    originalBefore = await workspaceInputsSha256(input.fixtureRoot);
     sha256Before = await fixtureStateSha256(input.fixtureRoot);
     if (sha256Before !== input.expected.fixtureStateSha256) {
       return early("fixture .sigil differs from the batch's snapshot");
@@ -327,6 +357,7 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
     } catch (cause) {
       return early(cause instanceof Error ? cause.message : String(cause));
     }
+    stagedBefore = await workspaceInputsSha256(root);
     if (Date.now() >= deadline) return early("pass timeout", "interrupted");
 
     const agent = await input.orchestrate(
@@ -336,6 +367,8 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
       Math.max(1, deadline - Date.now()),
     );
     const sha256After = await fixtureStateSha256(input.fixtureRoot);
+    const stagedAfter = await workspaceInputsSha256(root);
+    const originalAfter = await workspaceInputsSha256(input.fixtureRoot);
     const stoppedBy = agent.status === "timeout" || agent.status === "cancelled"
       ? agent.status
       : null;
@@ -355,6 +388,7 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
           : Math.max(CHECK_BUDGET_FLOOR_MS, deadline - Date.now()),
         signal: input.signal,
         expected: input.expected,
+        action: input.action,
       });
     }
     const unreadUnits = typeof linked?.result?.unreadUnits === "number"
@@ -407,6 +441,18 @@ export async function runPass(input: PassRequest): Promise<PassResult> {
     const invalid: [NonNullable<PassResult["failureStep"]>, string][] = [];
     if (!linked.validation.valid) {
       invalid.push(["validation", linked.validation.errors.join("; ")]);
+    }
+    if (originalAfter !== originalBefore) {
+      invalid.push([
+        "fixture",
+        "original fixture inputs changed during the pass",
+      ]);
+    }
+    if (stagedAfter !== stagedBefore) {
+      invalid.push([
+        "fixture",
+        "staged selection, code or design inputs changed during the pass",
+      ]);
     }
     if (sha256After !== sha256Before) {
       invalid.push(["fixture", "fixture .sigil changed during the pass"]);
@@ -470,6 +516,7 @@ async function runLinkedCheck(input: {
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
   readonly expected: PassExpectations;
+  readonly action?: "design" | "implementation";
 }): Promise<LinkedCheckResult> {
   const none = (error: string): LinkedCheckResult => ({
     exitCode: null,
@@ -482,7 +529,14 @@ async function runLinkedCheck(input: {
   await Deno.mkdir(input.evidenceDir, { recursive: true });
   const checked = await invoke(
     input.executable,
-    ["check", "--root", input.root, "--store", input.privateStore],
+    [
+      ...(input.action === "implementation" ? ["align"] : []),
+      "check",
+      "--root",
+      input.root,
+      "--store",
+      input.privateStore,
+    ],
     input.evidenceDir,
     "check",
     input.timeoutMs,
@@ -532,17 +586,20 @@ async function runLinkedCheck(input: {
     result,
     report,
     context,
-    validation: validateLinkedEvidence({
-      privateStore: input.privateStore,
-      exitCode: checked.exitCode,
-      workspaceDigest: input.expected.workspaceDigest,
-      guidanceFingerprint: input.expected.guidanceFingerprint,
-      vocabularyGeneration: input.expected.vocabularyGeneration,
-      memoKeys: memoKeys.sort(),
-      result,
-      report,
-      context,
-    }),
+    validation:
+      (input.action === "implementation"
+        ? validateAlignmentEvidence
+        : validateLinkedEvidence)({
+          privateStore: input.privateStore,
+          exitCode: checked.exitCode,
+          workspaceDigest: input.expected.workspaceDigest,
+          guidanceFingerprint: input.expected.guidanceFingerprint,
+          vocabularyGeneration: input.expected.vocabularyGeneration,
+          memoKeys: memoKeys.sort(),
+          result,
+          report,
+          context,
+        }),
     error: null,
   };
 }
@@ -654,4 +711,97 @@ function inside(root: string, path: unknown): boolean {
   const part = relative(resolve(root), resolve(path));
   return part !== "" && part !== ".." && !part.startsWith(`..${sep}`) &&
     !isAbsolute(part);
+}
+
+/** All staged inputs are immutable; claims write-back is the sole allowed change. */
+export async function workspaceInputsSha256(root: string): Promise<string> {
+  const rows: string[] = [];
+  async function visit(dir: string, prefix: string) {
+    const entries = [];
+    for await (const entry of Deno.readDir(dir)) entries.push(entry);
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const name = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (name === ".sigil/claims") continue;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory) await visit(path, name);
+      else if (entry.isFile) {
+        rows.push(`${name}:${await sha256(await Deno.readFile(path))}`);
+      } else rows.push(`${name}:link:${await Deno.readLink(path)}`);
+    }
+  }
+  await visit(root, "");
+  return sha256(new TextEncoder().encode(rows.join("\n")));
+}
+
+/** Alignment has its own state, version and provenance contract. */
+export function validateAlignmentEvidence(
+  input: LinkedEvidenceInput,
+): LinkedValidation {
+  const errors: string[] = [];
+  const { result, report, context } = input;
+  const identity = object(report.identity);
+  const state = result.state;
+  const exit = state === "closed" || state === "converged"
+    ? 0
+    : state === "drift" || state === "incomplete"
+    ? 1
+    : null;
+  if (exit === null || input.exitCode !== exit) {
+    errors.push("alignment exit code and state mismatch");
+  }
+  if (
+    result.version !== 1 || report.version !== 1 || context.version !== 1 ||
+    report.state !== state || report.designState !== result.designState
+  ) errors.push("alignment report state/version mismatch");
+  if (
+    result.scope !== "workspace" || report.source !== "workspace" ||
+    context.source !== "workspace"
+  ) errors.push("alignment scope mismatch");
+  if (
+    result.findings !== array(report.findings).length ||
+    result.unreadUnits !== array(report.unreadFiles).length ||
+    JSON.stringify(result.incompleteReasons) !==
+      JSON.stringify(report.incompleteReasons)
+  ) errors.push("alignment findings/unread counts or reasons mismatch");
+  if (
+    !identity || !isDeepStrictEqual(identity, context.identity)
+  ) errors.push("alignment context identity mismatch");
+  for (
+    const key of [
+      "workspaceDigest",
+      "designBindingDigest",
+      "selectionDigest",
+      "namesDigest",
+      "implementationDigest",
+      "guidanceFingerprint",
+    ]
+  ) {
+    if (typeof identity?.[key] !== "string") {
+      errors.push(`missing alignment ${key}`);
+    }
+  }
+  if (
+    identity?.workspaceDigest !== input.workspaceDigest ||
+    result.workspaceDigest !== input.workspaceDigest ||
+    identity?.guidanceFingerprint !== input.guidanceFingerprint ||
+    result.guidanceFingerprint !== input.guidanceFingerprint ||
+    identity?.vocabularyGeneration !== input.vocabularyGeneration ||
+    result.vocabularyGeneration !== input.vocabularyGeneration
+  ) errors.push("alignment prepared identity mismatch");
+  const design = object(context.designCheck);
+  if (
+    object(design?.identity)?.bindingDigest !== identity?.designBindingDigest ||
+    object(design?.linked)?.workspaceDigest !== identity?.workspaceDigest ||
+    object(context.selection)?.fingerprint !== identity?.selectionDigest
+  ) errors.push("alignment design or selection context mismatch");
+  if (
+    !inside(input.privateStore, result.report) ||
+    !inside(input.privateStore, result.judgmentContext)
+  ) errors.push("alignment result path outside private root");
+  return {
+    valid: errors.length === 0,
+    state: errors.length === 0 ? state as ComputedState : null,
+    errors,
+  };
 }

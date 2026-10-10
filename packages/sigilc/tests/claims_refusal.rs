@@ -3,7 +3,7 @@
 //! A whole refusal is for anything that is not data. A data mistake costs only
 //! the unit it is in, every refusal is reported at once, and a refused unit is
 //! left unread so the next `prepare` asks for it again. Every test drives the
-//! `sigil-claims` binary against a real `.sigil` workspace.
+//! `sigilc` binary against a real `.sigil` workspace.
 use serde_json::Value;
 use std::{
     fs,
@@ -16,10 +16,10 @@ mod support;
 use support::Workspace;
 
 fn claims(args: &[&str]) -> (i32, Value, String) {
-    let output = Command::new(env!("CARGO_BIN_EXE_sigil-claims"))
+    let output = Command::new(env!("CARGO_BIN_EXE_sigilc"))
         .args(args)
         .output()
-        .expect("sigil-claims runs");
+        .expect("sigilc runs");
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     (
         output.status.code().unwrap_or(-1),
@@ -595,7 +595,7 @@ fn an_off_list_name_refuses_its_unit_and_is_never_reported_as_ungrounded() {
     assert_eq!(code, 1, "{summary}{stderr}");
     assert_eq!(summary["refusalCount"], 1, "{summary}");
     let report = report_of(&run, "rooms.sigil.json");
-    assert_eq!(report["version"], 5);
+    assert_eq!(report["version"], 6);
     assert!(
         !laws_of(&report)
             .iter()

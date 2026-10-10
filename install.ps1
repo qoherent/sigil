@@ -51,10 +51,8 @@ try {
   $Source = Join-Path $Temp "sigil-$Version"
   $Executable = Join-Path $Source "bin\sigil.exe"
   $Compiler = Join-Path $Source "bin\sigilc.exe"
-  $Claims = Join-Path $Source "bin\sigil-claims.exe"
   if (-not (Test-Path $Executable -PathType Leaf)) { throw "Archive does not contain bin\sigil.exe." }
   if (-not (Test-Path $Compiler -PathType Leaf)) { throw "Archive does not contain bin\sigilc.exe." }
-  $ClaimsAvailable = Test-Path $Claims -PathType Leaf
   if (Test-Path (Join-Path $Source "lib\sigil\runtime")) { throw "Archive contains obsolete runtime payloads." }
   if (Get-ChildItem $Source -Recurse -Force | Where-Object { $_.LinkType }) { throw "Archive contains a symbolic link." }
   $Prefix = $Actual.Substring(0, 16)
@@ -77,11 +75,7 @@ try {
   if ($LASTEXITCODE -ne 0 -or $LanguageVersion -ne $Version) { throw "Language executable version check failed." }
   & (Join-Path $Destination "bin\sigilc.exe") --version | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "Native compiler failed; existing installation remains selected." }
-  if ($ClaimsAvailable) {
-    & (Join-Path $Destination "bin\sigil-claims.exe") --version | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Claims command failed; existing installation remains selected." }
-  }
-  $Names = if ($ClaimsAvailable) { @("sigil", "sigilc", "sigil-claims") } else { @("sigil", "sigilc") }
+  $Names = @("sigil", "sigilc")
   foreach ($Name in $Names) {
     $Wrapper = Join-Path $BinDir "$Name.cmd"
     $WrapperTemp = "$Wrapper.$PID.tmp"
@@ -92,13 +86,11 @@ try {
     $Wrapper = Join-Path $BinDir "$Name.cmd"
     Move-Item -Force "$Wrapper.$PID.tmp" $Wrapper
   }
-  if (-not $ClaimsAvailable) {
-    $ClaimsWrapper = Join-Path $BinDir "sigil-claims.cmd"
-    if (Test-Path $ClaimsWrapper -PathType Leaf) {
-      $ClaimsBody = [IO.File]::ReadAllText($ClaimsWrapper)
-      $ManagedClaimsWrapper = '(?s)\A@echo off\r\n@chcp 65001 >nul\r\n"[^"\r\n]+[\\/]versions[\\/][^\\/\r\n"]+[\\/]bin[\\/]sigil-claims\.exe" %\*\r\n\z'
-      if ($ClaimsBody -match $ManagedClaimsWrapper) { Remove-Item -Force $ClaimsWrapper }
-    }
+  $ClaimsWrapper = Join-Path $BinDir "sigil-claims.cmd"
+  if (Test-Path $ClaimsWrapper -PathType Leaf) {
+    $ClaimsBody = [IO.File]::ReadAllText($ClaimsWrapper)
+    $ManagedClaimsWrapper = '(?s)\A@echo off\r\n@chcp 65001 >nul\r\n"[^"\r\n]+[\\/]versions[\\/][^\\/\r\n"]+[\\/]bin[\\/]sigil-claims\.exe" %\*\r\n\z'
+    if ($ClaimsBody -match $ManagedClaimsWrapper) { Remove-Item -Force $ClaimsWrapper }
   }
   Write-Host "Installed Sigil $Version to $Destination"
 } finally {

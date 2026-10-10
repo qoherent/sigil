@@ -1,0 +1,32 @@
+{
+  "id": "undesigned-function",
+  "title": "Unaccounted marketing count",
+  "explanation": "Unaccounted marketing count",
+  "findingClass": "alignment",
+  "laws": [
+    "undesigned-element"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/booking.ts",
+      "section": "code",
+      "text": "countPendingForMarketing"
+    }
+  ],
+  "implementation": {
+    "source": "src/booking.ts",
+    "element": "countPendingForMarketing"
+  },
+  "changes": [
+    {
+      "path": "src/booking.ts",
+      "before": "export function submitBookingRequest",
+      "after": "export function countPendingForMarketing(ids: string[]) { return ids.length; }\n\nexport function submitBookingRequest"
+    }
+  ]
+}

@@ -1,11 +1,10 @@
 component SigilSemanticCompiler {
   goal {
-    Derive disposable Design and Implementation worlds using fixed semantic laws
-    while keeping *language interpretation* and external workers separate.
+    Read native Sigil source trees and expose claims checks while keeping
+    *language interpretation* and external workers separate.
   }
 
   constraints {
-
     SourceTrees {
       SourceTrees admit only authored sources: no obligations, rules,
       implementation evidence, model configuration or production metadata. Invalid
@@ -15,11 +14,11 @@ component SigilSemanticCompiler {
 
   interface {
     SourceTrees {
-      sigilc owns *parsing and language resolution* for compilation. It reads the
-      workspace root and keeps one content-addressed tree per source, with an
-      interface hash per component. A dependent sees only the interfaces it imports.
+      sigilc owns *parsing and language resolution*. It reads the workspace root
+      and keeps one content-addressed tree per source, with an interface hash per
+      component. A dependent sees only the interfaces it imports. The tree command
+      exposes resolved source trees and optional Facet diffs.
     }
     Exposes language interpretation to direct consumers.
-
   }
 }

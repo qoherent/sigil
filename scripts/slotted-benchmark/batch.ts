@@ -1,3 +1,8 @@
+import {
+  applyImplementationPlants,
+  IMPLEMENTATION_FIXTURE,
+  preflightImplementationFixture,
+} from "./implementation.ts";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -8,13 +13,15 @@ import {
   orchestratorPrompt,
   runOrchestrator,
 } from "./agents.ts";
+import { type ComputedState, fixtureStateSha256, runPass } from "./claims.ts";
 import {
-  type ComputedState,
-  fixtureStateSha256,
-  runPass,
-  type StagedSkill,
-} from "./claims.ts";
-import { copySkill, exists, sha256, treeSha256, writeJson } from "./files.ts";
+  copySkill,
+  copyTree,
+  exists,
+  sha256,
+  treeSha256,
+  writeJson,
+} from "./files.ts";
 import {
   designViewFromTrees,
   type FixturePreflight,
@@ -28,7 +35,7 @@ export interface BatchSelection {
   readonly model: string;
 }
 
-/** One pass: one orchestrator runs sigil-compute's whole-design action, then the benchmark checks. */
+/** One pass: one orchestrator runs sigil-compute-design's whole-design action, then the benchmark checks. */
 export interface ScheduledAttempt extends BatchSelection {
   readonly id: string;
   readonly pass: number;
@@ -65,7 +72,9 @@ export interface AttemptRecord extends ScheduledAttempt {
 }
 
 export interface BatchManifest {
-  readonly version: 2;
+  readonly version: 2 | 3;
+  readonly action?: "design" | "implementation";
+  readonly variant?: "clean" | "planted";
   readonly createdAt: string;
   readonly fixture: typeof SLOTTED_FIXTURE;
   readonly fixtureSha256: string;
@@ -88,6 +97,9 @@ export interface BatchManifest {
     readonly claimsPath: string;
     readonly claimsSha256: string;
     readonly sigilcSha256?: string;
+    readonly baselineClaimsSha256?: string;
+    readonly baselineSigilcSha256?: string;
+    readonly alignSha256?: string;
     readonly computeSha256: string;
     readonly understandSha256: string;
     readonly egglogSha256: string;
@@ -99,6 +111,9 @@ export interface BatchManifest {
 }
 
 export interface BatchOptions {
+  readonly action?: "design" | "implementation";
+  readonly variant?: "clean" | "planted";
+  readonly baselineDir?: string;
   readonly selections: readonly BatchSelection[];
   readonly passes: number;
   readonly outputDir: string;
@@ -107,11 +122,11 @@ export interface BatchOptions {
   readonly reasoning?: string;
   readonly workspaceDir?: string;
   readonly sigilcExecutable?: string;
-  readonly claimsExecutable?: string;
   readonly skillDirs?: {
     readonly computeDir: string;
     readonly understandDir: string;
     readonly egglogDir: string;
+    readonly alignDir?: string;
   };
   readonly agentExecutables?: Partial<Record<AgentName, string>>;
   /** Codex: the auth file copied into each pass's scratch CODEX_HOME. */
@@ -193,8 +208,11 @@ export function pendingRecord(planned: ScheduledAttempt): AttemptRecord {
 }
 
 /** The prompt with its per-host and per-model parts left as placeholders. */
-export function orchestratorPromptTemplate(): string {
+export function orchestratorPromptTemplate(
+  action: "design" | "implementation" = "design",
+): string {
   return orchestratorPrompt({
+    action,
     spawnInstruction: "{spawn}",
     model: "{model}",
     effort: "{effort}",
@@ -212,19 +230,31 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     throw new Error(`Output directory already exists: ${outputDir}`);
   }
 
-  const workspaceDir = options.workspaceDir ??
-    join(repoRoot, "examples/slotted");
+  const action = options.action ?? "design";
+  const variant = options.variant ?? "clean";
+  let workspaceDir = options.workspaceDir ??
+    join(
+      repoRoot,
+      action === "implementation"
+        ? "examples/slotted-implementation"
+        : "examples/slotted",
+    );
   const sigilc = options.sigilcExecutable ??
     join(repoRoot, "packages/sigilc/target/debug/sigilc");
-  const claims = options.claimsExecutable ??
-    join(repoRoot, "packages/sigilc/target/debug/sigil-claims");
   const skills = options.skillDirs ?? {
-    computeDir: join(repoRoot, "integrations/skills/sigil-compute"),
+    computeDir: join(repoRoot, "integrations/skills/sigil-compute-design"),
     understandDir: join(repoRoot, "integrations/skills/sigil-understand"),
     egglogDir: join(repoRoot, "integrations/skills/sigil-egglog"),
+    alignDir: join(repoRoot, "integrations/skills/sigil-compute-align"),
   };
   await Deno.mkdir(dirname(outputDir), { recursive: true });
   await Deno.mkdir(outputDir);
+  if (action === "implementation" && variant === "planted") {
+    const staged = join(outputDir, "fixture");
+    await copyTree(workspaceDir, staged, new Set([".sigil/claims"]));
+    await applyImplementationPlants(staged);
+    workspaceDir = staged;
+  }
   const treeResult = await new Deno.Command(sigilc, {
     args: [
       "tree",
@@ -258,29 +288,39 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
 
   const pinned = join(outputDir, "pinned");
   await Deno.mkdir(pinned);
-  const pinnedClaims = join(pinned, "sigil-claims");
-  await Deno.copyFile(claims, pinnedClaims);
+  const pinnedClaims = join(pinned, "sigilc");
+  await Deno.copyFile(sigilc, pinnedClaims);
   await Deno.chmod(pinnedClaims, 0o755);
   const pinnedSkills = {
-    computeDir: join(pinned, "sigil-compute"),
+    computeDir: join(pinned, "sigil-compute-design"),
     understandDir: join(pinned, "sigil-understand"),
     egglogDir: join(pinned, "sigil-egglog"),
   };
   await copySkill(skills.computeDir, pinnedSkills.computeDir);
   await copySkill(skills.understandDir, pinnedSkills.understandDir);
   await copySkill(skills.egglogDir, pinnedSkills.egglogDir);
-  const skillSha256: Record<StagedSkill, string> = {
-    "sigil-compute": await treeSha256(pinnedSkills.computeDir),
+  const skillSha256: Record<string, string> = {
+    "sigil-compute-design": await treeSha256(pinnedSkills.computeDir),
     "sigil-understand": await treeSha256(pinnedSkills.understandDir),
     "sigil-egglog": await treeSha256(pinnedSkills.egglogDir),
   };
 
+  if (action === "implementation") {
+    if (!skills.alignDir) throw new Error("Missing alignment skill");
+    const dir = join(pinned, "sigil-compute-align");
+    await copySkill(skills.alignDir, dir);
+    Object.assign(pinnedSkills, { alignDir: dir });
+    skillSha256["sigil-compute-align"] = await treeSha256(dir);
+  }
+  const fixture = action === "implementation"
+    ? IMPLEMENTATION_FIXTURE
+    : SLOTTED_FIXTURE;
   // Preflight: prepare every source once, on a throwaway store, to learn the
   // workspace digest, guidance and vocabulary a pass's check must report.
   let guidanceFingerprint: string | null = null;
   let vocabularyGeneration: number | null = null;
   let workspaceDigest: string | null = null;
-  for (const source of SLOTTED_FIXTURE.sources) {
+  for (const source of fixture.sources) {
     const prepDir = join(
       outputDir,
       "preflight",
@@ -347,7 +387,30 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     guidanceFingerprint = binding.guidanceFingerprint;
     vocabularyGeneration = binding.vocabularyGeneration;
   }
-  const preflight = preflightSlottedFixture(design);
+  const preflight = action === "implementation"
+    ? await preflightImplementationFixture(workspaceDir, variant)
+    : preflightSlottedFixture(design);
+  if (action === "implementation") {
+    // A cold alignment check reports the code guidance identity even for an empty selection.
+    const checked = await new Deno.Command(pinnedClaims, {
+      args: [
+        "align",
+        "check",
+        "--root",
+        workspaceDir,
+        "--store",
+        join(outputDir, "align-preflight-store"),
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    if (checked.code !== 0 && checked.code !== 1) {
+      throw new Error(new TextDecoder().decode(checked.stderr));
+    }
+    const summary = JSON.parse(new TextDecoder().decode(checked.stdout));
+    guidanceFingerprint = summary.guidanceFingerprint;
+    vocabularyGeneration = summary.vocabularyGeneration;
+  }
   if (!preflight.canSchedule) {
     throw new Error(
       `Slotted source drift: ${preflight.sourceDrift.join("; ")}`,
@@ -358,13 +421,15 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     sourceSha256[path] = await sha256(new TextEncoder().encode(text));
   }
   const fixtureSha256 = await sha256(
-    new TextEncoder().encode(JSON.stringify(SLOTTED_FIXTURE)),
+    new TextEncoder().encode(JSON.stringify(fixture)),
   );
   const fixtureState = await fixtureStateSha256(workspaceDir);
   const manifest: BatchManifest = {
-    version: 2,
+    version: 3,
+    action,
+    variant,
     createdAt: new Date().toISOString(),
-    fixture: SLOTTED_FIXTURE,
+    fixture,
     fixtureSha256,
     preflight,
     selections: options.selections,
@@ -381,14 +446,20 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
       fixtureStateSha256: fixtureState,
     },
     tools: {
-      claimsPath: "pinned/sigil-claims",
+      claimsPath: "pinned/sigilc",
       claimsSha256: await sha256(await Deno.readFile(pinnedClaims)),
-      sigilcSha256: await sha256(await Deno.readFile(sigilc)),
-      computeSha256: skillSha256["sigil-compute"],
+      sigilcSha256: await sha256(await Deno.readFile(pinnedClaims)),
+      ...(action === "design"
+        ? await baselineDigests(options.baselineDir)
+        : {}),
+      ...(action === "implementation"
+        ? { alignSha256: skillSha256["sigil-compute-align"] }
+        : {}),
+      computeSha256: skillSha256["sigil-compute-design"],
       understandSha256: skillSha256["sigil-understand"],
       egglogSha256: skillSha256["sigil-egglog"],
       promptSha256: await sha256(
-        new TextEncoder().encode(orchestratorPromptTemplate()),
+        new TextEncoder().encode(orchestratorPromptTemplate(action)),
       ),
       guidanceFingerprint: guidanceFingerprint!,
       vocabularyGeneration: vocabularyGeneration!,
@@ -413,6 +484,7 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
     try {
       const outcome = await runPass({
         executable: pinnedClaims,
+        action,
         fixtureRoot: workspaceDir,
         passDir: join(attemptDir, "pass"),
         evidenceDir: join(attemptDir, "evidence"),
@@ -429,6 +501,7 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
         signal: options.signal,
         orchestrate: (passDir, binDir, evidenceDir, timeoutMs) =>
           runOrchestrator({
+            action,
             agent: planned.agent,
             requestedModel: planned.model,
             reasoning: options.reasoning,
@@ -481,9 +554,9 @@ export async function readBatch(
   const manifest = JSON.parse(
     await Deno.readTextFile(join(outputDir, "manifest.json")),
   ) as BatchManifest;
-  if (manifest.version !== 2) {
+  if (manifest.version !== 2 && manifest.version !== 3) {
     throw new Error(
-      `${outputDir} was written by an older benchmark (manifest version ${manifest.version}); this one reads version 2 batches`,
+      `${outputDir} was written by an older benchmark (manifest version ${manifest.version}); this one reads version 2 and 3 batches`,
     );
   }
   const records: AttemptRecord[] = [];
@@ -509,4 +582,25 @@ async function writeRecord(
   record: AttemptRecord,
 ): Promise<void> {
   await writeJson(join(outputDir, "records", `${record.id}.json`), record);
+}
+
+async function baselineDigests(
+  dir?: string,
+): Promise<{ baselineClaimsSha256: string; baselineSigilcSha256: string }> {
+  const path = dir ??
+    join(
+      repoRoot,
+      "docs/skill-evaluation/evidence/claims-turtle-premerge-20261009",
+    );
+  const baseline = JSON.parse(
+    await Deno.readTextFile(join(path, "manifest.json")),
+  );
+  if (
+    baseline.version !== 2 || typeof baseline.tools.claimsSha256 !== "string" ||
+    typeof baseline.tools.sigilcSha256 !== "string"
+  ) throw new Error("Invalid recorded pre-merge baseline");
+  return {
+    baselineClaimsSha256: baseline.tools.claimsSha256,
+    baselineSigilcSha256: baseline.tools.sigilcSha256,
+  };
 }

@@ -35,7 +35,8 @@ component SigilClaimsVocabulary {
       that defines it. A generation records which accepted set a request was
       prepared against. It is declared rather than derived, and is bumped
       whenever the set changes so that an already-prepared request could no
-      longer satisfy it.
+      longer satisfy it. Maximum duration, lead and span in whole days are
+      separate numeric properties: maxDurationDays, maxLeadDays and maxSpanDays.
     }
 
     AtomDiscipline {

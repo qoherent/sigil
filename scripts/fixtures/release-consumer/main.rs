@@ -89,63 +89,19 @@ fn run() -> Result<(), String> {
             output_text(&compiler_version)
         ));
     }
-    let claims = distribution.join("bin").join(if cfg!(windows) {
+    let retired = distribution.join("bin").join(if cfg!(windows) {
         "sigil-claims.exe"
     } else {
         "sigil-claims"
     });
-    if !claims.is_file() {
-        return Err(format!("archive is missing {}", claims.display()));
-    }
-    let claims_version = run_cli(&claims, &["--version"], &unrelated, &environment)?;
-    if !claims_version.status.success()
-        || !stdout_text(&claims_version).starts_with("sigil-claims ")
-    {
-        return Err(format!(
-            "claims command version failed: {}",
-            output_text(&claims_version)
-        ));
+    if retired.exists() {
+        return Err("archive contains a retired claims binary".to_owned());
     }
     let target_text = path_string(&target);
-    let design = run_cli(
-        &compiler,
-        &[
-            "compile",
-            "design",
-            "--root",
-            &target_text,
-        ],
-        &unrelated,
-        &environment,
-    )?;
-    if !design.status.success() || !compact(&stdout_text(&design)).contains("\"state\":\"Loose\"") {
-        return Err(format!(
-            "unreconstructed Design must be Loose with exit 0: {}",
-            output_text(&design)
-        ));
-    }
-    let selection = unrelated.join("selection.json");
-    fs::write(&selection, b"{\"paths\":[\"main.sigil\"]}").map_err(io_error)?;
-    let selection_text = path_string(&selection);
-    let comparison = run_cli(
-        &compiler,
-        &[
-            "compare",
-            "--root",
-            &target_text,
-            "--selection",
-            &selection_text,
-        ],
-        &unrelated,
-        &environment,
-    )?;
-    if comparison.status.code() != Some(3)
-        || !compact(&stdout_text(&comparison)).contains("\"comparison\":null")
-    {
-        return Err(format!(
-            "unavailable comparison must be unset with exit 3: {}",
-            output_text(&comparison)
-        ));
+    let design = run_cli(&compiler, &["check", "--root", &target_text], &unrelated, &environment)?;
+    let summary = compact(&stdout_text(&design));
+    if design.status.code() != Some(1) || !summary.contains("\"state\":\"incomplete\"") || !summary.contains("\"version\":6") {
+        return Err(format!("fresh Design check must be Incomplete with exit 1: {}", output_text(&design)));
     }
 
     if marker.is_file() {
@@ -157,7 +113,7 @@ fn run() -> Result<(), String> {
         }
     }
     println!(
-        "{{\"artifactConsumer\":true,\"version\":\"{version_text}\",\"claimsCommand\":true,\"design\":\"Loose\",\"comparison\":null,\"hostToolsInvoked\":false}}"
+        "{{\"artifactConsumer\":true,\"version\":\"{version_text}\",\"singleNativeBinary\":true,\"design\":\"incomplete\",\"hostToolsInvoked\":false}}"
     );
     Ok(())
 }

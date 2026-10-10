@@ -7,7 +7,6 @@ use sigilc::{
         vocabulary,
     },
     structure::DesignInput,
-    turtle,
 };
 
 mod support;
@@ -205,22 +204,6 @@ fn numeric_measures_follow_the_ontology_bounds() {
         )
         .is_ok()
     );
-}
-
-#[test]
-fn the_published_relations_are_read_through_the_compilers_public_accessor() {
-    // KTD8: widening this would mean editing turtle.rs, whose text
-    // eqval::fingerprint() hashes, invalidating every stored world.
-    let expected: std::collections::BTreeSet<&str> =
-        turtle::ENTITY_PREDICATES.iter().copied().collect();
-    assert_eq!(vocabulary::relations(), &expected);
-    let all = turtle::vocabulary();
-    for name in vocabulary::boolean_properties() {
-        assert_eq!(all.get(name), Some(&"boolean"));
-    }
-    for name in vocabulary::numeric_properties() {
-        assert_eq!(all.get(name), Some(&"number"));
-    }
 }
 
 // ----------------------------------------------------------------- identity
@@ -1083,4 +1066,55 @@ fn an_answer_written_as_json_is_refused_whole_with_the_format_named() {
         let error = dialect::read(artifact, Limits::default()).unwrap_err();
         assert!(error.contains("not JSON"), "got: {error}");
     }
+}
+
+#[test]
+fn day_count_bounds_are_distinct_and_conflicting_lead_bounds_are_reported() {
+    let root = support::Workspace::new();
+    root.write("booking.sigil", b"component Booking {\n  goal {\n    Manage bookings.\n  }\n  constraints {\n    A *booking request* starts at most 180 days ahead and lasts at most 7 days.\n\n    The booking request starts at most 365 days ahead.\n  }\n}\n");
+    let input = root.design_input();
+    let request = request_for(&input, "booking.sigil");
+    let facets: Vec<_> = request
+        .rows
+        .iter()
+        .filter(|r| r.section == "constraints")
+        .collect();
+    assert_eq!(facets.len(), 2);
+    let rows = format!(
+        "(measure {:?} \"booking request\" \"maxLeadDays\" \"180\")\n(measure {:?} \"booking request\" \"maxDurationDays\" \"7\")\n",
+        facets[0].facet, facets[0].facet
+    );
+    let facts = accept(&input, "booking.sigil", &rows).unwrap();
+    assert_eq!(facts.len(), 2);
+    assert!(facts.iter().any(|f| matches!(&f.body, Body::Measure { property, number, .. } if property == "maxLeadDays" && number == "180")));
+    let world =
+        sigilc::claims::program::saturate(&request, &facts, sigilc::engine::Limits::default())
+            .unwrap();
+    assert!(world.table("violation").is_empty());
+    let conflicting = format!(
+        "{rows}(measure {:?} \"booking request\" \"maxLeadDays\" \"365\")\n",
+        facets[1].facet
+    );
+    let facts = accept(&input, "booking.sigil", &conflicting).unwrap();
+    let world =
+        sigilc::claims::program::saturate(&request, &facts, sigilc::engine::Limits::default())
+            .unwrap();
+    assert!(
+        world
+            .table("violation")
+            .iter()
+            .any(|r| r[0] == "conflicting-measure")
+    );
+    let invalid = format!(
+        "{rows}(measure {:?} \"booking request\" \"maxSpanDays\" \"many\")\n",
+        facets[1].facet
+    );
+    let parsed = dialect::read(&invalid, Limits::default()).unwrap();
+    assert_eq!(
+        parsed.rows.len(),
+        2,
+        "valid rows survive another unit's bad number"
+    );
+    assert_eq!(parsed.errors.len(), 1);
+    assert!(parsed.errors[0].reason.contains("number"));
 }

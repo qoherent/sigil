@@ -1,0 +1,31 @@
+{
+  "id": "undesigned-file",
+  "title": "Undesigned contact export file",
+  "explanation": "A selected file exports contacts that no in-scope design claim accounts for.",
+  "findingClass": "alignment",
+  "laws": [
+    "undesigned-file"
+  ],
+  "findingEvidence": {
+    "subject": "cited-claim",
+    "object": ""
+  },
+  "remedy": "Restore the clean implementation or revise the design with contributor approval.",
+  "anchors": [
+    {
+      "source": "src/contact-export.ts",
+      "section": "code",
+      "text": "exportRenterContacts"
+    }
+  ],
+  "implementation": {
+    "source": "src/contact-export.ts",
+    "element": "exportRenterContacts"
+  },
+  "changes": [
+    {
+      "path": "src/contact-export.ts",
+      "after": "export function exportRenterContacts(emails: string[]) { return emails.join(\",\"); }\n"
+    }
+  ]
+}

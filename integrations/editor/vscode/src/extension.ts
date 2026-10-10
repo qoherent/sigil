@@ -11,7 +11,7 @@ import {
 import {
   type CompilationFocus,
   type CompilationProcess,
-  diagnosticGroups,
+  incompleteExplanation,
   type NativeReport,
   nativeState,
   runCompilationProcess,
@@ -100,14 +100,16 @@ export async function activate(
       COMPILE_FILE_COMMAND,
       async (requestedFocus?: unknown) => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor || editor.document.languageId !== "sigil") {
+        if (!editor || editor.document.uri.scheme !== "file") {
           await vscode.window.showInformationMessage(
-            "Open a Sigil document to compile its file.",
+            "Open a file in the workspace to check it.",
           );
           return;
         }
-        const focus = asCompilationFocus(requestedFocus) ??
-          await resolveCompilationFocus();
+        const focus = editor.document.uri.path.endsWith(".sigil")
+          ? "design"
+          : asCompilationFocus(requestedFocus) ??
+            await resolveCompilationFocus();
         if (!focus) return;
         return await compileFromEditor(
           output,
@@ -141,13 +143,14 @@ export async function activate(
         const selected = await vscode.window.showQuickPick([
           {
             label: "$(symbol-interface) Design readiness",
-            description: "Active file and native dependency closure",
+            description: "Active design source",
             command: COMPILE_FILE_COMMAND,
             focus: "design" as const,
           },
           {
             label: "$(references) Implementation alignment",
-            description: "Active file and native dependency closure",
+            description:
+              "Workspace check with findings for the active code file",
             command: COMPILE_FILE_COMMAND,
             focus: "implementation" as const,
           },
@@ -189,6 +192,13 @@ export async function activate(
       ) return;
       const folder = vscode.workspace.getWorkspaceFolder(event.document.uri);
       if (!folder) return;
+      const relative = workspaceRelativeSigilPath(
+        folder.uri,
+        event.document.uri,
+      );
+      if (
+        relative === ".sigil/claims" || relative.startsWith(".sigil/claims/")
+      ) return;
       const key = folder.uri.toString();
       workspaceRevisions.set(key, (workspaceRevisions.get(key) ?? 0) + 1);
       if (displayedCompilationRoot === key) {
@@ -217,7 +227,7 @@ export async function activate(
       relative.split("/").some((part) =>
         [".git", "node_modules", "target", "build"].includes(part)
       ) ||
-      [".sigil/worlds", ".sigil/trees"].some((cache) =>
+      [".sigil/claims", ".sigil/trees"].some((cache) =>
         relative === cache || relative.startsWith(`${cache}/`)
       )
     ) return;
@@ -337,7 +347,6 @@ async function compileFromEditor(
   status.tooltip = "Compiling with sigilc";
   const operation = runCompilationProcess({
     executable: configuration.get<string>("executable", "sigilc"),
-    selection: configuration.get<string>("selection", ""),
     cwd: folder.uri.fsPath,
     focus,
     file: documentUri
@@ -362,10 +371,15 @@ async function compileFromEditor(
       status,
       folder.uri,
       focus,
-      documentUri ? "File and native dependency closure" : "Workspace",
+      documentUri?.path.endsWith(".sigil")
+        ? "Design findings for this source; workspace check"
+        : "Workspace",
       () =>
         activeCompilation === operation &&
         (workspaceRevisions.get(folderKey) ?? 0) === startingRevision,
+      focus === "implementation" && documentUri
+        ? workspaceRelativeSigilPath(folder.uri, documentUri)
+        : undefined,
     );
     if (activeCompilation !== operation) return;
     if ((workspaceRevisions.get(folderKey) ?? 0) !== startingRevision) {
@@ -496,8 +510,10 @@ async function projectCompilationReport(
   focus: CompilationFocus,
   target: string,
   isCurrent: () => boolean,
+  sourceFilter?: string,
 ): Promise<void> {
   await publishCompilationDiagnostics(report, {
+    sourceFilter,
     async loadSource(source) {
       const uri = vscode.Uri.joinPath(root, source);
       const bytes = await readFile(uri.fsPath);
@@ -527,7 +543,9 @@ async function projectCompilationReport(
         diagnostic.code = item.code;
         diagnostic.source = "sigilc";
         const key = uri.toString();
-        byUri.set(key, [...(byUri.get(key) ?? []), diagnostic]);
+        const diagnostics = byUri.get(key);
+        if (diagnostics) diagnostics.push(diagnostic);
+        else byUri.set(key, [diagnostic]);
       }
       collection.set(
         [...byUri].map(([uri, items]) => [vscode.Uri.parse(uri), items]),
@@ -537,19 +555,13 @@ async function projectCompilationReport(
         ? "$(pass-filled)"
         : state === "Loose" || state === "Converged"
         ? "$(warning)"
-        : state
-        ? "$(error)"
-        : "$(circle-slash)";
-      status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${
-        state ?? "unavailable"
-      }`;
-      const omitted = diagnosticGroups(report).reduce(
-        (n, group) => n + group.omitted,
-        0,
-      );
-      status.tooltip = `${target}\n${
-        state ?? ("reason" in report ? report.reason : "Unavailable")
-      }\n${omitted} omitted findings. Native scope and witnesses are in Sigil output.`;
+        : "$(error)";
+      status.text = `${icon} Sigil ${compilationFocusLabel(focus)}: ${state}`;
+      status.tooltip = `${target}\n${state}${
+        sourceFilter ? `\nShowing findings for ${sourceFilter}.` : ""
+      }\n${
+        incompleteExplanation(report)
+      }\nFull report and provenance are in Sigil output.`;
     },
   });
 }

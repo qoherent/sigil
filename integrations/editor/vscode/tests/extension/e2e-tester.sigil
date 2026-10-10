@@ -15,8 +15,8 @@ component SigilVsCodeE2ETester {
       disables unrelated extensions and supplies a *temporary test workspace* or
       controlled fixture state
 
-      uses current built language and *native compiler executables* for real scope,
-      diagnostic and unavailable-comparison assertions; separate unit fixtures
+      uses current built language and *native compiler executables* for real design and alignment
+      checks and diagnostic assertions; separate unit fixtures
       exercise all state/exit pairs without invoking a model
 
       does not mutate the repository's user workspace or depend on *global VS Code*
@@ -30,10 +30,10 @@ component SigilVsCodeE2ETester {
     context and owner definition.
 
     Exercise supplementary *Unicode positions* and CRLF in both LSP positions and
-    native schema 2 *byte-range diagnostics*, including related locations; stale
+    native *byte-range diagnostics*, including related locations; stale
     source digest prevents location publication.
 
-    Current native fixtures use schema 2 and *compatible prepared projections*
+    Current native fixtures use design report 6 and alignment report 1 with *compatible stored readings*
     produced outside the editor command. The retained legacy skill fixture remains
     a separately selected 0.7 check.
     ExtensionHostLifecycle {
@@ -50,11 +50,10 @@ component SigilVsCodeE2ETester {
     hover and definition.
 
     FileCompilationCommand {
-      Compile File uses the *active physical Sigil* path as an ordered native root,
-      and
-      the result exposes import and ownership dependencies. Language export and
-      sigilc produce native ranged findings that appear in editor diagnostics.
-      Missing Design reconstruction keeps Implementation comparison unavailable. The
+      Compile File checks an *active physical Sigil* source in design focus, or
+      checks the configured workspace selection in implementation focus and filters
+      its code diagnostics to the active file. Native findings carry verified
+      source ranges. Missing design or code readings keep the check Incomplete. The
       obsolete component alias is not registered.
     }
 
@@ -88,7 +87,7 @@ component SigilVsCodeE2ETester {
       VS
       Code command API
 
-      inspects native scope, *named states*, structured output and ranged diagnostics
+      inspects native selection, *named states*, structured output and ranged diagnostics
     }
   }
 }
