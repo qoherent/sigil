@@ -7,8 +7,9 @@ or own your coding loop.
 
 ## 1. Install both tools
 
-Standalone releases ship `sigil`, `sigilc` and the skill catalog together. See
-[installation](../README.md). They require no Deno, Node, Rust or source checkout
+Standalone releases ship `sigil` and `sigilc` together. The skills install through
+your agent's plugin system and follow the same releases; see
+[installation](../README.md) and the [install guides](install/README.md). They require no Deno, Node, Rust or source checkout
 at runtime. For repository development, build the two executables:
 
 ```sh
@@ -27,8 +28,11 @@ From the intended repository root:
 
 ```sh
 sigil init . --name your-repo
-sigil skill install --project
 ```
+
+Install the Sigil skills for your coding agent by following its
+[install guide](install/README.md). They install through the agent's own plugin
+system and need no `sigil` binary.
 
 Review `.sigil/config.json` and its authored-source include/exclude patterns.
 Keep `.sigil/worlds/` ignored: it is disposable generated native state. Native
@@ -70,9 +74,9 @@ sigilc align check --root .
 ```
 
 A fresh workspace is Incomplete until its readings are supplied. Run
-[sigil-compute-design](../integrations/skills/sigil-compute-design/SKILL.md)
+[sigil-compute-design](../skills/sigil-compute-design/SKILL.md)
 for design computation or
-[sigil-compute-align](../integrations/skills/sigil-compute-align/SKILL.md)
+[sigil-compute-align](../skills/sigil-compute-align/SKILL.md)
 for a design-first implementation check. The latter reads selection from
 `tools.sigilc.implementation` in workspace config and proposes excludes as output.
 

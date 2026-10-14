@@ -1,71 +1,40 @@
+@packages/sigilc/compiler.sigil from SigilSemanticCompiler import { SourceTrees }
+
 component SigilSourceIdentity {
   goal {
-    Capture language-neutral source identity with snapdir walking and *BLAKE3*.
+    Capture selected files as stable *SourceIdentity* values for SourceTrees
+    and implementation alignment.
   }
 
   constraints {
-
-    StructuralBinding {
-      Preparation and per-source Design binding include schema 2, *languageVersion*
-      0.9.0, components and Facets, Tag introductions and groupings, import
-      selections, bare references, links, ranges, and provenance. Changed relevant
-      structure changes captured source identities even when
-      semantic assertions appear unchanged.
-    }
-    SourceIdentity {
-      Permission changes preserve semantic identity. *Renames* and duplicate-file
-      additions change selected-scope identity. A file's identity depends on its own
-      normalized path and bytes, never on neighboring source or model data. Disable
-      snapdir symlink following and object-store checksum recovery. Reject explicitly
-      selected symlinks and non-regular files.
-    }
+    SourceIdentity A source identity uses its normalized workspace-relative
+    path and *BLAKE3* content checksum. Captured bytes must match a fresh
+    filesystem checksum. File identity excludes neighboring sources, selection
+    order, and model data.
   }
 
   cases {
-    FocusedSelection {
-      Selecting four *explicit files* does not read an unrelated large or unreadable
-      tree. Duplicate requested paths yield one manifest row. Internal, vendor,
-      include and exclude rules still apply before content reads. Equivalent
-      file-only and directory selections have equal identity.
-    }
+    *FocusedSelection* Selecting *explicit files* leaves unrelated trees
+    unread. Repeated paths contribute one file row, and a file-only selection
+    has the same identity as an equivalent directory selection.
 
-    SourceIdentity {
-      Editing an *imported file* changes only that file's content row. The union
-      identity changes, while the unchanged importer's source identity survives.
-      Retained captured bytes do not change when the live file is edited later.
-    }
+    SourceIdentity Editing one imported source changes that source row and the
+    selected union identity; the unchanged importer's own source identity stays
+    stable. Retained captured bytes stay unchanged after a later live edit.
   }
 
   interface {
-    SemanticInputs {
-      Capture a source's normalized path and exact bytes separately from selection
-      membership and neighboring sources. Design basis records the source's resolved
-      tree id and the interface hashes of components it imports, plus applicable
-      config and glossary bytes including absence. A dependency's internal change
-      that leaves its interface hash alone does not change the importer's basis.
-      An unresolved import invalidates only its own source. Recheck source and
-      context bytes against the filesystem before accepting a snapshot as current.
-      No production metadata enters source identity.
-    }
+    *SemanticInputs* Bind each SourceIdentity to its own parsed tree and resolved
+    component interfaces, plus applicable configuration and glossary bytes or their
+    absence. A dependency's private edit does not change the importer's basis
+    when its interface is unchanged. An unresolved import invalidates its own
+    source. Keep production metadata outside source identity.
 
-    CompilerInputSelection {
-      Select normalized *workspace-relative paths* and directories using Sigil
-      include
-      and exclude globs. Support arbitrary source extensions. Exclude generated
-      internal trees and configured vendor directories. Refuse accidental empty
-      selections and make intentional empty scope explicit. For explicit file-only
-      selection, filter requested paths before hashing and do not traverse unrelated
-      trees. Reuse snapdir file hashing and the same manifest encoding as directory
-      discovery. Validate selected regular files and reject detected changes during
-      hashing; no persistent shortcut replaces current content identity.
-    }
-
-    SourceIdentity {
-      Use snapdir manifests and BLAKE3 content hashes. Hash a versioned encoding of
-      sorted path, file type, and *source content checksum* rows for selected scope.
-      Capture
-      exact bounded source bytes and compare their checksum with a fresh snapdir file
-      hash. Reject paths crossing symlinks or workspace boundaries.
-    }
+    *CompilerInputSelection* Select workspace-relative paths and directories
+    with include and exclude globs. Support any file extension, omit internal
+    and configured vendor trees, and reject accidental empty selection.
+    Explicit file selection filters before hashing and does not traverse
+    unrelated trees. Refuse symlink crossings, non-regular files, and sources
+    that change while read.
   }
 }

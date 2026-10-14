@@ -75,15 +75,9 @@ Platform packages:
 
 Integrations:
 
-- `integrations/skills/sigil`: implemented host-neutral workflow for structural
-  tool use, semantic and standards review, brownfield adoption, reviewed
-  glossary proposals, review gates, and implementation colocation.
 - `integrations/editor/vscode`: implemented pre-production VS Code extension for
   syntax highlighting, bundled LSP features, component previews, and
   editor-native affordances.
-
-`integrations/skills/sigil-anchor-indexer` contains rejected historical design
-material only and has no active Sigil contract.
 
 The CLI is an automation interface. It may help humans during early development,
 but it is not the primary human product.
@@ -373,9 +367,6 @@ surface:
 - `packages/lsp/README.md`: implemented pre-production editor semantic protocol.
 - `integrations/editor/vscode/README.md`: implemented pre-production concrete
   editor UX.
-- `integrations/skills/sigil/`: host-neutral workflow and host-adapter metadata.
-- `integrations/skills/sigil-anchor-indexer/`: rejected historical anchor-workflow design
-  material.
 
 Root-level docs should stay stable and architectural. Package docs can change as
 the implementation and product surface become more concrete.

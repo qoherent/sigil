@@ -1,61 +1,33 @@
 component SigilClaimsVocabulary {
   goal {
-    Own the names an interpreted claim may use, and the *discipline* for accepting
-    returned text as data.
+    Own *AcceptedVocabulary* for interpreted design claims and the rules for
+    accepting returned claims as data.
   }
 
   constraints {
-    AcceptedVocabulary {
-      The set is this component's own and is read from nothing while running. No
-      change elsewhere in the *compiler* widens what an interpretation may return,
-      and no component outside this one decides what the set contains. It always
-      carries every name the closure's laws read; a set missing one is refused
-      before any request is prepared, rather than leaving a law that never fires.
-    }
+    AcceptedVocabulary This component alone declares the accepted claim names
+    and generation. Laws read every relation in the set; an incomplete set is
+    an operational error before request preparation.
 
-    AtomDiscipline {
-      The *returned text* is data and is never executed as a program. No file
-      outside the compiled binary widens what is accepted.
-    }
+    *AtomDiscipline* Returned text is parsed and admitted as bounded data. It is
+    never run as an egglog program, and external files cannot widen accepted
+    forms.
   }
 
   cases {
-    AcceptedVocabulary {
-      A relation the compiler defines and this set omits is refused like any
-      other *unknown name*.
-    }
+    AcceptedVocabulary A row naming a relation or property outside the
+    accepted set is refused under these AcceptedVocabulary rules.
   }
 
   interface {
-    AcceptedVocabulary {
-      Publish the *relation names* a claim may use and the property names a
-      property or measure row may use, each with its range. The set is closed: a
-      claim, property or measure naming anything outside it is refused. A row
-      carrying no such name is governed by the admission rules of the component
-      that defines it. A generation records which accepted set a request was
-      prepared against. It is declared rather than derived, and is bumped
-      whenever the set changes so that an already-prepared request could no
-      longer satisfy it. Maximum duration, lead and span in whole days are
-      separate numeric properties: maxDurationDays, maxLeadDays and maxSpanDays.
-    }
+    AcceptedVocabulary Publish the accepted relations, boolean properties,
+    numeric measures, seven contract roles, and vocabulary generation. Reject
+    names outside these sets. Change the generation when an incompatible row
+    shape or accepted name changes.
 
-    AtomDiscipline {
-      Returned text is accepted only as data-only egglog atoms: bytes bounded
-      before parsing and atom count before validation, every rule, command,
-      schedule and non-literal argument rejected, and the *whole artifact* refused
-      rather than its valid portion.
-    }
-  }
-
-  decisions {
-    AcceptedVocabulary {
-      The set began as a copy of the compiler's ontology and deliberately does
-      not track it. Reading that ontology while running folded it into the
-      interpretation fingerprint, so an edit anywhere in the compiler invalidated
-      every prepared request; holding the two equal by test would have kept the
-      same coupling in a weaker form. Being able to diverge is the point of
-      owning the set, and it is what lets the compiler's own vocabulary be
-      replaced without touching what an interpretation may return.
-    }
+    AtomDiscipline Bound artifact bytes and row count before validation.
+    Accept only literal-argument data rows; reject rules, commands, schedules,
+    nested expressions, and non-literal arguments. Refuse the whole artifact
+    when it contains executable or malformed top-level content.
   }
 }

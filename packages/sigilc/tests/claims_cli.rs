@@ -664,20 +664,29 @@ fn every_claims_module_is_owned_by_a_tag_the_contract_declares() {
     // The subsystem is owned by two contracts: the claims component, and the
     // vocabulary component that owns the accepted set and the atom discipline.
     // An annotation must name one of them and a Tag that contract declares.
+    // A Tag is declared either as a group heading (`Name {`) or inline
+    // (`*Name*`); a concept Tag is a single CamelCase word.
+    let concept = |name: &str| {
+        name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
+            && name.chars().all(|c| c.is_ascii_alphanumeric())
+    };
     let tags_of = |contract: &str| -> Vec<String> {
-        contract
-            .lines()
-            .filter_map(|line| {
-                let trimmed = line.trim();
-                trimmed
-                    .strip_suffix(" {")
-                    .filter(|name| {
-                        name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
-                            && name.chars().all(|c| c.is_ascii_alphanumeric())
-                    })
-                    .map(str::to_owned)
-            })
-            .collect()
+        let mut tags: Vec<String> = Vec::new();
+        for line in contract.lines() {
+            if let Some(name) = line.trim().strip_suffix(" {")
+                && concept(name)
+            {
+                tags.push(name.to_owned());
+            }
+            for (i, part) in line.split('*').enumerate() {
+                if i % 2 == 1 && concept(part) {
+                    tags.push(part.to_owned());
+                }
+            }
+        }
+        tags.sort();
+        tags.dedup();
+        tags
     };
     let owners: Vec<(&str, Vec<String>)> = vec![
         (

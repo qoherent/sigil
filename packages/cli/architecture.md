@@ -75,7 +75,7 @@ Owns command handlers.
 
 Responsibilities:
 
-- implement `skill list`, `skill install`, `parse`, `check`, `graph`, `context`,
+- implement `parse`, `check`, `graph`, `context`,
   `retrieve`, `render`, and configuration;
 - call `sigil-core` through shared helpers;
 - return typed command result objects;
@@ -106,26 +106,6 @@ Rules:
 - may depend on `sigil-core`;
 - may depend on `fs-adapter`;
 - must not render human output.
-
-### `installer`
-
-Owns global and repository-local installation of version-owned agent skills.
-
-Responsibilities:
-
-- resolve `integrations/skills` from the running source or binary installation;
-- enumerate immediate directories containing `SKILL.md`;
-- map Codex, Claude Code, OpenCode, and Pi to their global or project locations;
-- prefer host-native relative directory links and fall back to managed copies;
-- preserve or update managed installations and reject unmanaged conflicts;
-- create or extend project-local skill `.gitignore` files.
-
-Rules:
-
-- may use Deno filesystem APIs and host-native path operations;
-- must resolve sources from the selected Sigil installation, not the target;
-- may inspect only the presence of the `SKILL.md` entrypoint;
-- must not overwrite unrelated target files or symlinks.
 
 ### `fs-adapter`
 
@@ -268,7 +248,7 @@ Commands should keep option behavior boring and explicit.
 
 Commands remain non-interactive for language 0.9.
 
-Explicit init, fmt and skill installation own their existing write boundaries.
+Explicit init and fmt own their existing write boundaries.
 
 ## 9. Historical Anchor Extension Proposal
 

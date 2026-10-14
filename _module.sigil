@@ -1,6 +1,6 @@
 @integrations/editor/vscode/_module.sigil from SigilVsCodeExtension import { ExtensionPackage }
 @packages/lsp/_module.sigil from SigilLsp import { LspPackage }
-@packages/sigilc/_module.sigil from SigilSemanticCompiler import { SourceTrees, language interpretation }
+@packages/sigilc/compiler.sigil from SigilSemanticCompiler import { SourceTrees, language interpretation }
 @packages/cli/_module.sigil from SigilCli import { CliInvocation }
 @packages/core/_module.sigil from SigilCore import { CorePackage }
 @spec/language.sigil from SigilWorkspaceConfig import { WorkspaceBoundary, ConfigFile }
@@ -58,11 +58,9 @@ component Sigil {
       These designs specify intended 0.9 behavior pending implementation and do not
       claim legacy compiler validation or current implementation conformance.
 
-      Retain [the historical skill](integrations/skills/sigil/SKILL.md) as frozen 0.7
-      material outside *active 0.9 discovery* and compatibility. The current
-      [understanding](integrations/skills/sigil-understand/SKILL.md),
-      [writing](integrations/skills/sigil-write/SKILL.md), and
-      [evaluation](integrations/skills/sigil-evaluate/SKILL.md) siblings own current
+      The current [understanding](skills/sigil-understand/SKILL.md),
+      [writing](skills/sigil-write/SKILL.md), and
+      [evaluation](skills/sigil-evaluate/SKILL.md) siblings own current
       design workflows.
 
     RootLanguageVersion {

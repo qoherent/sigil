@@ -1,0 +1,21 @@
+component SigilSemanticCompiler {
+  goal {
+    Turn authored Sigil sources into resolved SourceTrees, compute design
+    results from caller supplied language interpretation, and compare design
+    commitments with supplied implementation readings.
+  }
+
+  interface {
+    *language interpretation* Caller supplied semantic readings consumed by
+    computed design claims; the compiler does not invoke a model.
+
+    *CompilerCommands* Provide one native executable for tree inspection,
+    computed design claims, implementation alignment, and disposable cache
+    cleanup. The executable launches no model or interpreter; callers prepare
+    and supply external readings.
+
+    *SourceTrees* Parse each source into a content-addressed tree and resolve
+    names against imported component interfaces. Expose trees and optional
+    Facet differences through the tree command.
+  }
+}

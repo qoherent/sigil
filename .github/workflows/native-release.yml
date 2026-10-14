@@ -16,7 +16,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 concurrency:
@@ -42,6 +42,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/cli-v{0}', inputs.version) || github.ref }}
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.9.2
@@ -343,11 +345,43 @@ jobs:
           path: ${{ runner.temp }}/consumer-summary.json
 
   publish:
-    if: ${{ github.event_name == 'push' || inputs.publish == true }}
+    if: ${{ github.repository == 'qoherent/sigil' && (github.event_name == 'push' || inputs.publish == true) }}
     needs: [build, artifact-consumer]
     runs-on: ubuntu-24.04
+    # The release App's secrets live in this environment, which only cli-v*
+    # tags may deploy to, so a workflow on any other branch cannot read them.
+    environment: release
+    # One publish at a time across versions, so an older release cannot move
+    # Latest after a newer one has advanced the release branch.
+    concurrency:
+      group: native-cli-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
     steps:
+      # Full history so the release branch ancestry check sees the commits it
+      # compares. The default token is not kept: pushing `release` uses the
+      # release App's token (see the "Advance the release branch" step).
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/cli-v{0}', inputs.version) || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.2
+      - name: Assert the checkout is the release tag, on main
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          version="${VERSION#cli-v}"
+          tag="cli-v$version"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$tag^{commit}")"
+          git fetch --no-tags "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main
+          git merge-base --is-ancestor HEAD FETCH_HEAD || { echo "$tag is not on main; merge it first" >&2; exit 1; }
       - uses: actions/download-artifact@v4
         with:
           pattern: sigil-release-*
@@ -355,10 +389,8 @@ jobs:
           path: build/release
       - name: Combine checksums and installers
         shell: bash
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          version="$INPUT_VERSION"; if [[ -z "$version" ]]; then version="${GITHUB_REF_NAME#cli-v}"; fi
+          version="${VERSION#cli-v}"
           find build/release -name checksums.txt -delete
           for asset in build/release/*.tar.gz build/release/*.zip; do
             [[ -f "$asset" ]] || continue
@@ -366,15 +398,59 @@ jobs:
           done | sort -k2 > build/release/checksums.txt
           sed "s/__SIGIL_VERSION__/$version/g" install.sh > build/release/install.sh
           sed "s/__SIGIL_VERSION__/$version/g" install.ps1 > build/release/install.ps1
-      - name: Publish GitHub Release
+      # Publishing is ordered and safe to rerun: the release assets first,
+      # without moving "Latest"; then the `release` branch every agent install
+      # reads; then "Latest". A failure before the branch moves leaves every
+      # agent on the previous release.
+      - name: Publish the GitHub Release without marking it latest
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version || github.ref_name }}
         shell: bash
         run: |
-          version="$VERSION"; version="${version#cli-v}"
+          version="${VERSION#cli-v}"
           tag="cli-v$version"
-          gh release create "$tag" \
-            build/release/*.tar.gz build/release/*.zip \
-            build/release/checksums.txt build/release/install.sh build/release/install.ps1 \
-            --verify-tag --title "Sigil CLI $version" --generate-notes --latest
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; reusing it and making sure every asset is on it."
+            gh release upload "$tag" \
+              build/release/*.tar.gz build/release/*.zip \
+              build/release/checksums.txt build/release/install.sh build/release/install.ps1 \
+              --clobber
+          else
+            gh release create "$tag" \
+              build/release/*.tar.gz build/release/*.zip \
+              build/release/checksums.txt build/release/install.sh build/release/install.ps1 \
+              --verify-tag --title "Sigil CLI $version" --generate-notes --latest=false
+          fi
+      - name: Create the release App token
+        id: release-app
+        # Pinned to a reviewed commit (v1.12.0): this step receives the App key.
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+      - name: Advance the release branch
+        env:
+          APP_TOKEN: ${{ steps.release-app.outputs.token }}
+        shell: bash
+        run: |
+          version="${VERSION#cli-v}"
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          deno run --allow-run=git scripts/advance-release-branch.ts --tag "cli-v$version"
+      - name: Mark the release latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version="${VERSION#cli-v}"
+          tag="cli-v$version"
+          latest="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name 2>/dev/null || true)"
+          branch_tip="$(git ls-remote origin refs/heads/release | cut -f1)"
+          if [[ "$branch_tip" != "$(git rev-parse HEAD)" ]]; then
+            echo "The release branch has moved past $tag; leaving Latest alone."
+          elif [[ "$latest" = "$tag" ]]; then
+            echo "$tag is already the latest release."
+          else
+            gh release edit "$tag" --latest
+          fi

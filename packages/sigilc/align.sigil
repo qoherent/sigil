@@ -1,95 +1,76 @@
+@packages/sigilc/compiler.sigil from SigilSemanticCompiler import { CompilerCommands }
+
 component SigilImplementationClaims {
   goal {
-    Present whole code files for independent claims readings against the design
-    names inside configured promise scope, and judge the implementation against
-    those promises after the full design check.
-  }
-
-  interface {
-    CodeVocabulary {
-      Describe code elements, actions and measures in their own vocabulary.
-      Separate observations from interpreter-written realizes mappings.
-      Component realization establishes membership; Tag realization states delivery.
-      A test element's mappings account for its exercise of the design and never
-      establish implementation membership or delivery.
-    }
-
-    CodeGuidance {
-      Publish compiled code guidance under its own fingerprint and vocabulary
-      generation. Extract copies only outside the workspace under validation.
-      Teach unmapped elements as faithful readings of undesigned code.
-    }
-
-    FileRequests {
-      Present each selected whole file in a safe directory carrying full source,
-      qualified design names, admitted design claims, exact Facet context and code
-      guidance. Bind each request to its path, content, names, effective selection,
-      code guidance and vocabulary generation. List empty files, skipped symlinks,
-      automatic design exclusions and unpresentable files separately.
-    }
-
-    AlignCommands {
-      Offer align prepare, align ingest and align check in the single sigilc executable. Read selection from
-      workspace configuration, refuse nonempty output directories, and launch no
-      interpreter. Present only files with stale or unread readings, and report reuse.
-      Ingest one file against its own binding; name every field that changed.
-      Accept either binding or rows from standard input, never both at once.
-    }
-
-    ImplementationLaws {
-      Judge only scoped design commitments against independent production code
-      observations. Component membership and Tag delivery answer provides;
-      dependencies on components or their Tags can answer requires through a
-      delivering service. Enforce exclusions, required state owners, exclusive
-      ownership and latency or calendar-day budgets. Keep unmapped writers visible
-      and count multiple members of one rightful component as one owner.
-      Test elements never establish production membership, delivery or ownership.
-      Logic, Cases and negative claims can breach but never demand an answer.
-    }
-
-    AlignCheck {
-      Gate the implementation laws on the complete linked design, including
-      sources outside configured promise roots. An incomplete or disjoint design,
-      unread code or an unpresentable file makes alignment Incomplete. Otherwise
-      disagreements, undesigned files or elements, and unanswered required promises
-      make Drift. Clean coherent design is Closed; clean loose design is Converged.
-      Closed and Converged exit zero, Drift and Incomplete exit one, usage exits
-      two and operational failure exits three. No command launches an interpreter.
-    }
-
-    LocatedFindings {
-      Write the versioned workspace report and judgment context under claims.
-      Each finding names its law, design claims and Facet spans, and code rows
-      with whole-file locations. Locations use UTF-8 byte offsets and a SHA256
-      digest of captured source bytes. Report incomplete reasons, unread files,
-      undesigned code, unanswered promises, active exclusion counts, components
-      outside promise scope and identity digests.
-    }
-
-    FileReadings {
-      Admit data-only code rows against the file's presented names. Resolve
-      qualified labels and unique bare labels to design identities. Refuse only
-      this file on a defect; empty or elementless answers keep it unread.
-      Store local element names under claims/implementation using content, code
-      guidance and vocabulary identities, so a path rename reuses the reading.
-      Ask again for changed code, changed cited names, changed component membership
-      promises, or newly added names when elements remain undesigned. Unrelated
-      design edits leave the reading fresh. An identical ingest makes no write.
-    }
+    Apply *ImplementationLaws* to caller supplied readings of whole files and
+    stored design claims, reporting whether selected implementation scope
+    satisfies the design or has drift.
   }
 
   constraints {
-    CodeVocabulary {
-      The unit of code is the whole file. No language parser or source annotation
-      supplies an implementation mapping. File location alone is no membership
-      evidence. An unmapped element must remain visible.
-    }
+    *CodeVocabulary* The unit is a whole file. No language parser or source
+    annotation supplies a mapping, and file location alone does not establish
+    component membership. Keep unmapped elements visible.
 
-    FileReadings {
-      Rules and nested expressions refuse the whole answer. An action target is
-      a presented design name, never another file's element. Each referenced
-      element must be declared within this file. Ambiguous labels list qualified
-      alternatives, and every mapping originates in the interpreter's rows.
-    }
+    *FileReadings* Accept only data rows within the presented names and file
+    binding. A bad row refuses that file's answer; an empty or elementless
+    answer leaves it unread.
+  }
+
+  cases {
+    CodeVocabulary A code element may be mapped to a component and a Tag it
+    delivers. A test mapping records what it exercises, but does not establish
+    production membership or delivery.
+
+    *FileRequests* Report a selected empty file, skipped symlink, automatically
+    excluded design file, and unpresentable file as distinct selection outcomes.
+  }
+
+  interface {
+    CodeVocabulary Publish accepted row shapes, element kinds, action
+    relations, measure names, and vocabulary generation for implementation
+    readings. Observation rows are separate from interpreter supplied mappings.
+
+    *CodeGuidance* Publish compiled code reading guidance with its own
+    fingerprint and vocabulary generation. Extract copies only to a named path
+    outside the workspace under validation.
+
+    FileRequests Present each selected, readable whole file with its source
+    bytes, design names, admitted design claims, relevant Facet context, and
+    code guidance. Bind each request to path and content, names, effective
+    selection, guidance, and vocabulary generation. Report empty, skipped,
+    excluded, and unpresentable files separately.
+
+    *AlignCommands* CompilerCommands Provide align prepare, align ingest, and
+    align check in sigilc. Prepare reads workspace selection and refuses a
+    nonempty output directory. Ingest admits one file against its binding. Check
+    reuses fresh readings and reports which files need new readings. No command
+    launches an interpreter.
+
+    ImplementationLaws Compare admitted code observations with scoped design
+    commitments. Derive component membership, Tag delivery, dependencies through
+    observed actions, exclusions, required state owners, exclusive ownership,
+    and numeric budgets. Count rightful members as owners and keep unmapped code
+    visible. Test elements never establish production delivery or ownership.
+
+    *AlignCheck* Check the complete linked design before comparing the selected
+    implementation scope. Return Incomplete for incomplete or disjoint design,
+    unread code, or unpresentable files; Drift for disagreements, undesigned
+    files or elements, and unanswered promises. With complete inputs and no
+    alignment findings, return Closed when the linked design has no findings,
+    or Converged when it has findings without contradictions or ownership
+    conflicts. Closed and Converged exit zero; Drift and Incomplete exit one.
+    No command launches an interpreter.
+
+    *LocatedFindings* Write a versioned workspace report and judgment context
+    under claims. Findings identify the law, supporting design claims, code rows,
+    and locations in whole-file source bytes. Include incomplete reasons, unread
+    files, undesigned code, unanswered promises, selection details, and identity
+    data.
+
+    FileReadings Store admitted readings by content, code guidance, and
+    vocabulary identities so path renames can reuse them. Request new readings
+    when code, cited names, component membership promises, or relevant
+    undesigned names change. Re-ingesting an identical answer makes no write.
   }
 }

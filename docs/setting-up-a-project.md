@@ -33,9 +33,8 @@ Use `sigil check . --format json` to inspect config and language diagnostics.
 
 ## Skill and ownership
 
-`sigil skill install --project` installs repository guidance for the selected
-host. Use `sigil skill install --help` for supported host and installation options.
-The skill helps author contracts and instructs the model to call `sigilc`
+The Sigil skills install through your coding agent's own plugin system; see the
+[install guides](install/README.md). The skills help author contracts and instructs the model to call `sigilc`
 directly. It does not supply verdicts or launch reconstruction workers.
 
 Keep contracts beside cohesive owners. A directory `_module.sigil` is a boundary
@@ -70,7 +69,7 @@ the whole design. `sigilc align prepare --root . --out DIR` reports the resolved
 selection, exclusions and out-of-scope components. A full-design check always
 gates alignment. Intentional empty selections require `allowEmpty`.
 
-Use [sigil-compute-align](../integrations/skills/sigil-compute-align/SKILL.md)
+Use [sigil-compute-align](../skills/sigil-compute-align/SKILL.md)
 for the design-first reading loop and
 [the native guide](../packages/sigilc/README.md) for exact commands and exits.
 Stored claims live in `.sigil/claims/`. `sigilc clean --root .` removes generated

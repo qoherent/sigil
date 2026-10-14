@@ -11,7 +11,7 @@ fn repo_root() -> PathBuf {
 
 fn skill_text(name: &str) -> String {
     let path = repo_root()
-        .join("integrations/skills/sigil-egglog/references")
+        .join("skills/sigil-egglog/references")
         .join(name);
     fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }

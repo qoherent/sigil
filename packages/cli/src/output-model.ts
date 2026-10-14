@@ -1,4 +1,3 @@
-import type { SkillCatalogEntry, SkillDestination } from "./installer.ts";
 import type {
   AgentDependencyContext,
   AgentDependentContext,
@@ -20,8 +19,6 @@ import type {
 } from "@qoherent/sigil-core";
 
 export type CommandResult =
-  | SkillListCommandResult
-  | SkillInstallCommandResult
   | InitCommandResult
   | VersionCommandResult
   | ParseCommandResult
@@ -36,35 +33,6 @@ export interface DiagnosticCounts {
   readonly error: number;
   readonly warning: number;
   readonly info: number;
-}
-export interface SkillListCommandResult {
-  readonly catalog: readonly SkillCatalogEntry[];
-  readonly command: "skill-list";
-  readonly sourceDirectory: string;
-  readonly skills: readonly string[];
-  readonly supportedAgents: readonly string[];
-  readonly diagnostics: readonly CliDiagnostic[];
-}
-export interface SkillInstallCommandResult {
-  readonly catalog: readonly SkillCatalogEntry[];
-  readonly command: "skill-install";
-  readonly scope: "global" | "project";
-  readonly agents: readonly string[];
-  readonly sourceDirectory: string;
-  readonly pruned: readonly SkillDestination[];
-  readonly unmanaged: readonly SkillDestination[];
-  readonly skills: readonly {
-    readonly name: string;
-    readonly agents: readonly string[];
-    readonly source: string;
-    readonly target: string;
-    readonly status:
-      | "installed"
-      | "updated"
-      | "existing"
-      | "copied";
-  }[];
-  readonly diagnostics: readonly CliDiagnostic[];
 }
 export interface WorkspaceMetadata {
   readonly workspaceRoot: string;

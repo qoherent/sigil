@@ -1,16 +1,15 @@
 component SigilProjectionStore {
   goal {
-    Remove disposable source caches while preserving *claims readings*.
+    Perform *DisposableCleanup* of cached source projections while preserving
+    stored claims readings and authored workspace data.
   }
 
   interface {
-    DisposableCleanup {
-      Clean removes worlds and trees from the selected store, including worlds
-      left by older versions. Tolerate absent cache directories and malformed old
-      indexes without interpreting their contents. Remove symlink artifacts
-      themselves without following their targets. Preserve claims readings,
-      authored sources, workspace configuration and external preparation inputs.
-      Cleanup takes no world lock and creates no cache directories.
-    }
+    DisposableCleanup The sigilc clean command removes only the worlds and
+    trees entries from the selected store. It tolerates a missing store and
+    removes symlink artifacts themselves without following their targets. It
+    preserves claims readings, authored sources, workspace configuration, and
+    external preparation input. Cleanup takes no world lock and creates no
+    cache directories.
   }
 }

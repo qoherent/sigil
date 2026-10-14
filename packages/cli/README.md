@@ -15,8 +15,9 @@ Package docs:
 - [architecture.md](architecture.md): command architecture, module boundaries,
   dependency rules, and implementation guidelines.
 
-Standalone GitHub releases install `sigil` and `sigilc`, plus
-bundled skills. Each binary reports its own manifest version. On macOS or Linux:
+Standalone GitHub releases install `sigil` and `sigilc`. Each binary reports its
+own manifest version. The Sigil skills install through your coding agent; see the
+[install guides](../../docs/install/README.md). On macOS or Linux:
 
 ```bash
 curl -fsSL https://github.com/qoherent/sigil/releases/latest/download/install.sh | sh
@@ -56,11 +57,6 @@ Commands:
 
 - `sigil --help` reports top-level help, while `--help` after any recognized
   command or subcommand reports help scoped to that command path;
-- `sigil skill list` reports bundled directories containing `SKILL.md`;
-- `sigil skill install` installs skills globally for Codex, Claude Code,
-  OpenCode, and Pi;
-- `sigil skill install --project` installs into the current repository;
-- `sigil skill install --agent <name>` limits installation to one agent;
 - `sigil init [path]` creates a config and, when absent, a glossary seeded only
   with the eight agent-context-excluded, colon-qualified decision-record field
   labels; it never overwrites either file;

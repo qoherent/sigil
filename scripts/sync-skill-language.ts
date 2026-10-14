@@ -10,8 +10,7 @@ export const LANGUAGE_SOURCES = [
   "spec/sigil-config.md",
   "spec/sigil-config.schema.json",
 ] as const;
-export const LANGUAGE_PACK_PATH =
-  "integrations/skills/sigil-understand/references/language";
+export const LANGUAGE_PACK_PATH = "skills/sigil-understand/references/language";
 const UPSTREAM = "https://github.com/farhoud/sigil";
 const MANIFEST = "manifest.json";
 const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });

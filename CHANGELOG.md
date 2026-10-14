@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Release alignment
+
+- Skills, `sigil` and `sigilc` now reach users together, only through a
+  `cli-v*` release. The CLI release job publishes the GitHub release, fast-forwards
+  a `release` branch to the tagged commit, then marks the release latest. Every
+  agent install guide follows `release` (Gemini CLI follows the latest release),
+  so a skill change merged to `main` no longer reaches installed copies. Anyone
+  who installed from `main` moves once; see
+  [Moving from an earlier install](docs/install/README.md#moving-from-an-earlier-install).
+  The Cursor team marketplace import still reads the default branch and says so.
+- Add a build-from-source install path for use before the first release, and a
+  [contributor guide](docs/contributing/README.md) for setting up, working on
+  skills and cutting a release.
+- `sigil-compute-design` 0.5.3 and `sigil-compute-align` 0.1.2 point the
+  installer offer at the release they belong to and, once `sigilc` answers,
+  compare it with `sigil --version`. On a mismatch they name both releases and
+  offer the matching installer; a declined offer lets the run continue. The
+  plugin manifest check now fails when that installer pin differs from the CLI
+  version.
+
 ### Breaking native changes
 
 - Native `sigilc` 0.3.0 owns design claims and implementation alignment. The
@@ -13,11 +33,65 @@
 - Rename `sigil-compute` to `sigil-compute-design`; add `sigil-compute-align`.
   Skill installation prunes retired managed entries while preserving unmanaged
   paths. Upgrades remove managed wrappers for the retired executable.
+- Remove `sigil skill`, `sigil skill list` and `sigil skill install`; they now
+  exit 2 as unknown commands. The Sigil skills install through each agent's own
+  plugin system (Claude Code, Codex, OpenCode, Pi, Cursor, Gemini CLI and
+  Antigravity) from `qoherent/sigil`, with no `sigil` binary needed; see
+  [docs/install](docs/install/README.md). CLI release archives no longer bundle
+  skills. If you ran `sigil skill install`, remove its copies first: each guide
+  opens with the cleanup steps.
+- Delete the legacy 0.7 `sigil` skill and the rejected `sigil-anchor-indexer`
+  proposal, and move the seven active skills from `integrations/skills/` to
+  `skills/`. Links to the old paths no longer resolve.
+- `sigil-compute-design` 0.5.2 and `sigil-compute-align` 0.1.1 check that
+  `sigilc` responds before any work, start no child without it, and show the
+  official installer command, running it only if the user agrees.
 - Design vocabulary generation 5 adds distinct day-count bounds. Existing
   readings are asked once more; identity domains otherwise remain stable.
 - VS Code compile commands use design report 6 and alignment report 1 with
   located findings and Incomplete states.
 
+
+- `sigilc check` also writes a compact review view
+  (`<scope>.linked.review.md`) and its evidence file
+  (`<scope>.linked.review.json`) beside the linked report and judgment context,
+  and names both in its result as `reviewView` and `reviewEvidence`. The view
+  names every unit, claim and finding by a short alias and carries no prose; the
+  evidence maps each alias to its identity and the exact source bytes the check
+  read. Report 6, context 1 and exit codes are unchanged.
+- `sigil-compute-design` 0.5.0 adds review preparation. `sigil-evaluate` 0.2.0
+  and `sigil-write` 0.2.0 now require it: they compute the design first, judge
+  from the compact review view, read prose through its verified byte ranges, and
+  report computed coverage separately from advisory findings. A review that used
+  computed claims returns a `computed_evidence` extension of
+  `sigil-design-review/v1`; without `sigilc` both continue source-only and say so.
+- Claims artifact file names percent-encode `/`, `\`, `:` and `%` in a source
+  path instead of replacing them with `_`, so `a/b.sigil` and `a_b.sigil` no
+  longer write to the same file. Names without those characters are unchanged.
+- Each inferred conclusion in the review evidence names its `premises`: the
+  claims and conclusions its law combined, also shown in the view after
+  `from`. Conclusions witnessed by a component or graph, such as dependency
+  reachability, delegated capabilities and flow ends, previously had no
+  pointer to their support.
+- `sigil-evaluate` 0.2.4 and `sigil-write` 0.2.4 require each captured
+  dependency to match the digest the evidence file's `inputs` records, so a
+  source edited between the check and capture cannot pass as current.
+  `sigil-compute-design` 0.5.1 documents conclusion premises.
+- `sigil-evaluate` 0.2.3 judges each step that reaches no end on its own, as a
+  result nothing uses, and sets aside a name only as an existing Tag or as
+  context wording. It never counts a Decisions note as keeping an undecided
+  policy. `sigil-write` 0.2.3 never clears a name warning by deleting the word,
+  and never replaces a conflict with a Decisions note.
+- `sigil-evaluate` 0.2.2 lists every computed finding it does not report under
+  `set_aside` in `computed_evidence`, with the reason, so a dropped warning can
+  be checked.
+- `sigil-evaluate` 0.2.1 and `sigil-write` 0.2.2 judge undeclared names by the
+  Tag rule alone: a name that is a promise's subject or object gets a Tag even
+  when it reads as ordinary wording. The writer applies this to the computed
+  view before capture, without waiting for an evaluator finding.
+- `sigil-write` 0.2.1 removes or weakens a promise only with an intent that
+  authorizes it, keeps two contradicting promises for the human to decide, adds
+  no unsupported promise, and lists every promise it removed, weakened or added.
 
 - Rename `sigil-compute` to `sigil-compute-design` (0.4.0). Its reading,
   re-ask and store write-back behavior stays the same; it now invokes the
@@ -115,36 +189,7 @@
 - Separate offline `test:skill` checks from `test:skill:native`, and document
   observed agent behavior independently from package correctness.
 
-## 0.7.1 - 2026-08-04
-
-- Advance the core, compiler, CLI, LSP, VS Code extension, and coding-agent
-  skill artifacts to 0.7.1 over the Sigil Language and configuration contract
-  0.7.0.
-- Add implementation-ownership discovery with exact component and concept
-  targets, source ranges, cross-language entrypoint resolution, resilient
-  diagnostics, CLI projections, LSP hover/navigation, and watched-file
-  invalidation.
-- Add the compiler workflow with design and implementation focus, semantic
-  readiness and architecture evaluations, structured reports, lifecycle
-  statuses, persisted sessions and history, and proposal workspaces with
-  ReviewGate-aware materialization.
-- Add Markdown and JSON context assembly for direct dependencies, importing
-  files, implementation ownership, bounded sources, and stable diagnostics.
-- Add `sigil retrieve` for deterministic purpose-specific graph selection and
-  aggregated compilation context, including stable evidence identifiers,
-  fingerprints, dependency boundaries, and strongly connected component groups.
-- Add compiler-facing retrieval envelopes so evaluators consume one selected
-  context instead of independently traversing the workspace graph.
-- Extend graph and resolver diagnostics for cross-file expands, component
-  imports, duplicate identities, unreadable implementation sources, and
-  platform-independent path handling.
-- Complete the Sigil 0.6 semantic-unit and formatter tooling integration,
-  including reviewed glossary projections, concept identity reuse, Markdown
-  rendering, and deterministic formatting checks.
-- Add VS Code compilation commands and the validated JSONL bridge over the
-  external compatible Sigil CLI.
-
-## Unreleased
+### Other changes
 
 - Split 0.8 documentation into an example-led [language guide](spec/sigil-language.md),
   a [normative reference](spec/sigil-reference.md), and [EBNF grammar](spec/sigil.ebnf).
@@ -336,6 +381,35 @@
   CLI, LSP, and VS Code extension to 0.6.0.
 - Advance the Sigil skill to 0.6.2 with decision-rationale coverage,
   correction conversations, and semantic-readiness gates.
+
+## 0.7.1 - 2026-08-04
+
+- Advance the core, compiler, CLI, LSP, VS Code extension, and coding-agent
+  skill artifacts to 0.7.1 over the Sigil Language and configuration contract
+  0.7.0.
+- Add implementation-ownership discovery with exact component and concept
+  targets, source ranges, cross-language entrypoint resolution, resilient
+  diagnostics, CLI projections, LSP hover/navigation, and watched-file
+  invalidation.
+- Add the compiler workflow with design and implementation focus, semantic
+  readiness and architecture evaluations, structured reports, lifecycle
+  statuses, persisted sessions and history, and proposal workspaces with
+  ReviewGate-aware materialization.
+- Add Markdown and JSON context assembly for direct dependencies, importing
+  files, implementation ownership, bounded sources, and stable diagnostics.
+- Add `sigil retrieve` for deterministic purpose-specific graph selection and
+  aggregated compilation context, including stable evidence identifiers,
+  fingerprints, dependency boundaries, and strongly connected component groups.
+- Add compiler-facing retrieval envelopes so evaluators consume one selected
+  context instead of independently traversing the workspace graph.
+- Extend graph and resolver diagnostics for cross-file expands, component
+  imports, duplicate identities, unreadable implementation sources, and
+  platform-independent path handling.
+- Complete the Sigil 0.6 semantic-unit and formatter tooling integration,
+  including reviewed glossary projections, concept identity reuse, Markdown
+  rendering, and deterministic formatting checks.
+- Add VS Code compilation commands and the validated JSONL bridge over the
+  external compatible Sigil CLI.
 
 ## 0.5.1 - 2026-07-23
 

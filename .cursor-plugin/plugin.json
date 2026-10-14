@@ -1,0 +1,19 @@
+{
+  "name": "sigil",
+  "version": "0.9.0",
+  "description": "Understand, write and review Sigil designs, and check implementations against them",
+  "author": {
+    "name": "Qoherent"
+  },
+  "homepage": "https://github.com/qoherent/sigil",
+  "repository": "https://github.com/qoherent/sigil",
+  "license": "Apache-2.0",
+  "keywords": [
+    "sigil",
+    "design",
+    "contracts",
+    "specification",
+    "skills"
+  ],
+  "displayName": "Sigil"
+}

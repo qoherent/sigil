@@ -88,6 +88,6 @@ Converged exit 0; Drift and Incomplete exit 1. Usage exits 2 and operational
 failures exit 3. Version-1 reports and contexts live at `claims/workspace.align.json`
 and `claims/workspace.align.context.json`; readings live in `claims/implementation/`.
 
-Use [sigil-compute-design](../../integrations/skills/sigil-compute-design/SKILL.md)
-and [sigil-compute-align](../../integrations/skills/sigil-compute-align/SKILL.md)
+Use [sigil-compute-design](../../skills/sigil-compute-design/SKILL.md)
+and [sigil-compute-align](../../skills/sigil-compute-align/SKILL.md)
 for the interpretation loops and guarded write-back.

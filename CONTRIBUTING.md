@@ -12,6 +12,7 @@ they matter.
 
 - [Prerequisites](#prerequisites)
 - [Set up the repository](#set-up-the-repository)
+- [Working on the skills](docs/contributing/README.md)
 - [The validation workflow](#the-validation-workflow)
 - [Focused tasks](#focused-tasks)
 - [Repository boundaries](#repository-boundaries)
@@ -75,6 +76,11 @@ npm 11, which ships with Node 24, prints `npm warn allow-scripts` lines about
 `esbuild` and `keytar` during that install. They are expected and safe to ignore;
 both packages get their platform binaries from optional dependencies rather than
 from the skipped install scripts.
+
+Working on the Sigil skills, or cutting a release? The
+[contributor guide](docs/contributing/README.md) covers building `sigil` and
+`sigilc` from your checkout, loading the checkout's skills into each supported
+agent, the rules for changing a skill, and the release steps.
 
 Confirm the environment before you change anything:
 
@@ -157,12 +163,12 @@ own task:
 | Task                              | Scope                                                                                          |
 | --------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `deno task test:core`             | `@qoherent/sigil-core` — parser, resolver, graph, projections, diagnostics                     |
-| `deno task test:cli`              | `@qoherent/sigil` — commands, argument parsing, output formatting, skill installer             |
+| `deno task test:cli`              | `@qoherent/sigil` — commands, argument parsing, output formatting                                 |
 | `deno task test:lsp`              | `@qoherent/sigil-lsp` — lifecycle, diagnostics, symbols, hover, semantic tokens                |
 | `deno task test:vscode`           | Extension type-check and unit tests. No VS Code launch.                                        |
 | `deno task test:vscode:extension` | Extension integration tests. Launches VS Code.                                                 |
 | `deno task test:skill` | Offline metadata, dependencies, links and 0.9 reference reproduction via [`scripts/validate-skill.ts`](scripts/validate-skill.ts) |
-| `deno task test:skill:native` | Preserved legacy metadata and native command examples via [`scripts/validate-native-skill.ts`](scripts/validate-native-skill.ts) |
+| `deno task test:native:protocol` | Native command examples run on disposable fixtures via [`scripts/validate-native-protocol.ts`](scripts/validate-native-protocol.ts) |
 | `deno task check:vscode`          | Extension type-check alone                                                                     |
 
 To narrow further, call `deno test` directly. Note that each package's task
@@ -195,14 +201,14 @@ orchestration stay outside the toolchain.
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `spec/`                       | The language, configuration, workflow, glossary, and platform-architecture specifications, plus [ADRs](spec/decisions) | The normative definition is [`spec/sigil-reference.md`](spec/sigil-reference.md) with [`spec/sigil.ebnf`](spec/sigil.ebnf); [`spec/sigil-language.md`](spec/sigil-language.md) is the authoring guide. [`spec/language.sigil`](spec/language.sigil) owns the implemented language-version literal. |
 | `packages/core/`              | Parsing, configuration, workspace discovery, resolution, graphs, projections, glossary matching, diagnostics           | Pure and deterministic. No semantic judgment, no network, no interactive behavior.                                                                                                                                                     |
-| `packages/cli/`               | The `sigil` command: authored inspection, structural Design export and skill installation | Uses core language APIs; never invokes sigilc or models. Also owns skill installation. |
+| `packages/cli/`               | The `sigil` command: authored inspection and formatting | Uses core language APIs; never invokes sigilc or models. |
 | `packages/sigilc/` | Native scope, source identity, prepared inputs, disposable worlds, catalogs and fixed semantic gates | Rust; no model runtime or language-specific Implementation adapter. |
 | `packages/lsp/`               | The editor-neutral language server over core                                                                           | LSP 3.18 on stdio.                                                                                                                                                     |
-| `integrations/skills/` | Four source-based 0.9 design skills, the `sigil-egglog` language skill, plus the legacy `sigil` 0.7 native workflow | Shared language pack and evaluator-owned review contract; models execute in the host. |
+| `skills/` | Four source-based 0.9 design skills, the `sigil-egglog` language skill, and the computed and alignment skills | Shared language pack and evaluator-owned review contract; models execute in the host. |
 | `integrations/editor/vscode/` | The VS Code extension: syntax, bundled LSP startup, semantic tokens, component preview                                 | The only Node.js code in the repository.                                                                                                                               |
 | `examples/`                   | `promise` and `slotted`, each an independently configured workspace                                                    | Design-pressure fixtures, excluded from the root workspace. Not products.                                                                                              |
 | `scripts/`                    | Release build and skill validation                                                                                     |                                                                                                                                                                        |
-| `docs/`                       | Adoption pilots and images                                                                                             |                                                                                                                                                                        |
+| `docs/`                       | End-user [install guides](docs/install/README.md), the [contributor guide](docs/contributing/README.md), the quickstart, skill evaluation records, and adoption pilots |                                                                                                                                                                        |
 
 Dependency direction is one-way: `cli` and `lsp` depend on `core`; the extension
 depends on `lsp` and invokes language export/native gates; the skill depends on no
@@ -232,8 +238,8 @@ useful, and worth reading rather than ignoring. Exit codes are `0` clean, `1` er
 diagnostics, `2` bad arguments, `3` host failure.
 
 Placement rules, from [`spec/sigil-reference.md`](spec/sigil-reference.md) and the
-skill's
-[authoring conventions](integrations/skills/sigil/references/authoring-conventions.md):
+`sigil-write` skill's
+[contract prose rules](skills/sigil-write/references/contract-prose.md):
 
 - **Boundary summaries** live in the `_module.sigil` of the workspace root and of
   each declared member — [`_module.sigil`](_module.sigil),
@@ -275,7 +281,7 @@ ingestion, catalogs and Design/Implementation gates. The language CLI does not
 invoke the native compiler or a model on the caller's behalf.
 
 Use the
-[native skill protocol](integrations/skills/sigil/references/compilation-execution.md)
+[computed evaluation protocol](skills/sigil-compute-design/references/computed-evaluation.md)
 for exact commands. External interpreters reconstruct each source from prepared
 inputs; Implementation interpreters receive only source bytes, fixed ontology and
 identity catalog. Keep Design prose, neighboring code and binding files out of
@@ -288,13 +294,13 @@ Closed/Converged exit 0; Disjoint and Drift exit 1 on their respective gates.
 Unavailable comparison remains unset. Tests, ownership comments and a completed
 gate do not individually prove full delivery or faithful reconstruction.
 
-`deno task test:skill:native` checks legacy metadata/references and executes the documented
-native commands on disposable fixtures. Build both tools first with
+`deno task test:native:protocol` executes the documented native commands on
+disposable fixtures. Build both tools first with
 `deno task build:sigilc` and `deno task build:cli`, or set `SIGIL_TEST_LANGUAGE`
 and `SIGIL_TEST_COMPILER` to the intended binaries. The root test task builds its
 prerequisites. Fixed fixture Turtle exercises protocol, not independent
 reconstruction of this repository. Release smoke tests cover all six gate states
-and installation of all four skills from a relocated distribution.
+from a relocated distribution.
 
 The 0.8 foundation check, `deno task test:skill`, needs only read access and no
 Sigil binaries. Run mutation/relocation regressions with
@@ -307,7 +313,7 @@ checks exact reproduction. Only documentary link destinations may change;
 fenced examples and inline code remain source text.
 
 Package checks are distinct from model behavior. Follow the
-[agent evaluation procedure](integrations/skills/sigil-write/evals/README.md),
+[agent evaluation procedure](skills/sigil-write/evals/README.md),
 materialize 0.8 source fixtures only in temporary workspaces, and record actual
 outcomes in [the evidence report](docs/skill-evaluation/sigil-0.8-foundation.md).
 Keep expected answers out of tested agents' inputs and preserve failures and
@@ -371,11 +377,26 @@ the authority on how they relate:
   (`core` 0.8.0, `cli` 0.9.0, and `lsp` 0.8.0).
 - **VS Code extension** — owned by its `package.json`.
 - **Agent skills** — each owns `VERSION` and `compatibility.json` in its
-  `integrations/skills/<name>/` directory. New 0.9 design skills declare language
-  and sibling requirements independently from the legacy native skill.
+  `skills/<name>/` directory. The design skills declare language
+  and sibling requirements independently.
+
+A skill's own `VERSION` follows the
+[rules for skills](docs/contributing/skills.md#when-to-bump-a-version), and a
+release is cut as [the release guide](docs/contributing/releasing.md) describes;
+skill changes reach users only at the next CLI release.
 
 Do not bump a version as a side effect of another change, and do not duplicate a
-version literal into a second file. A tool must reject a `sigilVersion` it does not
+version literal into a second file. The one exception is the agent plugin
+manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`,
+`gemini-extension.json`, `plugin.json` and `package.json`): each carries the CLI
+release version, and `deno task test:plugin-manifests` and
+`scripts/build-cli-release.ts` fail when any of them differs from
+[`packages/cli/deno.json`](packages/cli/deno.json). Agents key plugin updates on
+those versions, so bumping `packages/cli/deno.json` also publishes a plugin
+update; do it only in the release-cut commit. The installer URLs in
+[`skills/sigil-compute-design/references/computed-evaluation.md`](skills/sigil-compute-design/references/computed-evaluation.md)
+are pinned to that same release, are checked the same way, and change only in
+the release-cut commit; that change needs no skill `VERSION` bump. A tool must reject a `sigilVersion` it does not
 explicitly support. Everything here is pre-production; see
 [PRE_RELEASE.md](PRE_RELEASE.md). User-visible changes belong in
 [CHANGELOG.md](CHANGELOG.md).
@@ -451,7 +472,10 @@ Before you open one:
 - the four validation tasks pass locally;
 - any `.sigil` change was proposed and approved before it was written;
 - new behavior carries an ownership annotation pointing at its governing contract;
-- version literals are unchanged unless the change is a deliberate release;
+- a change to text an agent follows in a skill bumps that skill's `VERSION` in the
+  same commit, by the [rules for skills](docs/contributing/skills.md#when-to-bump-a-version);
+  the CLI version, plugin manifests and installer pin change only in a release-cut
+  commit;
 - user-visible changes are noted in [CHANGELOG.md](CHANGELOG.md).
 
 Unsure whether something needs a Sigil proposal, or which boundary should own your

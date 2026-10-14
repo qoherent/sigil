@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sigil Evaluate (0.9)"
+  short_description: "Review compact Sigil 0.9 design commitments"
+  default_prompt: "Use $sigil-evaluate to review this Sigil 0.9 design read-only from its computed claims, reporting consequential findings, commitment-preserving simplifications, computed coverage, and exact review coverage."

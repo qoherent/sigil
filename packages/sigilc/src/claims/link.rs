@@ -188,10 +188,7 @@ pub fn link(input: &DesignInput, basis: &DesignBasis, store: &Path) -> Result<Li
             path: i.path.clone(),
             provider: i.provider.clone(),
             // The kebab-case name the import status serializes to.
-            status: serde_json::to_value(&i.status)
-                .ok()
-                .and_then(|v| v.as_str().map(str::to_owned))
-                .unwrap_or_default(),
+            status: super::findings::serde_name(&i.status),
         })
         .collect();
     unresolved_imports.sort();

@@ -90,7 +90,7 @@ fn bundled_roles_name_every_contract_section_the_export_can_produce() {
 #[test]
 fn bundled_role_descriptions_do_not_drift_from_the_language_authority() {
     let authority =
-        repo_root().join("integrations/skills/sigil-understand/references/understanding.md");
+        repo_root().join("skills/sigil-understand/references/understanding.md");
     let authority =
         fs::read_to_string(&authority).unwrap_or_else(|e| panic!("{}: {e}", authority.display()));
     let expected = role_table(&authority);

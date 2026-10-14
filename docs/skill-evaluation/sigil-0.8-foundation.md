@@ -24,7 +24,7 @@ The complete sibling bundle and fenced fixture inputs were copied to temporary
 workspaces outside authored source discovery. Original absolute paths in the
 reports identify that run's temporary inputs; repeat runs use the fixture's
 workspace-relative layout. No 0.8 `.sigil` fixture was added to the repository.
-[Run instructions](../../integrations/skills/sigil-write/evals/README.md) explain
+[Run instructions](../../skills/sigil-write/evals/README.md) explain
 how to materialize inputs and keep observer expectations out of agent prompts.
 
 ## Understanding and direct evaluation

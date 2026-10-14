@@ -1,0 +1,16 @@
+{
+  "name": "sigil",
+  "owner": {
+    "name": "Qoherent"
+  },
+  "metadata": {
+    "description": "Sigil skills for Cursor"
+  },
+  "plugins": [
+    {
+      "name": "sigil",
+      "source": ".",
+      "description": "Understand, write and review Sigil designs, and check implementations against them"
+    }
+  ]
+}

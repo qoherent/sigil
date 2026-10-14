@@ -168,9 +168,9 @@ Deno.test("missing pinned skill fails before scheduling attempts", async () => {
         outputDir: `${root}/batch`,
         timeoutMs: 1000,
         skillDirs: {
-          computeDir: "integrations/skills/sigil-compute-design",
+          computeDir: "skills/sigil-compute-design",
           understandDir: missing,
-          egglogDir: "integrations/skills/sigil-egglog",
+          egglogDir: "skills/sigil-egglog",
         },
       });
     } catch (cause) {

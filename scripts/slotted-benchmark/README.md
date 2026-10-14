@@ -29,8 +29,8 @@ score.
 - Each model selector must be accepted by its selected CLI.
 - Pi additionally needs the `pi-subagents` extension (see below).
 
-The `deno task slotted-benchmark` command builds `sigilc` and `sigilc` with
-Cargo before running the benchmark.
+The `deno task slotted-benchmark` command builds `sigilc` with Cargo before
+running the benchmark.
 
 ## Run a batch
 

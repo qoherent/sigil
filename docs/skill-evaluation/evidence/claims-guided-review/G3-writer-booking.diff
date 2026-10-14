@@ -1,0 +1,26 @@
+5c5
+<     Let the signed-in user hold a *booking* of a room.
+---
+>     Support room *booking*.
+8c8,9
+<     Booking never changes the range of a *pending booking*.
+---
+>     A *pending booking* must never overlap a *confirmed booking*. Cancelling a
+>     pending booking frees its *range* immediately.
+10,13c11
+<     A pending booking never overlaps a *confirmed booking*. Cancelling a
+<     pending booking releases its range at once.
+< 
+<     A pending booking must not overlap any confirmed booking.
+---
+>     Booking never changes the range of a pending booking.
+16,17c14,15
+<     Booking lets the current user change the range of their own pending
+<     booking.
+---
+>     Booking lets the signed-in user hold a booking.
+>     Booking lets the current user change the range of their own pending booking.
+18a17,19
+>   decisions {
+>     Whether a renter may change the range of a pending booking remains undecided.
+>   }

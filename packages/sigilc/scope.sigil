@@ -2,53 +2,45 @@
 
 component SigilComparisonScope {
   goal {
-    Resolve explicit source membership through *imports and structural ownership*
-    for library callers.
+    Resolve requested roots into reproducible *DesignMembership* and
+    implementation selection for library callers.
   }
 
   constraints {
-    StructuralScope {
-      Use schema 2 exact selections and explicit owner files. _module.sigil is
-      ordinary source with no re-export or directory-import closure. Preserve all
-      Facet references, links, contract roles, exact ranges and selected Tag origins.
-      Imports alone do not prove runtime or semantic dependence.
-    }
+    *StructuralScope* Accept version 1 scope input with workspace-relative design
+    roots and an implementation selection. Reject unknown fields, duplicate or
+    missing roots, paths outside the workspace, and empty selections unless
+    explicitly allowed. compiler.sigil is an ordinary source; imports do not
+    imply runtime calls or semantic dependence.
   }
 
   cases {
-    DependencyClosure {
-      Selecting a file that imports another includes both and reports why the second
-      file is present. Cycles include each source once. Include declarations needed
-      by selected Tags and Facet owners. An unresolved import contributes no target
-      and remains a diagnostic on its own source.
-    }
-    ScopeChanges {
-      Reordering roots changes reported focus order while preserving membership
-      identity. Removing a file from membership does not delete its source or stored
-      reading.
-    }
+    *DependencyClosure* Selecting a source that imports another includes the
+    provider and records why it was included. Cycles include each source once.
+    An unresolved import adds no target and remains a diagnostic on its source.
+
+    *ScopeChanges* Reordering roots changes focus order while preserving
+    membership identity. Removing a source from membership does not delete it or
+    its stored reading.
   }
 
   interface {
-    ScopeInput {
-      Accept a versioned scope containing ordered workspace-relative Design root
-      paths and CompilerInputSelection. Reject unknown fields, duplicate roots,
-      missing roots, paths outside the workspace and accidental empty selection.
-      Intentional emptiness is explicit and visible for each side. Expose resolution
-      as a library capability with no scope command.
-    }
-    FocusOrder {
-      Preserve explicit root order as focus priority. Report dependency additions
-      deterministically after roots with their inclusion reasons. Identify order
-      separately from unordered membership. Ordering does not schedule interpretation.
-    }
-    DesignMembership {
-      Resolve Design roots through transitive imports and structural ownership to
-      a closed set of physical files. Terminate cycles with a visited set. Preserve
-      each authored unit's physical source and canonical owner. Report requested
-      roots separately from dependency additions. Preserve applicable configuration,
-      glossary context, global diagnostics and unresolved reference diagnostics.
-      Do not infer membership from temporary prose or caller metadata.
-    }
+    *ScopeInput* Resolve a versioned scope object containing ordered design roots
+    and a CompilerInputSelection for implementation sources. Report malformed
+    input as an error and expose resolution as a library operation, without
+    adding a scope command.
+
+    *FocusOrder* Preserve requested root order as focus priority. List dependency
+    additions deterministically after roots with their inclusion reasons. Report
+    order separately from unordered membership; order does not schedule
+    interpreters.
+
+    DesignMembership Close roots over resolved import targets, owners of
+    imported names, and owners of entities or Facets in each included source.
+    Include each owner source and record its reason. Preserve physical source
+    and canonical owner for every unit, plus applicable configuration, glossary
+    context, global diagnostics, and unresolved references. Report roots and
+    dependency additions separately; do not infer membership from prose or
+    caller metadata.
   }
 }

@@ -18,4 +18,5 @@ pub mod link;
 pub mod memo;
 pub mod prepare;
 pub mod program;
+pub mod review;
 pub mod vocabulary;

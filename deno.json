@@ -5,11 +5,12 @@
     "./packages/lsp"
   ],
   "lock": true,
+  "nodeModulesDir": "none",
   "imports": {
     "@noble/hashes/blake3.js": "npm:@noble/hashes@2.0.1/blake3.js"
   },
   "tasks": {
-    "fmt": "deno fmt --check deno.json .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json spec/sigil-config.schema.json spec/sigil-glossary.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
+    "fmt": "deno fmt --check deno.json package.json plugin.json gemini-extension.json .claude-plugin .codex-plugin .cursor-plugin .agents/plugins .opencode/plugins .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json spec/sigil-config.schema.json spec/sigil-glossary.schema.json packages/core/deno.json packages/core/src packages/core/tests packages/cli/deno.json packages/cli/src packages/cli/tests packages/lsp/deno.json packages/lsp/src packages/lsp/tests integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
     "lint": "deno lint",
     "generate:language-tables": "deno run --allow-read --allow-write scripts/generate-language-tables.ts",
     "check": "deno check packages/core/src/mod.ts packages/cli/src/main.ts packages/lsp/src/main.ts && deno task check:vscode && deno task check:slotted-benchmark",
@@ -21,9 +22,10 @@
     "test:lsp": "deno task --cwd packages/lsp test",
     "test:vscode": "npm --prefix integrations/editor/vscode test",
     "test:vscode:extension": "deno task build:cli && npm --prefix integrations/editor/vscode run test:extension",
+    "test:plugin-manifests": "deno test --allow-read --allow-write scripts/plugin-manifests_test.ts",
+    "test:release-branch": "deno test --allow-read --allow-write --allow-run --allow-env scripts/advance-release-branch_test.ts",
     "test:skill": "deno run --allow-read scripts/validate-skill.ts",
-    "test:skill:native": "deno run --allow-read --allow-write --allow-run --allow-env scripts/validate-native-skill.ts",
-    "test": "deno task test:sigilc && deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task build:sigilc && deno task test:native:protocol && deno task test:skill && deno task test:skill:native && deno test --allow-read --allow-write scripts/skill-foundation_test.ts && deno task test:slotted-benchmark",
+    "test": "deno task test:sigilc && deno task test:core && deno task test:cli && deno task test:lsp && deno task test:vscode && deno task test:vscode:extension && deno task build:sigilc && deno task test:native:protocol && deno task test:skill && deno test --allow-read --allow-write scripts/skill-foundation_test.ts && deno task test:plugin-manifests && deno task test:release-branch && deno task test:slotted-benchmark",
     "test:slotted-benchmark": "deno task build:sigilc && deno test --allow-read --allow-write --allow-run --allow-env=PATH scripts/slotted-benchmark/*_test.ts",
     "slotted-benchmark:probe": "deno run --allow-read --allow-write --allow-run --allow-env scripts/slotted-benchmark/probe-hosts.ts",
     "slotted-benchmark": "deno task build:sigilc && deno run --allow-read --allow-write --allow-run --allow-env scripts/slotted-benchmark/main.ts",

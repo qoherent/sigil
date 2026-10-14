@@ -1,4 +1,5 @@
 import { basename, dirname, join, resolve } from "node:path";
+import { checkPluginManifests } from "./plugin-manifests.ts";
 
 interface ReleaseTarget {
   readonly deno: string;
@@ -50,6 +51,12 @@ const version = args.version ?? cliManifest.version;
 if (cliManifest.version !== version) {
   throw new Error(
     `Release version ${version} does not match CLI manifest ${cliManifest.version}.`,
+  );
+}
+const manifestErrors = await checkPluginManifests(root);
+if (manifestErrors.length > 0) {
+  throw new Error(
+    `Plugin manifests disagree with the release:\n${manifestErrors.join("\n")}`,
   );
 }
 await Deno.mkdir(output, { recursive: true });
@@ -137,10 +144,6 @@ async function buildTarget(target: ReleaseTarget): Promise<void> {
       join(stage, "bin", target.executable),
       join(root, "packages/cli/src/main.ts"),
     ]);
-    await copyValidSkills(
-      join(root, "integrations/skills"),
-      join(stage, "integrations/skills"),
-    );
     await run([
       Deno.execPath(),
       "run",
@@ -186,29 +189,6 @@ function powershellLiteral(path: string): string {
   return `'${path.replaceAll("'", "''")}'`;
 }
 
-async function copyValidSkills(source: string, target: string): Promise<void> {
-  for await (const entry of Deno.readDir(source)) {
-    if (!entry.isDirectory || entry.isSymlink || entry.name.startsWith(".")) {
-      continue;
-    }
-    const skill = join(source, entry.name);
-    try {
-      if (!(await Deno.stat(join(skill, "SKILL.md"))).isFile) continue;
-    } catch (error) {
-      if (error instanceof Deno.errors.NotFound) continue;
-      throw error;
-    }
-    await copyDirectory(skill, join(target, entry.name));
-  }
-}
-async function copyDirectory(source: string, target: string): Promise<void> {
-  await Deno.mkdir(target, { recursive: true });
-  for await (const entry of Deno.readDir(source)) {
-    const from = join(source, entry.name), to = join(target, entry.name);
-    if (entry.isDirectory) await copyDirectory(from, to);
-    else if (entry.isFile) await Deno.copyFile(from, to);
-  }
-}
 async function run(command: readonly string[], cwd = root): Promise<void> {
   const result = await new Deno.Command(command[0], {
     args: command.slice(1),

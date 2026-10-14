@@ -2,8 +2,8 @@
 
 Sigil remains a pre-production 0.x toolchain. The language packages, native
 compiler, skill, LSP and editor have independent versions owned by their manifests.
-The legacy skill's [compatibility metadata](integrations/skills/sigil/compatibility.json)
-declares supported language, CLI, core and sigilc combinations.
+Each skill's `compatibility.json` declares its supported language, CLI, core
+and sigilc combinations.
 
 Current architecture:
 
@@ -30,7 +30,7 @@ other release targets require their own matching-runner evidence.
 
 The ongoing refactor's complete delivery, semantic comparison and temporary-state
 retirement gate is tracked operationally while the temporary loop documents are
-present; the durable workflow is the repository-owned Sigil skill and native
+present; the durable workflow is the repository-owned Sigil skills and native
 command guide. A pre-release milestone does not waive it. Publishing or
 deploying requires separate authorization.
 
@@ -41,9 +41,7 @@ artifacts for source-based 0.9 design work. They ship together with their bundle
 language authority and declared sibling dependencies. Their artifact versions are independent of the activated 0.9 root workspace and
 updated core, CLI, LSP, editor and native compiler artifacts.
 
-`test:skill` validates this foundation offline. `test:skill:native` checks retained
-legacy material statically; optional runtime checks require explicitly supplied
-compatible old tools. `test:native:protocol` runs the current six-state native
+`test:skill` validates this foundation offline. `test:native:protocol` runs the current six-state native
 protocol smoke and is included in aggregate tests and relocated CLI acceptance. Behavioral acceptance also needs observed fresh
 agent runs, recorded in [the foundation evidence report](docs/skill-evaluation/sigil-0.8-foundation.md).
 The evaluator stays advisory and read-only. Writer automation is supported only

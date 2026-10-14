@@ -1,6 +1,5 @@
 import { validateNativeProtocol } from "./validate-native-protocol.ts";
 import { join, resolve } from "node:path";
-import { validateFoundation } from "./validate-skill.ts";
 import {
   deepStrictEqual as assertEquals,
   ok as assert,
@@ -14,17 +13,21 @@ const scratch = await Deno.makeTempDir({ prefix: "sigil release smoke 空 " });
 try {
   const relocated = join(scratch, "bundle with spaces and Ω");
   await copyDirectory(distribution, relocated);
-  for (const name of ["lib", "repos", "packages", "node_modules"]) {
+  for (
+    const name of [
+      "lib",
+      "repos",
+      "packages",
+      "node_modules",
+      "integrations",
+      "skills",
+    ]
+  ) {
     assert(
       !await exists(join(relocated, name)),
       `Unexpected release payload: ${name}`,
     );
   }
-  assert(await exists(join(relocated, "integrations/skills/sigil/SKILL.md")));
-  await validateFoundation(join(relocated, "integrations/skills"));
-  assert(
-    !await exists(join(relocated, "integrations/skills/sigil-anchor-indexer")),
-  );
   const suffix = Deno.build.os === "windows" ? ".exe" : "";
   const language = join(relocated, "bin", `sigil${suffix}`);
   const compiler = join(relocated, "bin", `sigilc${suffix}`);
@@ -80,25 +83,6 @@ try {
   };
   const version = (await run(language, ["--version"])).trim();
   assert(/^\d+\.\d+\.\d+$/.test(version));
-  const catalog = JSON.parse(await run(language, ["skill", "list"]));
-  assertEquals(catalog.skills, [
-    "sigil",
-    "sigil-align",
-    "sigil-compute-align",
-    "sigil-compute-design",
-    "sigil-egglog",
-    "sigil-evaluate",
-    "sigil-understand",
-    "sigil-write",
-  ]);
-  assertEquals(
-    catalog.catalog.find((s: { name: string }) => s.name === "sigil")
-      .compatibility.languageCompatible,
-    false,
-  );
-  await run(language, ["skill", "install", "--project", "--agent", "codex"]);
-  await validateFoundation(join(scratch, ".agents/skills"));
-  assert(await exists(join(scratch, ".agents/skills/sigil-align/SKILL.md")));
   const compilerVersion = (await run(compiler, ["--version"])).trim();
   assert(/^sigilc \d+\.\d+\.\d+$/.test(compilerVersion));
   await run(language, ["check", fixture, "--format", "json"]);

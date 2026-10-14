@@ -242,10 +242,10 @@ export async function runBatch(options: BatchOptions): Promise<BatchManifest> {
   const sigilc = options.sigilcExecutable ??
     join(repoRoot, "packages/sigilc/target/debug/sigilc");
   const skills = options.skillDirs ?? {
-    computeDir: join(repoRoot, "integrations/skills/sigil-compute-design"),
-    understandDir: join(repoRoot, "integrations/skills/sigil-understand"),
-    egglogDir: join(repoRoot, "integrations/skills/sigil-egglog"),
-    alignDir: join(repoRoot, "integrations/skills/sigil-compute-align"),
+    computeDir: join(repoRoot, "skills/sigil-compute-design"),
+    understandDir: join(repoRoot, "skills/sigil-understand"),
+    egglogDir: join(repoRoot, "skills/sigil-egglog"),
+    alignDir: join(repoRoot, "skills/sigil-compute-align"),
   };
   await Deno.mkdir(dirname(outputDir), { recursive: true });
   await Deno.mkdir(outputDir);

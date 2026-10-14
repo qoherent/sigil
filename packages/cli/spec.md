@@ -119,37 +119,12 @@ ungrouped/Tag-grouped contracts are valid and produce no grouping warning.
 
 ## 7. Commands
 
-### `sigil skill list` and `sigil skill install`
+### Workspace discovery and symlinks
 
-`skill list` enumerates immediate directories containing `SKILL.md` in the
-running Sigil installation's `integrations/skills` directory without changing
-the filesystem.
-
-`skill install` installs globally by default. Codex, OpenCode, and Pi share
-`~/.agents/skills`; Claude Code uses `~/.claude/skills`. `--project` selects the
-equivalent locations under the current repository. `--agent` limits the target
-to one supported agent.
-
-Project installation creates skill-directory `.gitignore` entries. Existing
-unrelated ignore rules are preserved. Installation records managed destinations
-so a later selected CLI version can update them while refusing to replace
-unmanaged files, directories, or links. Relative directory links are preferred;
-a managed copy is used when the host does not permit directory links.
-
-The installed skill source is resolved from the running CLI installation, not
-from the target repository. A versioned binary distribution should place the
-binary at `<version>/bin/sigil` and its skills at
-`<version>/integrations/skills`. Source-based development installs may resolve
-the repository's top-level `integrations/skills` directory.
-
-Skill commands accept no positional path beyond `list` or `install` and do not
-accept `--root`. CLI workspace discovery does not traverse symlink entries, so
-linked project skills are not loaded as duplicate workspace sources.
-
-Catalog and installation results include declared language/tool requirements,
-language compatibility, and `runtimeValidation: "not-run"`. The retained legacy
-skill requirements remain frozen and incompatible with the new language
-toolchain.
+The CLI installs no agent skills; they install through each agent's own plugin
+system (see `docs/install/`). CLI workspace discovery does not traverse symlink
+entries, so a linked copy of a directory is not loaded as duplicate workspace
+sources.
 
 ### `sigil parse <file>`
 
@@ -377,7 +352,7 @@ remains reusable by LSP and editor integrations.
 
 Commands remain non-interactive. Model interaction and orchestration are
 external. Init creates missing workspace metadata, fmt explicitly formats
-authored source, and skill installation writes the selected skill destinations.
+authored source.
 Semantic commands, provider/profile authoring, migrations, compiler events and
 runtime doctor are removed, with no forwarding command. Init writes an empty
 tools object; normal workspace configuration discovery, validation and version

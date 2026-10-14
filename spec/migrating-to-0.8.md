@@ -403,8 +403,6 @@ must be migrated before serving as Tag-language syntax examples. See the
 | [Workspace pipeline](../packages/core/src/pipeline.sigil) | Explicit stage ordering and separate behavior owners. |
 | [Model summary](../packages/core/src/model/_module.sigil) | Independently owned domains; replace the directory import surface with explicit Tag imports. |
 | [Core summary](../packages/core/_module.sigil) | Package responsibility without importing whole component namespaces. |
-| [Design conversation](../integrations/skills/sigil/design-conversation.sigil) | Several recurring concerns across all relevant contracts. |
-| [Skill summary](../integrations/skills/sigil/_module.sigil) | Workflow responsibilities with explicit public Tag dependencies. |
 
 ## Implementation follow-through and future extensions
 

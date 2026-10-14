@@ -65,7 +65,53 @@ impl Saturated {
     pub fn table(&self, name: &str) -> &[Vec<Value>] {
         self.tables.get(name).map(Vec::as_slice).unwrap_or_default()
     }
+
+    /// The flow graphs the program minted, read from the `entity` table.
+    pub(super) fn graphs(&self) -> impl Iterator<Item = Graph> + '_ {
+        self.table("entity")
+            .iter()
+            .filter(|row| text(row, 1) == "Graph")
+            .map(|row| Graph {
+                id: text(row, 0),
+                label: text(row, 2),
+                owner: text(row, 3),
+                source: text(row, 4),
+            })
+    }
+
+    /// Why each fact holds, read from the `because` table: one reason per law
+    /// and witness, with `asserted` naming the claim that states it.
+    pub(super) fn reasons(&self) -> impl Iterator<Item = Reason> + '_ {
+        self.table("because").iter().map(|row| Reason {
+            subject: text(row, 0),
+            relation: text(row, 1),
+            object: text(row, 2),
+            law: text(row, 3),
+            witness: text(row, 4),
+        })
+    }
 }
+
+/// One flow graph: a component section's Logic steps, as the program minted it.
+pub(super) struct Graph {
+    pub id: String,
+    pub label: String,
+    /// The owning component, empty when the row carries none.
+    pub owner: String,
+    pub source: String,
+}
+
+/// One row of `because`: a fact, the law that holds it, and its witness.
+pub(super) struct Reason {
+    pub subject: String,
+    pub relation: String,
+    pub object: String,
+    pub law: String,
+    pub witness: String,
+}
+
+/// The law a claim's own statement of a fact is recorded under.
+pub(super) const ASSERTED: &str = "asserted";
 
 /// One cell of a saturated table row, as the exported rows encode it.
 ///

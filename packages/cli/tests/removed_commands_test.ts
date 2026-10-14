@@ -31,6 +31,24 @@ Deno.test("removed semantic routes reject usage and are absent from CLI help", a
   assert(exported.stderr.includes('Unknown command "export"'));
 });
 
+// @sigil tests packages/cli/_module.sigil::SigilCli::CliInvocation interface,logic,cases
+Deno.test("the skill command group is removed and absent from CLI help", async () => {
+  for (
+    const args of [
+      ["skill"],
+      ["skill", "list"],
+      ["skill", "install", "--project"],
+    ]
+  ) {
+    const result = await runCli(args);
+    assertEquals(result.exitCode, 2, args.join(" "));
+    assertEquals(result.stdout, "");
+    assert(result.stderr.includes('Unknown command "skill"'));
+  }
+  const help = await runCli(["--help"]);
+  assert(!/^\s+skill\s/m.test(help.stdout));
+});
+
 Deno.test("legacy compilation/config/runtime commands and event flags are absent", async () => {
   const help = await runCli(["--help"]);
   for (const command of ["compile", "config", "doctor"]) {

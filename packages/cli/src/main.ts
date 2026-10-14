@@ -9,7 +9,6 @@ const HELP: Readonly<Record<HelpTopic, string>> = {
   root: `Usage: sigil <command> [options]
 
 Commands:
-  skill             List or install bundled agent skills
   init              Create a workspace configuration
   version           Report workspace and contract versions
   parse             Parse one Sigil file
@@ -24,33 +23,6 @@ Commands:
 Options:
   --help            Show this help
   --version         Show the sigil version
-`,
-  skill: `Usage: sigil skill <subcommand> [options]
-
-Subcommands:
-  list              List bundled agent skills
-  install           Install bundled agent skills
-
-Options:
-  --help            Show this help
-`,
-  "skill-list": `Usage: sigil skill list [options]
-
-Options:
-  --format <value>  Output json, text, or markdown
-  --pretty          Pretty-print JSON output
-  --quiet           Suppress command output
-  --help            Show this help
-`,
-  "skill-install": `Usage: sigil skill install [options]
-
-Options:
-  --project         Install skills into the current repository
-  --agent <value>   Install for codex, claude, opencode, pi, or all
-  --format <value>  Output json, text, or markdown
-  --pretty          Pretty-print JSON output
-  --quiet           Suppress command output
-  --help            Show this help
 `,
   init: `Usage: sigil init [path] [options]
 

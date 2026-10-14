@@ -4,7 +4,8 @@
 //! options. The external interpretation is an input the caller supplies and can
 //! supply again, which is what makes a run reproducible.
 use super::{
-    canon, context, dialect, findings, guidance, identity, link, memo, prepare, program, vocabulary,
+    canon, context, dialect, findings, guidance, identity, link, memo, prepare, program, review,
+    vocabulary,
 };
 use crate::{
     basis::DesignBasis,
@@ -15,7 +16,7 @@ use crate::{
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 const MAX_BINDING_BYTES: u64 = 16_000_000;
@@ -49,6 +50,9 @@ readings. Run it after each source has been prepared, interpreted and ingested.
 --source narrows the report to the findings that source authored part of;
 completeness is always the workspace's. A unit with no valid reading, or an
 import that did not resolve, makes the state incomplete and a gate failure.
+Beside its report and judgment context, check writes a review view that names
+every unit, claim and finding by a short alias and carries no prose, and an
+evidence file that maps each alias to its identity and exact source bytes.
 
 Gate exits: 0 = pass or warning, 1 = a gate failure (a computed Disjoint
 verdict, an incomplete check, a refused artifact, or a saturation-limit
@@ -208,10 +212,36 @@ fn check(source: Option<&str>, root: &str, store: &Path) -> Output {
     );
     context.source = report.source.clone();
 
-    let report_path = findings::store(&report, store, &report.source, findings::LINKED_SUFFIX)
-        .map_err(operational)?;
-    let context_path = findings::store(&context, store, &report.source, context::LINKED_SUFFIX)
-        .map_err(operational)?;
+    // The review view hashes the exact bytes written beside it, so each
+    // artifact is encoded once and those bytes are what lands on disk.
+    let (report_path, report_artifact) =
+        write_linked(&report, store, &report.source, findings::LINKED_SUFFIX)?;
+    let (context_path, context_artifact) =
+        write_linked(&context, store, &report.source, context::LINKED_SUFFIX)?;
+    let bundle = review::build(&review::Inputs {
+        input: &input,
+        linked: &linked,
+        world: &world,
+        report: &report,
+        context: &context,
+        filter: source,
+        report_artifact,
+        context_artifact,
+    });
+    let view_path = findings::store_bytes(
+        bundle.view.as_bytes(),
+        store,
+        &report.source,
+        review::VIEW_SUFFIX,
+    )
+    .map_err(operational)?;
+    let evidence_path = findings::store(
+        &bundle.evidence,
+        store,
+        &report.source,
+        review::EVIDENCE_SUFFIX,
+    )
+    .map_err(operational)?;
 
     let code = match report.state {
         findings::State::Disjoint | findings::State::Incomplete => 1,
@@ -228,11 +258,26 @@ fn check(source: Option<&str>, root: &str, store: &Path) -> Output {
             "unresolvedImports": linked.unresolved_imports.len(),
             "report": report_path,
             "judgmentContext": context_path,
+            "reviewView": view_path,
+            "reviewEvidence": evidence_path,
             "workspaceDigest": linked.workspace_digest,
             "vocabularyGeneration": vocabulary::VOCABULARY_GENERATION,
             "guidanceFingerprint": report.identity.guidance_fingerprint,
         }),
     )
+}
+
+/// Write one linked artifact and name the exact bytes written.
+fn write_linked(
+    value: &impl serde::Serialize,
+    store: &Path,
+    source: &str,
+    suffix: &str,
+) -> Result<(PathBuf, review::Artifact), (u8, String)> {
+    let bytes = findings::encode(value).map_err(operational)?;
+    let path = findings::store_bytes(&bytes, store, source, suffix).map_err(operational)?;
+    let named = review::Artifact::new(&findings::file_name(source, suffix), &bytes);
+    Ok((path, named))
 }
 
 fn ingest(options: &BTreeMap<String, String>, root: &str, store: &Path) -> Output {

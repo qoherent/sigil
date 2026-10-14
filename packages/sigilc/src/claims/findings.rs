@@ -247,10 +247,8 @@ fn derive(request: &Request, facts: &[Fact], world: &Saturated) -> Vec<Finding> 
     // component's the flow's component can never answer it; say so, because the
     // fix is the guarantee in that component's interface.
     let graph_owner: BTreeMap<String, String> = world
-        .table("entity")
-        .iter()
-        .filter(|row| text(row, 1) == "Graph")
-        .map(|row| (text(row, 0), text(row, 3)))
+        .graphs()
+        .map(|graph| (graph.id, graph.owner))
         .collect();
     for row in world.table("unguarded-flow") {
         let (claim, graph, object) = (text(row, 0), text(row, 1), text(row, 2));
@@ -606,13 +604,56 @@ pub(crate) fn store(
     source: &str,
     suffix: &str,
 ) -> Result<PathBuf, String> {
-    let dir = store_path(root);
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let path = dir.join(format!("{}{suffix}", source.replace(['/', '\\', ':'], "_")));
+    store_bytes(&encode(value)?, root, source, suffix)
+}
+
+/// The exact bytes `store` writes for a value.
+pub(crate) fn encode(value: &impl Serialize) -> Result<Vec<u8>, String> {
     let mut bytes = serde_json::to_vec_pretty(value).map_err(|e| e.to_string())?;
     bytes.push(b'\n');
+    Ok(bytes)
+}
+
+/// The file name an artifact for `source` takes under the store.
+///
+/// Percent-encodes only the characters a file name cannot carry, and `%`
+/// itself, so two sources never share a name (`a/b.sigil` and `a_b.sigil`
+/// once did) and a name without them, such as `workspace`, stays as written.
+pub(crate) fn file_name(source: &str, suffix: &str) -> String {
+    let mut name = String::with_capacity(source.len() + suffix.len());
+    for c in source.chars() {
+        match c {
+            '%' => name.push_str("%25"),
+            '/' => name.push_str("%2F"),
+            '\\' => name.push_str("%5C"),
+            ':' => name.push_str("%3A"),
+            c => name.push(c),
+        }
+    }
+    name.push_str(suffix);
+    name
+}
+
+/// Write bytes already encoded under the store this component owns.
+pub(crate) fn store_bytes(
+    bytes: &[u8],
+    root: &Path,
+    source: &str,
+    suffix: &str,
+) -> Result<PathBuf, String> {
+    let dir = store_path(root);
+    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let path = dir.join(file_name(source, suffix));
     std::fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(path)
+}
+
+/// The name a string enum serializes to, such as a state or a finding class.
+pub(crate) fn serde_name(value: &impl Serialize) -> String {
+    serde_json::to_value(value)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .unwrap_or_default()
 }
 
 /// Attach a repeat comparison to a report.

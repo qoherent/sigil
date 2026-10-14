@@ -1,5 +1,4 @@
 @packages/cli/src/retrieval-markdown.sigil from SigilRetrievalMarkdown import { RetrievalMarkdownProjection }
-@packages/cli/src/installer.sigil from SkillInstaller import { SkillCatalog, SkillInstallation }
 @packages/core/src/implementation-ownership.sigil from SigilImplementationOwnership import { OwnedImplementationLookup, OwnershipDiagnostics, fallback, selected sections, unknown-target }
 @packages/core/src/glossary.sigil from SigilGlossaryEngine import { GlossaryInspection }
 @packages/core/src/context-retrieval.sigil from SigilContextRetrieval import { PurposeRetrievalRequest, PurposeRetrievalResult, component name }
@@ -20,9 +19,9 @@ component SigilCli {
     Expose *deterministic Sigil language* and workspace operations to agents, CI,
     scripts, debugging and review workflows through a non-interactive command line.
 
-    Use CorePackage for language operations. Keep
-    skill installation separate. Models and operators invoke sigilc directly for
-    semantic compilation; this language CLI owns no compiler facade.
+    Use CorePackage for language operations. Models and operators invoke sigilc
+    directly for semantic compilation; this language CLI owns no compiler
+    facade.
   }
 
   logic {
@@ -41,21 +40,6 @@ component SigilCli {
 
       --version prints the *CLI artifact version* from packages/cli/deno.json without
       workspace discovery.
-    }
-
-    CliSkillCatalog {
-      skill list delegates bundled-skill discovery to SkillCatalog and reports valid
-      skills with supported installation targets without changing the filesystem.
-    }
-
-    CliSkillInstallation {
-      skill install delegates installation to SkillInstallation.
-
-      skill install uses global scope and all *supported agents* by default.
-
-      --project selects the *current repository* and --agent limits installation to
-      one
-      named agent.
     }
 
     WorkspaceInitialization {
@@ -99,7 +83,7 @@ component SigilCli {
 
       check reports core warnings, *hints*, and errors without reinterpreting them.
 
-      Workspace source discovery skips symlink entries so installed skills cannot
+      Workspace source discovery skips symlink entries so linked copies cannot
       re-enter the workspace as *duplicate Sigil sources*.
 
       A configuration error prevents source loading and parse JSON reports document:
@@ -205,11 +189,6 @@ component SigilCli {
       obtains complete provider context before interpreting imports or wrapping
       prose; validate every selected candidate against the same provider snapshot
       before the existing all-source write preflight.
-
-      Catalog and installation output retain all four bundled skills. Label the
-      *retained sigil skill* as legacy 0.7 with its frozen incompatible tool
-      requirements; do not claim compatibility with the current binaries. Current
-      understand/write/evaluate skills use their shared 0.9 pack.
     }
 
     ArtifactVersionOwnership assigns the CLI artifact version to
@@ -299,8 +278,6 @@ component SigilCli {
       invocation with exit code 3 before any write. This preflight does not promise
       rollback after a filesystem failure during replacement.
 
-      Skill commands do not require or modify ConfigFile.
-
       glossary is a read-only workspace inspection command.
     }
 
@@ -320,10 +297,6 @@ component SigilCli {
       invalid fmt usage exits with code 2; a *CLI runtime failure* or
       *filesystem failure*
       exits with code 3.
-    }
-
-    CliSkillInstallation {
-      Skill installation never overwrites unmanaged files, *directories*, or links.
     }
 
     ExitStatus {
@@ -357,17 +330,6 @@ component SigilCli {
       with help for the longest recognized command path.
 
       Explicit help succeeds without *required operands* or workspace discovery.
-    }
-
-    CliSkillCatalog {
-      skill list includes *valid bundled skills* and excludes directories without
-      SKILL.md.
-    }
-
-    CliSkillInstallation {
-      *Default installation targets Codex*, Claude Code, OpenCode, and Pi.
-
-      --project changes only skill destinations inside the current repository.
     }
 
     WorkspaceInitialization {
@@ -539,20 +501,6 @@ component SigilCli {
       *sigil --version* has this invocation:
       ```text
       sigil --version
-      ```
-    }
-
-    SkillCatalogCommand {
-      The SkillCatalog adapter exposes the *sigil skill list* invocation:
-      ```text
-      sigil skill list
-      ```
-    }
-
-    SkillInstallationCommand {
-      The SkillInstallation adapter exposes the *sigil skill install* invocation:
-      ```text
-      sigil skill install [--project] [--agent codex|claude|opencode|pi|all]
       ```
     }
 
@@ -802,8 +750,7 @@ component SigilCli {
       source mutation through explicit fmt invocation.
 
       Scope: Governs version, parse, check, glossary, graph, context, render, init,
-      fmt and fmt --check; excludes *explicitly requested skill-installation side*
-      effects.
+      fmt and fmt --check.
 
       Trade-offs: Initialization performs bounded metadata creation and formatting
       performs *explicit source* rewrites, while inspection provides no automatic

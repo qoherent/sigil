@@ -1,0 +1,17 @@
+8c8
+<     Booking never changes the range of a *pending booking*.
+---
+>     Booking never changes a *pending booking range*.
+10,13c10,11
+<     A pending booking never overlaps a *confirmed booking*. Cancelling a
+<     pending booking releases its range at once.
+< 
+<     A pending booking must not overlap any confirmed booking.
+---
+>     A *pending booking* never overlaps a *confirmed booking*, and cancelling
+>     a pending booking releases its *range reservation* immediately.
+16,17c14
+<     Booking lets the current user change the range of their own pending
+<     booking.
+---
+>     Booking lets the signed-in user change their own pending booking range.

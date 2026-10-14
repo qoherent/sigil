@@ -7,11 +7,6 @@ import type {
 import type { CommandRequest, ContextRequest } from "./args.ts";
 import { CoreAdapter } from "./core-adapter.ts";
 import {
-  installSkills,
-  type InstallSkillsOptions,
-  listInstalledSkills,
-} from "./installer.ts";
-import {
   type CommandResult,
   diagnosticCounts,
   workspaceMetadata,
@@ -20,14 +15,9 @@ import { renderWorkspaceMarkdown } from "./markdown.ts";
 
 export interface CommandHandlerOptions {
   readonly core?: CoreAdapter;
-  readonly install?: InstallSkillsOptions;
 }
 
 /**
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillCatalogCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillCatalog logic,cases
- * @sigil implements packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
- * @sigil implements packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInitialization interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::WorkspaceInspection interface,logic,cases
  * @sigil implements packages/cli/_module.sigil::SigilCli::GlossaryInspectionCommand interface
@@ -40,23 +30,6 @@ export async function runCommand(
   options: CommandHandlerOptions = {},
 ): Promise<CommandResult> {
   const core = options.core ?? new CoreAdapter();
-  if (request.command === "skill-list") {
-    const result = await listInstalledSkills(options.install?.sourceDirectory);
-    return {
-      command: "skill-list",
-      ...result,
-      supportedAgents: ["codex", "claude", "opencode", "pi"],
-      diagnostics: [],
-    };
-  }
-  if (request.command === "skill-install") {
-    const result = await installSkills({
-      ...options.install,
-      scope: request.project ? "project" : "global",
-      agents: request.agents,
-    });
-    return { command: "skill-install", ...result, diagnostics: [] };
-  }
   if (request.command === "init") {
     const result = await core.initConfig(
       request.path,

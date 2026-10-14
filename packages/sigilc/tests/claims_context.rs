@@ -120,7 +120,7 @@ fn an_unfilled_promise_names_what_raised_it_and_where_it_is_stated() {
     let base_interface = base_interface();
     // R22, and the one missing-detail admission element that is a fact:
     // "The existing promise or supplied intent that makes the omission
-    // relevant" (integrations/skills/sigil-evaluate/references/design-review.md).
+    // relevant" (skills/sigil-evaluate/references/design-review.md).
     let (request, _, context) = run(&format!(
         "(claim {base_interface:?} \"Base\" \"requires\" \"result\" \"required\" \"true\")\n"
     ));
@@ -152,7 +152,7 @@ fn an_unfilled_promise_names_what_raised_it_and_where_it_is_stated() {
 
     // The admission element this satisfies is really in that document.
     let rules = fs::read_to_string(
-        repo_root().join("integrations/skills/sigil-evaluate/references/design-review.md"),
+        repo_root().join("skills/sigil-evaluate/references/design-review.md"),
     )
     .unwrap();
     assert!(

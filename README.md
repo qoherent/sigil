@@ -36,15 +36,15 @@ before running it, download the script first instead of piping it directly to a
 shell. Every archive is verified against the release's SHA-256 manifest before
 installation.
 
-Install the complete Sigil skill bundle globally for Codex, Claude Code, OpenCode, and
-Pi:
+The Sigil skills install separately, through your coding agent's own plugin
+system, with no `sigil` binary needed. Claude Code, Codex, OpenCode, Pi, Cursor,
+and Gemini CLI or Antigravity each have an [install guide](docs/install/README.md).
+For example, in Claude Code:
 
-```bash
-sigil skill install
+```text
+/plugin marketplace add qoherent/sigil#release
+/plugin install sigil@sigil
 ```
-
-Use `sigil skill install --project` for repository-local installation, or
-`--agent codex|claude|opencode|pi` to target one agent.
 
 VS Code extension releases are currently available as manually installable
 `.vsix` files on the
@@ -587,19 +587,22 @@ The problem statement that lead us to Sigil is captured in [PROBLEM.md](PROBLEM.
 | Trying Sigil for the first time  | [Quickstart](docs/quickstart.md)                                                        |
 | Setting up a repository properly | [Setting Up A Project](docs/setting-up-a-project.md)                                    |
 | Code exists, contracts do not    | [Setting Up A Project](docs/setting-up-a-project.md#adopting-into-an-existing-codebase) |
-| Designing something new          | [Greenfield Design](integrations/skills/sigil/references/greenfield-design.md)          |
+| Designing something new          | [sigil-write](skills/sigil-write/SKILL.md)                                 |
 | Writing Sigil, need the syntax   | [Language Guide](spec/sigil-language.md)                                        |
 | Tuning `.sigil/config.json`      | [Config Reference](spec/sigil-config.md)                                                |
 | Upgrading an existing workspace  | [Compatibility](COMPATIBILITY.md), then the `spec/migrating-to-*.md` for your target    |
 | Changing Sigil itself            | [CONTRIBUTING.md](CONTRIBUTING.md)                                                      |
+| Changing the skills or cutting a release | [Contributor guide](docs/contributing/README.md)                                |
 
-The brownfield and greenfield procedures are written for a coding agent running
-the bundled skill. They are readable on their own, but you get them applied for
-you by installing the skill above.
+Greenfield design is the job of the `sigil-write` skill. The brownfield
+procedure is written for a coding agent running the Sigil skills; it is readable
+on its own in Setting Up A Project.
 
 ## Setup for development
 
-For Contributors using the codebase directly, use the following.
+For Contributors using the codebase directly, use the following. Working on the
+skills? The [contributor guide](docs/contributing/README.md) also covers loading
+the checkout into your agent.
 
 1. Clone the repo:
 
@@ -627,6 +630,10 @@ GitHub.
 deno task --cwd packages/cli install
 sigil --version
 ```
+
+Build the native compiler, `sigilc`, from the same clone with
+`deno task build:sigilc`; it lands in `packages/sigilc/target/debug`, which you put
+on your `PATH`.
 
 The installed command runs this clone, so it follows whichever branch is checked
 out here. To pin one instead, add a detached worktree and install it under its
@@ -683,7 +690,6 @@ Open design questions are tracked in
 
 ## Repository Layout
 
-Legacy skill sources remain retained but excluded from active discovery.
 The root [.sigil/config.json](./.sigil/config.json) defines this repository as a
 Sigil 0.9.0 workspace and excludes the independent example projects. The root
 [_module.sigil](./_module.sigil) is an ordinary source containing the
@@ -744,28 +750,34 @@ repository.
 
 ## Coding-Agent Skills
 
-The bundle provides four Sigil 0.9 design entry points, an implementation
+The skills provide four Sigil 0.9 design entry points, an implementation
 alignment skill, its computed partner, and one egglog language skill:
 
 | Skill | Use it to |
 | --- | --- |
-| [sigil-understand](integrations/skills/sigil-understand/SKILL.md) | Explain intent, contract roles, Tag ownership, and relevant context. |
-| [sigil-evaluate](integrations/skills/sigil-evaluate/SKILL.md) | Review design read-only for consequential problems and useful simplification. |
-| [sigil-compute-design](integrations/skills/sigil-compute-design/SKILL.md) | Run the claims loop on an existing design and hand back the computed Coherent, Loose, Disjoint, or Incomplete ingest state with findings, distinct from advisory review. |
-| [sigil-write](integrations/skills/sigil-write/SKILL.md) | Write compact contracts and apply supported corrections through independent delegated review. |
-| [sigil-align](integrations/skills/sigil-align/SKILL.md) | Review and repair a selected component's implementation against its accepted contract, then report code and test evidence. |
-| [sigil-compute-align](integrations/skills/sigil-compute-align/SKILL.md) | Run the design-first computed implementation check and hand back Closed, Converged, Drift, or Incomplete with findings and proposed excludes. |
-| [sigil-egglog](integrations/skills/sigil-egglog/SKILL.md) | Teach egglog/datalog for claims data-only rows and `.egg` law programs. |
+| [sigil-understand](skills/sigil-understand/SKILL.md) | Explain intent, contract roles, Tag ownership, and relevant context. |
+| [sigil-evaluate](skills/sigil-evaluate/SKILL.md) | Review design read-only from its computed claims for consequential problems and useful simplification. |
+| [sigil-compute-design](skills/sigil-compute-design/SKILL.md) | Run the claims loop on an existing design and hand back the computed Coherent, Loose, Disjoint, or Incomplete ingest state with findings, distinct from advisory review. |
+| [sigil-write](skills/sigil-write/SKILL.md) | Write compact contracts and apply supported corrections through independent delegated review. |
+| [sigil-align](skills/sigil-align/SKILL.md) | Review and repair a selected component's implementation against its accepted contract, then report code and test evidence. |
+| [sigil-compute-align](skills/sigil-compute-align/SKILL.md) | Run the design-first computed implementation check and hand back Closed, Converged, Drift, or Incomplete with findings and proposed excludes. |
+| [sigil-egglog](skills/sigil-egglog/SKILL.md) | Teach egglog/datalog for claims data-only rows and `.egg` law programs. |
 
 The four design skills and `sigil-align` start at artifact version 0.1.0 and
 share the bundled 0.9.0 normative reference and grammar. `sigil-egglog` starts
-at 0.1.0 with no design-skill dependency. Install the complete catalog with
-`sigil skill install`
-(or `--project`); writer and evaluator require their sibling reference files.
+at 0.1.0 with no design-skill dependency. Install the complete set through your
+agent's [install guide](docs/install/README.md); writer and evaluator require
+their sibling reference files.
 `sigil-compute-design` requires its declared siblings `sigil-understand` and
 `sigil-egglog`; it routes only explicit claims or computed-check requests, so a
 generic review stays on `sigil-evaluate`. It needs the `sigilc` binary and
 a host that can delegate a fresh child.
+`sigil-evaluate` (0.2.0) requires `sigil-understand` and `sigil-compute-design`;
+`sigil-write` (0.2.0) also requires `sigil-evaluate`. Before judging, they run
+`sigil-compute-design`'s review preparation, which reuses stored readings and
+ends with one linked `sigilc check`. The judge reads that check's compact
+review view and reads prose through its verified byte ranges. Without `sigilc`
+both continue from the sources and report computed coverage as unavailable.
 `sigil-compute-align` starts at 0.1.0 and requires `sigil-compute-design`,
 `sigil-understand`, and `sigil-egglog`, plus `sigilc` and fresh-child delegation.
 It needs configured implementation selection and proposes excludes as output only;
@@ -774,7 +786,8 @@ a plain implementation review stays on `sigil-align`.
 Use it for implementation conformance and determinate code repairs; use
 `sigil-evaluate` for read-only design review. A consequential contract change
 routes through `sigil-write` and independent design review. `sigil-align`
-uses contract, code, and test evidence; it does not require `sigilc`.
+uses contract, code, and test evidence; it does not require `sigilc`, and a
+design review it routes through `sigil-write` continues source-only without it.
 
 Writing and evaluation use a verified compatible CLI when available. The writer
 runs `check`, formats only authored files, and rechecks before capturing inputs
@@ -785,7 +798,7 @@ choices, rechecks review freshness, and provides an independently unreviewed dra
 and portable handoff if delegation cannot complete. Static package checks and
 [observed agent evaluations](docs/skill-evaluation/sigil-0.8-foundation.md) provide
 separate evidence. Mechanical checks do not establish design coherence or code
-conformance. The [mechanical fixtures](integrations/skills/sigil-write/evals/mechanical-validation-fixture.md)
+conformance. The [mechanical fixtures](skills/sigil-write/evals/mechanical-validation-fixture.md)
 cover CLI-enabled behavior separately from the earlier offline observations.
 The [mechanical validation observations](docs/skill-evaluation/sigil-mechanical-validation.md)
 record actual commands, independent reviews, input identities, and limitations.
@@ -805,55 +818,8 @@ Overlapping targets are deduplicated; every target and the combined result
 validate before any write. Workspace checks may report errors outside the
 selected files, but formatting writes only changed selected `.sigil` files.
 
-### Legacy Sigil 0.7 native workflow
-
-The existing `sigil` skill remains at its own artifact version, with its existing
-compiler compatibility metadata. Its 0.7 workflow lives in
-[integrations/skills/sigil/SKILL.md](integrations/skills/sigil/SKILL.md), with
-host adapters supplied separately. Its frozen compiler requirements are incompatible
-with the current 0.9 tools; `sigil skill list` reports that explicitly.
-
-The skill teaches coding-agent hosts to:
-
-- bootstrap and validate the configured workspace before interpreting `.sigil`
-  files;
-- preserve and initialize repositories that contain Sigil sources without a
-  config before selecting a semantic workflow;
-- follow Sigil imports;
-- identify public component contracts and matching expands;
-- detect missing, conflicting, or vague information;
-- assess semantic readiness, modularity, applicable standards, and common
-  implementation pitfalls;
-- introduce Sigil incrementally into brownfield codebases through a
-  change-frontier pilot;
-- derive provisional boundary pictures from documentation, dependency
-  definitions, executable configuration, and entrypoints, then confirm goals and
-  interfaces before proposing ordinary summaries at the workspace root and
-  declared members;
-- preserve material boundary-wide runtime modes, flows, binding architecture
-  decisions, and observable outcomes in minimal expands while excluding
-  incidental and task-specific details;
-- record durable rationale for material selected choices in optional `decisions`
-  sections while keeping binding outcomes in `constraints`;
-- propose brownfield and externally informed semantic units before editing;
-- stop at the review gate after semantic changes;
-- colocate approved Sigil with the implementation it explains;
-- use approved Sigil as implementation context.
-
-The compact `SKILL.md` dispatches into progressive references. The
-[workspace bootstrap](integrations/skills/sigil/references/workspace-bootstrap.md)
-reference defines root discovery, configuration-state handling, initialization,
-and compatibility validation. The
-[authoring conventions](integrations/skills/sigil/references/authoring-conventions.md)
-reference owns section discipline, Tag identities, decision rationale, and
-colocation. The reference file at
-[integrations/skills/sigil/references/sigil-format.md](integrations/skills/sigil/references/sigil-format.md)
-is a concise agent-facing guide. The
-[standards review](integrations/skills/sigil/references/standards-review.md) and
-[brownfield adoption](integrations/skills/sigil/references/brownfield-adoption.md)
-references define the corresponding host-side workflows. The canonical language
-specification is [spec/sigil-reference.md](spec/sigil-reference.md), with the
-[EBNF grammar](spec/sigil.ebnf). The [language guide](spec/sigil-language.md)
+The canonical language specification is [spec/sigil-reference.md](spec/sigil-reference.md),
+with the [EBNF grammar](spec/sigil.ebnf). The [language guide](spec/sigil-language.md)
 provides authoring explanations and examples.
 
 ## Current Status

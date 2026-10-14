@@ -8,7 +8,7 @@ use super::{
     findings::Identity,
     identity::{Body, Fact},
     prepare::Request,
-    program::{self, Saturated, text},
+    program::{self, ASSERTED, Saturated, text},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -142,14 +142,13 @@ pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Ide
 
     // Conclusions, grouped by the claim or intermediary that witnesses them.
     let derived: Vec<Derived> = world
-        .table("because")
-        .iter()
-        .map(|row| Derived {
-            subject: text(row, 0),
-            relation: text(row, 1),
-            object: text(row, 2),
-            law: text(row, 3),
-            witness: text(row, 4),
+        .reasons()
+        .map(|reason| Derived {
+            subject: reason.subject,
+            relation: reason.relation,
+            object: reason.object,
+            law: reason.law,
+            witness: reason.witness,
         })
         .collect();
 
@@ -273,6 +272,12 @@ pub fn build(request: &Request, facts: &[Fact], world: &Saturated, identity: Ide
     }
 }
 
+/// A candidate where two units author the same proposition.
+pub const DUPLICATE_PROPOSITION: &str = "duplicate-proposition";
+
+/// A candidate where the laws already derive what a claim states.
+pub const SUBSUMED_CLAIM: &str = "subsumed-claim";
+
 /// Smaller formulations that may keep every promise. Proposed, never ruled on.
 fn candidates(world: &Saturated, origin: &BTreeMap<&str, &Fact>) -> Vec<Candidate> {
     let mut out = BTreeSet::new();
@@ -288,7 +293,7 @@ fn candidates(world: &Saturated, origin: &BTreeMap<&str, &Fact>) -> Vec<Candidat
             .filter_map(|id| origin.get(*id).map(|f| f.facet.clone()))
             .collect();
         out.insert(Candidate {
-            kind: "duplicate-proposition".into(),
+            kind: DUPLICATE_PROPOSITION.into(),
             claims: vec![a, b],
             facets,
             detail:
@@ -302,10 +307,10 @@ fn candidates(world: &Saturated, origin: &BTreeMap<&str, &Fact>) -> Vec<Candidat
     // claim may be the one carrying the intent.
     let mut asserted: BTreeMap<(String, String, String), Vec<String>> = BTreeMap::new();
     let mut inferred: BTreeSet<(String, String, String)> = BTreeSet::new();
-    for row in world.table("because") {
-        let triple = (text(row, 0), text(row, 1), text(row, 2));
-        if text(row, 3) == "asserted" {
-            asserted.entry(triple).or_default().push(text(row, 4));
+    for reason in world.reasons() {
+        let triple = (reason.subject, reason.relation, reason.object);
+        if reason.law == ASSERTED {
+            asserted.entry(triple).or_default().push(reason.witness);
         } else {
             inferred.insert(triple);
         }
@@ -319,7 +324,7 @@ fn candidates(world: &Saturated, origin: &BTreeMap<&str, &Fact>) -> Vec<Candidat
             .filter_map(|id| origin.get(id.as_str()).map(|f| f.facet.clone()))
             .collect();
         out.insert(Candidate {
-            kind: "subsumed-claim".into(),
+            kind: SUBSUMED_CLAIM.into(),
             claims,
             facets,
             detail: format!(

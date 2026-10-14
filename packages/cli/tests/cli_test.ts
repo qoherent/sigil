@@ -9,9 +9,7 @@ import { relative as relativePathFrom, resolve } from "node:path";
 import { CoreAdapter } from "../src/core-adapter.ts";
 import metadata from "../deno.json" with { type: "json" };
 import { DenoSigilFileSystem } from "../src/fs-adapter.ts";
-import { resolveInstalledSkillsDirectory } from "../src/installer.ts";
 import { runCli } from "../src/main.ts";
-import { validateFoundation } from "../../../scripts/validate-skill.ts";
 import type { CheckRequest } from "../src/args.ts";
 import { formatResult } from "../src/formatters.ts";
 import { renderRetrieveMarkdown } from "../src/markdown.ts";
@@ -1637,9 +1635,6 @@ Deno.test("help is scoped to every recognized command path", async () => {
   assertEquals(help.stderr, "");
 
   const commandPaths = [
-    ["skill"],
-    ["skill", "list"],
-    ["skill", "install"],
     ["init"],
     ["version"],
     ["parse"],
@@ -1673,21 +1668,6 @@ Deno.test("usage errors include help for the longest recognized command path", a
       usage: "Usage: sigil <command>",
     },
     {
-      argv: ["skill"],
-      problem: "skill requires exactly one subcommand",
-      usage: "Usage: sigil skill <subcommand>",
-    },
-    {
-      argv: ["skill", "unknown"],
-      problem: 'Unknown skill subcommand "unknown"',
-      usage: "Usage: sigil skill <subcommand>",
-    },
-    {
-      argv: ["skill", "list", "extra"],
-      problem: "skill list does not accept positional arguments",
-      usage: "Usage: sigil skill list",
-    },
-    {
       argv: ["parse"],
       problem: "parse requires exactly one file",
       usage: "Usage: sigil parse <file>",
@@ -1719,231 +1699,26 @@ Deno.test("version flag reports CLI information", async () => {
   assertEquals(version.stderr, "");
 });
 
-/*
- * @sigil tests packages/cli/_module.sigil::SigilCli::CliSkillInstallation logic,constraints,cases
- * @sigil tests packages/cli/_module.sigil::SigilCli::SkillInstallationCommand interface
- * @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
- */
-Deno.test("skill install defaults global and supports project agent targets", async () => {
-  const root = await Deno.makeTempDir({ prefix: "sigil-install-" });
-  const source = `${root}/installation/integrations/skills`;
-  const target = `${root}/project`;
-  const home = `${root}/home`;
+// @sigil tests packages/cli/_module.sigil::SigilCli::WorkspaceInspection logic,cases
+Deno.test("check skips a symlinked directory inside a workspace", async () => {
+  const root = await Deno.makeTempDir({ prefix: "sigil-symlink-" });
+  const workspace = `${root}/workspace`;
+  const outside = `${root}/outside`;
   try {
-    await Deno.mkdir(`${source}/sigil`, { recursive: true });
-    await Deno.mkdir(`${source}/sigil-anchor-indexer`, { recursive: true });
-    await Deno.mkdir(`${source}/future-skill`, { recursive: true });
-    await Deno.writeTextFile(`${source}/sigil/SKILL.md`, "# Sigil\n");
-    await Deno.writeTextFile(`${source}/future-skill/SKILL.md`, "# Future\n");
+    await Deno.mkdir(`${outside}/linked`, { recursive: true });
+    await Deno.writeTextFile(`${outside}/linked/_module.sigil`, "component {");
+    await Deno.mkdir(workspace, { recursive: true });
+    await writeWorkspaceConfig(workspace, "symlink-workspace");
     await Deno.writeTextFile(
-      `${source}/sigil/_module.sigil`,
-      validSigil("InstalledSkill"),
+      `${workspace}/_module.sigil`,
+      validSigil("RealSource"),
     );
-    await Deno.writeTextFile(
-      `${source}/sigil-anchor-indexer/spec.md`,
-      "# Anchor indexer\n",
-    );
+    await Deno.mkdir(`${workspace}/.claude`, { recursive: true });
+    await Deno.symlink(`${outside}/linked`, `${workspace}/.claude/linked`);
 
-    const listed = await runCli(["skill", "list", "--pretty"], {
-      install: { sourceDirectory: source },
-    });
-    assertEquals(listed.exitCode, EXIT_OK);
-    assertEquals(
-      parseJson(listed.stdout).skills.join(","),
-      "future-skill,sigil",
-    );
-
-    const first = await runCli(["skill", "install", "--pretty"], {
-      install: { sourceDirectory: source, userHome: home },
-    });
-    assertEquals(first.exitCode, EXIT_OK);
-    const firstOutput = parseJson(first.stdout);
-    assertEquals(firstOutput.command, "skill-install");
-    assertEquals(firstOutput.scope, "global");
-    assert(
-      firstOutput.skills.every((skill: { status: string }) =>
-        skill.status === "installed"
-      ),
-    );
-    assert((await Deno.lstat(`${home}/.agents/skills/sigil`)).isSymlink);
-    assert((await Deno.lstat(`${home}/.claude/skills/sigil`)).isSymlink);
-    assertEquals(
-      await Deno.realPath(`${home}/.agents/skills/sigil`),
-      await Deno.realPath(`${source}/sigil`),
-    );
-
-    const second = await runCli([
-      "skill",
-      "install",
-      "--project",
-      "--agent",
-      "claude",
-    ], {
-      install: { sourceDirectory: source, targetRoot: target },
-    });
-    assertEquals(second.exitCode, EXIT_OK);
-    assert((await Deno.lstat(`${target}/.claude/skills/sigil`)).isSymlink);
-    const gitignore = await Deno.readTextFile(
-      `${target}/.claude/skills/.gitignore`,
-    );
-    assert(gitignore.includes("/.sigil-managed.json\n"));
-    assert(gitignore.includes("/sigil\n"));
-    assert(!gitignore.includes("sigil-anchor-indexer"));
-
-    const repeated = await runCli(["skill", "install"], {
-      install: { sourceDirectory: source, userHome: home },
-    });
-    assertEquals(repeated.exitCode, EXIT_OK);
-    assert(
-      parseJson(repeated.stdout).skills.every((skill: { status: string }) =>
-        skill.status === "existing"
-      ),
-    );
-
-    await writeWorkspaceConfig(target, "installed-skills");
-    const check = await runCli(["check", target, "--format", "json"]);
+    const check = await runCli(["check", workspace, "--format", "json"]);
     assertEquals(check.exitCode, EXIT_OK);
     assertEquals(parseJson(check.stdout).diagnosticCounts.error, 0);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-// @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillCatalog interface,state,logic,constraints,cases
-Deno.test("skill discovery resolves valid skills from the source installation", async () => {
-  const source = await resolveInstalledSkillsDirectory();
-  const names: string[] = [];
-  for await (const entry of Deno.readDir(source)) {
-    if (entry.isDirectory) names.push(entry.name);
-  }
-  assert(names.includes("sigil"));
-  assert(names.includes("sigil-anchor-indexer"));
-  const listed = await runCli(["skill", "list"], {
-    install: { sourceDirectory: source },
-  });
-  assertEquals(listed.exitCode, EXIT_OK);
-  assertEquals(
-    parseJson(listed.stdout).skills.join(","),
-    "sigil,sigil-align,sigil-compute-align,sigil-compute-design,sigil-egglog,sigil-evaluate,sigil-understand,sigil-write",
-  );
-  const legacy = parseJson(listed.stdout).catalog.find((s: { name: string }) =>
-    s.name === "sigil"
-  );
-  assertEquals(legacy.compatibility.requirements.sigilVersion, "0.7.0");
-  assertEquals(legacy.compatibility.requirements.cliVersion, "^0.8.0");
-  assertEquals(legacy.compatibility.requirements.coreVersion, "^0.7.0");
-  assertEquals(legacy.compatibility.requirements.sigilcVersion, "^0.1.0");
-  assertEquals(legacy.compatibility.languageCompatible, false);
-  assertEquals(legacy.compatibility.runtimeValidation, "not-run");
-});
-
-Deno.test("skill real bundle retains sibling references in global and project links and relocated copies", async () => {
-  // macOS /var aliases /private/var; use the physical parent for relative links
-  // crossing from this temporary installation to the repository's real catalog.
-  const root = await Deno.realPath(
-    await Deno.makeTempDir({ prefix: "sigil real catalog 空 " }),
-  );
-  const sourceDirectory = await resolveInstalledSkillsDirectory();
-  try {
-    for (const scope of ["global", "project"]) {
-      for (const forceCopy of [false, true]) {
-        const destination = `${root}/${scope}-${forceCopy ? "copy" : "link"}`;
-        const result = await runCli([
-          "skill",
-          "install",
-          "--agent",
-          "codex",
-          ...(scope === "project" ? ["--project"] : []),
-        ], {
-          install: {
-            sourceDirectory,
-            userHome: destination,
-            targetRoot: destination,
-            forceCopy,
-          },
-        });
-        assertEquals(result.exitCode, EXIT_OK);
-        assertEquals(parseJson(result.stdout).skills.length, 8);
-        const catalog = `${destination}/.agents/skills`;
-        assert((await Deno.stat(`${catalog}/sigil-align/SKILL.md`)).isFile);
-        assertEquals(
-          (await Deno.lstat(`${catalog}/sigil-write`)).isSymlink,
-          !forceCopy,
-        );
-        await validateFoundation(catalog);
-        if (forceCopy) {
-          const relocated = `${destination} relocated Ω`;
-          await Deno.rename(destination, relocated);
-          await validateFoundation(`${relocated}/.agents/skills`);
-        }
-      }
-    }
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-// @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillSourceDiscovery interface,logic,cases
-Deno.test("skill install resolves skills beside a selected versioned binary", async () => {
-  const root = await Deno.makeTempDir({ prefix: "sigil-versioned-install-" });
-  const installation = `${root}/0.6.0`;
-  const skills = `${installation}/integrations/skills`;
-  try {
-    await Deno.mkdir(`${skills}/sigil`, { recursive: true });
-    const resolved = await resolveInstalledSkillsDirectory(
-      "https://jsr.io/@qoherent/sigil/0.6.0/src/main.ts",
-      `${installation}/bin/sigil`,
-    );
-    assertEquals(await Deno.realPath(resolved), await Deno.realPath(skills));
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-// @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
-Deno.test("skill install copies when links are unavailable and updates managed copies", async () => {
-  const root = await Deno.makeTempDir({ prefix: "sigil-copy-install-" });
-  const source = `${root}/v1/integrations/skills`;
-  const source2 = `${root}/v2/integrations/skills`;
-  const home = `${root}/home`;
-  try {
-    for (const directory of [source, source2]) {
-      await Deno.mkdir(`${directory}/sigil`, { recursive: true });
-    }
-    await Deno.writeTextFile(`${source}/sigil/SKILL.md`, "version one\n");
-    await Deno.writeTextFile(`${source2}/sigil/SKILL.md`, "version two\n");
-    let result = await runCli(["skill", "install", "--agent", "codex"], {
-      install: { sourceDirectory: source, userHome: home, forceCopy: true },
-    });
-    assertEquals(parseJson(result.stdout).skills[0].status, "copied");
-    result = await runCli(["skill", "install", "--agent", "codex"], {
-      install: { sourceDirectory: source2, userHome: home, forceCopy: true },
-    });
-    assertEquals(parseJson(result.stdout).skills[0].status, "updated");
-    assertEquals(
-      await Deno.readTextFile(`${home}/.agents/skills/sigil/SKILL.md`),
-      "version two\n",
-    );
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-// @sigil tests packages/cli/src/installer.sigil::SkillInstaller::SkillInstallation interface,state,logic,constraints,cases
-Deno.test("skill install refuses unmanaged destinations before changing others", async () => {
-  const root = await Deno.makeTempDir({ prefix: "sigil-conflict-install-" });
-  const source = `${root}/skills`;
-  const home = `${root}/home`;
-  try {
-    await Deno.mkdir(`${source}/sigil`, { recursive: true });
-    await Deno.writeTextFile(`${source}/sigil/SKILL.md`, "skill\n");
-    await Deno.mkdir(`${home}/.claude/skills/sigil`, { recursive: true });
-    const result = await runCli(["skill", "install"], {
-      install: { sourceDirectory: source, userHome: home },
-    });
-    assertEquals(result.exitCode, EXIT_RUNTIME);
-    assert(result.stderr.includes("unmanaged skill path"));
-    assert(!(await exists(`${home}/.agents/skills/sigil`)));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -2029,16 +1804,6 @@ function assertHasCode(
 
 function countOccurrences(source: string, needle: string): number {
   return source.split(needle).length - 1;
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await Deno.lstat(path);
-    return true;
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return false;
-    throw error;
-  }
 }
 
 class UnreadableImplementationFileSystem implements SigilFileSystem {
@@ -2440,8 +2205,6 @@ Deno.test("fmt variadic paths leave other commands positional limits intact", as
     ["render"],
     ["context", "--component", "Example"],
     ["retrieve", "--component", "Example", "--purpose", "semantic"],
-    ["skill", "list"],
-    ["skill", "install"],
   ];
   for (const command of commands) {
     const result = await runCli([...command, "first.sigil", "second.sigil"]);

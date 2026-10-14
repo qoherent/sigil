@@ -1,0 +1,499 @@
+{
+  "host": "codex-cli 0.161.0",
+  "model": "gpt-6-luna",
+  "reasoningEffort": "high",
+  "sigilcSha256": "5cb2c7bc3d59fdebffb323932431b21b65e329cae449d9341f0dd26c32473611",
+  "sigilcBuiltFrom": "a559fea (sigilc unchanged through 91861bc)",
+  "date": "2026-10-12",
+  "runs": {
+    "A1-cold": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 72,
+      "exit": 0,
+      "elapsedSeconds": 711.0,
+      "host": {
+        "input_tokens": 3078285,
+        "cached_input_tokens": 2989568,
+        "output_tokens": 11666,
+        "reasoning_output_tokens": 4256
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 11,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 4467183,
+        "cached_input_tokens": 3939072,
+        "output_tokens": 91057,
+        "reasoning_output_tokens": 67632
+      },
+      "commands": 33
+    },
+    "A2-unchanged": {
+      "catalog": "proposed-r2",
+      "catalogCommit": "e980db4",
+      "hostTurns": 9,
+      "exit": 0,
+      "elapsedSeconds": 51.3,
+      "host": {
+        "input_tokens": 272854,
+        "cached_input_tokens": 232192,
+        "output_tokens": 3722,
+        "reasoning_output_tokens": 1335
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 8
+    },
+    "F-baseline": {
+      "catalog": "baseline",
+      "catalogCommit": "a559fea",
+      "hostTurns": 10,
+      "exit": 0,
+      "elapsedSeconds": 66.5,
+      "host": {
+        "input_tokens": 255899,
+        "cached_input_tokens": 219648,
+        "output_tokens": 4989,
+        "reasoning_output_tokens": 1981
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 9
+    },
+    "F-proposed": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 7,
+      "exit": 0,
+      "elapsedSeconds": 85.5,
+      "host": {
+        "input_tokens": 223083,
+        "cached_input_tokens": 176384,
+        "output_tokens": 8294,
+        "reasoning_output_tokens": 4168
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 6
+    },
+    "F1-prep-cold": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 20,
+      "exit": 0,
+      "elapsedSeconds": 217.0,
+      "host": {
+        "input_tokens": 556789,
+        "cached_input_tokens": 491520,
+        "output_tokens": 7379,
+        "reasoning_output_tokens": 3151
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 2,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 390817,
+        "cached_input_tokens": 305664,
+        "output_tokens": 5551,
+        "reasoning_output_tokens": 3915
+      },
+      "commands": 16
+    },
+    "G-writer": {
+      "catalog": "proposed-r3",
+      "catalogCommit": "91861bc",
+      "hostTurns": 42,
+      "exit": 0,
+      "elapsedSeconds": 591.4,
+      "host": {
+        "input_tokens": 2186502,
+        "cached_input_tokens": 2073344,
+        "output_tokens": 16865,
+        "reasoning_output_tokens": 10679
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 4,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 1480422,
+        "cached_input_tokens": 1268992,
+        "output_tokens": 34574,
+        "reasoning_output_tokens": 15966
+      },
+      "commands": 27
+    },
+    "J1-baseline": {
+      "catalog": "baseline",
+      "catalogCommit": "a559fea",
+      "hostTurns": 8,
+      "exit": 0,
+      "elapsedSeconds": 142.6,
+      "host": {
+        "input_tokens": 254948,
+        "cached_input_tokens": 202752,
+        "output_tokens": 7077,
+        "reasoning_output_tokens": 4043
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 7
+    },
+    "J1-proposed": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 12,
+      "exit": 0,
+      "elapsedSeconds": 154.0,
+      "host": {
+        "input_tokens": 587599,
+        "cached_input_tokens": 500736,
+        "output_tokens": 14216,
+        "reasoning_output_tokens": 5751
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 43
+    },
+    "J1r2-proposed": {
+      "catalog": "proposed-r2",
+      "catalogCommit": "e980db4",
+      "hostTurns": 11,
+      "exit": 0,
+      "elapsedSeconds": 94.8,
+      "host": {
+        "input_tokens": 360303,
+        "cached_input_tokens": 303360,
+        "output_tokens": 8215,
+        "reasoning_output_tokens": 6371
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 10
+    },
+    "J1r3-proposed": {
+      "catalog": "proposed-r3",
+      "catalogCommit": "91861bc",
+      "hostTurns": 17,
+      "exit": 0,
+      "elapsedSeconds": 331.0,
+      "host": {
+        "input_tokens": 1018025,
+        "cached_input_tokens": 927488,
+        "output_tokens": 16242,
+        "reasoning_output_tokens": 8341
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 16
+    },
+    "J2-baseline": {
+      "catalog": "baseline",
+      "catalogCommit": "a559fea",
+      "hostTurns": 10,
+      "exit": 0,
+      "elapsedSeconds": 80.4,
+      "host": {
+        "input_tokens": 308234,
+        "cached_input_tokens": 246272,
+        "output_tokens": 7252,
+        "reasoning_output_tokens": 4208
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 9
+    },
+    "J3-baseline": {
+      "catalog": "baseline",
+      "catalogCommit": "a559fea",
+      "hostTurns": 7,
+      "exit": 0,
+      "elapsedSeconds": 59.2,
+      "host": {
+        "input_tokens": 218448,
+        "cached_input_tokens": 172288,
+        "output_tokens": 5097,
+        "reasoning_output_tokens": 1764
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 6
+    },
+    "U2-16b-selected": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 21,
+      "exit": 0,
+      "elapsedSeconds": 169.5,
+      "host": {
+        "input_tokens": 624321,
+        "cached_input_tokens": 558080,
+        "output_tokens": 5857,
+        "reasoning_output_tokens": 2511
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 1,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 196357,
+        "cached_input_tokens": 123648,
+        "output_tokens": 4076,
+        "reasoning_output_tokens": 3438
+      },
+      "commands": 17
+    },
+    "U2-16e-oldcompiler": {
+      "catalog": "proposed",
+      "catalogCommit": "8295728",
+      "hostTurns": 8,
+      "exit": 0,
+      "elapsedSeconds": 46.4,
+      "host": {
+        "input_tokens": 204261,
+        "cached_input_tokens": 146432,
+        "output_tokens": 3186,
+        "reasoning_output_tokens": 1622
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 7
+    },
+    "G2-writer": {
+      "catalog": "proposed-r4",
+      "catalogCommit": "12582d6",
+      "hostTurns": 75,
+      "exit": 0,
+      "elapsedSeconds": 1412.2,
+      "host": {
+        "input_tokens": 6766755,
+        "cached_input_tokens": 6570240,
+        "output_tokens": 41130,
+        "reasoning_output_tokens": 21168
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 7,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 2067069,
+        "cached_input_tokens": 1827840,
+        "output_tokens": 40176,
+        "reasoning_output_tokens": 17505
+      },
+      "commands": 39
+    },
+    "J1r4-proposed": {
+      "catalog": "proposed-r5",
+      "catalogCommit": "25849fb",
+      "hostTurns": 15,
+      "exit": 0,
+      "elapsedSeconds": 952.4,
+      "host": {
+        "input_tokens": 515299,
+        "cached_input_tokens": 440064,
+        "output_tokens": 11834,
+        "reasoning_output_tokens": 6553
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 11
+    },
+    "G3-writer": {
+      "catalog": "proposed-r5",
+      "catalogCommit": "25849fb",
+      "hostTurns": 107,
+      "exit": 0,
+      "elapsedSeconds": 2117.0,
+      "host": {
+        "input_tokens": 10917848,
+        "cached_input_tokens": 10701312,
+        "output_tokens": 41193,
+        "reasoning_output_tokens": 23063
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 12,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 4086610,
+        "cached_input_tokens": 3570944,
+        "output_tokens": 59383,
+        "reasoning_output_tokens": 29809
+      },
+      "commands": 48
+    },
+    "J1r5-proposed": {
+      "catalog": "proposed-r6",
+      "catalogCommit": "649c758",
+      "hostTurns": 13,
+      "exit": 0,
+      "elapsedSeconds": 282.1,
+      "host": {
+        "input_tokens": 534439,
+        "cached_input_tokens": 448256,
+        "output_tokens": 28562,
+        "reasoning_output_tokens": 17820
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 0,
+      "childModels": [],
+      "childUsage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "commands": 12
+    },
+    "G4-writer": {
+      "catalog": "proposed-r6",
+      "catalogCommit": "649c758",
+      "hostTurns": 39,
+      "exit": 0,
+      "elapsedSeconds": 343.0,
+      "host": {
+        "input_tokens": 2014433,
+        "cached_input_tokens": 1917440,
+        "output_tokens": 15137,
+        "reasoning_output_tokens": 8058
+      },
+      "hostModels": [
+        "gpt-6-luna/high"
+      ],
+      "children": 2,
+      "childModels": [
+        "gpt-6-luna/high"
+      ],
+      "childUsage": {
+        "input_tokens": 761868,
+        "cached_input_tokens": 656128,
+        "output_tokens": 10744,
+        "reasoning_output_tokens": 5627
+      },
+      "commands": 31
+    }
+  }
+}

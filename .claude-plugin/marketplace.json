@@ -1,0 +1,27 @@
+{
+  "name": "sigil",
+  "owner": {
+    "name": "Qoherent"
+  },
+  "metadata": {
+    "description": "Sigil skills for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "sigil",
+      "description": "Understand, write and review Sigil designs, and check implementations against them",
+      "author": {
+        "name": "Qoherent"
+      },
+      "homepage": "https://github.com/qoherent/sigil",
+      "tags": [
+        "sigil",
+        "design",
+        "contracts",
+        "specification",
+        "skills"
+      ],
+      "source": "./"
+    }
+  ]
+}

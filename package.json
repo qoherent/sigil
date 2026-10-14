@@ -1,0 +1,16 @@
+{
+  "name": "sigil",
+  "version": "0.9.0",
+  "description": "Understand, write and review Sigil designs, and check implementations against them",
+  "type": "module",
+  "private": true,
+  "main": ".opencode/plugins/sigil.js",
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  },
+  "homepage": "https://github.com/qoherent/sigil",
+  "repository": "https://github.com/qoherent/sigil",
+  "license": "Apache-2.0"
+}
