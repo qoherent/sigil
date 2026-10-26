@@ -1,4 +1,4 @@
-import { cp, mkdtemp, realpath, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -75,4 +75,49 @@ try {
   });
 } finally {
   if (fixture) await rm(fixture, { recursive: true, force: true });
+}
+
+// A second run opens an enclosing workspace that excludes a nested copy of the
+// example, and checks that a nested file is still served.
+if (!process.env.SIGIL_TEST_WORKSPACE) {
+  const enclosing = await mkdtemp(
+    path.join(os.tmpdir(), "sigil-editor-nested-"),
+  );
+  try {
+    await mkdir(path.join(enclosing, ".sigil"));
+    await writeFile(
+      path.join(enclosing, ".sigil/config.json"),
+      JSON.stringify({
+        sigilVersion: "0.9.0",
+        workspace: { name: "enclosing", members: [] },
+        files: { include: ["**/*.sigil"], exclude: ["inner/**"] },
+        tools: {},
+      }),
+    );
+    await cp(
+      path.join(repository, "examples/slotted"),
+      path.join(enclosing, "inner/slotted"),
+      { recursive: true },
+    );
+    const workspace = await realpath(enclosing);
+    await runTests({
+      vscodeExecutablePath,
+      extensionDevelopmentPath: extension,
+      extensionTestsPath: path.join(extension, "dist/test/extension.js"),
+      launchArgs: [workspace, "--disable-extensions"],
+      extensionTestsEnv: {
+        SIGIL_REPO_ROOT: repository,
+        SIGIL_TEST_WORKSPACE: workspace,
+        SIGIL_TEST_NESTED: "1",
+        SIGIL_TEST_LANGUAGE: process.env.SIGIL_TEST_LANGUAGE ??
+          path.join(
+            repository,
+            "packages/cli/target/debug",
+            process.platform === "win32" ? "sigil.exe" : "sigil",
+          ),
+      },
+    });
+  } finally {
+    await rm(enclosing, { recursive: true, force: true });
+  }
 }

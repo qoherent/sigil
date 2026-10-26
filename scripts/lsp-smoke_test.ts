@@ -41,6 +41,36 @@ Deno.test("a built sigil answers a session that opens the release fixture", asyn
   }
 });
 
+Deno.test("a built sigil serves a file of a workspace nested inside the folder it started in", async () => {
+  const { dir } = await workspace();
+  try {
+    const config = JSON.parse(
+      await Deno.readTextFile(join(FIXTURE, "fixture-config.json")),
+    );
+    config.files.exclude = [...(config.files.exclude ?? []), "inner/**"];
+    await Deno.writeTextFile(
+      join(dir, ".sigil/config.json"),
+      JSON.stringify(config),
+    );
+    await Deno.mkdir(join(dir, "inner/.sigil"), { recursive: true });
+    await Deno.copyFile(
+      join(FIXTURE, "fixture-config.json"),
+      join(dir, "inner/.sigil/config.json"),
+    );
+    const document = join(dir, "inner/main.sigil");
+    await Deno.copyFile(join(FIXTURE, "main.sigil"), document);
+    const result = await lspSmoke({
+      executable: SIGIL,
+      workspace: dir,
+      document,
+    });
+    equal(result.symbols > 0, true);
+    equal(result.stderr, "");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("a document with no component yields no symbols and the smoke fails", async () => {
   const { dir, document } = await workspace("plain.sigil", "just words\n");
   try {
