@@ -15,5 +15,6 @@ pub mod snapshot;
 pub mod symbols;
 pub mod tokens;
 pub mod uri;
+pub mod workspaces;
 
 pub use serve::{IO_FAILURE, serve};

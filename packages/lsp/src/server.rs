@@ -13,6 +13,7 @@ use crate::{
     snapshot::Snapshot,
     symbols, tokens,
     uri::{UriError, file_uri_to_path},
+    workspaces::{self, Workspaces},
 };
 use serde_json::{Value, json};
 use sigil_core::language::{
@@ -32,6 +33,9 @@ pub type FsFactory = Box<dyn Fn(&Path) -> Box<dyn SourceFs> + Send>;
 /// How long a failed recovery blocks the next attempt.
 pub const RELOAD_RETRY_DELAY: Duration = Duration::from_millis(1000);
 
+/// The request that tells a client which workspace a document belongs to.
+pub const DOCUMENT_WORKSPACE: &str = "sigil/documentWorkspace";
+const NESTED_CONFIG: &str = "SIGIL_NESTED_CONFIG";
 const WATCH_REQUEST_ID: &str = "sigil/watch/request";
 const WATCH_REGISTRATION_ID: &str = "sigil/language-watch";
 /// The notification that cancels a request, and the one that ends the server.
@@ -111,7 +115,9 @@ enum Change<'a> {
         path: String,
         uri: String,
     },
-    Watch,
+    /// Watched files that matter, with their change kind (1 created, 2
+    /// changed, 3 deleted).
+    Watch(Vec<(String, u8)>),
 }
 
 /// An open buffer.
@@ -133,17 +139,23 @@ pub struct Server {
     open: BTreeMap<String, OpenDocument>,
     published: BTreeSet<String>,
     cancelled: HashSet<Id>,
-    snapshot: Option<Snapshot>,
-    load_failure: Option<String>,
-    retry_after: Option<Instant>,
+    /// The workspace the editor started in, and the nested ones with an open
+    /// file.
+    workspaces: Workspaces,
     generation: u64,
+    /// A change is recorded and the workspaces it touched wait in `dirty`.
     reload_pending: bool,
+    dirty: BTreeSet<String>,
+    /// A config appeared or went away, so which workspace owns a file may have
+    /// changed for any of them.
+    dirty_all: bool,
     closed_uris: BTreeSet<String>,
     exit_code: Option<i32>,
 }
 
 impl Server {
     pub fn new(options: ServerOptions) -> Self {
+        let workspaces = Workspaces::new(&options.cwd);
         Self {
             workspace_start: options.cwd.clone(),
             cwd: options.cwd,
@@ -155,11 +167,11 @@ impl Server {
             open: BTreeMap::new(),
             published: BTreeSet::new(),
             cancelled: HashSet::new(),
-            snapshot: None,
-            load_failure: None,
-            retry_after: None,
+            workspaces,
             generation: 0,
             reload_pending: false,
+            dirty: BTreeSet::new(),
+            dirty_all: false,
             closed_uris: BTreeSet::new(),
             exit_code: None,
         }
@@ -180,9 +192,30 @@ impl Server {
         self.generation
     }
 
-    /// The current reading, none while a failed load has not recovered.
+    /// The current reading of the workspace the editor started in, none while
+    /// a failed load has not recovered.
     pub fn snapshot(&self) -> Option<&Snapshot> {
-        self.snapshot.as_ref()
+        self.workspaces.start()?.snapshot.as_ref()
+    }
+
+    /// The current reading of the workspace that owns the file at `path`: the
+    /// start workspace's when no config sits above the file.
+    pub fn snapshot_for(&self, path: &str) -> Option<&Snapshot> {
+        let key = self.key_for_path(path);
+        self.workspaces.get(&key)?.snapshot.as_ref()
+    }
+
+    /// The keys of the workspaces held now, the start workspace first.
+    pub fn held_workspaces(&self) -> Vec<String> {
+        let start = self.workspaces.start_key().to_owned();
+        let mut keys: Vec<String> = self
+            .workspaces
+            .keys()
+            .filter(|key| **key != start)
+            .cloned()
+            .collect();
+        keys.insert(0, start);
+        keys
     }
 
     /// Whether a change recorded by `handle_queued` still awaits `settle`.
@@ -249,10 +282,13 @@ impl Server {
         if !self.reload_pending {
             return Vec::new();
         }
+        self.reload_pending = false;
         let extra: Vec<String> = std::mem::take(&mut self.closed_uris).into_iter().collect();
-        match self.reload(false) {
-            Ok(()) => self.diagnostic_notifications(&extra),
-            Err(cause) => self.load_failure_notifications(&cause),
+        let failures = self.refresh();
+        if failures.is_empty() {
+            self.diagnostic_notifications(&extra)
+        } else {
+            self.load_failure_notifications(&failures)
         }
     }
 
@@ -281,16 +317,20 @@ impl Server {
             return failure(rpc::INVALID_REQUEST, "Server is shutting down.");
         }
         let mut out = self.settle();
+        let key = self.route(params);
         if uses_workspace(method)
-            && let Err(cause) = self.recover()
+            && let Err(cause) = self.recover(&key)
         {
             out.extend(failure(
                 rpc::INTERNAL_ERROR,
                 &format!("Unable to load workspace: {cause}"),
             ));
+            self.release_unneeded();
             return out;
         }
-        out.push(match self.dispatch(method, params) {
+        let answer = self.dispatch(method, params, &key);
+        self.release_unneeded();
+        out.push(match answer {
             None => rpc::failure(
                 Some(id),
                 rpc::METHOD_NOT_FOUND,
@@ -309,15 +349,16 @@ impl Server {
 
     /// The request methods. A method that reads the workspace takes the
     /// snapshot, which recovery has made present.
-    fn dispatch(&mut self, method: &str, params: &Value) -> Option<Answer> {
+    fn dispatch(&mut self, method: &str, params: &Value, key: &str) -> Option<Answer> {
         match method {
             "initialize" => Some(self.initialize(params)),
             "shutdown" => {
                 self.state = State::ShutdownRequested;
                 Some(Ok(Value::Null))
             }
+            DOCUMENT_WORKSPACE => Some(self.document_workspace(params)),
             _ => {
-                let snapshot = self.snapshot.as_ref()?;
+                let snapshot = self.workspaces.get(key)?.snapshot.as_ref()?;
                 workspace_method(snapshot, method, params)
             }
         }
@@ -335,7 +376,10 @@ impl Server {
             None => self.cwd.clone(),
         };
         self.supports_watch_registration = given.supports_watch_registration();
-        self.reload(false).map_err(RequestError::Internal)?;
+        self.workspaces = Workspaces::new(&self.workspace_start);
+        let start = self.workspaces.start_key().to_owned();
+        self.reload_entry(&start, false)
+            .map_err(RequestError::Internal)?;
         self.state = State::Running;
         Ok(json!({
             "capabilities": {
@@ -414,16 +458,17 @@ impl Server {
             }
             "workspace/didChangeWatchedFiles" => {
                 let given = params::did_change_watched_files(params).ok()?;
-                let paths: Vec<String> = given
+                let changed: Vec<(String, u8)> = given
                     .changes
                     .iter()
-                    .map(|change| file_uri_to_path(&change.uri))
-                    .collect::<Result<_, _>>()
+                    .map(|change| Ok((file_uri_to_path(&change.uri)?, change.kind)))
+                    .collect::<Result<_, UriError>>()
                     .ok()?;
-                paths
-                    .iter()
-                    .any(|path| triggers_reload(path))
-                    .then_some(Change::Watch)
+                let relevant: Vec<(String, u8)> = changed
+                    .into_iter()
+                    .filter(|(path, _)| triggers_reload(path))
+                    .collect();
+                (!relevant.is_empty()).then_some(Change::Watch(relevant))
             }
             _ => None,
         }
@@ -439,6 +484,8 @@ impl Server {
                 version,
                 text,
             } => {
+                let key = self.key_for_path(&path);
+                self.dirty.insert(key);
                 self.open.insert(
                     path,
                     OpenDocument {
@@ -449,19 +496,99 @@ impl Server {
                 );
             }
             Change::Close { path, uri } => {
+                let key = self.key_for_path(&path);
+                self.dirty.insert(key);
                 self.open.remove(&path);
                 self.closed_uris.insert(uri);
             }
-            Change::Watch => {}
+            Change::Watch(changed) => {
+                for (path, kind) in changed {
+                    if kind != 2 && normalize_path(&path).ends_with("/.sigil/config.json") {
+                        self.dirty_all = true;
+                    } else if let Some(root) = workspaces::context_root(&path) {
+                        // A file of a directory that is no workspace root yet
+                        // belongs to whichever workspace holds that directory.
+                        let owner = self.key_for_path(&path);
+                        self.dirty.insert(root);
+                        self.dirty.insert(owner);
+                    } else {
+                        let key = self.key_for_path(&path);
+                        self.dirty.insert(key);
+                    }
+                }
+            }
         }
     }
 
-    /// Read the workspace again. A failure drops the snapshot; `recovery`
-    /// says this read retries after an earlier failure, which blocks the next
-    /// retry for the delay.
-    fn reload(&mut self, recovery: bool) -> Result<(), String> {
+    /// The key of the workspace that serves a file: the one that owns it, or
+    /// the start workspace when no config sits above it.
+    fn key_for_path(&self, path: &str) -> String {
+        workspaces::owner_key(path).unwrap_or_else(|| self.workspaces.start_key().to_owned())
+    }
+
+    /// The key of the workspace a request is about: the owner of the document
+    /// it names, or the start workspace.
+    fn route(&self, params: &Value) -> String {
+        match document_path(params) {
+            Some(path) => self.key_for_path(&path),
+            None => self.workspaces.start_key().to_owned(),
+        }
+    }
+
+    /// The keys of the workspaces that own an open buffer.
+    fn owners_of_open(&self) -> BTreeSet<String> {
+        self.open
+            .keys()
+            .filter_map(|path| workspaces::owner_key(path))
+            .collect()
+    }
+
+    /// Release the nested workspaces that no open buffer needs.
+    fn release_unneeded(&mut self) {
+        let needed = self.owners_of_open();
+        self.workspaces.retain(|key| needed.contains(key));
+    }
+
+    /// Hold the workspace of each open buffer, release the ones no buffer
+    /// needs, and read every workspace that a change touched. The causes of
+    /// the reads that failed.
+    fn refresh(&mut self) -> Vec<String> {
+        let needed = self.owners_of_open();
+        for key in &needed {
+            if self.workspaces.ensure(key) {
+                self.dirty.insert(key.clone());
+            }
+        }
+        self.workspaces.retain(|key| needed.contains(key));
+        let dirty = std::mem::take(&mut self.dirty);
+        let keys: Vec<String> = if std::mem::take(&mut self.dirty_all) {
+            self.workspaces.keys().cloned().collect()
+        } else {
+            self.workspaces
+                .keys()
+                .filter(|key| dirty.contains(*key))
+                .cloned()
+                .collect()
+        };
+        let mut failures = Vec::new();
+        for key in keys {
+            if let Err(cause) = self.reload_entry(&key, false) {
+                failures.push(cause);
+            }
+        }
+        failures
+    }
+
+    /// Read one workspace again. A failure drops its snapshot; `recovery` says
+    /// this read retries after an earlier failure, which blocks the next retry
+    /// for the delay.
+    fn reload_entry(&mut self, key: &str, recovery: bool) -> Result<(), String> {
         self.generation += 1;
-        self.reload_pending = false;
+        let Some(entry) = self.workspaces.get(key) else {
+            return Ok(());
+        };
+        let start = entry.start.clone();
+        let start_key = self.workspaces.start_key().to_owned();
         let loaded = {
             let make = |root: &Path| -> Box<dyn SourceFs> {
                 match &self.fs {
@@ -472,45 +599,96 @@ impl Server {
             let buffers = self
                 .open
                 .iter()
+                .filter(|(path, _)| match workspaces::owner_key(path) {
+                    Some(owner) => owner == key,
+                    None => key == start_key,
+                })
                 .map(|(path, document)| (path.as_str(), document.text.as_str()));
-            Snapshot::load(&self.workspace_start, buffers, &make)
+            Snapshot::load(&start, buffers, &make)
+        };
+        let retry_delay = self.retry_delay;
+        let Some(entry) = self.workspaces.get_mut(key) else {
+            return Ok(());
         };
         match loaded {
             Ok(snapshot) => {
-                self.snapshot = Some(snapshot);
-                self.load_failure = None;
-                self.retry_after = None;
+                entry.snapshot = Some(snapshot);
+                entry.load_failure = None;
+                entry.retry_after = None;
                 Ok(())
             }
             Err(error) => {
                 let cause = error.to_string();
-                self.snapshot = None;
-                self.load_failure = Some(cause.clone());
-                self.retry_after = recovery.then(|| Instant::now() + self.retry_delay);
+                entry.snapshot = None;
+                entry.load_failure = Some(cause.clone());
+                entry.retry_after = recovery.then(|| Instant::now() + retry_delay);
                 Err(cause)
             }
         }
     }
 
-    /// Make a snapshot present before a request that reads it. After a failed
-    /// load the next request tries once more, unless the last retry failed
-    /// less than the delay ago.
-    fn recover(&mut self) -> Result<(), String> {
-        if self.snapshot.is_some() {
+    /// Make a workspace's snapshot present before a request that reads it.
+    /// After a failed load the next request tries once more, unless the last
+    /// retry failed less than the delay ago.
+    fn recover(&mut self, key: &str) -> Result<(), String> {
+        self.workspaces.ensure(key);
+        let Some(entry) = self.workspaces.get(key) else {
+            return Ok(());
+        };
+        if entry.snapshot.is_some() {
             return Ok(());
         }
-        if self.retry_after.is_some_and(|at| Instant::now() < at) {
-            return Err(self.load_failure.clone().unwrap_or_default());
+        if entry.retry_after.is_some_and(|at| Instant::now() < at) {
+            return Err(entry.load_failure.clone().unwrap_or_default());
         }
-        self.reload(true)
+        self.reload_entry(key, true)
     }
 
-    fn load_failure_notifications(&mut self, cause: &str) -> Vec<Value> {
+    /// Which workspace a document belongs to, or why none holds it.
+    fn document_workspace(&self, params: &Value) -> Answer {
+        let given = params::document_workspace(params)?;
+        let path = file_uri_to_path(&given.uri)?;
+        let Some(owner) = workspaces::owner_key(&path) else {
+            return Ok(json!({
+                "state": "none",
+                "reason": "No .sigil/config.json was found above this file.",
+            }));
+        };
+        let Some(snapshot) = self
+            .workspaces
+            .get(&owner)
+            .and_then(|entry| entry.snapshot.as_ref())
+        else {
+            return Err(RequestError::Internal(format!(
+                "Unable to load workspace: {owner}"
+            )));
+        };
+        let name = snapshot
+            .workspace
+            .config
+            .as_ref()
+            .map(|config| config.workspace_name.clone())
+            .unwrap_or_else(|| owner.rsplit('/').next().unwrap_or(&owner).to_owned());
+        if snapshot.file_index(&path).is_some() {
+            Ok(json!({"state": "workspace", "name": name, "root": owner}))
+        } else {
+            Ok(json!({
+                "state": "excluded",
+                "name": name,
+                "root": owner,
+                "reason": "The files selection of this workspace leaves this file out.",
+            }))
+        }
+    }
+
+    fn load_failure_notifications(&mut self, causes: &[String]) -> Vec<Value> {
         let mut out = self.diagnostic_notifications(&[]);
-        out.push(rpc::notification(
-            "window/showMessage",
-            json!({"type": 1, "message": format!("Unable to load Sigil workspace: {cause}")}),
-        ));
+        for cause in causes {
+            out.push(rpc::notification(
+                "window/showMessage",
+                json!({"type": 1, "message": format!("Unable to load Sigil workspace: {cause}")}),
+            ));
+        }
         out
     }
 
@@ -533,15 +711,41 @@ impl Server {
         )]
     }
 
-    /// Publish the snapshot's diagnostics for every file that has some, and an
+    /// The diagnostics of every held workspace, grouped by URI. A URI keeps
+    /// one nested-config error, the one of the nested workspace's own reading,
+    /// and no other entry twice.
+    fn grouped_diagnostics(&self) -> BTreeMap<String, Vec<Value>> {
+        let mut keys: Vec<&String> = self.workspaces.snapshots().map(|(key, _)| key).collect();
+        keys.sort_by_key(|key| std::cmp::Reverse(key.matches('/').count()));
+        let mut grouped: BTreeMap<String, Vec<Value>> = BTreeMap::new();
+        for key in keys {
+            let Some(entry) = self.workspaces.get(key) else {
+                continue;
+            };
+            let Some(snapshot) = entry.snapshot.as_ref() else {
+                continue;
+            };
+            for (uri, found) in diagnostics::by_uri(snapshot) {
+                let target = grouped.entry(uri).or_default();
+                for item in found {
+                    let nested = item["code"] == NESTED_CONFIG;
+                    let repeats = target
+                        .iter()
+                        .any(|seen| *seen == item || (nested && seen["code"] == NESTED_CONFIG));
+                    if !repeats {
+                        target.push(item);
+                    }
+                }
+            }
+        }
+        grouped
+    }
+
+    /// Publish the diagnostics of every workspace for every file that has some, and an
     /// empty list for each file that had some, each open buffer and each URI
     /// in `extra`, in URI order.
     fn diagnostic_notifications(&mut self, extra: &[String]) -> Vec<Value> {
-        let mut grouped = self
-            .snapshot
-            .as_ref()
-            .map(diagnostics::by_uri)
-            .unwrap_or_default();
+        let mut grouped = self.grouped_diagnostics();
         let mut uris: BTreeSet<String> = grouped.keys().cloned().collect();
         uris.extend(self.open.values().map(|document| document.uri.clone()));
         uris.extend(extra.iter().cloned());
@@ -592,4 +796,15 @@ fn triggers_reload(path: &str) -> bool {
     ];
     let path = normalize_path(path);
     path.ends_with(".sigil") || CONTEXT_FILES.iter().any(|name| path.ends_with(name))
+}
+
+/// The path of the document a request names: its `textDocument` URI, or the
+/// first argument of a command.
+fn document_path(params: &Value) -> Option<String> {
+    let uri = params
+        .get("textDocument")
+        .and_then(|document| document.get("uri"))
+        .or_else(|| params.get("arguments")?.get(0))?
+        .as_str()?;
+    file_uri_to_path(uri).ok()
 }

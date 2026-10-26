@@ -189,9 +189,14 @@ impl Client {
     }
 
     pub fn watched(&mut self, uris: &[String]) -> Vec<Value> {
+        self.watched_kind(uris, 2)
+    }
+
+    /// Watched-file events of one kind: 1 created, 2 changed, 3 deleted.
+    pub fn watched_kind(&mut self, uris: &[String], kind: u8) -> Vec<Value> {
         let changes: Vec<Value> = uris
             .iter()
-            .map(|uri| json!({"uri": uri, "type": 2}))
+            .map(|uri| json!({"uri": uri, "type": kind}))
             .collect();
         self.notify(
             "workspace/didChangeWatchedFiles",
@@ -328,7 +333,7 @@ impl Disk {
 }
 
 /// A file source whose every read fails.
-struct Unreadable;
+pub struct Unreadable;
 
 impl SourceFs for Unreadable {
     fn read(&self, _path: &str) -> io::Result<Option<Vec<u8>>> {
