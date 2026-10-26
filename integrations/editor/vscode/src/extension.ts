@@ -35,6 +35,7 @@ let client: LanguageClient | undefined;
 let languageServerQueue: Promise<void> = Promise.resolve();
 let activeCompilation: CompilationProcess | undefined;
 let workspaceIndicator: vscode.StatusBarItem | undefined;
+let workspaceRefresh: ReturnType<typeof setTimeout> | undefined;
 let displayedCompilationRoot: string | undefined;
 let displayedCompilationFocus: CompilationFocus | undefined;
 const workspaceRevisions = new Map<string, number>();
@@ -241,7 +242,11 @@ export async function activate(
     // between workspaces. The server reads it from its own watch, so give it
     // a moment before asking again.
     if (uri.path.endsWith("/.sigil/config.json")) {
-      setTimeout(() => void refreshWorkspaceIndicator(), 300);
+      clearTimeout(workspaceRefresh);
+      workspaceRefresh = setTimeout(
+        () => void refreshWorkspaceIndicator(),
+        300,
+      );
     }
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder) return;
@@ -428,6 +433,7 @@ export async function deactivate(): Promise<void> {
   displayedCompilationFocus = undefined;
   workspaceRevisions.clear();
   workspaceIndicator = undefined;
+  clearTimeout(workspaceRefresh);
   await languageServerQueue.catch(() => undefined);
   const running = client;
   client = undefined;

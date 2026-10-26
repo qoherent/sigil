@@ -20,6 +20,7 @@ use sigil_core::language::{
     fs::{DiskFs, SourceFs},
     path::normalize_path,
     position::EditorPosition,
+    workspace::CONFIG_PATH,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -132,7 +133,6 @@ pub struct Server {
     fs: Option<FsFactory>,
     retry_delay: Duration,
     state: State,
-    workspace_start: PathBuf,
     supports_watch_registration: bool,
     watch_requested: bool,
     /// Open buffers by absolute path.
@@ -157,7 +157,6 @@ impl Server {
     pub fn new(options: ServerOptions) -> Self {
         let workspaces = Workspaces::new(&options.cwd);
         Self {
-            workspace_start: options.cwd.clone(),
             cwd: options.cwd,
             fs: options.fs,
             retry_delay: options.retry_delay,
@@ -198,24 +197,16 @@ impl Server {
         self.workspaces.start()?.snapshot.as_ref()
     }
 
-    /// The current reading of the workspace that owns the file at `path`: the
-    /// start workspace's when no config sits above the file.
-    pub fn snapshot_for(&self, path: &str) -> Option<&Snapshot> {
-        let key = self.key_for_path(path);
-        self.workspaces.get(&key)?.snapshot.as_ref()
-    }
-
     /// The keys of the workspaces held now, the start workspace first.
     pub fn held_workspaces(&self) -> Vec<String> {
         let start = self.workspaces.start_key().to_owned();
-        let mut keys: Vec<String> = self
+        let others: Vec<String> = self
             .workspaces
             .keys()
             .filter(|key| **key != start)
             .cloned()
             .collect();
-        keys.insert(0, start);
-        keys
+        std::iter::once(start).chain(others).collect()
     }
 
     /// Whether a change recorded by `handle_queued` still awaits `settle`.
@@ -371,12 +362,12 @@ impl Server {
             ));
         }
         let given = params::initialize(params)?;
-        self.workspace_start = match given.start_uri() {
+        let start = match given.start_uri() {
             Some(uri) => PathBuf::from(file_uri_to_path(uri)?),
             None => self.cwd.clone(),
         };
         self.supports_watch_registration = given.supports_watch_registration();
-        self.workspaces = Workspaces::new(&self.workspace_start);
+        self.workspaces = Workspaces::new(&start);
         let start = self.workspaces.start_key().to_owned();
         self.reload_entry(&start, false)
             .map_err(RequestError::Internal)?;
@@ -503,7 +494,7 @@ impl Server {
             }
             Change::Watch(changed) => {
                 for (path, kind) in changed {
-                    if kind != 2 && normalize_path(&path).ends_with("/.sigil/config.json") {
+                    if kind != 2 && normalize_path(&path).ends_with(&format!("/{CONFIG_PATH}")) {
                         self.dirty_all = true;
                     } else if let Some(root) = workspaces::context_root(&path) {
                         // A file of a directory that is no workspace root yet
@@ -545,6 +536,9 @@ impl Server {
 
     /// Release the nested workspaces that no open buffer needs.
     fn release_unneeded(&mut self) {
+        if self.workspaces.len() == 1 {
+            return;
+        }
         let needed = self.owners_of_open();
         self.workspaces.retain(|key| needed.contains(key));
     }
@@ -588,7 +582,6 @@ impl Server {
             return Ok(());
         };
         let start = entry.start.clone();
-        let start_key = self.workspaces.start_key().to_owned();
         let loaded = {
             let make = |root: &Path| -> Box<dyn SourceFs> {
                 match &self.fs {
@@ -599,10 +592,7 @@ impl Server {
             let buffers = self
                 .open
                 .iter()
-                .filter(|(path, _)| match workspaces::owner_key(path) {
-                    Some(owner) => owner == key,
-                    None => key == start_key,
-                })
+                .filter(|(path, _)| self.key_for_path(path) == key)
                 .map(|(path, document)| (path.as_str(), document.text.as_str()));
             Snapshot::load(&start, buffers, &make)
         };
@@ -786,16 +776,10 @@ fn workspace_method(snapshot: &Snapshot, method: &str, params: &Value) -> Option
     }
 }
 
-/// Whether a changed path reloads the workspace: a `.sigil` source, or the
+/// Whether a changed path reloads a workspace: a `.sigil` source, or the
 /// config, glossary or local override under `.sigil/`.
 fn triggers_reload(path: &str) -> bool {
-    const CONTEXT_FILES: [&str; 3] = [
-        "/.sigil/config.json",
-        "/.sigil/glossary.json",
-        "/.sigil/local.json",
-    ];
-    let path = normalize_path(path);
-    path.ends_with(".sigil") || CONTEXT_FILES.iter().any(|name| path.ends_with(name))
+    normalize_path(path).ends_with(".sigil") || workspaces::context_root(path).is_some()
 }
 
 /// The path of the document a request names: its `textDocument` URI, or the

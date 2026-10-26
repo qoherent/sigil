@@ -88,24 +88,24 @@ impl Workspaces {
     }
 
     /// Release every workspace that `keep` does not name, except the start one.
-    /// The keys released.
-    pub fn retain(&mut self, keep: impl Fn(&str) -> bool) -> Vec<String> {
-        let gone: Vec<String> = self
-            .entries
-            .keys()
-            .filter(|key| **key != self.start_key && !keep(key))
-            .cloned()
-            .collect();
-        for key in &gone {
-            self.entries.remove(key);
-        }
-        gone
+    pub fn retain(&mut self, keep: impl Fn(&str) -> bool) {
+        let start = &self.start_key;
+        self.entries.retain(|key, _| key == start || keep(key));
+    }
+
+    /// How many workspaces are held, the start one included.
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
     }
 }
 
 /// A workspace root as the key of its entry and as a snapshot names its root:
 /// normalized, `/`-separated, with no trailing slash.
-pub fn root_key(root: &Path) -> String {
+fn root_key(root: &Path) -> String {
     let text = normalize_path(&root.to_string_lossy());
     if text == "/" {
         text

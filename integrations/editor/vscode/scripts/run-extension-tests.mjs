@@ -33,6 +33,13 @@ if (
   if (existsSync(renamedExecutable)) vscodeExecutablePath = renamedExecutable;
 }
 
+const sigilExecutable = process.env.SIGIL_TEST_LANGUAGE ??
+  path.join(
+    repository,
+    "packages/cli/target/debug",
+    process.platform === "win32" ? "sigil.exe" : "sigil",
+  );
+
 const fixture = process.env.SIGIL_TEST_WORKSPACE
   ? undefined
   : await mkdtemp(path.join(os.tmpdir(), "sigil-editor-workspace-"));
@@ -65,12 +72,7 @@ try {
           process.platform === "win32" ? "sigilc.exe" : "sigilc",
         ),
       SIGIL_TEST_BUNDLED: process.env.SIGIL_TEST_BUNDLED ?? "0",
-      SIGIL_TEST_LANGUAGE: process.env.SIGIL_TEST_LANGUAGE ??
-        path.join(
-          repository,
-          "packages/cli/target/debug",
-          process.platform === "win32" ? "sigil.exe" : "sigil",
-        ),
+      SIGIL_TEST_LANGUAGE: sigilExecutable,
     },
   });
 } finally {
@@ -109,12 +111,7 @@ if (!process.env.SIGIL_TEST_WORKSPACE) {
         SIGIL_REPO_ROOT: repository,
         SIGIL_TEST_WORKSPACE: workspace,
         SIGIL_TEST_NESTED: "1",
-        SIGIL_TEST_LANGUAGE: process.env.SIGIL_TEST_LANGUAGE ??
-          path.join(
-            repository,
-            "packages/cli/target/debug",
-            process.platform === "win32" ? "sigil.exe" : "sigil",
-          ),
+        SIGIL_TEST_LANGUAGE: sigilExecutable,
       },
     });
   } finally {
