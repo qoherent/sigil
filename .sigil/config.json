@@ -25,6 +25,7 @@
       "repos/**",
       "**/target/**",
       "examples/**",
+      ".benchmarks/**",
       "scripts/slotted-benchmark/fixtures/**",
       "packages/core/tests/**",
       "packages/cli/tests/**",
