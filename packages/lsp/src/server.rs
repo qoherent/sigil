@@ -559,6 +559,10 @@ impl Server {
     /// needs, and read every workspace that a change touched. The causes of
     /// the reads that failed.
     fn refresh(&mut self) -> Vec<String> {
+        let everything = std::mem::take(&mut self.dirty_all);
+        if everything {
+            self.workspaces.rekey_start();
+        }
         let needed = self.owners_of_open();
         for key in &needed {
             if self.workspaces.ensure(key) {
@@ -567,7 +571,7 @@ impl Server {
         }
         self.workspaces.retain(|key| needed.contains(key));
         let dirty = std::mem::take(&mut self.dirty);
-        let keys: Vec<String> = if std::mem::take(&mut self.dirty_all) {
+        let keys: Vec<String> = if everything {
             self.workspaces.keys().cloned().collect()
         } else {
             self.workspaces

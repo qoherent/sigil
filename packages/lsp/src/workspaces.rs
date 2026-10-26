@@ -38,6 +38,9 @@ impl Entry {
 /// The held workspaces by root key, and which one the editor started in.
 #[derive(Debug)]
 pub struct Workspaces {
+    /// Where the editor started, kept so the start workspace can be found
+    /// again when a config appears or goes away.
+    start_dir: PathBuf,
     start_key: String,
     entries: BTreeMap<String, Entry>,
 }
@@ -48,7 +51,27 @@ impl Workspaces {
         let start_key = start_key(start);
         let mut entries = BTreeMap::new();
         entries.insert(start_key.clone(), Entry::new(start.to_path_buf()));
-        Self { start_key, entries }
+        Self {
+            start_dir: start.to_path_buf(),
+            start_key,
+            entries,
+        }
+    }
+
+    /// Find the start workspace again. A config that appeared or went away may
+    /// have changed which workspace the start folder belongs to, and its entry
+    /// must read the workspace it is keyed by. The reading of the old start
+    /// workspace is dropped; it comes back when an open buffer still needs it.
+    pub fn rekey_start(&mut self) {
+        let key = start_key(&self.start_dir);
+        if key == self.start_key {
+            return;
+        }
+        self.entries.remove(&self.start_key);
+        self.entries
+            .entry(key.clone())
+            .or_insert_with(|| Entry::new(self.start_dir.clone()));
+        self.start_key = key;
     }
 
     pub fn start_key(&self) -> &str {

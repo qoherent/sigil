@@ -577,3 +577,38 @@ fn workspace_with_broken() -> Temp {
     temp.write("b.sigil", support::BROKEN);
     temp
 }
+
+#[test]
+fn a_config_created_in_the_start_folder_does_not_leave_two_readings_of_it() {
+    // The editor starts in `sub`, whose workspace is the enclosing one until
+    // `sub` gets a config of its own.
+    let temp = Temp::new();
+    temp.write(".sigil/config.json", &named_config("outer", &[]));
+    temp.write("sub/a.sigil", support::BROKEN);
+    let mut client = Client::at(&temp.root);
+    client.start_with(json!({"rootUri": temp.uri("sub")}));
+    let uri = temp.uri("sub/a.sigil");
+    let out = client.open(&uri, 1, CLEAN);
+    assert_eq!(
+        support::published_for(&out, &uri).unwrap_or_default().len(),
+        0,
+        "the unsaved fix hides the disk errors"
+    );
+
+    temp.write("sub/.sigil/config.json", &named_config("sub", &[]));
+    let out = client.watched_kind(&[temp.uri("sub/.sigil/config.json")], 1);
+    assert!(
+        support::published_for(&out, &uri).is_none_or(|found| found.is_empty()),
+        "no reading of the nested workspace may ignore the unsaved buffer: {:?}",
+        support::published_for(&out, &uri)
+    );
+    let held = client.server.held_workspaces();
+    let mut roots: Vec<&String> = held.iter().collect();
+    roots.dedup();
+    assert_eq!(roots.len(), held.len(), "{held:?}");
+    let reading_sub = held
+        .iter()
+        .filter(|key| key.ends_with("/sub") || key.as_str() == format!("{}/sub", temp.text()))
+        .count();
+    assert_eq!(reading_sub, 1, "{held:?}");
+}
