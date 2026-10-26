@@ -494,17 +494,29 @@ impl Server {
             }
             Change::Watch(changed) => {
                 for (path, kind) in changed {
-                    if kind != 2 && normalize_path(&path).ends_with(&format!("/{CONFIG_PATH}")) {
+                    let is_config = normalize_path(&path).ends_with(&format!("/{CONFIG_PATH}"));
+                    if is_config && kind != 2 {
                         self.dirty_all = true;
-                    } else if let Some(root) = workspaces::context_root(&path) {
-                        // A file of a directory that is no workspace root yet
-                        // belongs to whichever workspace holds that directory.
-                        let owner = self.key_for_path(&path);
+                        continue;
+                    }
+                    let owner = self.key_for_path(&path);
+                    self.dirty.insert(owner);
+                    // A config, glossary or local override belongs to its own
+                    // directory even when that directory is no workspace root
+                    // yet. A config also decides the nested-config error that
+                    // every workspace below it reports.
+                    if let Some(root) = workspaces::context_root(&path) {
+                        if is_config {
+                            let below = format!("{root}/");
+                            let held: Vec<String> = self
+                                .workspaces
+                                .keys()
+                                .filter(|key| key.starts_with(&below))
+                                .cloned()
+                                .collect();
+                            self.dirty.extend(held);
+                        }
                         self.dirty.insert(root);
-                        self.dirty.insert(owner);
-                    } else {
-                        let key = self.key_for_path(&path);
-                        self.dirty.insert(key);
                     }
                 }
             }

@@ -372,6 +372,7 @@ async function startLanguageServer(
       `Failed to start Sigil language server (${executable.command} lsp): ${message}. The executable must be a sigil that supports "sigil lsp"; the sigil.executable setting names it.`,
     );
     if (client === started) client = undefined;
+    workspaceIndicator?.hide();
     void started.dispose().catch(() => undefined);
     // Not awaited: a restart must not wait for the user to dismiss the message.
     void vscode.window.showErrorMessage(

@@ -525,3 +525,55 @@ fn the_workspace_request_checks_its_params_and_waits_for_initialize() {
     );
     assert_eq!(other["error"]["code"], -32603, "{other}");
 }
+
+#[test]
+fn an_edit_to_the_enclosing_config_refreshes_a_held_nested_workspace() {
+    let temp = Temp::new();
+    temp.write(".sigil/config.json", &named_config("outer", &[]));
+    temp.write("inner/.sigil/config.json", &named_config("inner", &[]));
+    temp.write("inner/a.sigil", CLEAN);
+    let mut client = Client::at(&temp.root);
+    client.start(&temp);
+    let inner_config = temp.uri("inner/.sigil/config.json");
+    let out = client.open(&temp.uri("inner/a.sigil"), 1, CLEAN);
+    let found = support::published_for(&out, &inner_config).expect("the nested-config error");
+    assert_eq!(codes(&found), ["SIGIL_NESTED_CONFIG"]);
+
+    temp.write(".sigil/config.json", &named_config("outer", &["inner"]));
+    let out = client.watched(&[temp.uri(".sigil/config.json")]);
+    assert_eq!(
+        support::published_for(&out, &inner_config),
+        Some(Vec::new()),
+        "excluding the nested workspace clears its error"
+    );
+}
+
+#[test]
+fn an_error_in_a_nested_file_is_published_once_when_the_parent_reads_it_too() {
+    let single = workspace_with_broken();
+    let mut one = Client::at(&single.root);
+    one.start(&single);
+    let uri = single.uri("b.sigil");
+    let expected = support::published_for(&one.open(&uri, 1, support::BROKEN), &uri)
+        .expect("published")
+        .len();
+    assert!(expected > 1, "the fixture has several errors");
+
+    let temp = Temp::new();
+    temp.write(".sigil/config.json", &named_config("outer", &[]));
+    temp.write("inner/.sigil/config.json", &named_config("inner", &[]));
+    temp.write("inner/b.sigil", support::BROKEN);
+    let mut client = Client::at(&temp.root);
+    client.start(&temp);
+    let nested = temp.uri("inner/b.sigil");
+    let out = client.open(&nested, 1, support::BROKEN);
+    let found = support::published_for(&out, &nested).expect("published");
+    assert_eq!(found.len(), expected, "{found:?}");
+}
+
+fn workspace_with_broken() -> Temp {
+    let temp = Temp::new();
+    temp.write(".sigil/config.json", &named_config("single", &[]));
+    temp.write("b.sigil", support::BROKEN);
+    temp
+}
