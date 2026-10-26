@@ -42,7 +42,9 @@
   go-to-definition and the preview in place. The enclosing workspace's config
   must exclude it. A nested workspace is read when its first file opens and
   released when its last file closes. A new `sigil/documentWorkspace` request
-  names the workspace of a document or says why none serves it.
+  names the workspace of a document or says why none serves it, and the server
+  sends `sigil/workspacesChanged` after it has read a changed workspace config,
+  so the status bar entry follows a config edit without waiting.
 - The VS Code extension shows the workspace of the active `.sigil` file in a
   status bar entry, and warns when the file is part of no workspace.
 

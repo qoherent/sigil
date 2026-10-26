@@ -657,6 +657,9 @@ pub mod replay {
                     let mut sent = substitute(message, &root);
                     watch_registration(&mut sent);
                     let mut actual = server.handle(classify(sent.clone()));
+                    // The recorded server never told a client that workspaces
+                    // changed.
+                    actual.retain(|message| message["method"] != "sigil/workspacesChanged");
                     let mut expected = expected_output(&scenario.name, output, &root);
                     for message in &mut expected {
                         symbols_without_disk_bom(scenario, &sent, message);

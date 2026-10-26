@@ -36,6 +36,9 @@ pub const RELOAD_RETRY_DELAY: Duration = Duration::from_millis(1000);
 
 /// The request that tells a client which workspace a document belongs to.
 pub const DOCUMENT_WORKSPACE: &str = "sigil/documentWorkspace";
+/// Sent after a workspace config changed and the server read again, so a
+/// client asks `sigil/documentWorkspace` again.
+pub const WORKSPACES_CHANGED: &str = "sigil/workspacesChanged";
 const NESTED_CONFIG: &str = "SIGIL_NESTED_CONFIG";
 const WATCH_REQUEST_ID: &str = "sigil/watch/request";
 const WATCH_REGISTRATION_ID: &str = "sigil/language-watch";
@@ -149,6 +152,9 @@ pub struct Server {
     /// A config appeared or went away, so which workspace owns a file may have
     /// changed for any of them.
     dirty_all: bool,
+    /// A workspace config changed, so what a client shows about the workspace
+    /// of a document is out of date once the next reading is done.
+    config_changed: bool,
     closed_uris: BTreeSet<String>,
     exit_code: Option<i32>,
 }
@@ -171,6 +177,7 @@ impl Server {
             reload_pending: false,
             dirty: BTreeSet::new(),
             dirty_all: false,
+            config_changed: false,
             closed_uris: BTreeSet::new(),
             exit_code: None,
         }
@@ -276,11 +283,15 @@ impl Server {
         self.reload_pending = false;
         let extra: Vec<String> = std::mem::take(&mut self.closed_uris).into_iter().collect();
         let failures = self.refresh();
-        if failures.is_empty() {
+        let mut out = if failures.is_empty() {
             self.diagnostic_notifications(&extra)
         } else {
             self.load_failure_notifications(&failures)
+        };
+        if std::mem::take(&mut self.config_changed) {
+            out.push(rpc::notification(WORKSPACES_CHANGED, json!({})));
         }
+        out
     }
 
     fn control(&mut self, method: &str, params: &Value) {
@@ -495,6 +506,7 @@ impl Server {
             Change::Watch(changed) => {
                 for (path, kind) in changed {
                     let is_config = normalize_path(&path).ends_with(&format!("/{CONFIG_PATH}"));
+                    self.config_changed |= is_config;
                     if is_config && kind != 2 {
                         self.dirty_all = true;
                         continue;

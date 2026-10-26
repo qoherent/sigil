@@ -612,3 +612,157 @@ fn a_config_created_in_the_start_folder_does_not_leave_two_readings_of_it() {
         .count();
     assert_eq!(reading_sub, 1, "{held:?}");
 }
+
+// A nested workspace that fails to load, and what a change to its context files does.
+
+/// Opens `inner/consumer.sigil` while the disk fails, so the nested workspace
+/// is held without a reading. The outer workspace was read before.
+fn failed_nested(delay: std::time::Duration) -> (Temp, support::Disk, Client, String) {
+    let temp = enclosing(&[
+        ("contract.sigil", CLEAN),
+        ("consumer.sigil", CONSUMER),
+        ("inner/contract.sigil", CLEAN),
+        ("inner/consumer.sigil", CONSUMER),
+    ]);
+    let disk = support::Disk::new();
+    let mut client = Client::new(disk.options(&temp.root, delay));
+    client.start(&temp);
+    disk.fail(support::ALWAYS);
+    let inner = temp.uri("inner/consumer.sigil");
+    let out = client.open(&inner, 1, CONSUMER);
+    assert_eq!(out.last().unwrap()["method"], "window/showMessage");
+    (temp, disk, client, inner)
+}
+
+fn hover_error(client: &mut Client, uri: &str) -> Value {
+    client.request(
+        "textDocument/hover",
+        json!({"textDocument": {"uri": uri}, "position": {"line": 0, "character": 0}}),
+    )
+}
+
+#[test]
+fn a_failed_nested_workspace_is_retried_once_and_then_left_alone_inside_the_window() {
+    let (temp, disk, mut client, inner) = failed_nested(support::LONG_DELAY);
+    let loads = disk.loads();
+    let first = hover_error(&mut client, &inner);
+    assert_eq!(first["error"]["code"], -32603, "{first}");
+    assert_eq!(disk.loads(), loads + 1, "the first request tries once more");
+
+    // Inside the window not even a disk that works again is read.
+    disk.fail(0);
+    let second = hover_error(&mut client, &inner);
+    assert_eq!(second["error"]["code"], -32603, "{second}");
+    assert_eq!(disk.loads(), loads + 1);
+
+    // The workspace that did load keeps answering, without a read.
+    let outer = temp.uri("consumer.sigil");
+    client.open(&outer, 1, CONSUMER);
+    let before = disk.loads();
+    let found = hover(&mut client, &outer, at(CONSUMER, "Execution", 3));
+    assert!(markdown(&found).contains("### Tag"), "{found}");
+    assert_eq!(disk.loads(), before);
+}
+
+#[test]
+fn a_failed_nested_workspace_is_served_again_once_the_window_has_passed() {
+    let (_temp, disk, mut client, inner) = failed_nested(support::SHORT_DELAY);
+    assert_eq!(hover_error(&mut client, &inner)["error"]["code"], -32603);
+    std::thread::sleep(support::SHORT_DELAY * 4);
+    assert_eq!(hover_error(&mut client, &inner)["error"]["code"], -32603);
+
+    disk.fail(0);
+    std::thread::sleep(support::SHORT_DELAY * 4);
+    let found = hover(&mut client, &inner, at(CONSUMER, "Execution", 3));
+    assert!(
+        markdown(&found).contains("### Tag"),
+        "the nested workspace answers again: {found}"
+    );
+    assert_eq!(client.server.held_workspaces().len(), 2);
+}
+
+fn glossary(definition: &str) -> String {
+    json!({
+        "schemaVersion": 1,
+        "terms": [{"term": "Execution", "definition": definition, "aliases": []}],
+        "contexts": [],
+    })
+    .to_string()
+}
+
+#[test]
+fn a_glossary_change_inside_a_nested_workspace_reads_only_that_workspace() {
+    let temp = enclosing(&[("inner/a.sigil", CLEAN), ("b.sigil", CLEAN)]);
+    temp.write("inner/.sigil/glossary.json", &glossary("First meaning."));
+    let disk = support::Disk::new();
+    let mut client = Client::new(disk.options(&temp.root, support::LONG_DELAY));
+    client.start(&temp);
+    let uri = temp.uri("inner/a.sigil");
+    client.open(&uri, 1, CLEAN);
+    let position = at(CLEAN, "Execution.", 0);
+    let found = hover(&mut client, &uri, position);
+    assert!(markdown(&found).contains("First meaning."), "{found}");
+
+    temp.write("inner/.sigil/glossary.json", &glossary("Second meaning."));
+    let before = disk.loads();
+    client.watched(&[temp.uri("inner/.sigil/glossary.json")]);
+    assert_eq!(disk.loads() - before, 1, "one workspace was read again");
+    let found = hover(&mut client, &uri, position);
+    assert!(markdown(&found).contains("Second meaning."), "{found}");
+    assert!(!markdown(&found).contains("First meaning."), "{found}");
+}
+
+#[test]
+fn a_local_override_change_inside_a_nested_workspace_reads_only_that_workspace() {
+    let temp = enclosing(&[("inner/a.sigil", CLEAN), ("b.sigil", CLEAN)]);
+    let disk = support::Disk::new();
+    let mut client = Client::new(disk.options(&temp.root, support::LONG_DELAY));
+    client.start(&temp);
+    client.open(&temp.uri("inner/a.sigil"), 1, CLEAN);
+    let before = disk.loads();
+    client.watched(&[temp.uri("inner/.sigil/local.json")]);
+    assert_eq!(disk.loads() - before, 1, "one workspace was read again");
+}
+
+// What a client is told, and how a path may be spelled.
+
+#[test]
+fn a_changed_workspace_config_is_followed_by_a_workspaces_changed_notification() {
+    let temp = enclosing(&[("inner/a.sigil", CLEAN), ("b.sigil", CLEAN)]);
+    let mut client = Client::at(&temp.root);
+    client.start(&temp);
+    client.open(&temp.uri("inner/a.sigil"), 1, CLEAN);
+    let told = |out: &[Value]| out.iter().any(|m| m["method"] == "sigil/workspacesChanged");
+
+    temp.write("inner/.sigil/config.json", &named_config("renamed", &[]));
+    let out = client.watched(&[temp.uri("inner/.sigil/config.json")]);
+    assert!(told(&out), "{out:?}");
+    let renamed = workspace_of(&mut client, &temp.uri("inner/a.sigil"));
+    assert_eq!(renamed["name"], "renamed", "{renamed}");
+
+    temp.write("inner/a.sigil", support::BROKEN);
+    let out = client.watched(&[temp.uri("inner/a.sigil")]);
+    assert!(
+        !told(&out),
+        "a source change leaves the workspaces as they were"
+    );
+}
+
+#[test]
+fn one_directory_spelled_with_dots_and_repeated_slashes_is_one_workspace() {
+    let temp = enclosing(&[("inner/a.sigil", CLEAN), ("inner/b.sigil", CLEAN)]);
+    let mut client = Client::at(&temp.root);
+    client.start(&temp);
+    let plain = temp.uri("inner/a.sigil");
+    let spelled = temp
+        .uri("inner/../inner/./b.sigil")
+        .replace("/inner/", "//inner/");
+    client.open(&plain, 1, CLEAN);
+    client.open(&spelled, 1, CLEAN);
+    assert_eq!(
+        client.server.held_workspaces().len(),
+        2,
+        "the start workspace and one nested one: {:?}",
+        client.server.held_workspaces()
+    );
+}

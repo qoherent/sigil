@@ -31,11 +31,11 @@ const COMPILE_FILE_COMMAND = "sigil.compileFile";
 const COMPILE_WORKSPACE_COMMAND = "sigil.compileWorkspace";
 const SELECT_COMPILATION_FOCUS_COMMAND = "sigil.selectCompilationFocus";
 const DOCUMENT_WORKSPACE_REQUEST = "sigil/documentWorkspace";
+const WORKSPACES_CHANGED_NOTIFICATION = "sigil/workspacesChanged";
 let client: LanguageClient | undefined;
 let languageServerQueue: Promise<void> = Promise.resolve();
 let activeCompilation: CompilationProcess | undefined;
 let workspaceIndicator: vscode.StatusBarItem | undefined;
-let workspaceRefresh: ReturnType<typeof setTimeout> | undefined;
 let displayedCompilationRoot: string | undefined;
 let displayedCompilationFocus: CompilationFocus | undefined;
 const workspaceRevisions = new Map<string, number>();
@@ -238,16 +238,6 @@ export async function activate(
     uri: vscode.Uri,
     event: "change" | "create" | "delete",
   ) => {
-    // A workspace config that appears, changes or goes away moves files
-    // between workspaces. The server reads it from its own watch, so give it
-    // a moment before asking again.
-    if (uri.path.endsWith("/.sigil/config.json")) {
-      clearTimeout(workspaceRefresh);
-      workspaceRefresh = setTimeout(
-        () => void refreshWorkspaceIndicator(),
-        300,
-      );
-    }
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder) return;
     const relative = workspaceRelativeSigilPath(folder.uri, uri);
@@ -363,6 +353,12 @@ async function startLanguageServer(
     },
   );
   client = started;
+  // The server sends this once a changed workspace config has been read, so
+  // the answer to the next request already reflects it.
+  started.onNotification(
+    WORKSPACES_CHANGED_NOTIFICATION,
+    () => void refreshWorkspaceIndicator(),
+  );
   try {
     await started.start();
     void refreshWorkspaceIndicator();
@@ -434,7 +430,6 @@ export async function deactivate(): Promise<void> {
   displayedCompilationFocus = undefined;
   workspaceRevisions.clear();
   workspaceIndicator = undefined;
-  clearTimeout(workspaceRefresh);
   await languageServerQueue.catch(() => undefined);
   const running = client;
   client = undefined;

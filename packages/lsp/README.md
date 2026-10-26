@@ -19,7 +19,8 @@ Language 0.9 responsibilities:
 - answer `sigil/documentWorkspace` with the workspace that owns a document
   (`workspace`, with its name and root), or with why none serves it (`excluded`
   by the files selection of its workspace, or `none` because no config sits
-  above the file);
+  above the file), and send `sigil/workspacesChanged` once a changed workspace
+  config has been read, so a client asks again;
 - surface diagnostics inline;
 - navigate explicit provider selections, local Tag introductions and resolved
   references using their captured source spans;

@@ -83,7 +83,9 @@ component SigilLsp {
 
     SigilLsp provides the *document workspace*, which the sigil/documentWorkspace
     request answers with the workspace snapshot that owns a source document, or
-    with the reason that no workspace snapshot does.
+    with the reason that no workspace snapshot does. After a workspace config
+    changes and the server has read again, it sends sigil/workspacesChanged, so
+    that a client asks again.
   }
 
   decisions {
