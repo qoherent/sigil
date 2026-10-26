@@ -34,6 +34,18 @@
   `@qoherent/sigil-lsp` are no longer published. Install `sigil` from the
   release archives or the installer instead.
 
+### Nested workspaces in the editor
+
+- The language server serves each `.sigil` file from the nearest workspace above
+  it, so a project nested inside the open folder, such as an example or a
+  benchmark attempt's design, gets diagnostics, hover, Tag highlighting,
+  go-to-definition and the preview in place. The enclosing workspace's config
+  must exclude it. A nested workspace is read when its first file opens and
+  released when its last file closes. A new `sigil/documentWorkspace` request
+  names the workspace of a document or says why none serves it.
+- The VS Code extension shows the workspace of the active `.sigil` file in a
+  status bar entry, and warns when the file is part of no workspace.
+
 ### Glossary
 
 - Remove `agentContext` from the glossary format. It only hid a term from the

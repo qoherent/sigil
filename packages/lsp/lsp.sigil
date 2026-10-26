@@ -38,6 +38,10 @@ component SigilLsp {
     SigilLsp must answer each request from one workspace snapshot, so that
     definition links, tag hover and semantic tokens agree on each tag identity.
 
+    SigilLsp must serve each source document from the workspace snapshot of the
+    nearest workspace config above it, so that a document of a nested workspace
+    gets the same answers as one of the enclosing workspace.
+
     A late reload must not overwrite a newer unsaved buffer, and a request that
     outlives its workspace snapshot must be answered as content modified.
 
@@ -76,6 +80,10 @@ component SigilLsp {
 
     SigilLsp provides the *render command*, sigil.renderDocument, which returns
     the Markdown of every component declared in one source document.
+
+    SigilLsp provides the *document workspace*, which the sigil/documentWorkspace
+    request answers with the workspace snapshot that owns a source document, or
+    with the reason that no workspace snapshot does.
   }
 
   decisions {

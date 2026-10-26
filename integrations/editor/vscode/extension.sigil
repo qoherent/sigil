@@ -5,6 +5,7 @@
 @docs/spec/sigil-reference.sigil from SpecLanguageReference import { source document }
 @packages/cli/cli.sigil from SigilCli import { lsp command }
 @packages/lsp/lsp.sigil from SigilLsp import {
+  document workspace,
   language server,
   render command,
 }
@@ -35,6 +36,10 @@ component SigilVsCodeExtension {
 
     The extension must run a compile through the CompilerCommands and must not
     change any source document.
+
+    The extension must show the document workspace of the active source
+    document as the language server reports it, and must not read a workspace
+    config itself.
   }
 
   interface {
@@ -43,6 +48,10 @@ component SigilVsCodeExtension {
 
     SigilVsCodeExtension provides the *component preview*, a read-only Markdown
     view of the active source document, which comes from the render command.
+
+    SigilVsCodeExtension provides the *workspace indicator*, a status bar entry
+    that names the workspace of the active source document, or says that it
+    belongs to none.
 
     SigilVsCodeExtension provides *compile file* and *compile workspace*,
     which run a compile for the active file or for the whole workspace root and

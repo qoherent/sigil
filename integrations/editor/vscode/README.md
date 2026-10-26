@@ -10,6 +10,8 @@ Language 0.9 responsibilities:
   highlighting; the `sigil.executable` setting names the `sigil` to run (empty
   uses the `sigil` shipped with the extension, else `sigil` on the `PATH`), and
   changing it restarts the server;
+- show the workspace of the active `.sigil` file in a status bar entry, as the
+  language server reports it, and say when the file belongs to no workspace;
 - expose `Sigil: Open Preview`, which renders the whole active `.sigil` file to
   Markdown and opens it in VS Code's built-in Markdown preview, available from
   the Command Palette and from a preview button in the editor title toolbar of
@@ -33,6 +35,11 @@ Configure these settings on the extension host:
 | `sigil.compile.executable`         | Native `sigilc` executable; default `sigilc`.                                                                        |
 | `sigil.compile.focus`              | `ask`, `design`, or `implementation`.                                                                                |
 | `sigil.compile.selection`          | Native Implementation selection JSON path, relative to the workspace or absolute; required for Implementation focus. |
+
+A `.sigil` file of a project nested inside the open folder, such as an example
+or a benchmark design, is served by that project's own workspace, provided the
+enclosing workspace's config excludes the project. Compilation still uses the
+workspace folder.
 
 The workspace folder must contain its `.sigil/config.json`. Multi-root windows
 use the active document's containing folder or prompt for a folder. The

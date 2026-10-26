@@ -12,6 +12,14 @@ Language 0.9 responsibilities:
 - implement Language Server Protocol 3.18 over standard input and output;
 - implement initialize, initialized, shutdown, and exit lifecycle handling;
 - synchronize open files using full-document changes and in-memory overlays;
+- serve each document from the nearest workspace above it, so a nested workspace
+  gets the same answers as the enclosing one. The workspace the editor starts in
+  stays loaded; a nested workspace is read when its first file opens and
+  released when its last file closes;
+- answer `sigil/documentWorkspace` with the workspace that owns a document
+  (`workspace`, with its name and root), or with why none serves it (`excluded`
+  by the files selection of its workspace, or `none` because no config sits
+  above the file);
 - surface diagnostics inline;
 - navigate explicit provider selections, local Tag introductions and resolved
   references using their captured source spans;
