@@ -11,7 +11,8 @@ A finding must quote the authored text it is about.
   only that it was.
 - `Revisit when:` names a condition someone could observe, not "if needed".
 - The `Trade-offs:` name a cost the decision actually accepts.
-- The decision does not restate a binding commitment that belongs in
-  Constraints, and does not add a commitment Constraints lack.
+- The decision may name the course a Constraint binds, but gives the reason for
+  it rather than only repeating the constraint's wording, and adds no binding
+  commitment that Constraints lack.
 - An optional label is present only when it carries content; flag a label that
   restates another label's paragraph.
