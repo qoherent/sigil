@@ -69,6 +69,34 @@ fn a_workspace_error_fails_every_selected_file_even_with_check() {
 }
 
 #[test]
+fn a_malformed_conventions_file_does_not_stop_formatting() {
+    // `check.json` is an advisory file for `sigil check`; the formatter reads
+    // sources, so a typo in it must not fail every file.
+    let temp = Temp::workspace();
+    temp.write("c.sigil", WRAPPABLE);
+    temp.write(".sigil/conventions/check.json", "{ \"rules\": [");
+    for args in [&["fmt", "--check"][..], &["fmt"][..]] {
+        let ran = temp.sigil(args);
+        assert!(ran.stdout.contains("c.sigil"), "{args:?}: {}", ran.stdout);
+        assert!(
+            !ran.stdout.contains("SIGIL_CONVENTION_PARSE"),
+            "{args:?}: {}",
+            ran.stdout
+        );
+        assert!(
+            !ran.stdout.starts_with("failed"),
+            "{args:?}: {}",
+            ran.stdout
+        );
+    }
+    assert_eq!(temp.files()["c.sigil"], WRAPPED);
+    // `check` still reports the file.
+    let checked = temp.sigil(&["check"]);
+    assert_eq!(checked.code, 1);
+    assert!(checked.stdout.contains("SIGIL_CONVENTION_PARSE"));
+}
+
+#[test]
 fn check_reports_a_noncanonical_file_and_leaves_it_alone() {
     let temp = Temp::workspace();
     temp.write("c.sigil", WRAPPABLE);

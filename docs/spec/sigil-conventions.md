@@ -68,7 +68,8 @@ language server shows the same warnings in the editor.
 
 A malformed `check.json` produces one error, `SIGIL_CONVENTION_PARSE`, on that
 file, and no rule warnings. The error belongs to the host, not to the language,
-so it does not stop `sigilc` from reading the workspace.
+so it does not stop `sigilc` from reading the workspace, and `sigil fmt`
+ignores it: only `sigil check` reports it.
 
 In the editor, a change to `check.json` applies when the file is saved.
 

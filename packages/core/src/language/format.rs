@@ -6,6 +6,7 @@
 //! the same meaning as the original, and formatting the output again returns
 //! the same bytes.
 use super::{
+    conventions::CONVENTION_PARSE,
     diagnostics::{Location, diagnostic, order_diagnostics},
     fs::MemoryFs,
     parse::{Facet, Span, line_index_at},
@@ -19,6 +20,12 @@ use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 
 pub const LINE_TOO_LONG: &str = "SIGIL_LINE_TOO_LONG";
+
+/// A malformed conventions file is `sigil check`'s to report. Formatting reads
+/// only sources, so it must not fail because of that file.
+pub fn is_conventions_error(d: &Diagnostic) -> bool {
+    d.code == CONVENTION_PARSE
+}
 
 /// A facet by component, section and unit index.
 type FacetKey = (usize, usize, usize);
@@ -116,10 +123,9 @@ fn format_resolved(
         ));
         return reject(diagnostics);
     };
-    let has_errors = before
-        .diagnostics
-        .iter()
-        .any(|d| matches!(d.severity, Severity::Error) && d.code != LINE_TOO_LONG);
+    let has_errors = before.diagnostics.iter().any(|d| {
+        matches!(d.severity, Severity::Error) && d.code != LINE_TOO_LONG && !is_conventions_error(d)
+    });
     if has_errors || !document.complete {
         return reject(before.diagnostics.clone());
     }
@@ -216,6 +222,7 @@ fn format_resolved(
     let after = ResolvedWorkspace::from(&reformatted);
     let invalid = after.diagnostics.iter().any(|d| {
         matches!(d.severity, Severity::Error)
+            && !is_conventions_error(d)
             && (d.file_path.as_deref() == Some(path.as_str()) || d.code != LINE_TOO_LONG)
     });
     let unchanged_meaning =

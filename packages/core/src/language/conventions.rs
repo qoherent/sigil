@@ -18,6 +18,9 @@ use serde_json::{Map, Value};
 
 pub const CONVENTIONS_CHECK_PATH: &str = ".sigil/conventions/check.json";
 
+/// The code of the one error a malformed `check.json` produces.
+pub const CONVENTION_PARSE: &str = "SIGIL_CONVENTION_PARSE";
+
 /// One required-label rule. Without `groups` it applies to every named group in
 /// the section.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +56,7 @@ pub fn parse_check(bytes: &[u8], file_path: &str) -> ConventionsParse {
     let fail = |message: String, range| ConventionsParse {
         conventions: None,
         diagnostics: vec![diagnostic(
-            "SIGIL_CONVENTION_PARSE",
+            CONVENTION_PARSE,
             message,
             Location::at(file_path, range),
         )],
