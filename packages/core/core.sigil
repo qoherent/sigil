@@ -51,6 +51,10 @@ component SigilCore {
     config and the local override, check only their shape, and must not
     interpret the tool settings of a tool that owns them.
 
+    SigilCore must read only the check rules of the workspace conventions, from
+    the workspace root, and must not read its write or judge parts, and a
+    workspace without workspace conventions must report no convention warning.
+
     SigilCore must read a source document from caller-supplied text in place
     of the file on disk, with the same result as if the file held that text.
 
@@ -87,6 +91,14 @@ component SigilCore {
 
     SigilCore provides each glossary occurrence found in facet prose, as the
     workspace glossary defines it.
+
+    SigilCore provides the *workspace conventions* of one workspace, the check
+    rules that name a contract section, the groups in it and the labels each
+    group must start a facet with. A nested workspace has only its own.
+
+    SigilCore provides a *convention warning* for each label that a check rule
+    requires and a named group lacks, on the group's header, and reports a
+    malformed check rule file as an error.
 
     SigilCore provides the *formatted source* of a source document: prose
     wrapped to the formatting width, with every facet, tag identity and

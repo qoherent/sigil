@@ -230,8 +230,9 @@ impl Server {
 
     /// Whether `message` would change the workspace and start a reload: a
     /// document message the server would act on, or a watched-file event for a
-    /// `.sigil` file, the config, the glossary or the local override. Judged
-    /// against the state now, not the state after earlier queued messages.
+    /// `.sigil` file, the config, the glossary, the local override or the
+    /// conventions check file. Judged against the state now, not the state
+    /// after earlier queued messages.
     pub fn would_reload(&self, message: &Incoming) -> bool {
         match message {
             Incoming::Notification { method, params } => self.plan(method, params).is_some(),
@@ -805,7 +806,8 @@ fn workspace_method(snapshot: &Snapshot, method: &str, params: &Value) -> Option
 }
 
 /// Whether a changed path reloads a workspace: a `.sigil` source, or the
-/// config, glossary or local override under `.sigil/`.
+/// config, glossary, local override or conventions check file under `.sigil/`.
+/// The write and judge parts of the conventions are never read here.
 fn triggers_reload(path: &str) -> bool {
     normalize_path(path).ends_with(".sigil") || workspaces::context_root(path).is_some()
 }

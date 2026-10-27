@@ -159,10 +159,15 @@ fn start_key(start: &Path) -> String {
     root_key(&nearest_config_root(&start).unwrap_or(start))
 }
 
-/// The root a config, glossary or local override path belongs to, or none for
-/// any other path.
+/// The root a config, glossary, local override or conventions check file
+/// belongs to, or none for any other path.
 pub fn context_root(path: &str) -> Option<String> {
-    const CONTEXT_FILES: [&str; 3] = ["config.json", "glossary.json", "local.json"];
+    const CONTEXT_FILES: [&str; 4] = [
+        "config.json",
+        "glossary.json",
+        "local.json",
+        "conventions/check.json",
+    ];
     let path = normalize_path(path);
     CONTEXT_FILES.iter().find_map(|name| {
         let suffix = format!("/.sigil/{name}");

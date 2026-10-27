@@ -11,9 +11,9 @@ no release is published by the 0.9 migration.
 | `sigil-lsp` | 0.8.0 | Core 0.1.x; language 0.9.0; UTF-16 LSP; started by `sigil lsp` |
 | VS Code extension | 0.8.0 | `sigil` 0.9.x, shipped in each platform package or named by `sigil.executable`; language 0.9.0; VS Code `^1.91.0` |
 | Native `sigilc` | 0.3.0 | Sigil 0.9.0; tree format 1; design request 6, vocabulary 5, report 6; implementation request 1, vocabulary 1, report 1; judgment contexts 1 |
-| `sigil-understand` | 0.1.0 | Sigil 0.9.0 reference pack; no compiler requirement |
-| `sigil-evaluate` | 0.2.6 | Sigil 0.9.0; siblings `sigil-understand` and `sigil-compute-design` |
-| `sigil-write` | 0.2.4 | Sigil 0.9.0; siblings `sigil-understand`, `sigil-evaluate` and `sigil-compute-design` |
+| `sigil-understand` | 0.1.1 | Sigil 0.9.0 reference pack; no compiler requirement |
+| `sigil-evaluate` | 0.3.0 | Sigil 0.9.0; siblings `sigil-understand` and `sigil-compute-design` |
+| `sigil-write` | 0.3.0 | Sigil 0.9.0; siblings `sigil-understand`, `sigil-evaluate` and `sigil-compute-design` |
 | `sigil-align` | 0.1.2 | Sigil 0.9.0; siblings `sigil-understand`, `sigil-evaluate` and `sigil-write` |
 | `sigil-egglog` | 0.1.0 | Sigil 0.9.0; no sibling skills; egglog 3.0.0 pin |
 | `sigil-compute-design` | 0.5.3 | Sigil 0.9.0; siblings `sigil-understand` and `sigil-egglog`; native `sigilc` for the loop |

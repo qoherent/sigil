@@ -1,4 +1,4 @@
-//! The `init` command: write a workspace config and a seed glossary, and never
+//! The `init` command: write a workspace config and an empty glossary, and never
 //! overwrite an existing config.
 use crate::{
     Context,
@@ -61,64 +61,20 @@ struct InitView {
     diagnostics: Vec<DiagnosticView>,
 }
 
+/// The glossary as `init` writes it: the schema version and no terms or
+/// contexts, so a new workspace carries no vocabulary of its own.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GlossaryFile {
     schema_version: u32,
-    terms: Vec<SeedTerm>,
+    terms: Vec<()>,
     contexts: Vec<()>,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SeedTerm {
-    term: &'static str,
-    definition: &'static str,
-}
-
-/// The decision-record vocabulary every new workspace starts with.
-const SEED_TERMS: [(&str, &str); 8] = [
-    (
-        "Decision:",
-        "Required by the decision record convention; states the selected course or outcome whose rationale is being recorded.",
-    ),
-    (
-        "Scope:",
-        "Required by the decision record convention; states the governed boundary and important exclusions.",
-    ),
-    (
-        "Assumptions:",
-        "States materially applicable conditions treated as true when making the decision.",
-    ),
-    (
-        "Trade-offs:",
-        "States materially applicable benefits, costs, and tensions accepted by the decision.",
-    ),
-    (
-        "Design issues addressed:",
-        "States materially applicable problems or pressures the decision resolves.",
-    ),
-    (
-        "Discarded alternatives:",
-        "States materially relevant options not selected and why they were rejected.",
-    ),
-    (
-        "Consequences:",
-        "States materially applicable effects and obligations created by the decision.",
-    ),
-    (
-        "Revisit when:",
-        "States conditions that should trigger reconsideration of the decision.",
-    ),
-];
-
-fn seed_glossary() -> GlossaryFile {
+fn empty_glossary() -> GlossaryFile {
     GlossaryFile {
         schema_version: GLOSSARY_SCHEMA_VERSION,
-        terms: SEED_TERMS
-            .iter()
-            .map(|(term, definition)| SeedTerm { term, definition })
-            .collect(),
+        terms: Vec::new(),
         contexts: Vec::new(),
     }
 }
@@ -228,7 +184,7 @@ pub fn run(request: &InitRequest, ctx: &Context) -> Output {
         tools: ToolsView {},
     };
     let config_text = pretty_file(&config)?;
-    let glossary_text = pretty_file(&seed_glossary())?;
+    let glossary_text = pretty_file(&empty_glossary())?;
 
     let sigil_dir = target.join(".sigil");
     fs::create_dir_all(&sigil_dir).map_err(|error| {

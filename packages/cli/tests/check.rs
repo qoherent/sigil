@@ -43,6 +43,82 @@ fn an_untagged_facet_warns_and_an_implementation_annotation_adds_nothing() {
     );
 }
 
+/// A required-label rule, and a contract whose named decision group lacks `Scope:`.
+const DECISION_RULE: &str =
+    r#"{"rules":[{"section":"decisions","require":["Decision:","Scope:"]}]}"#;
+const LACKS_SCOPE: &str = "component Feature {\n  goal {\n    Keep the record.\n  }\n\n  interface {\n    Record {\n      A Record is kept.\n    }\n  }\n\n  decisions {\n    Retention {\n      Decision: Keep audit data.\n    }\n  }\n}\n";
+
+#[test]
+fn a_group_missing_a_required_label_warns_and_the_exit_stays_zero() {
+    let temp = Temp::workspace();
+    temp.write(".sigil/conventions/check.json", DECISION_RULE);
+    temp.write("contract.sigil", LACKS_SCOPE);
+    let (code, value) = temp.json("check", &[]);
+    assert_eq!(code, 0);
+    assert_eq!(codes(&value), ["SIGIL_CONVENTION_MISSING_LABEL"]);
+    assert_eq!(value["diagnostics"][0]["severity"], "warning");
+    assert!(
+        value["diagnostics"][0]["message"]
+            .as_str()
+            .unwrap()
+            .contains("`Scope:`")
+    );
+    assert_eq!(
+        value["diagnosticCounts"],
+        serde_json::json!({"error": 0, "warning": 1, "info": 0})
+    );
+    let text = temp.sigil(&["check", "--show-locations"]);
+    assert_eq!(text.code, 0);
+    assert!(
+        text.stdout
+            .contains("Diagnostics: 0 error, 1 warning, 0 info\n")
+    );
+    assert!(
+        text.stdout
+            .contains("warning SIGIL_CONVENTION_MISSING_LABEL contract.sigil:13:1: "),
+        "{}",
+        text.stdout
+    );
+}
+
+#[test]
+fn a_workspace_without_conventions_reports_no_convention_warning() {
+    let temp = Temp::workspace();
+    temp.write("contract.sigil", LACKS_SCOPE);
+    let (code, value) = temp.json("check", &[]);
+    assert_eq!(code, 0);
+    assert_eq!(codes(&value), Vec::<&str>::new());
+    assert_eq!(
+        value["diagnosticCounts"],
+        serde_json::json!({"error": 0, "warning": 0, "info": 0})
+    );
+    assert_eq!(
+        temp.sigil(&["check"]).stdout,
+        "Workspace root: .\nDiagnostics: 0 error, 0 warning, 0 info\n"
+    );
+}
+
+#[test]
+fn a_malformed_conventions_file_is_an_error_that_names_it() {
+    let temp = Temp::workspace();
+    temp.write(
+        ".sigil/conventions/check.json",
+        "{\"rules\": [{\"section\": \"decisions\", \"require\": []}]}",
+    );
+    temp.write("contract.sigil", LACKS_SCOPE);
+    let (code, value) = temp.json("check", &[]);
+    assert_eq!(code, 1);
+    assert_eq!(codes(&value), ["SIGIL_CONVENTION_PARSE"]);
+    assert_eq!(
+        value["diagnostics"][0]["filePath"],
+        ".sigil/conventions/check.json"
+    );
+    assert_eq!(
+        value["diagnosticCounts"],
+        serde_json::json!({"error": 1, "warning": 0, "info": 0})
+    );
+}
+
 #[test]
 fn counts_follow_the_severities_and_an_error_decides_the_exit_status() {
     let temp = Temp::workspace();
