@@ -21,6 +21,15 @@ the affected conclusion and missing source. Do not manufacture its content or
 call the affected scope clean. Background links do not need retrieval unless
 they affect the selected assessment.
 
+When the workspace owning the design has judge rules, apply them as additional
+review criteria. A delegated request supplies them as a `context` input; read
+that copy. A direct review reads `.sigil/conventions/judge.md` in place and
+records its hash with `captured_path: null` and `capture_mode: in_place`. Each
+finding a rule produces cites authored text under `location` and `evidence`
+like any other, and the rules file joins `assessed_inputs`. Use no write
+instructions or check rules, and use no rules from an enclosing workspace. With
+no judge rules, nothing changes.
+
 ## Start from computed claims
 
 When current computed evidence is available, start from it. A delegated

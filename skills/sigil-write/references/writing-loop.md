@@ -9,6 +9,10 @@ human choices, and details implementation can choose. Preserve responsibility,
 contract roles, Tag identities and ownership when revising. Replacing a
 local synonym with its owner's Tag keeps identity; it removes a duplicate.
 
+If the workspace has `.sigil/conventions/write.md`, read it now and follow it
+while drafting, as added guidance: where it conflicts with a language rule, the
+language rule wins. Without the file, nothing changes.
+
 Take the Tag inventory from [contract prose](contract-prose.md) before drafting.
 Reuse and import existing Tags first; define a new Tag only in the Component
 that owns its concept.
@@ -73,7 +77,11 @@ is the sole request/report definition. Use its required fields and identity,
 mapping, authority, freshness, and handoff rules; do not invent a reduced protocol.
 
 Before dispatch, capture the exact draft, provider/linked context, and intent
-bytes in temporary storage outside authored Sigil and source discovery. With
+bytes in temporary storage outside authored Sigil and source discovery. When the
+workspace has `.sigil/conventions/judge.md`, capture it with them as a `context`
+input, hash included, like a provider file, so the evaluator reads the copy.
+Do not capture `write.md` or `check.json`: write instructions guide authoring,
+not review, and `check.json` is for `sigil check`. With
 computed evidence, also capture the review view, evidence file, report, and
 judgment context, and every source and configuration file the evidence file
 lists, at their original relative paths. Record them under the contract's
