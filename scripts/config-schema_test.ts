@@ -42,8 +42,7 @@ const validateConventions = await compileSchema(
 /** Names of the fixtures replayed, so a silent skip cannot pass. */
 function replay(
   cases: Fixture[],
-  validateSource: (value: unknown) => boolean,
-  errors: () => unknown,
+  validator: ((value: unknown) => boolean) & { errors?: unknown },
 ): string[] {
   const checked: string[] = [];
   for (const fixture of cases) {
@@ -57,9 +56,9 @@ function replay(
       `${fixture.name} states no schema outcome`,
     );
     equal(
-      validateSource(JSON.parse(fixture.source)),
+      validator(JSON.parse(fixture.source)),
       expected,
-      `${fixture.name}: ${JSON.stringify(errors())}`,
+      `${fixture.name}: ${JSON.stringify(validator.errors)}`,
     );
     checked.push(fixture.name);
   }
@@ -67,20 +66,12 @@ function replay(
 }
 
 Deno.test("every config fixture gets the schema outcome it records", () => {
-  const checked = replay(
-    fixtures,
-    (value) => validate(value),
-    () => validate.errors,
-  );
+  const checked = replay(fixtures, validate);
   equal(checked.length, 57);
 });
 
 Deno.test("every conventions fixture gets the schema outcome it records", () => {
-  const checked = replay(
-    conventionFixtures,
-    (value) => validateConventions(value),
-    () => validateConventions.errors,
-  );
+  const checked = replay(conventionFixtures, validateConventions);
   equal(checked.length, 27);
 });
 

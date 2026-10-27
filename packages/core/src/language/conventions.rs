@@ -9,7 +9,7 @@ use super::{
     diagnostics::{Location, diagnostic, order_diagnostics},
     parse::{Group, Section},
     resolve::ResolvedWorkspace,
-    text::capture_source,
+    text::{SourceText, capture_source},
     untagged::untagged_facet_diagnostics,
     workspace::Workspace,
 };
@@ -25,6 +25,15 @@ pub struct CheckRule {
     pub section: String,
     pub groups: Option<Vec<String>>,
     pub require: Vec<String>,
+}
+
+impl CheckRule {
+    /// Whether the rule applies to the named group.
+    fn covers(&self, group: &str) -> bool {
+        self.groups
+            .as_ref()
+            .is_none_or(|names| names.iter().any(|name| name == group))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -93,10 +102,10 @@ fn rule_of(value: &Value) -> Result<CheckRule, String> {
         Some(section) if !section.is_empty() => section.to_owned(),
         _ => return Err("section must be a non-empty string.".to_owned()),
     };
-    let groups = match rule.get("groups") {
-        None => None,
-        Some(groups) => Some(strings_of(groups, "groups", false)?),
-    };
+    let groups = rule
+        .get("groups")
+        .map(|groups| strings_of(groups, "groups", false))
+        .transpose()?;
     let require = strings_of(
         rule.get("require")
             .ok_or("require must be a list of labels.")?,
@@ -171,21 +180,12 @@ pub fn convention_diagnostics(
             continue;
         };
         let file_path = &resolved.paths[component.file];
+        let sections = &resolved.declaration(component).sections;
         for rule in &conventions.rules {
-            for section in &resolved.declaration(component).sections {
-                if section.name != rule.section {
-                    continue;
-                }
-                for group in &section.groups {
-                    if rule
-                        .groups
-                        .as_ref()
-                        .is_some_and(|g| !g.contains(&group.name))
-                    {
-                        continue;
-                    }
+            for section in sections.iter().filter(|s| s.name == rule.section) {
+                for group in section.groups.iter().filter(|g| rule.covers(&g.name)) {
                     for label in &rule.require {
-                        if starts_a_facet(section, group, &source.text, label) {
+                        if starts_a_facet(section, group, source, label) {
                             continue;
                         }
                         let mut warning = diagnostic(
@@ -208,10 +208,10 @@ pub fn convention_diagnostics(
 
 /// Whether any Facet of the group has prose starting with `label`, after
 /// leading whitespace.
-fn starts_a_facet(section: &Section, group: &Group, text: &str, label: &str) -> bool {
+fn starts_a_facet(section: &Section, group: &Group, source: &SourceText, label: &str) -> bool {
     group.units.iter().any(|&unit| {
-        let range = section.units[unit].prose_range;
-        text.get(range.start..range.end)
+        source
+            .slice(&section.units[unit].prose_range.range())
             .is_some_and(|prose| prose.trim_start().starts_with(label))
     })
 }
