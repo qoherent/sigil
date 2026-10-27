@@ -133,6 +133,19 @@ fn a_label_wrapped_across_lines_still_starts_the_facet() {
 }
 
 #[test]
+fn a_trailing_space_in_a_label_still_guards_the_word() {
+    let rule = r#"{"rules":[{"section":"decisions","require":["Must "]}]}"#;
+    // `Must ` ends in a word boundary, so it must not match the start of `Mustard`.
+    let longer = decisions("    Retention {\n      Mustard is a condiment.\n    }\n");
+    assert_eq!(warn(rule, &[("c.sigil", &longer)]).len(), 1);
+    let word = decisions("    Retention {\n      Must keep audit data.\n    }\n");
+    assert!(warn(rule, &[("c.sigil", &word)]).is_empty());
+    // A line break after the word is that same boundary.
+    let wrapped = decisions("    Retention {\n      Must\n      keep audit data.\n    }\n");
+    assert!(warn(rule, &[("c.sigil", &wrapped)]).is_empty());
+}
+
+#[test]
 fn a_label_in_another_group_does_not_satisfy_this_one() {
     let source = decisions(
         "    Retention {\n      Decision: Keep audit data.\n    }\n\n    Access {\n      Decision: Limit readers.\n\n      Scope: Staff only.\n    }\n",
