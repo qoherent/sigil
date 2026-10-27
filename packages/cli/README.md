@@ -37,8 +37,8 @@ Commands:
 
 - `sigil --help` reports top-level help, while `--help` after any recognized
   command reports help scoped to that command;
-- `sigil init [path]` creates a config and, when absent, a glossary seeded with
-  the decision-record field labels; it never overwrites either file;
+- `sigil init [path]` creates a config and, when absent, an empty
+  glossary; it never overwrites either file;
 - `sigil version [path]` reports the CLI, core and configured language versions;
 - `sigil parse <path>` returns one source document with a source range for each
   of its parts;
