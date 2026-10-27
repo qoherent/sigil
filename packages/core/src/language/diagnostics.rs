@@ -57,6 +57,7 @@ pub fn stage_of(code: &str) -> Stage {
         "RETRIEVAL",
         "BOUNDARY",
         "GLOSSARY",
+        "CONVENTION_PARSE",
         "FORMAT_CONTEXT",
     ]) {
         Stage::Host
@@ -74,6 +75,7 @@ pub fn stage_of(code: &str) -> Stage {
         "TAG_NAME_COLLISION",
         "UNUSED_TAG",
         "UNTAGGED_FACET",
+        "CONVENTION_MISSING",
     ]) {
         Stage::Resolution
     } else if starts(&[

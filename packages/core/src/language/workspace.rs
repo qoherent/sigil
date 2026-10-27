@@ -5,6 +5,7 @@
 //! directly inside the root, and no ancestor is searched.
 use super::{
     config::{self, Config, excludes_subtree, matches_source_file},
+    conventions::{self, CONVENTIONS_CHECK_PATH, Conventions},
     diagnostics::{Location, diagnostic, order_diagnostics},
     fs::{DiskFs, SourceFs},
     glossary::{self, Glossary},
@@ -43,6 +44,9 @@ pub struct Workspace {
     pub sources: Vec<SourceFile>,
     pub context: Vec<ContextFile>,
     pub glossary: Option<Glossary>,
+    /// The check rules of `.sigil/conventions/check.json`, kept apart from
+    /// `context` because they are not a claims input.
+    pub conventions: Option<Conventions>,
     /// The tool settings of the workspace config merged with the local
     /// override, one object per tool namespace and never interpreted here.
     pub tools: Map<String, Value>,
@@ -82,6 +86,7 @@ impl Workspace {
             sources: Vec::new(),
             context: Vec::new(),
             glossary: None,
+            conventions: None,
             tools: Map::new(),
             diagnostics: Vec::new(),
             text_complete: true,
@@ -206,6 +211,11 @@ impl Workspace {
                 );
             }
             workspace.glossary = parsed.glossary;
+        }
+        if let Some(bytes) = fs.read(CONVENTIONS_CHECK_PATH)? {
+            let parsed = conventions::parse_check(&bytes, CONVENTIONS_CHECK_PATH);
+            diagnostics.extend(parsed.diagnostics);
+            workspace.conventions = parsed.conventions;
         }
         workspace.tools = match &local_tools {
             Some(local) => config::merge_tools(&config.tools, local),
