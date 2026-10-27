@@ -1,0 +1,189 @@
+[
+  {
+    "name": "minimal-no-rules",
+    "category": "structural-parity",
+    "source": "{\"rules\":[]}",
+    "parserValid": true
+  },
+  {
+    "name": "minimal-one-rule",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"Decision:\"]}]}",
+    "parserValid": true
+  },
+  {
+    "name": "rule-with-groups",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"groups\":[\"RetentionPeriod\",\"ResultAuthority\"],\"require\":[\"Decision:\",\"Scope:\"]}]}",
+    "parserValid": true
+  },
+  {
+    "name": "two-rules",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"Decision:\",\"Scope:\"]},{\"section\":\"constraints\",\"groups\":[\"Limits\"],\"require\":[\"Limit:\"]}]}",
+    "parserValid": true
+  },
+  {
+    "name": "label-with-internal-space",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"Trade-offs accepted:\"]}]}",
+    "parserValid": true
+  },
+  {
+    "name": "empty-object",
+    "category": "structural-parity",
+    "source": "{}",
+    "parserValid": false
+  },
+  {
+    "name": "rules-missing-with-unknown-key",
+    "category": "structural-parity",
+    "source": "{\"rule\":[]}",
+    "parserValid": false
+  },
+  {
+    "name": "unknown-root-key",
+    "category": "structural-parity",
+    "source": "{\"rules\":[],\"extra\":1}",
+    "parserValid": false
+  },
+  {
+    "name": "unknown-rule-key",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"Decision:\"],\"severity\":\"error\"}]}",
+    "parserValid": false
+  },
+  {
+    "name": "rules-not-an-array",
+    "category": "structural-parity",
+    "source": "{\"rules\":{}}",
+    "parserValid": false
+  },
+  {
+    "name": "rule-not-an-object",
+    "category": "structural-parity",
+    "source": "{\"rules\":[\"decisions\"]}",
+    "parserValid": false
+  },
+  {
+    "name": "section-missing",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "section-not-a-string",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":1,\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "section-empty",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"\",\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "require-missing",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\"}]}",
+    "parserValid": false
+  },
+  {
+    "name": "require-empty",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "require-not-an-array",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":\"Decision:\"}]}",
+    "parserValid": false
+  },
+  {
+    "name": "require-non-string-label",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"Decision:\",2]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "require-empty-label",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\"\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "groups-empty",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"groups\":[],\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "groups-not-an-array",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"groups\":\"RetentionPeriod\",\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "groups-non-string-name",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"groups\":[null],\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "groups-empty-name",
+    "category": "structural-parity",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"groups\":[\"\"],\"require\":[\"Decision:\"]}]}",
+    "parserValid": false
+  },
+  {
+    "name": "root-is-an-array",
+    "category": "structural-parity",
+    "source": "[]",
+    "parserValid": false
+  },
+  {
+    "name": "root-is-a-string",
+    "category": "structural-parity",
+    "source": "\"decisions\"",
+    "parserValid": false
+  },
+  {
+    "name": "root-is-null",
+    "category": "structural-parity",
+    "source": "null",
+    "parserValid": false
+  },
+  {
+    "name": "label-leading-whitespace",
+    "category": "parser-only-semantic",
+    "source": "{\"rules\":[{\"section\":\"decisions\",\"require\":[\" Decision:\"]}]}",
+    "parserValid": false,
+    "schemaValid": true
+  },
+  {
+    "name": "empty-source",
+    "category": "malformed-source",
+    "source": "",
+    "parserValid": false
+  },
+  {
+    "name": "not-json",
+    "category": "malformed-source",
+    "source": "rules: []",
+    "parserValid": false
+  },
+  {
+    "name": "trailing-comma",
+    "category": "malformed-source",
+    "source": "{\"rules\":[],}",
+    "parserValid": false
+  },
+  {
+    "name": "truncated",
+    "category": "malformed-source",
+    "source": "{\"rules\":[{\"section\":\"decisions\"",
+    "parserValid": false
+  }
+]

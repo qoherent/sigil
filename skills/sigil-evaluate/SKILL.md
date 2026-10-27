@@ -33,6 +33,9 @@ verified compatible CLI for `check` and `fmt --check` when available. Keep
 mechanical observations revision-bound and separate from semantic findings;
 otherwise continue review and report the specific unavailable validation.
 
+If the workspace has judge rules (`.sigil/conventions/judge.md`), apply them as
+described in the design review reference. With none, review is unchanged.
+
 Read the evaluator-owned [review contract](references/review-contract.md) to
 receive delegated inputs or return a revision-bound report or portable handoff.
 For direct review, its direct-input route preserves the same evidence fields

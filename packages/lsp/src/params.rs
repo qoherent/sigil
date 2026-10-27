@@ -221,6 +221,11 @@ pub fn semantic_tokens(params: &Value) -> Result<TextDocumentParams, InvalidPara
     document_only(params, "semanticTokens params")
 }
 
+/// Params for the request that asks which workspace a document belongs to.
+pub fn document_workspace(params: &Value) -> Result<TextDocumentParams, InvalidParams> {
+    document_only(params, "documentWorkspace params")
+}
+
 pub fn did_change_watched_files(
     params: &Value,
 ) -> Result<DidChangeWatchedFilesParams, InvalidParams> {

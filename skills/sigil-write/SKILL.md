@@ -22,6 +22,12 @@ first, then import it from its owning Component, and define a new Tag only when
 no existing Tag names the concept. In files you edit, replace a local synonym
 of another Component's Tag with an import from its owner.
 
+A workspace may add its own write instructions in `.sigil/conventions/write.md`.
+Read them before authoring or revising, and follow them in addition to the
+language rules; they only add guidance, and a language rule wins any conflict.
+With no such file, nothing changes. Use the conventions of the workspace that
+owns the design, never an enclosing one.
+
 Read [the writing loop](references/writing-loop.md) before drafting. It consumes
 the evaluator-owned [review contract](../sigil-evaluate/references/review-contract.md);
 read that contract before preparing any review request or using a report.

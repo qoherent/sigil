@@ -21,7 +21,7 @@ is host-neutral.
 | `unresolved_questions` | Known undecided consequential choices, or an empty list. |
 | `source_root` | Original absolute Sigil workspace root used for root-relative imports. |
 | `captured_root` | Absolute temporary capture directory. |
-| `inputs` | All selected drafts, provider/linked context, and intent evidence, with identities below. |
+| `inputs` | All selected drafts, provider/linked context, and intent evidence, with identities below. The workspace's judge rules (`.sigil/conventions/judge.md`), when present, travel as a `context` input; write instructions and check rules do not. |
 | `evaluator_skill` | Available evaluator entrypoint and version or digest; include shared language-pack identity. |
 | `read_only` | Instructions prohibiting source edits, plus the actual host restrictions and allowed read roots. Say when restriction is instructions only. |
 | `computed_evidence` | Required when the review uses computed claims; absent for a source-only review. See below. |
@@ -186,7 +186,8 @@ evaluator retrieved beyond the original request. Verify original-to-capture
 mapping and source root as well: a relocation that changes resolution can change
 meaning even when individual file bytes are unchanged. Missing or changed input
 makes coverage stale; capture a fresh set and request a new assessment before
-using its findings to edit. Do not rely on the draft digest alone.
+using its findings to edit. Do not rely on the draft digest alone. A changed
+`judge.md` makes coverage stale through this same check.
 
 The writer independently checks the suggested correction against the cited
 authority and preserves all commitments before editing. Determined corrections

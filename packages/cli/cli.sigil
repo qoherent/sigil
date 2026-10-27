@@ -14,7 +14,9 @@
   source range,
 }
 @packages/core/core.sigil from SigilCore import {
+  convention warning,
   formatted source,
+  workspace conventions,
   workspace snapshot,
 }
 
@@ -42,6 +44,10 @@ component SigilCli {
 
     The check command must report only the diagnostics of the workspace
     snapshot, and none about implementation sources.
+
+    The check command must report each convention warning without changing the
+    exit status, and must not read the write or judge parts of the
+    workspace conventions.
 
     SigilCli must treat a removed command, graph, context, retrieve or render,
     as invalid usage and must not read the workspace for it.

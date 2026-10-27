@@ -96,6 +96,14 @@ written. A second Ctrl-C exits at once; its active record stays `running`, and
 directory under the OS temp directory and names it in `stagingPath`; look at it,
 then remove it by hand.
 
+### Read a design in the editor
+
+Each attempt's `design/` folder is a Sigil workspace. Open the repository root
+in VS Code and open a file under `.benchmarks/<batch>/attempts/<id>/design/` to
+get hover, tag highlighting and go-to-definition in place. The root
+`.sigil/config.json` must exclude `.benchmarks/**`, and the status bar entry
+names the design's workspace.
+
 ### Where a pass runs
 
 Each pass runs in a fresh directory under the OS temp directory, outside the

@@ -3,6 +3,7 @@
 use crate::{position, uri::path_to_file_uri};
 use sigil_core::{
     language::{
+        conventions::advisory_diagnostics,
         diagnostics::{Location, diagnostic, order_diagnostics},
         discovery::discover_workspace,
         fs::{Overlay, SourceFs},
@@ -12,7 +13,6 @@ use sigil_core::{
         position::{EditorPosition, EditorRange},
         resolve::ResolvedWorkspace,
         text::{SourceText, capture_source},
-        untagged::untagged_facet_diagnostics,
         workspace::{CONFIG_PATH, Workspace},
     },
     types::{Diagnostic, Range, RelatedLocation},
@@ -74,7 +74,7 @@ impl Snapshot {
         let resolved = ResolvedWorkspace::from(&workspace);
         let glossary = glossary_projection(&workspace, &resolved);
         let mut all = resolved.diagnostics.clone();
-        all.extend(untagged_facet_diagnostics(&resolved));
+        all.extend(advisory_diagnostics(&resolved, &workspace));
         if found {
             let cwd = std::env::current_dir()
                 .map(|dir| path_text(&dir))
