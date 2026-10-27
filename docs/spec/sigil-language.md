@@ -231,6 +231,9 @@ The others explain it. A rejected alternative is not a requested feature. A
 rationale paragraph alone should not be the only place a binding technology
 or architecture choice is recorded.
 
+How a workspace structures its decisions, for example with labels, is a
+workspace convention rather than language. See docs/spec/sigil-conventions.md.
+
 ### Write Cases that expose a decision
 
 Weak: "Cancellation works correctly."
@@ -910,52 +913,6 @@ component ReservationWindow {
 
 State describes meaningful domain data. It does not prescribe a database table.
 The Case makes the boundary convention observable.
-
-### A policy with a binding decision and rationale
-
-```sigil
-component AuditRetention {
-  goal {
-    Bound how long each *completed audit record* remains available.
-  }
-
-  constraints {
-    RetentionPeriod {
-      Keep each completed audit record for at least 30 days after completion.
-    }
-  }
-
-  cases {
-    A deletion eligibility check reports a completed audit record from
-    29 days ago as ineligible for deletion.
-  }
-
-  interface {
-    A *deletion eligibility check* reports whether a completed audit record
-    is eligible for deletion.
-  }
-
-  decisions {
-    RetentionPeriod {
-      Decision: Use a 30-day minimum for this example's audit history.
-
-      Scope: Each completed audit record; active records are excluded.
-
-      Trade-offs: Longer history would cost more storage.
-
-      Discarded alternatives: Immediate deletion was rejected because recent
-      incidents need investigation.
-
-      Revisit when: Investigation needs require a longer history.
-    }
-  }
-}
-```
-
-The labels are optional authoring conventions. A short decision can stay
-unlabeled. Useful additional labels include `Assumptions:`,
-`Design issues addressed:`, and `Consequences:`. Keep each paragraph focused on
-one contribution. Explain important exclusions without listing every dependent.
 
 ### An architectural boundary
 

@@ -26,6 +26,8 @@ and native export:
   recognition, Facet boundaries, payloads and link targets. Repair width errors
   only when reparsing and resolution preserve meaning.
 - Read the workspace glossary and find its term occurrences.
+- Read the workspace's optional check rules from `.sigil/conventions/check.json`
+  and warn about each named group that lacks a required label.
 - Retain explicit missing evidence and ambiguity metadata.
 
 Core does not own CLI arguments, editor APIs, LSP transport, model prompts or

@@ -702,8 +702,8 @@ The root [.sigil/config.json](./.sigil/config.json) defines this repository as a
 Sigil 0.9.0 workspace and excludes the independent example projects.
 
 - `docs/spec/` contains the language reference, grammar, authoring guide,
-  configuration and glossary specifications, their JSON schemas, and the Sigil
-  contracts that describe them.
+  configuration, glossary and conventions specifications, their JSON schemas,
+  and the Sigil contracts that describe them.
 - `examples/` contains independently configured Sigil projects used as
   design-pressure fixtures.
 - `packages/` contains `sigil-core`, the `sigil` command line, the language server, and the native `sigilc`, all Rust.

@@ -14,7 +14,7 @@
     "ajv-2020": "npm:ajv@8/dist/2020.js"
   },
   "tasks": {
-    "fmt": "deno fmt --check deno.json package.json plugin.json gemini-extension.json .claude-plugin .codex-plugin .cursor-plugin .agents/plugins .opencode/plugins .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json scripts/slotted-benchmark/fixtures/slotted-planted/.sigil/config.json docs/spec/sigil-config.schema.json docs/spec/sigil-glossary.schema.json integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
+    "fmt": "deno fmt --check deno.json package.json plugin.json gemini-extension.json .claude-plugin .codex-plugin .cursor-plugin .agents/plugins .opencode/plugins .sigil/config.json examples/promise/.sigil/config.json examples/slotted/.sigil/config.json scripts/slotted-benchmark/fixtures/slotted-planted/.sigil/config.json docs/spec/sigil-config.schema.json docs/spec/sigil-glossary.schema.json docs/spec/sigil-conventions.schema.json integrations/editor/vscode/package.json integrations/editor/vscode/tsconfig.json integrations/editor/vscode/language-configuration.json integrations/editor/vscode/syntaxes integrations/editor/vscode/src integrations/editor/vscode/tests integrations/editor/vscode/scripts integrations/editor/vscode/esbuild.mjs scripts",
     "lint": "deno lint",
     "generate:language-tables": "deno run --allow-read --allow-write scripts/generate-language-tables.ts",
     "check": "deno task check:vscode && deno task check:slotted-benchmark",

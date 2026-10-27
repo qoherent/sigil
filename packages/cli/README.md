@@ -44,7 +44,10 @@ Commands:
   of its parts;
 - `sigil check [path]` returns the workspace's diagnostics; add
   `--format text --show-locations` to append each diagnostic's file path, line,
-  and column to the text output;
+  and column to the text output. When the workspace has
+  `.sigil/conventions/check.json`, it also warns about each named group that
+  lacks a required label (see `docs/spec/sigil-conventions.md`), without
+  changing the exit status;
 - `sigil fmt [paths...]` formats selected files or included sources beneath
   selected directories in one workspace, deduplicating overlaps. No paths means
   the current directory, so running at the workspace root selects all included

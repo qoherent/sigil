@@ -46,6 +46,9 @@ its objects merge recursively into the workspace tool settings, while arrays
 and scalars replace the workspace values. Core validates only that each tool's
 value is an object.
 
+An optional `.sigil/conventions/` folder records how the workspace's designs
+should be written; see docs/spec/sigil-conventions.md.
+
 `workspace.members` is the sole authority for additional project roots in the
 workspace. Each entry is a unique, non-root, non-overlapping,
 workspace-relative directory. Package manifests and repository workspace
