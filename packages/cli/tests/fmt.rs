@@ -97,6 +97,28 @@ fn a_malformed_conventions_file_does_not_stop_formatting() {
 }
 
 #[test]
+fn a_failed_batch_does_not_report_a_malformed_conventions_file() {
+    let temp = Temp::workspace();
+    temp.write("a.sigil", &named(WRAPPABLE, "A"));
+    temp.write("b.sigil", UNFORMATTABLE);
+    temp.write(".sigil/conventions/check.json", "{ \"rules\": [");
+    for args in [&["fmt"][..], &["fmt", "--format", "json"][..]] {
+        let ran = temp.sigil(args);
+        assert_eq!(ran.code, 1, "{args:?}");
+        assert!(
+            ran.stdout.contains("SIGIL_UNFORMATTABLE_LINE"),
+            "{}",
+            ran.stdout
+        );
+        assert!(
+            !ran.stdout.contains("SIGIL_CONVENTION_PARSE"),
+            "{args:?}: {}",
+            ran.stdout
+        );
+    }
+}
+
+#[test]
 fn check_reports_a_noncanonical_file_and_leaves_it_alone() {
     let temp = Temp::workspace();
     temp.write("c.sigil", WRAPPABLE);

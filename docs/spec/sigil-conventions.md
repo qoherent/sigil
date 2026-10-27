@@ -57,7 +57,8 @@ keys at the root or in a rule are rejected.
 A rule applies to every named group in its section, or only to the listed
 groups. A Facet outside a named group is never matched. A label is satisfied
 when a Facet in the group starts with it, after leading whitespace; the same
-words in the middle of a Facet do not count.
+words in the middle of a Facet do not count. A run of whitespace, a line break
+included, counts as one space, so a label wrapped across two lines still matches.
 
 ## What sigil check reports
 

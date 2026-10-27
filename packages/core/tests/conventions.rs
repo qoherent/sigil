@@ -112,6 +112,27 @@ fn a_label_must_start_the_facet() {
 }
 
 #[test]
+fn a_label_wrapped_across_lines_still_starts_the_facet() {
+    let rule = r#"{"rules":[{"section":"decisions","require":["Discarded alternatives:"]}]}"#;
+    let wrapped = decisions(
+        "    Retention {\n      Discarded\n      alternatives: Immediate deletion.\n    }\n",
+    );
+    assert!(warn(rule, &[("c.sigil", &wrapped)]).is_empty());
+
+    // Runs of spaces and a line break all count as one space, in the label too.
+    let spaced =
+        decisions("    Retention {\n      Discarded   alternatives: Immediate deletion.\n    }\n");
+    assert!(warn(rule, &[("c.sigil", &spaced)]).is_empty());
+    let double = r#"{"rules":[{"section":"decisions","require":["Discarded  alternatives:"]}]}"#;
+    assert!(warn(double, &[("c.sigil", &wrapped)]).is_empty());
+
+    // A different word between the two is still a miss.
+    let other =
+        decisions("    Retention {\n      Discarded\n      options: Immediate deletion.\n    }\n");
+    assert_eq!(warn(rule, &[("c.sigil", &other)]).len(), 1);
+}
+
+#[test]
 fn a_label_in_another_group_does_not_satisfy_this_one() {
     let source = decisions(
         "    Retention {\n      Decision: Keep audit data.\n    }\n\n    Access {\n      Decision: Limit readers.\n\n      Scope: Staff only.\n    }\n",
@@ -357,6 +378,34 @@ fn a_malformed_check_json_is_one_host_stage_error_and_no_rule_warnings() {
         assert!(
             convention_diagnostics(&resolved, &workspace).is_empty(),
             "{name}"
+        );
+    }
+}
+
+#[test]
+fn formatting_results_never_carry_the_conventions_error() {
+    use sigil_core::language::format::format_document;
+    let long = "These words need wrapping. These words need wrapping. These words need wrapping. These words need wrapping.";
+    let wrappable = format!(
+        "component Feature {{\n  goal {{\n    {long}\n  }}\n\n  interface {{\n    run()\n  }}\n}}\n"
+    );
+    let canonical = "component Feature {\n  goal {\n    Keep a record.\n  }\n\n  interface {\n    run()\n  }\n}\n".to_owned();
+    let broken = "component Feature {\n}\n";
+    for (source, formats) in [
+        (&wrappable, true),
+        (&canonical, true),
+        (&broken.to_owned(), false),
+    ] {
+        let workspace = load(Some("{ not json"), &[("c.sigil", source)]);
+        let result = format_document(&workspace, "c.sigil");
+        assert_eq!(result.formatted_source.is_some(), formats, "{source}");
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|d| d.code != "SIGIL_CONVENTION_PARSE"),
+            "{source}: {:?}",
+            result.diagnostics
         );
     }
 }

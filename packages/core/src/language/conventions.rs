@@ -210,11 +210,18 @@ pub fn convention_diagnostics(
 }
 
 /// Whether any Facet of the group has prose starting with `label`, after
-/// leading whitespace.
+/// leading whitespace. A run of whitespace, a line break included, counts as one
+/// space on both sides, so a label wrapped across lines still matches.
 fn starts_a_facet(section: &Section, group: &Group, source: &SourceText, label: &str) -> bool {
+    let label = single_spaced(label);
     group.units.iter().any(|&unit| {
         source
             .slice(&section.units[unit].prose_range.range())
-            .is_some_and(|prose| prose.trim_start().starts_with(label))
+            .is_some_and(|prose| single_spaced(prose).starts_with(&label))
     })
+}
+
+/// The text with every whitespace run replaced by one space and none at the ends.
+fn single_spaced(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }

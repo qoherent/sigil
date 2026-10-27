@@ -72,7 +72,9 @@ fn has_blocking_error(diagnostics: &[Diagnostic]) -> bool {
     })
 }
 
-fn all_failed(selected: Vec<String>, diagnostics: Vec<Diagnostic>) -> Batch {
+fn all_failed(selected: Vec<String>, mut diagnostics: Vec<Diagnostic>) -> Batch {
+    // `check` reports a malformed conventions file; the formatter does not.
+    diagnostics.retain(|d| !is_conventions_error(d));
     Batch {
         files: selected
             .into_iter()

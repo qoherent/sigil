@@ -47,8 +47,17 @@ fn reject(diagnostics: Vec<Diagnostic>) -> FormatResult {
     FormatResult {
         formatted_source: None,
         changed: false,
-        diagnostics: order_diagnostics(diagnostics),
+        diagnostics: order_diagnostics(without_conventions_error(&diagnostics)),
     }
+}
+
+/// A result never carries the conventions error, so no caller has to filter it.
+fn without_conventions_error(diagnostics: &[Diagnostic]) -> Vec<Diagnostic> {
+    diagnostics
+        .iter()
+        .filter(|d| !is_conventions_error(d))
+        .cloned()
+        .collect()
 }
 
 fn without_width(diagnostics: &[Diagnostic]) -> Vec<Diagnostic> {
@@ -211,7 +220,7 @@ fn format_resolved(
         return FormatResult {
             formatted_source: Some(rendered),
             changed: false,
-            diagnostics: before.diagnostics.clone(),
+            diagnostics: without_conventions_error(&before.diagnostics),
         };
     }
 
@@ -245,7 +254,7 @@ fn format_resolved(
     FormatResult {
         changed: rendered != source.text,
         formatted_source: Some(rendered),
-        diagnostics: after.diagnostics,
+        diagnostics: without_conventions_error(&after.diagnostics),
     }
 }
 
