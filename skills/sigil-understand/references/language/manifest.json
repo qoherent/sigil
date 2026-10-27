@@ -20,8 +20,8 @@
     {
       "source": "docs/spec/sigil-language.md",
       "output": "sigil-language.md",
-      "sourceSha256": "a1e350e65402e7cbd52dfb394be18e414489d1b505ea7c752e54cf3358f42f29",
-      "outputSha256": "a1e350e65402e7cbd52dfb394be18e414489d1b505ea7c752e54cf3358f42f29"
+      "sourceSha256": "411c00425eeee95e94ff0b59c44e98b80e082bdb5aa9aefb5ab716c0be4eaf83",
+      "outputSha256": "411c00425eeee95e94ff0b59c44e98b80e082bdb5aa9aefb5ab716c0be4eaf83"
     },
     {
       "source": "docs/spec/migrating-to-0.9.md",
@@ -32,8 +32,8 @@
     {
       "source": "docs/spec/sigil-config.md",
       "output": "sigil-config.md",
-      "sourceSha256": "91cafdf91b62ef88448aab4f87392beb75773eb00b8b43aa542ac17f437b3bb5",
-      "outputSha256": "91cafdf91b62ef88448aab4f87392beb75773eb00b8b43aa542ac17f437b3bb5"
+      "sourceSha256": "559bd6360a98f1269083dc5f5b9fadc083609fb439b0ed0aec053d6721ef5552",
+      "outputSha256": "559bd6360a98f1269083dc5f5b9fadc083609fb439b0ed0aec053d6721ef5552"
     },
     {
       "source": "docs/spec/sigil-config.schema.json",

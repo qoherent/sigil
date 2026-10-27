@@ -1,5 +1,5 @@
 //! The `check` command: the workspace's diagnostics plus the advisory
-//! untagged-Facet warnings, with a character location for each.
+//! untagged-Facet and convention warnings, with a character location for each.
 use crate::{
     Context,
     args::{CheckRequest, Format},
@@ -10,8 +10,8 @@ use crate::{
 use serde::Serialize;
 use sigil_core::{
     language::{
-        diagnostics::order_diagnostics, resolve::ResolvedWorkspace,
-        untagged::untagged_facet_diagnostics,
+        conventions::advisory_diagnostics, diagnostics::order_diagnostics,
+        resolve::ResolvedWorkspace,
     },
     types::Diagnostic,
 };
@@ -27,16 +27,16 @@ struct CheckOutput {
 }
 
 /// The diagnostics `check` reports, in canonical order: what resolving the
-/// workspace found plus the untagged-Facet warnings. When discovery stopped
+/// workspace found plus the advisory warnings. When discovery stopped
 /// before any workspace was read, only its own diagnostics.
 fn diagnostics_of(session: &Session) -> Vec<Diagnostic> {
     let Some(workspace) = &session.workspace else {
         return session.diagnostics.clone();
     };
     let resolved = ResolvedWorkspace::from(workspace);
-    let untagged = untagged_facet_diagnostics(&resolved);
+    let advisory = advisory_diagnostics(&resolved, workspace);
     let mut all = resolved.diagnostics;
-    all.extend(untagged);
+    all.extend(advisory);
     session.reword(&mut all);
     order_diagnostics(all)
 }

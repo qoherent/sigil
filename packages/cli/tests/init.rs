@@ -6,7 +6,8 @@ mod support;
 use sigil_core::language::{glossary::parse_glossary, workspace::Workspace};
 use support::{Temp, replay};
 
-const SEED_NAMES: [&str; 8] = [
+/// The decision labels `init` used to seed into every new glossary.
+const DECISION_LABELS: [&str; 8] = [
     "Decision:",
     "Scope:",
     "Assumptions:",
@@ -39,7 +40,11 @@ const DEFAULT_CONFIG: &str = r#"{
 }
 "#;
 
-/// The seed glossary exactly as the TypeScript command line recorded it.
+/// The glossary `init` writes: the schema version and nothing else.
+const EMPTY_GLOSSARY: &str =
+    "{\n  \"schemaVersion\": 1,\n  \"terms\": [],\n  \"contexts\": []\n}\n";
+
+/// The glossary of the recorded `init-defaults-text` case.
 fn recorded_glossary() -> String {
     let case = replay::load()
         .into_iter()
@@ -55,7 +60,7 @@ fn project() -> Temp {
 }
 
 #[test]
-fn a_new_directory_gets_the_config_and_the_seed_glossary() {
+fn a_new_directory_gets_the_config_and_an_empty_glossary() {
     let temp = project();
     let ran = temp.sigil(&["init", "my-project"]);
     assert_eq!(ran.code, 0, "{ran:?}");
@@ -66,24 +71,29 @@ fn a_new_directory_gets_the_config_and_the_seed_glossary() {
     assert_eq!(ran.stderr, "");
     let files = temp.files();
     assert_eq!(files["my-project/.sigil/config.json"], DEFAULT_CONFIG);
+    assert_eq!(files["my-project/.sigil/glossary.json"], EMPTY_GLOSSARY);
     assert_eq!(
         files["my-project/.sigil/glossary.json"],
         recorded_glossary()
     );
     assert_eq!(files.len(), 2);
+    assert!(!temp.path("my-project/.sigil/conventions").exists());
 }
 
 #[test]
-fn the_seed_glossary_has_the_eight_decision_record_terms() {
+fn the_new_glossary_seeds_no_decision_labels() {
     let temp = project();
     temp.sigil(&["init", "my-project"]);
     let text = std::fs::read(temp.path("my-project/.sigil/glossary.json")).unwrap();
     let parsed = parse_glossary(&text, ".sigil/glossary.json");
     assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
-    let glossary = parsed.glossary.expect("the seed glossary parses");
-    let names: Vec<&str> = glossary.terms.iter().map(|t| t.term.as_str()).collect();
-    assert_eq!(names, SEED_NAMES);
+    let glossary = parsed.glossary.expect("the new glossary parses");
+    assert!(glossary.terms.is_empty());
     assert!(glossary.contexts.is_empty());
+    let text = String::from_utf8(text).unwrap();
+    for label in DECISION_LABELS {
+        assert!(!text.contains(label), "{label} is seeded");
+    }
 }
 
 #[test]
@@ -275,7 +285,7 @@ fn the_written_workspace_loads_without_diagnostics() {
     let config = workspace.config.expect("the config loads");
     assert_eq!(config.workspace_name, "my-project");
     let glossary = workspace.glossary.expect("the glossary loads");
-    assert_eq!(glossary.terms.len(), 8);
+    assert!(glossary.terms.is_empty());
 }
 
 #[test]

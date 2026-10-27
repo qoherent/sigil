@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/qoherent/sigil/blob/main/docs/spec/sigil-conventions.schema.json",
+  "title": "Sigil workspace conventions check rules",
+  "type": "object",
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "section",
+        "require"
+      ],
+      "properties": {
+        "section": {
+          "$ref": "#/$defs/text"
+        },
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "require": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "rules"
+  ],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  }
+}

@@ -12,6 +12,10 @@ import {
   resolveServerExecutable,
 } from "./server-executable.ts";
 import {
+  indicatorView,
+  parseDocumentWorkspace,
+} from "./workspace-indicator.ts";
+import {
   type CompilationFocus,
   type CompilationProcess,
   incompleteExplanation,
@@ -26,9 +30,12 @@ const PREVIEW_SCHEME = "sigil-preview";
 const COMPILE_FILE_COMMAND = "sigil.compileFile";
 const COMPILE_WORKSPACE_COMMAND = "sigil.compileWorkspace";
 const SELECT_COMPILATION_FOCUS_COMMAND = "sigil.selectCompilationFocus";
+const DOCUMENT_WORKSPACE_REQUEST = "sigil/documentWorkspace";
+const WORKSPACES_CHANGED_NOTIFICATION = "sigil/workspacesChanged";
 let client: LanguageClient | undefined;
 let languageServerQueue: Promise<void> = Promise.resolve();
 let activeCompilation: CompilationProcess | undefined;
+let workspaceIndicator: vscode.StatusBarItem | undefined;
 let displayedCompilationRoot: string | undefined;
 let displayedCompilationFocus: CompilationFocus | undefined;
 const workspaceRevisions = new Map<string, number>();
@@ -89,10 +96,20 @@ export async function activate(
   compilationStatus.text = "$(play) Sigil Compile $(chevron-down)";
   compilationStatus.tooltip = "Select Sigil compilation focus";
   compilationStatus.show();
+  const workspaceStatus = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    90,
+  );
+  workspaceStatus.name = "Sigil Workspace";
+  workspaceIndicator = workspaceStatus;
   context.subscriptions.push(
     output,
     compilationDiagnostics,
     compilationStatus,
+    workspaceStatus,
+    vscode.window.onDidChangeActiveTextEditor(() => {
+      void refreshWorkspaceIndicator();
+    }),
     vscode.workspace.registerTextDocumentContentProvider(
       PREVIEW_SCHEME,
       previews,
@@ -336,14 +353,22 @@ async function startLanguageServer(
     },
   );
   client = started;
+  // The server sends this once a changed workspace config has been read, so
+  // the answer to the next request already reflects it.
+  started.onNotification(
+    WORKSPACES_CHANGED_NOTIFICATION,
+    () => void refreshWorkspaceIndicator(),
+  );
   try {
     await started.start();
+    void refreshWorkspaceIndicator();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     output.appendLine(
       `Failed to start Sigil language server (${executable.command} lsp): ${message}. The executable must be a sigil that supports "sigil lsp"; the sigil.executable setting names it.`,
     );
     if (client === started) client = undefined;
+    workspaceIndicator?.hide();
     void started.dispose().catch(() => undefined);
     // Not awaited: a restart must not wait for the user to dismiss the message.
     void vscode.window.showErrorMessage(
@@ -355,6 +380,48 @@ async function startLanguageServer(
   }
 }
 
+/**
+ * Shows the workspace of the active Sigil file, as the language server names
+ * it. The entry hides when the answer is not available.
+ */
+async function refreshWorkspaceIndicator(): Promise<void> {
+  const item = workspaceIndicator;
+  if (!item) return;
+  const editor = vscode.window.activeTextEditor;
+  const running = client?.isRunning() ? client : undefined;
+  if (
+    !editor || !running || editor.document.languageId !== "sigil" ||
+    editor.document.uri.scheme !== "file"
+  ) {
+    item.hide();
+    return;
+  }
+  const uri = editor.document.uri.toString();
+  let answer;
+  try {
+    answer = parseDocumentWorkspace(
+      await running.sendRequest(DOCUMENT_WORKSPACE_REQUEST, {
+        textDocument: { uri },
+      }),
+    );
+  } catch {
+    answer = undefined;
+  }
+  // The editor may have moved on while the server answered.
+  if (vscode.window.activeTextEditor?.document.uri.toString() !== uri) return;
+  const view = indicatorView(answer);
+  if (!view.visible) {
+    item.hide();
+    return;
+  }
+  item.text = view.text;
+  item.tooltip = view.tooltip;
+  item.backgroundColor = view.warning
+    ? new vscode.ThemeColor("statusBarItem.warningBackground")
+    : undefined;
+  item.show();
+}
+
 // @sigil implements integrations/editor/vscode/_module.sigil::SigilVsCodeExtension::EditorLanguageSupport interface,state,logic,constraints,cases
 export async function deactivate(): Promise<void> {
   activeCompilation?.cancel();
@@ -362,6 +429,7 @@ export async function deactivate(): Promise<void> {
   displayedCompilationRoot = undefined;
   displayedCompilationFocus = undefined;
   workspaceRevisions.clear();
+  workspaceIndicator = undefined;
   await languageServerQueue.catch(() => undefined);
   const running = client;
   client = undefined;

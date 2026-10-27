@@ -1,0 +1,8 @@
+{
+  "rules": [
+    {
+      "section": "decisions",
+      "require": ["Decision:", "Scope:"]
+    }
+  ]
+}

@@ -13,7 +13,7 @@ use serde::Serialize;
 use sigil_core::{
     language::{
         diagnostics::order_diagnostics,
-        format::{LINE_TOO_LONG, format_document_resolved},
+        format::{LINE_TOO_LONG, format_document_resolved, is_conventions_error},
         fs::{DiskFs, Overlay},
         resolve::ResolvedWorkspace,
         workspace::Workspace,
@@ -67,12 +67,14 @@ struct Batch {
 }
 
 fn has_blocking_error(diagnostics: &[Diagnostic]) -> bool {
-    diagnostics
-        .iter()
-        .any(|d| matches!(d.severity, Severity::Error) && d.code != LINE_TOO_LONG)
+    diagnostics.iter().any(|d| {
+        matches!(d.severity, Severity::Error) && d.code != LINE_TOO_LONG && !is_conventions_error(d)
+    })
 }
 
-fn all_failed(selected: Vec<String>, diagnostics: Vec<Diagnostic>) -> Batch {
+fn all_failed(selected: Vec<String>, mut diagnostics: Vec<Diagnostic>) -> Batch {
+    // `check` reports a malformed conventions file; the formatter does not.
+    diagnostics.retain(|d| !is_conventions_error(d));
     Batch {
         files: selected
             .into_iter()
@@ -132,7 +134,7 @@ fn run_batch(
     }
     if diagnostics
         .iter()
-        .any(|d| matches!(d.severity, Severity::Error))
+        .any(|d| matches!(d.severity, Severity::Error) && !is_conventions_error(d))
         || !every_formatted
     {
         return Ok(all_failed(selected, diagnostics));
@@ -156,6 +158,8 @@ fn run_batch(
         }
         files.push(((*path).clone(), status));
     }
+    // `check` reports a malformed conventions file; the formatter does not.
+    diagnostics.retain(|d| !is_conventions_error(d));
     Ok(Batch { files, diagnostics })
 }
 

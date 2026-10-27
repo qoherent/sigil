@@ -7,6 +7,10 @@ import * as vscode from "vscode";
 export async function run(): Promise<void> {
   const repository = process.env.SIGIL_REPO_ROOT;
   assert(repository, "SIGIL_REPO_ROOT is required");
+  if (process.env.SIGIL_TEST_NESTED === "1") {
+    await runNested(process.env.SIGIL_TEST_WORKSPACE);
+    return;
+  }
   const workspace = process.env.SIGIL_TEST_WORKSPACE ??
     path.join(repository, "examples/slotted");
   const source = vscode.Uri.file(path.join(workspace, "booking.sigil"));
@@ -501,6 +505,44 @@ async function until(condition: () => boolean, label: string): Promise<void> {
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
+}
+
+/**
+ * The folder the editor opened is an enclosing workspace that excludes a nested
+ * project. A file of the nested project must still get hover and definition.
+ */
+async function runNested(workspace: string | undefined): Promise<void> {
+  assert(workspace, "SIGIL_TEST_WORKSPACE is required");
+  const sigilExecutable = process.env.SIGIL_TEST_LANGUAGE;
+  assert(sigilExecutable, "SIGIL_TEST_LANGUAGE (a built sigil) is required");
+  await vscode.workspace.getConfiguration("sigil").update(
+    "executable",
+    sigilExecutable,
+    vscode.ConfigurationTarget.Global,
+  );
+  const source = vscode.Uri.file(
+    path.join(workspace, "inner/slotted/booking.sigil"),
+  );
+  const document = await vscode.workspace.openTextDocument(source);
+  await vscode.window.showTextDocument(document);
+  assert.equal(document.languageId, "sigil");
+  const position = document.positionAt(
+    document.getText().indexOf("nonexistent local time"),
+  );
+  const hovers = await eventually(async () =>
+    await vscode.commands.executeCommand<vscode.Hover[]>(
+      "vscode.executeHoverProvider",
+      source,
+      position,
+    )
+  );
+  assert(hovers.length > 0, "A nested file should provide a hover result");
+  const definitions = await eventually(async () =>
+    await vscode.commands.executeCommand<
+      Array<vscode.Location | vscode.LocationLink>
+    >("vscode.executeDefinitionProvider", source, position)
+  );
+  assert(definitions.length > 0, "A nested file should provide definitions");
 }
 
 async function eventually<T>(
