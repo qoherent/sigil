@@ -79,11 +79,12 @@ export function coverageTask(): string {
   return [
     "Judge which Facets of a Sigil design answer each requirement.",
     "",
-    `Read ${skill} for how to read Sigil. Then read:`,
+    `Read ${skill}, and each reference file it names, for how to read Sigil. Then read:`,
     "",
     `- \`${requirement}\`: the full requirement text. It is the only statement of what was asked.`,
     `- \`${list}\`: every requirement ID, each with a one-line label. Judge each ID against its full text in \`${requirement}\`, not against the label alone.`,
-    `- \`${facets}\`: every Facet of the design, each with its handle (\`#N\`), its label (\`Component section N\`), its source file and its prose. The design itself is in \`${design}/\`, if you need a Facet's surroundings.`,
+    `- \`${facets}\`: every Facet of the design, each with its handle (\`#N\`), its label (\`Component section N\`), its source file and its prose.`,
+    `- every file under \`${design}/\`: the whole design. A Facet means what it means within its component and its neighbours, so read the design around each Facet you cite before you judge it.`,
     "",
     "A Facet answers a requirement when what it promises, together with the other Facets you cite for that requirement, delivers what the requirement asks. A Facet that only mentions the same subject or words does not answer it. Cite every Facet the answer needs, by handle, and only handles that appear in the Facet list. If no Facet answers a requirement, its verdict is `none`.",
     "",
@@ -136,8 +137,23 @@ export interface ClaimsPromptDefinition {
   readonly child: ChildAgentDefinition;
 }
 
+type OrchestratorInput = Parameters<typeof orchestratorPrompt>[0];
+
+/**
+ * The claims orchestrator's prompt for a benchmark reading. The harness reads
+ * the private store, so the workspace write-back is not part of the reading and
+ * the shared template's instruction to do it is overridden here.
+ */
+export function benchmarkClaimsPrompt(input: OrchestratorInput): string {
+  return [
+    orchestratorPrompt(input),
+    "Benchmark note, which overrides the write-back above: this is a benchmark reading. Do not copy anything into the workspace store or under `root/.sigil`. The harness reads the private store `store` directly. Your final check is the one you run with `--root root --store store`, and its state is the hand-back.",
+    "",
+  ].join("\n");
+}
+
 const CLAIMS_PROMPTS: ClaimsPromptDefinition = {
-  orchestrator: orchestratorPrompt,
+  orchestrator: benchmarkClaimsPrompt,
   child: INTERPRETER_CHILD,
 };
 

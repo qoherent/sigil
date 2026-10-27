@@ -1,0 +1,907 @@
+{
+  "version": 1,
+  "requirementList": {
+    "name": "slotted",
+    "digest": "e7d6855ef5df5dcf6109718415fe9a67caecb03b4ea9b6388f8c24b37dd72337"
+  },
+  "requirementFiles": {
+    "slotted-with-split": "3ef4028dfb2af59e59b882746a2fbecd27639d9ed70de79bba40068d11a0050e",
+    "slotted-without-split": "91c7e9e5cbb607378c18ffaaaac81428836243c8e23fe1d1ef6e6b7392e40fae"
+  },
+  "reader": {
+    "agent": "claude",
+    "model": "sonnet",
+    "effort": "high",
+    "skillDigests": {
+      "sigil-compute-design": "9662eac5f30aad3810a2b0f046ac94b4b8803a56a32802e61dbdac4cbea20160",
+      "sigil-understand": "c2af2c06888a7243e6cece0c15a20515bc016de3a3891f404c68fa11dbe3b59e",
+      "sigil-egglog": "9421c0ea291ab771b51d5366af40c500e547178778a72bdfcf8420ca338cf383"
+    },
+    "coveragePromptDigest": "d275c5561c2368d71e084f6748d2cc57cecee84a6d6f21011900f8816310e748",
+    "claimsPromptDigest": "f552761f4c1a1bf4395920cbe99da25d690feddbf78cde734331c4e0ea50d723"
+  },
+  "entries": [
+    {
+      "id": "R1",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:f51483b144ff145f79240bc1039d7d0f6eec2edf32c776dbc42d213f696d7a1d",
+          "label": "Identity goal 1"
+        },
+        {
+          "id": "facet:d5b045679e177a20ab08a32a9a764a187755f720d726cc4a3def15233173d19c",
+          "label": "Identity state 1"
+        },
+        {
+          "id": "facet:fd473418d898355ffd268798d9739b0d1a7b9efee541b91d7e867f9c9c6bc8f7",
+          "label": "Identity constraints 3"
+        },
+        {
+          "id": "facet:5537e8b7019f185fc1e33fd0d4cde6473a8c6fdb16780b9437d755d724520a5c",
+          "label": "Identity interface 2"
+        },
+        {
+          "id": "facet:8aff6a70c1bf09e8d74e4129e73f4800c3f66439b468125ee3d619049773d6be",
+          "label": "Slotted constraints 5"
+        },
+        {
+          "id": "facet:3364982e5151a54f43aa97682bfd973aeb2079c3f4ef5e47f4cf8cf7a9c95c44",
+          "label": "Slotted interface 4"
+        },
+        {
+          "id": "facet:4d03495dfffad0fffac455bcff0523ab3dee35c3e992bd44b41689c327be6235",
+          "label": "Slotted cases 1"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:0da5e09f1c74b9fbac041a46484e5e443fc56bcbfe28ccfdd289aac23cb0b121",
+          "label": "Identity decisions 2"
+        },
+        {
+          "id": "facet:fd473418d898355ffd268798d9739b0d1a7b9efee541b91d7e867f9c9c6bc8f7",
+          "label": "Identity constraints 3"
+        },
+        {
+          "id": "facet:72c89f161ed04622a523f60ff3979a84af46ace767effe2350334066332e6259",
+          "label": "Rooms state 2"
+        },
+        {
+          "id": "facet:929472ccb7c1876ca744f252837afb0b6dfe3e129c40a1ac6c07171987a7aeda",
+          "label": "Booking constraints 5"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        },
+        {
+          "id": "facet:ddc1a917bbefc164caaa2f0007cbe44d2dd8efd5a809e4fa4c223c35a946e3bf",
+          "label": "Booking cases 3"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:7cd187ff450249a1ed95a45e2fc5fbe9357d6da347e74b22a325b4663d8d16e8",
+          "label": "Rooms state 1"
+        },
+        {
+          "id": "facet:be4c2ed16dbb0bd9e5b8c5e9ad3d7783dcf5fb0a82e76277a78c1a8d81ce78b0",
+          "label": "Rooms interface 1"
+        },
+        {
+          "id": "facet:c0a3f5d9fbe6e454b36dca2f37c46f954153122a956ee2f80863b1a71c85cda7",
+          "label": "Rooms logic 1"
+        },
+        {
+          "id": "facet:72c89f161ed04622a523f60ff3979a84af46ace767effe2350334066332e6259",
+          "label": "Rooms state 2"
+        },
+        {
+          "id": "facet:2ea4472a1c3a71f5d3e2f2d54d101392b788fef09bce7f414dc4e6f2d5a49c86",
+          "label": "Rooms constraints 1"
+        },
+        {
+          "id": "facet:5325d3291691597c72c8391298d5a7399c5f3e5b331ada40d7e66799ba843262",
+          "label": "Rooms cases 2"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:41670ffb073fb17e6ee7840793a23feb5abbfa824633c8aa753f3fc84a956905",
+          "label": "Booking logic 9"
+        },
+        {
+          "id": "facet:b9c619ce58bb0a1fae46f4eb0a9fae695350d8442be4857926944a2de36f5402",
+          "label": "Booking cases 14"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        },
+        {
+          "id": "facet:70a8fd2acb0bb537e46cd407a307ae0399aaba3784532a53f1b827dec3aa0c9d",
+          "label": "Booking interface 4"
+        },
+        {
+          "id": "facet:2ea4472a1c3a71f5d3e2f2d54d101392b788fef09bce7f414dc4e6f2d5a49c86",
+          "label": "Rooms constraints 1"
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:6cde8d72c392032e79bae22fda7680a1aaebf0f81779dc3fe4962569a7cf6c0f",
+          "label": "Rooms state 4"
+        },
+        {
+          "id": "facet:e58a82de64311b56dbfc63ece1f41656cf4c0de6b5c25e8b6f14df5f8241c6dd",
+          "label": "Rooms interface 2"
+        },
+        {
+          "id": "facet:8450164e1ab212d9583416ee4a57b53aa26b339a64afeb4eef4f5a923bbb0753",
+          "label": "Slotted interface 1"
+        },
+        {
+          "id": "facet:2b7694aa74787c50ee8914833d1ee59bb5fe990e00952a816ccf29ce0a27d622",
+          "label": "Calendar interface 1"
+        },
+        {
+          "id": "facet:3fb1536d3b0ffed58e0e8572fa4f7907464b2f837fdc641aa73b1949ab9ac81c",
+          "label": "Calendar interface 2"
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:6f9dd68ea63aaf95f975347cd7ab8d115bb815376b87c9fa19023258fa668574",
+          "label": "Availability state 1"
+        },
+        {
+          "id": "facet:886f329dbbda48f41977fe1aedb8f2fa240cd6e88ae1a0b39662cc04191919c2",
+          "label": "Availability constraints 1"
+        },
+        {
+          "id": "facet:6944f00a24ed3778cead355b477dc4ebb079018f68b06a807995c1b4a15e4354",
+          "label": "Availability constraints 2"
+        },
+        {
+          "id": "facet:12b5402cdac2e4bb756cfc07b0e6372e3fd5d520efd367112874de708ad4c68b",
+          "label": "Availability interface 1"
+        },
+        {
+          "id": "facet:d889203eb50af2750ca0355822b52350eda0fa19b1a1a9457f385de564e10b5e",
+          "label": "Availability constraints 4"
+        },
+        {
+          "id": "facet:61c418cf08df65da27c898909402b4d353930ff3301df943a4d4e08138c35939",
+          "label": "Availability cases 1"
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:b607ac014311f92feb9b4048d57bc87cb7dceb020a31b744b69aaa71a15a4a50",
+          "label": "Availability state 2"
+        },
+        {
+          "id": "facet:fdf0cdb62f1f43b0e8c551df89e337e8fff5258327e0de6bef59ba8ecb119384",
+          "label": "Availability state 3"
+        },
+        {
+          "id": "facet:22ab2986989e2eaa27393caff00f89d6c1482052adc2a0a2b8b20e72edd79b06",
+          "label": "Availability logic 1"
+        },
+        {
+          "id": "facet:12b5402cdac2e4bb756cfc07b0e6372e3fd5d520efd367112874de708ad4c68b",
+          "label": "Availability interface 1"
+        },
+        {
+          "id": "facet:d889203eb50af2750ca0355822b52350eda0fa19b1a1a9457f385de564e10b5e",
+          "label": "Availability constraints 4"
+        },
+        {
+          "id": "facet:0bb5f415310f24c32a522ef8f7bc9948c340b5284de300dc6a677edae924d792",
+          "label": "Availability cases 3"
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:c4f33f27555ceb02fd568e825394430178c4cb39b385f7303400921978431e3a",
+          "label": "Booking logic 8"
+        },
+        {
+          "id": "facet:7e66e9925e6fbd9a81668f4bebff86ad87054021299d63efd38dfe8f5d7c045e",
+          "label": "Booking constraints 9"
+        },
+        {
+          "id": "facet:5a0afb23d2ac3ebaff1f28af26ad98e2aa342e30ec6be742b9a55bc79d254c9d",
+          "label": "Booking state 6"
+        },
+        {
+          "id": "facet:ad768767824ba8892bd835e2b435dad7873007395ecf893d4f5cd9e21d43ee1b",
+          "label": "Calendar constraints 4"
+        },
+        {
+          "id": "facet:11cfa330bb5f80eb7d995a3c555245c2a0f5bb608fb232477d65290519b47f0f",
+          "label": "Booking constraints 15"
+        },
+        {
+          "id": "facet:b0587d2faf27109d584f70dffaa65e8b35264996e5da40643be008ccb1dc236f",
+          "label": "Availability constraints 5"
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        },
+        {
+          "id": "facet:9030b6e859632c966d5fb2595aea5b33b538a6ecfa13ded4c2d6cf047d1279d2",
+          "label": "SharedKernel constraints 3"
+        },
+        {
+          "id": "facet:b540bd1c75b821b26d6044efbfc0a5675eba312fbbd058267de187e05cd16f69",
+          "label": "SharedKernel logic 1"
+        },
+        {
+          "id": "facet:fcd4a4f257ddcba90960c1b9e315471c7afb6771393b0dcdb05fdb0d8b00acb7",
+          "label": "SharedKernel constraints 2"
+        },
+        {
+          "id": "facet:50ae973b4ae5232ff9e5754955f608e720f2ae373e274299bf75aafbc2c24feb",
+          "label": "Booking state 1"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:86b34ec5b009c68c89b0a09ea78f915473e42619eb2ebd9bac826349437e015e",
+          "label": "Booking logic 1"
+        },
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        },
+        {
+          "id": "facet:d1632ab790cdf1698704db7ce3b7e594cd0ce4feddc432a071a1f697f278c72f",
+          "label": "Booking constraints 3"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        },
+        {
+          "id": "facet:eacf47647606100154af77c54349e8d40a1a56eebff7ec2eddffd7a98ed9d049",
+          "label": "Booking interface 1"
+        },
+        {
+          "id": "facet:a64ee90ae5471ef94f926ef677a6330085a75e04cf399f44d569a5e4e8962185",
+          "label": "Booking constraints 14"
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:c2a32960c0b5ccffffe9e1acc500b1aa0fccd43c31461d542ff17c0bcdf08da5",
+          "label": "Booking constraints 4"
+        },
+        {
+          "id": "facet:d1632ab790cdf1698704db7ce3b7e594cd0ce4feddc432a071a1f697f278c72f",
+          "label": "Booking constraints 3"
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:0997b5d4faa6ed8c3d644a2baa22607b67d7b393a151be270676a140d39ed608",
+          "label": "Booking interface 2"
+        },
+        {
+          "id": "facet:228f7e1aae590b94123eb5ca6fd1389293cccf3c4762cc3c995baf789311e1ba",
+          "label": "Booking logic 3"
+        },
+        {
+          "id": "facet:28fda03fa217bc50c3a385e37665d35e9a4849a4b84dd9cbbe514e854368dc04",
+          "label": "Booking logic 5"
+        },
+        {
+          "id": "facet:8f87f21c716239c6b690a221afa4111e64370b0cd8f651d45e531edb9d751daa",
+          "label": "Booking logic 4"
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:228f7e1aae590b94123eb5ca6fd1389293cccf3c4762cc3c995baf789311e1ba",
+          "label": "Booking logic 3"
+        },
+        {
+          "id": "facet:0997b5d4faa6ed8c3d644a2baa22607b67d7b393a151be270676a140d39ed608",
+          "label": "Booking interface 2"
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:228f7e1aae590b94123eb5ca6fd1389293cccf3c4762cc3c995baf789311e1ba",
+          "label": "Booking logic 3"
+        },
+        {
+          "id": "facet:8adf3b3d2486b3a2fba8bfcc18f1aeebfc3393b48ab94aaa6d3b37dcd121f912",
+          "label": "Booking decisions 2"
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:7e34a59d3fbb2b2aa27e44d18d154625fe3f3a6761cc3a0e42f55129b395dc9c",
+          "label": "Booking interface 3"
+        },
+        {
+          "id": "facet:28fda03fa217bc50c3a385e37665d35e9a4849a4b84dd9cbbe514e854368dc04",
+          "label": "Booking logic 5"
+        },
+        {
+          "id": "facet:8f87f21c716239c6b690a221afa4111e64370b0cd8f651d45e531edb9d751daa",
+          "label": "Booking logic 4"
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:7e34a59d3fbb2b2aa27e44d18d154625fe3f3a6761cc3a0e42f55129b395dc9c",
+          "label": "Booking interface 3"
+        },
+        {
+          "id": "facet:28fda03fa217bc50c3a385e37665d35e9a4849a4b84dd9cbbe514e854368dc04",
+          "label": "Booking logic 5"
+        },
+        {
+          "id": "facet:8f87f21c716239c6b690a221afa4111e64370b0cd8f651d45e531edb9d751daa",
+          "label": "Booking logic 4"
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:cf10cec15eadd317f30d7a8137e83802fcd9b626682eca2e76e63b4c1c6dea2d",
+          "label": "Booking constraints 10"
+        },
+        {
+          "id": "facet:c2fbb7cd743458e41803b8ff902c58b7f8657ac1fcd9cbed705c4c37eebbe14d",
+          "label": "Booking state 5"
+        },
+        {
+          "id": "facet:07cc64d557237ac310ad308928b3622f8755238a3b6584e85d490546cddb2c71",
+          "label": "Booking interface 6"
+        },
+        {
+          "id": "facet:11cfa330bb5f80eb7d995a3c555245c2a0f5bb608fb232477d65290519b47f0f",
+          "label": "Booking constraints 15"
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:4898550a59b80e20ffeb4bd1860b24425983812c94675242c47615dc2c45ccb1",
+          "label": "Booking constraints 1"
+        },
+        {
+          "id": "facet:72c726e680c0ce40c7ad6df53b6b8fdd011523394eb461c3a84aefc542fdefe6",
+          "label": "Booking constraints 2"
+        },
+        {
+          "id": "facet:4d753901cdf31e228f34278333b9825d997032d18d0a474b6844ee82ac8543c3",
+          "label": "Booking constraints 13"
+        },
+        {
+          "id": "facet:f06cfc7ad0fc4fdf1e082321baf7ecef40828b3cce91b8945c98c8937c740ea9",
+          "label": "Rooms constraints 2"
+        }
+      ]
+    },
+    {
+      "id": "R19",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:cb274e514ba3f17bde0e2b0bbc5d3e764525d611d62cc5ec281754f6b076e7ff",
+          "label": "Booking interface 5"
+        },
+        {
+          "id": "facet:e6ded28798d6380fee6162b6141bb991cf8b32ecb639b842fe8dbf8dec238cf5",
+          "label": "Slotted interface 3"
+        },
+        {
+          "id": "facet:e17cbc921a0911dbc271e71e4382cfd0c25ffd323c51ca78c073ed546ae3b0e0",
+          "label": "Booking state 3"
+        },
+        {
+          "id": "facet:50ae973b4ae5232ff9e5754955f608e720f2ae373e274299bf75aafbc2c24feb",
+          "label": "Booking state 1"
+        }
+      ]
+    },
+    {
+      "id": "R20",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:ad768767824ba8892bd835e2b435dad7873007395ecf893d4f5cd9e21d43ee1b",
+          "label": "Calendar constraints 4"
+        },
+        {
+          "id": "facet:6273fa247d3ab98d60492e67d37f3292bac4bb2e4233003ea8eaad75935cc172",
+          "label": "Calendar logic 1"
+        },
+        {
+          "id": "facet:5a0afb23d2ac3ebaff1f28af26ad98e2aa342e30ec6be742b9a55bc79d254c9d",
+          "label": "Booking state 6"
+        },
+        {
+          "id": "facet:2b7694aa74787c50ee8914833d1ee59bb5fe990e00952a816ccf29ce0a27d622",
+          "label": "Calendar interface 1"
+        }
+      ]
+    },
+    {
+      "id": "R21",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:22c6790ff0b76019bdb656703171edd7ad13f88b6db9916d397fae0340d108f4",
+          "label": "Calendar constraints 2"
+        },
+        {
+          "id": "facet:effbc19229a4f9184354502e6750a1886c4daa84136c499e7efc52878c44c796",
+          "label": "Calendar constraints 3"
+        },
+        {
+          "id": "facet:6273fa247d3ab98d60492e67d37f3292bac4bb2e4233003ea8eaad75935cc172",
+          "label": "Calendar logic 1"
+        },
+        {
+          "id": "facet:2b7694aa74787c50ee8914833d1ee59bb5fe990e00952a816ccf29ce0a27d622",
+          "label": "Calendar interface 1"
+        }
+      ]
+    },
+    {
+      "id": "R22",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:09609ea02e9f291a015d9ea685344d8c0abb08e5eb9af8b79f649c98c3920214",
+          "label": "Booking constraints 12"
+        },
+        {
+          "id": "facet:7d58b3bab4bfc6274a1abc19386596344a79f3acdc983193e1f6ed61a00500eb",
+          "label": "Booking logic 10"
+        },
+        {
+          "id": "facet:70a8fd2acb0bb537e46cd407a307ae0399aaba3784532a53f1b827dec3aa0c9d",
+          "label": "Booking interface 4"
+        }
+      ]
+    },
+    {
+      "id": "R23",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:7d58b3bab4bfc6274a1abc19386596344a79f3acdc983193e1f6ed61a00500eb",
+          "label": "Booking logic 10"
+        },
+        {
+          "id": "facet:4df0b098c433768d364164e44b8d7c66bc679a5fbad4f2682c099bf85abdec4f",
+          "label": "Booking constraints 11"
+        },
+        {
+          "id": "facet:70a8fd2acb0bb537e46cd407a307ae0399aaba3784532a53f1b827dec3aa0c9d",
+          "label": "Booking interface 4"
+        },
+        {
+          "id": "facet:58efc7d5972f6009f07e0170b1a3c0a1ea3c81436f791d9a8c9c2a4c6c02bce9",
+          "label": "Rooms interface 7"
+        },
+        {
+          "id": "facet:f08fcf576eb1c17cddcc2a48d8d5584b4966f90d9e246544469c4a6db3632533",
+          "label": "Rooms interface 3"
+        }
+      ]
+    },
+    {
+      "id": "R24",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:f343cc7eace0d8da7e4b29e3fb243af5b7221289814fbb61f10044a106115110",
+          "label": "Booking constraints 6"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        }
+      ]
+    },
+    {
+      "id": "R25",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:586614b5f36b8275bc89cbfffbdddca978dc683b46684fca3f2d01ba24d692f5",
+          "label": "Calendar constraints 1"
+        },
+        {
+          "id": "facet:4251b3a68c826237943c3aa8335677174a3a50c2e14d0248923301bcd081fbaf",
+          "label": "Booking constraints 8"
+        },
+        {
+          "id": "facet:2b7694aa74787c50ee8914833d1ee59bb5fe990e00952a816ccf29ce0a27d622",
+          "label": "Calendar interface 1"
+        },
+        {
+          "id": "facet:6273fa247d3ab98d60492e67d37f3292bac4bb2e4233003ea8eaad75935cc172",
+          "label": "Calendar logic 1"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        }
+      ]
+    },
+    {
+      "id": "R26",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:5d8f678a259023cc0076de902f37a0551e34e3228b48b100c6b706ba0ad66065",
+          "label": "Booking state 4"
+        },
+        {
+          "id": "facet:4df0b098c433768d364164e44b8d7c66bc679a5fbad4f2682c099bf85abdec4f",
+          "label": "Booking constraints 11"
+        }
+      ]
+    },
+    {
+      "id": "R27",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:b540bd1c75b821b26d6044efbfc0a5675eba312fbbd058267de187e05cd16f69",
+          "label": "SharedKernel logic 1"
+        },
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        },
+        {
+          "id": "facet:5484f159fae0aef6ad01dfd62b4cfa5f8ab2696c12730e7cb621c589ab133db5",
+          "label": "SharedKernel interface 2"
+        }
+      ]
+    },
+    {
+      "id": "R28",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        },
+        {
+          "id": "facet:86b34ec5b009c68c89b0a09ea78f915473e42619eb2ebd9bac826349437e015e",
+          "label": "Booking logic 1"
+        },
+        {
+          "id": "facet:eacf47647606100154af77c54349e8d40a1a56eebff7ec2eddffd7a98ed9d049",
+          "label": "Booking interface 1"
+        }
+      ]
+    },
+    {
+      "id": "AE1",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:3f63c5e39ba18ebd714106bba0227874eb20899cdb96f5788a959fc6f9b46fd5",
+          "label": "Booking cases 1"
+        },
+        {
+          "id": "facet:9030b6e859632c966d5fb2595aea5b33b538a6ecfa13ded4c2d6cf047d1279d2",
+          "label": "SharedKernel constraints 3"
+        },
+        {
+          "id": "facet:d1632ab790cdf1698704db7ce3b7e594cd0ce4feddc432a071a1f697f278c72f",
+          "label": "Booking constraints 3"
+        }
+      ]
+    },
+    {
+      "id": "AE2",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:2b192e08653c307d012e53a6f0ee244bc92a8e187036407156a8119245273fad",
+          "label": "Booking cases 2"
+        },
+        {
+          "id": "facet:86b34ec5b009c68c89b0a09ea78f915473e42619eb2ebd9bac826349437e015e",
+          "label": "Booking logic 1"
+        },
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        }
+      ]
+    },
+    {
+      "id": "AE3",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:72c82b4c21d96c329f1a300a43c61e304627e87182b7580196f16f15f51a257e",
+          "label": "Booking cases 6"
+        },
+        {
+          "id": "facet:228f7e1aae590b94123eb5ca6fd1389293cccf3c4762cc3c995baf789311e1ba",
+          "label": "Booking logic 3"
+        },
+        {
+          "id": "facet:c2a32960c0b5ccffffe9e1acc500b1aa0fccd43c31461d542ff17c0bcdf08da5",
+          "label": "Booking constraints 4"
+        }
+      ]
+    },
+    {
+      "id": "AE4",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:0110d34a5f019fd66f03121207878bd4b67270841f302351adf51fb9e1de0e1e",
+          "label": "Booking cases 7"
+        },
+        {
+          "id": "facet:c4f33f27555ceb02fd568e825394430178c4cb39b385f7303400921978431e3a",
+          "label": "Booking logic 8"
+        },
+        {
+          "id": "facet:5a0afb23d2ac3ebaff1f28af26ad98e2aa342e30ec6be742b9a55bc79d254c9d",
+          "label": "Booking state 6"
+        },
+        {
+          "id": "facet:ad768767824ba8892bd835e2b435dad7873007395ecf893d4f5cd9e21d43ee1b",
+          "label": "Calendar constraints 4"
+        }
+      ]
+    },
+    {
+      "id": "AE5",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:ddc1a917bbefc164caaa2f0007cbe44d2dd8efd5a809e4fa4c223c35a946e3bf",
+          "label": "Booking cases 3"
+        },
+        {
+          "id": "facet:929472ccb7c1876ca744f252837afb0b6dfe3e129c40a1ac6c07171987a7aeda",
+          "label": "Booking constraints 5"
+        },
+        {
+          "id": "facet:184a8b905c64e248c585f12c585b2683abab674caa4c9bcf80532e8377e56112",
+          "label": "Booking logic 2"
+        }
+      ]
+    },
+    {
+      "id": "AE6",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:76aada6a761c69aa51b3ec04eabfecd8f8fba5d12c3a7816d25372891a7e1e5a",
+          "label": "Booking cases 9"
+        },
+        {
+          "id": "facet:228f7e1aae590b94123eb5ca6fd1389293cccf3c4762cc3c995baf789311e1ba",
+          "label": "Booking logic 3"
+        },
+        {
+          "id": "facet:c2fbb7cd743458e41803b8ff902c58b7f8657ac1fcd9cbed705c4c37eebbe14d",
+          "label": "Booking state 5"
+        },
+        {
+          "id": "facet:cf10cec15eadd317f30d7a8137e83802fcd9b626682eca2e76e63b4c1c6dea2d",
+          "label": "Booking constraints 10"
+        }
+      ]
+    },
+    {
+      "id": "AE7",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:8b637383991605baa169a9ff04c659cf2e95808d2804d39565b479bd0e829ebf",
+          "label": "Availability cases 4"
+        },
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        },
+        {
+          "id": "facet:3aca1422c2783e9c86f9b7c680ec9bd61568e3814071ce979360fb39e64a437b",
+          "label": "SharedKernel logic 2"
+        }
+      ]
+    },
+    {
+      "id": "AE8",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:69f5f3c5ee5dddf7f88d20f4442d380f8d1e6ed210f079ce4b022b1ee4a2cdcb",
+          "label": "Calendar cases 1"
+        },
+        {
+          "id": "facet:22c6790ff0b76019bdb656703171edd7ad13f88b6db9916d397fae0340d108f4",
+          "label": "Calendar constraints 2"
+        }
+      ]
+    },
+    {
+      "id": "AE9",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:48661e51734ccdf3a620a6184e539f3563cb20c02cc6bccd0cb6af390617e8b5",
+          "label": "Booking cases 10"
+        },
+        {
+          "id": "facet:4898550a59b80e20ffeb4bd1860b24425983812c94675242c47615dc2c45ccb1",
+          "label": "Booking constraints 1"
+        },
+        {
+          "id": "facet:72c726e680c0ce40c7ad6df53b6b8fdd011523394eb461c3a84aefc542fdefe6",
+          "label": "Booking constraints 2"
+        },
+        {
+          "id": "facet:4d753901cdf31e228f34278333b9825d997032d18d0a474b6844ee82ac8543c3",
+          "label": "Booking constraints 13"
+        }
+      ]
+    },
+    {
+      "id": "AE10",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:44a4de819f677e8e78e7902d4d222fc76e1f33f8d939fbe4597ba1e15c9e61f9",
+          "label": "Booking cases 12"
+        },
+        {
+          "id": "facet:09609ea02e9f291a015d9ea685344d8c0abb08e5eb9af8b79f649c98c3920214",
+          "label": "Booking constraints 12"
+        },
+        {
+          "id": "facet:7d58b3bab4bfc6274a1abc19386596344a79f3acdc983193e1f6ed61a00500eb",
+          "label": "Booking logic 10"
+        }
+      ]
+    },
+    {
+      "id": "AE11",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:5ba07e6cc4b981c0dd6ab724fd024d78f01975e45e120606ce602d2b03efe4d5",
+          "label": "Booking cases 8"
+        },
+        {
+          "id": "facet:4df0b098c433768d364164e44b8d7c66bc679a5fbad4f2682c099bf85abdec4f",
+          "label": "Booking constraints 11"
+        },
+        {
+          "id": "facet:5d8f678a259023cc0076de902f37a0551e34e3228b48b100c6b706ba0ad66065",
+          "label": "Booking state 4"
+        }
+      ]
+    },
+    {
+      "id": "AE12",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:89688192a6b15bbed1cf4a414201c2d391d8789b59ce1a68c2166066b0577641",
+          "label": "Booking cases 11"
+        },
+        {
+          "id": "facet:4d753901cdf31e228f34278333b9825d997032d18d0a474b6844ee82ac8543c3",
+          "label": "Booking constraints 13"
+        },
+        {
+          "id": "facet:8f87f21c716239c6b690a221afa4111e64370b0cd8f651d45e531edb9d751daa",
+          "label": "Booking logic 4"
+        },
+        {
+          "id": "facet:28fda03fa217bc50c3a385e37665d35e9a4849a4b84dd9cbbe514e854368dc04",
+          "label": "Booking logic 5"
+        }
+      ]
+    },
+    {
+      "id": "AE13",
+      "verdict": "answered",
+      "facets": [
+        {
+          "id": "facet:9ea5502aaec19f949c770343cae70701e4a909664f48b087699566787dfaf7bb",
+          "label": "SharedKernel cases 3"
+        },
+        {
+          "id": "facet:b540bd1c75b821b26d6044efbfc0a5675eba312fbbd058267de187e05cd16f69",
+          "label": "SharedKernel logic 1"
+        },
+        {
+          "id": "facet:0322be4363a75b407af8c2f1b6de21a18589d840265c85a62b5e0b428f470497",
+          "label": "Booking constraints 7"
+        }
+      ]
+    }
+  ]
+}

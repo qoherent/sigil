@@ -1,0 +1,12 @@
+{
+  "agent": "claude",
+  "model": "sonnet",
+  "effort": "high",
+  "skillDigests": {
+    "sigil-compute-design": "9662eac5f30aad3810a2b0f046ac94b4b8803a56a32802e61dbdac4cbea20160",
+    "sigil-understand": "c2af2c06888a7243e6cece0c15a20515bc016de3a3891f404c68fa11dbe3b59e",
+    "sigil-egglog": "9421c0ea291ab771b51d5366af40c500e547178778a72bdfcf8420ca338cf383"
+  },
+  "coveragePromptDigest": "d275c5561c2368d71e084f6748d2cc57cecee84a6d6f21011900f8816310e748",
+  "claimsPromptDigest": "f552761f4c1a1bf4395920cbe99da25d690feddbf78cde734331c4e0ea50d723"
+}

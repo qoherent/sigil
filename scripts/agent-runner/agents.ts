@@ -63,6 +63,8 @@ export interface AgentRunResult {
   readonly stderrPath: string;
   /** Exact final message bytes. Null when the orchestrator never completed one. */
   readonly finalResponsePath: string | null;
+  /** Tool calls the host refused during the run; empty where the host shows none. */
+  readonly permissionDenials: readonly string[];
 }
 
 export interface HostProcessRequest {

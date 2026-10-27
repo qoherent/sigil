@@ -179,6 +179,12 @@ reader and reference digests, and rewrites the report. The designs are not
 touched. Coverage readings cite Facet ids and survive a law-only change; reread
 a batch with `--coverage` when the pinned reader changed.
 
+An attempt is reread only when its new reading finishes: the reader completes,
+hands back a state rather than `failed`, and, with `--coverage`, its coverage
+reading finishes too. Otherwise the attempt keeps its old store, coverage,
+record and reader identity, and `reread` lists it as skipped with the reason.
+Nothing is left half-replaced.
+
 Each attempt retains the identity of its reader. If a reread stops partway
 through a reader change, untouched attempts keep their old readings and reader
 identity. Their claims and coverage are unavailable in comparisons with the new
@@ -195,6 +201,15 @@ readings with `reread reference --coverage` before comparing new passes.
 committed `reference/slotted/`. It prints where it wrote and the commands that
 copy the new readings in. Without `--coverage` it carries the committed coverage
 reading over.
+
+A claims reading is refused, and writes no readings, when the reader hands back
+`failed` or no state, or when the store leaves units unread. Tool calls the
+claims reader was refused are printed with the reading: the reader may work
+around them, and the store and its hand-back decide whether the reading stands.
+The pinned reader's claims orchestrator prompt is the benchmark's own
+(`benchmarkClaimsPrompt`): it does not write back to the workspace store, since
+the harness reads the private store. Changing either prompt changes the reader's
+identity, so pin the reader again with `pin-reader --force` before `reread`.
 
 ## Pin the reference
 

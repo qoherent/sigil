@@ -312,6 +312,9 @@ export const rereadCommand: CommandHandler = async (args, context) => {
         result.coverage
           ? `Coverage: ${result.coverage.answered} answered, ${result.coverage.none} none, ${result.coverage.notRead} not read`
           : "Coverage: not reread",
+        ...(result.deniedToolCalls.length > 0
+          ? [`Claims reader: ${result.deniedToolCalls.length} tool call(s) refused, its readings were still taken:`, ...result.deniedToolCalls.map((call) => `  ${call}`)]
+          : []),
         "",
         "The committed reference store was not changed. After reviewing the new",
         "readings, copy them in:",

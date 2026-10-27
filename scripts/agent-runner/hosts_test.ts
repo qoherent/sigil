@@ -310,3 +310,62 @@ test("JSON lines skip what is not a JSON object and SKILL.md paths are collected
     ["skills/a/SKILL.md", "skills/b/SKILL.md"],
   );
 });
+
+test("Claude allows the pinned sigil by name and by path when it is named", async () => {
+  await withTempDir("agent-runner-hosts-", async (root) => {
+    const launch = await buildHostLaunch(
+      settings(root, {
+        children: [INTERPRETER],
+        allowedShell: ["sigilc", "sigil"],
+      }),
+    );
+    const args = launch.args;
+    const allowed = args.slice(
+      args.indexOf("--allowedTools") + 1,
+      args.indexOf("--agents"),
+    );
+    assert.deepEqual(
+      allowed.filter((entry) => entry.includes("sigil")),
+      [
+        "Bash(sigilc *)",
+        "Bash(./bin/sigilc *)",
+        "Bash(sigil *)",
+        "Bash(./bin/sigil *)",
+      ],
+    );
+  });
+});
+
+test("Claude analysis reports the tool calls its result says were denied", async () => {
+  const events = [
+    { type: "assistant", message: { model: "model-o", content: [] } },
+    {
+      type: "result",
+      result: "Hand-back state: failed",
+      permission_denials: [
+        { tool_name: "Bash", tool_input: { command: "./bin/sigil --version" } },
+      ],
+    },
+  ];
+  const claude = await analyzeHostStream("claude", events, {
+    childNames: [],
+  });
+  assert.deepEqual(claude.permissionDenials, [
+    'Bash: {"command":"./bin/sigil --version"}',
+  ]);
+  // Every turn ends with a result; a later turn's empty list must not hide
+  // the denials of an earlier one.
+  const turns = await analyzeHostStream("claude", [
+    {
+      type: "result",
+      result: "first turn",
+      permission_denials: [{ tool_name: "Bash", tool_input: { command: "x" } }],
+    },
+    { type: "result", result: "done", permission_denials: [] },
+  ], { childNames: [] });
+  assert.deepEqual(turns.permissionDenials, ['Bash: {"command":"x"}']);
+  const clean = await analyzeHostStream("claude", [
+    { type: "result", result: "done", permission_denials: [] },
+  ], { childNames: [] });
+  assert.deepEqual(clean.permissionDenials, []);
+});

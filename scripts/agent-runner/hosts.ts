@@ -212,6 +212,8 @@ export async function buildHostLaunch(
           ? ["Bash(ls)", "Bash(ls *)"]
           : program === "sigilc"
           ? ["Bash(sigilc *)", "Bash(./bin/sigilc *)"]
+          : program === "sigil"
+          ? ["Bash(sigil *)", "Bash(./bin/sigil *)"]
           : [`Bash(${program} *)`]
       );
       const args = [
@@ -383,6 +385,11 @@ export interface HostAnalysis {
    * the orchestrator's; Codex shows its children's only through rollouts.
    */
   toolCalls: ToolCall[];
+  /**
+   * Tool calls the host refused, each as `Tool: input`. Claude Code reports
+   * them on its final result; the other hosts report none.
+   */
+  permissionDenials: string[];
 }
 
 function emptyAnalysis(): HostAnalysis {
@@ -402,6 +409,7 @@ function emptyAnalysis(): HostAnalysis {
     blockedReason: null,
     gaps: [],
     notes: [],
+    permissionDenials: [],
   };
 }
 
@@ -630,6 +638,14 @@ function analyzeClaude(
   for (const event of events) {
     if (event.type === "result" && typeof event.result === "string") {
       base.finalText = event.result;
+    }
+    if (event.type === "result" && Array.isArray(event.permission_denials)) {
+      base.permissionDenials.push(...event.permission_denials.map((denial) => {
+        const record = asRecord(denial);
+        const input = asRecord(record?.tool_input);
+        const tool = String(record?.tool_name ?? "unknown tool");
+        return input ? `${tool}: ${JSON.stringify(input)}` : tool;
+      }));
     }
     if (event.type !== "assistant") continue;
     const message = asRecord(event.message);

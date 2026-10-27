@@ -234,6 +234,7 @@ function agentRun(
     stdoutPath: "",
     stderrPath: "",
     finalResponsePath,
+    permissionDenials: [],
     ...overrides,
   };
 }

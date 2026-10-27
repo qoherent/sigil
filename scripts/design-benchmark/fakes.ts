@@ -46,6 +46,12 @@ export interface FakeReaderOptions {
   readonly coverage?: Record<string, string[]>;
   /** Wait this long in the coverage stage. */
   readonly coverageSleepMs?: number;
+  /** The hand-back state to print in place of the check's own state. */
+  readonly handback?: string;
+  /** Skip the claims readings, so every unit stays unread. */
+  readonly skipClaims?: boolean;
+  /** Write no coverage answer, so the coverage stage fails. */
+  readonly skipCoverage?: boolean;
 }
 
 const HEADER =
@@ -139,7 +145,7 @@ if (existsSync("facets.md")) {
   const entries = list.requirements.map((requirement) => cited[requirement.id]
     ? { id: requirement.id, verdict: "answered", facets: cited[requirement.id] }
     : { id: requirement.id, verdict: "none", facets: [] });
-  write("answer/coverage.json", JSON.stringify({ entries }));
+  if (!O.skipCoverage) write("answer/coverage.json", JSON.stringify({ entries }));
   result("Coverage: written");
 } else {
   write("run/start-state.json", JSON.stringify({
@@ -152,7 +158,8 @@ if (existsSync("facets.md")) {
   const first = sigilc("check", "--root", "root", "--store", "store");
   const report = JSON.parse(readFileSync(JSON.parse(first.stdout).report, "utf8"));
   const sources = [...new Set(report.unread.map((unit) => unit.source))].sort();
-  sources.forEach((source, index) => {
+  if (O.skipClaims) mkdirSync("store/claims/interpretations", { recursive: true });
+  else sources.forEach((source, index) => {
     const prep = "run/prep-" + index;
     const prepared = sigilc("prepare", "--source", source, "--out", prep, "--root", "root", "--store", "store");
     if (prepared.status !== 0) {
@@ -175,7 +182,7 @@ if (existsSync("facets.md")) {
     copyFileSync(join("store/claims/interpretations", name), join("root/.sigil/claims/interpretations", name));
   }
   const final = JSON.parse(sigilc("check", "--root", "root", "--store", "store").stdout);
-  result("Final check: " + final.state + ".\\nHand-back state: " + final.state);
+  result("Final check: " + final.state + ".\\nHand-back state: " + (O.handback ?? final.state));
 }
 `;
 

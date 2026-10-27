@@ -483,3 +483,4 @@ test("a stage's status follows how its host ended", () => {
     outcomeOf({ ...base, status: "failed", error: "Agent exited 2" }, "writer"),
   ).toEqual({ status: "failed", error: "Agent exited 2" });
 });
+

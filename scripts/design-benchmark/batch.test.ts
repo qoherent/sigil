@@ -594,3 +594,140 @@ describe("interruption and reread", () => {
     LONG,
   );
 });
+
+describe("reread that does not finish", () => {
+  const failingHosts = (role: string) =>
+    role === "reader" ? { executable: "sh", args: ["-c", "exit 1"] } : undefined;
+
+  test(
+    "a reread whose claims reader fails keeps the old readings, record and manifest",
+    async () => {
+      const { batchDir, paths } = await onePass({ design: TWO_COMPONENTS });
+      const storeBefore = await treeSha256(paths.store);
+      const before = await readBatch(batchDir);
+      const result = await rereadBatch({
+        ...reference.environment,
+        hostFor: failingHosts,
+        batchDir,
+        coverage: false,
+      });
+      expect(result.reread).toEqual([]);
+      expect(result.skipped).toEqual([
+        expect.objectContaining({
+          id: "000001",
+          reason: expect.stringContaining("reread failed, kept its old readings"),
+        }),
+      ]);
+      expect(await treeSha256(paths.store)).toBe(storeBefore);
+      const after = await readBatch(batchDir);
+      expect(after.records[0]).toEqual(before.records[0]);
+      expect(after.manifest.reader).toEqual(before.manifest.reader);
+      expect(after.manifest.readings).toEqual(before.manifest.readings);
+      expect(after.manifest.rereads ?? []).toEqual([]);
+      const evidence = await readdir(paths.evidence);
+      expect(evidence.some((name) => name.startsWith("superseded-"))).toBe(
+        false,
+      );
+    },
+    LONG,
+  );
+
+  test(
+    "a pass whose claims reader hands back failed has a failed claims stage",
+    async () => {
+      const { record } = await onePass(
+        { design: TWO_COMPONENTS },
+        { readerOptions: { handback: "failed" } },
+      );
+      expect(status(record).claims).toBe("failed");
+    },
+    LONG,
+  );
+});
+
+describe("reference reread refusals", () => {
+  test(
+    "a claims reading handed back failed is refused and writes no readings",
+    async () => {
+      const scratch = await tempDir();
+      const reader = await fakeReader(scratch, { handback: "failed" });
+      const out = join(scratch, "out");
+      await expect(rereadReference({
+        ...reference.environment,
+        hostFor: fakeHosts(null, reader),
+        coverage: false,
+        out,
+      })).rejects.toThrow(/handed back failed/);
+      expect(await exists(join(out, "readings.json"))).toBe(false);
+    },
+    LONG,
+  );
+
+  test(
+    "a claims reading with unread units is refused and writes no readings",
+    async () => {
+      const scratch = await tempDir();
+      const reader = await fakeReader(scratch, { skipClaims: true });
+      const out = join(scratch, "out");
+      await expect(rereadReference({
+        ...reference.environment,
+        hostFor: fakeHosts(null, reader),
+        coverage: false,
+        out,
+      })).rejects.toThrow(/is incomplete/);
+      expect(await exists(join(out, "readings.json"))).toBe(false);
+    },
+    LONG,
+  );
+});
+
+describe("coverage that does not finish", () => {
+  test(
+    "a reread whose coverage reader fails keeps the old coverage and readings",
+    async () => {
+      const { batchDir, paths } = await onePass({ design: TWO_COMPONENTS });
+      const coverageBefore = await readFile(paths.coverage, "utf8");
+      const storeBefore = await treeSha256(paths.store);
+      const before = await readBatch(batchDir);
+      const reader = await fakeReader(await tempDir(), { skipCoverage: true });
+      const result = await rereadBatch({
+        ...reference.environment,
+        hostFor: (role: string) => (role === "reader" ? reader : undefined),
+        batchDir,
+        coverage: true,
+      });
+      expect(result.reread).toEqual([]);
+      expect(result.skipped).toEqual([
+        expect.objectContaining({
+          id: "000001",
+          reason: expect.stringContaining("coverage done"),
+        }),
+      ]);
+      expect(await readFile(paths.coverage, "utf8")).toBe(coverageBefore);
+      expect(await treeSha256(paths.store)).toBe(storeBefore);
+      const after = await readBatch(batchDir);
+      expect(after.records[0]).toEqual(before.records[0]);
+      expect(after.manifest.reader).toEqual(before.manifest.reader);
+    },
+    LONG,
+  );
+});
+
+describe("reference coverage refusal", () => {
+  test(
+    "a reference whose coverage reader fails is refused and writes no readings",
+    async () => {
+      const scratch = await tempDir();
+      const reader = await fakeReader(scratch, { skipCoverage: true });
+      const out = join(scratch, "out");
+      await expect(rereadReference({
+        ...reference.environment,
+        hostFor: fakeHosts(null, reader),
+        coverage: true,
+        out,
+      })).rejects.toThrow(/coverage reading done/);
+      expect(await exists(join(out, "readings.json"))).toBe(false);
+    },
+    LONG,
+  );
+});

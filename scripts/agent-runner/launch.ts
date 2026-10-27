@@ -275,6 +275,7 @@ export async function launchAgent<H>(
       stdoutPath,
       stderrPath,
       finalResponsePath,
+      permissionDenials: analysis.permissionDenials,
       handback,
     };
   }

@@ -57,13 +57,13 @@ import {
   type HandbackState,
   INTERPRETER_CHILD,
   ORCHESTRATOR_SHELL,
-  orchestratorPrompt,
   parseHandbackState,
   PASS_LAYOUT,
 } from "../slotted-benchmark/agents.ts";
 import type { CoverageFile } from "./coverage.ts";
 import {
   COVERAGE_CHILD,
+  benchmarkClaimsPrompt,
   COVERAGE_LAYOUT,
   coverageFromAnswer,
   type CoverageHandback,
@@ -477,6 +477,8 @@ export interface ReaderRequest {
   /** The design to read; copied, never read in place. */
   readonly design: string;
   readonly sigilc: string;
+  /** The pinned `sigil`, staged beside `sigilc` for the reader's version check. */
+  readonly sigil: string;
   /** The stage's working directory; must not exist yet or be empty. */
   readonly passDir: string;
   /** Outside `passDir`; launch evidence goes here. */
@@ -506,6 +508,8 @@ export interface ClaimsReading {
   readonly handback: HandbackState | null;
   /** The reader's private store; its interpretations are the readings. */
   readonly store: string;
+  /** Tool calls the host refused during the reading; the store decides the rest. */
+  readonly permissionDenials: readonly string[];
 }
 
 /**
@@ -534,6 +538,9 @@ export async function runClaimsReading(
   const bin = join(passDir, PASS_LAYOUT.bin);
   await mkdir(bin, { recursive: true });
   await copyFile(request.sigilc, join(bin, "sigilc"));
+  // The staged skills ask the reader to read `sigil --version`, so the
+  // pinned `sigil` is staged and allowed beside `sigilc`.
+  await copyFile(request.sigil, join(bin, "sigil"));
   const agent = parseHostName(request.reader.agent);
   const result = await launchAgent<HandbackState>({
     agent,
@@ -543,8 +550,8 @@ export async function runClaimsReading(
     binDir: bin,
     evidenceDir: request.evidenceDir,
     ...launchSettings("reader", agent, request.host),
-    prompt: (context) => orchestratorPrompt({ ...context, action: "design" }),
-    allowedShell: ORCHESTRATOR_SHELL,
+    prompt: (context) => benchmarkClaimsPrompt({ ...context, action: "design" }),
+    allowedShell: [...ORCHESTRATOR_SHELL, "sigil"],
     children: [INTERPRETER_CHILD],
     parseHandback: parseHandbackState,
   });
@@ -552,6 +559,7 @@ export async function runClaimsReading(
     outcome: outcomeOf(result, "claims reader"),
     handback: result.handback,
     store,
+    permissionDenials: result.permissionDenials,
   };
 }
 
