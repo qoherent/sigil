@@ -41,7 +41,6 @@ impl CheckRule {
 
 #[derive(Debug, Clone)]
 pub struct Conventions {
-    pub file_path: String,
     pub rules: Vec<CheckRule>,
 }
 
@@ -74,10 +73,7 @@ pub fn parse_check(bytes: &[u8], file_path: &str) -> ConventionsParse {
     };
     match rules_of(&value) {
         Ok(rules) => ConventionsParse {
-            conventions: Some(Conventions {
-                file_path: file_path.to_owned(),
-                rules,
-            }),
+            conventions: Some(Conventions { rules }),
             diagnostics: Vec::new(),
         },
         Err(message) => fail(message, None),

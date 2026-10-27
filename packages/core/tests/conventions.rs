@@ -146,6 +146,21 @@ fn a_trailing_space_in_a_label_still_guards_the_word() {
 }
 
 #[test]
+fn two_rules_requiring_the_same_label_warn_once() {
+    let rules = r#"{"rules":[
+        {"section":"decisions","require":["Scope:"]},
+        {"section":"decisions","groups":["Retention"],"require":["Scope:"]}
+    ]}"#;
+    let source = decisions("    Retention {\n      Decision: Keep audit data.\n    }\n");
+    let found = warn(rules, &[("c.sigil", &source)]);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(
+        found[0].message,
+        missing("Scope:", "Retention", "decisions")
+    );
+}
+
+#[test]
 fn a_label_in_another_group_does_not_satisfy_this_one() {
     let source = decisions(
         "    Retention {\n      Decision: Keep audit data.\n    }\n\n    Access {\n      Decision: Limit readers.\n\n      Scope: Staff only.\n    }\n",
@@ -254,7 +269,6 @@ fn a_workspace_without_conventions_loads_as_it_always_did() {
 fn a_loaded_rule_set_keeps_its_rules_and_stays_out_of_context() {
     let workspace = load(Some(RULE), &[]);
     let conventions = workspace.conventions.expect("rules load");
-    assert_eq!(conventions.file_path, CONVENTIONS_CHECK_PATH);
     assert_eq!(conventions.rules.len(), 1);
     assert_eq!(conventions.rules[0].section, "decisions");
     assert_eq!(conventions.rules[0].groups, None);
