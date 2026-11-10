@@ -28,6 +28,6 @@ The code vocabulary has `uses`, `owns`, `invokes` and `dependsOn`, but no `write
 ### 3. Checking a script is token-heavy, and per-component verdicts hide per-file gaps
 
 - **Cost:** the design guidance is about 71 KB per prepare. Each code file's `request.json` was about 261 KB for a 3.6 KB script (roughly 70x), about 65k tokens per fresh child, so about 600k tokens for 9 files run by the book.
-- **Granularity:** obligations are answered per component. Of six restore scripts, one verifies the restored model's id; four only grep the response for a generic word. Because one script did it right, the obligation counted as met for all of them.
+- **Granularity:** obligations are answered per component. Of six restore scripts, one verifies the restored model's id; four check weakly (a generic word in the response, or no model id sent at all). Because one script did it right, the obligation counted as met for all of them.
 
 **Suggestion:** a trimmed per-file request (only the Facets that file could touch), and an option to answer obligations per file or per instance rather than per component.
